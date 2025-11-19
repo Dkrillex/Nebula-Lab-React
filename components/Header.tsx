@@ -316,16 +316,16 @@ const Header: React.FC<HeaderProps> = ({
                           Expenses
                         </button>
                         <div className="h-px bg-border my-1"></div>
-                        <button 
+                  <button 
                           onClick={() => {
                             logout();
                             setShowUserMenu(false);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                        >
+                  >
                           <LogOut size={16} />
                           Sign out
-                        </button>
+                  </button>
                       </div>
                     </div>
                   )}

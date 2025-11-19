@@ -276,87 +276,87 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
     <div className="flex h-full bg-background overflow-hidden w-full">
       {/* Filter Sidebar */}
       {showFilterPanel && (
-        <aside className="w-80 border-r border-border bg-surface p-6 flex-shrink-0 hidden lg:block h-full overflow-y-auto custom-scrollbar">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-bold text-lg">{t.filterSearch}</h2>
+      <aside className="w-80 border-r border-border bg-surface p-6 flex-shrink-0 hidden lg:block h-full overflow-y-auto custom-scrollbar">
+        <div className="flex items-center justify-between mb-6">
+           <h2 className="font-bold text-lg">{t.filterSearch}</h2>
             <button 
               onClick={() => setShowFilterPanel(false)}
               className="p-1 text-muted hover:text-foreground"
             >
-              <X size={16} />
-            </button>
-          </div>
+             <X size={16} />
+           </button>
+        </div>
 
-          <div className="space-y-5">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted">{t.searchName}</label>
-              <input 
-                type="text" 
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted">{t.searchName}</label>
+            <input 
+              type="text" 
                 value={filters.assetName}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetName: e.target.value }))}
-                placeholder={t.namePlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-              />
-            </div>
+              placeholder={t.namePlaceholder}
+              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted">{t.searchType}</label>
-              <select 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted">{t.searchType}</label>
+            <select 
                 value={filters.assetType || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetType: e.target.value ? Number(e.target.value) : undefined }))}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-              >
-                <option value="">{t.chooseType}</option>
+              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            >
+              <option value="">{t.chooseType}</option>
                 <option value="1">图片</option>
                 <option value="2">视频</option>
                 <option value="3">音频</option>
                 <option value="4">文档</option>
-              </select>
-            </div>
+            </select>
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted">{t.searchTag}</label>
-              <input 
-                type="text" 
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-muted">{t.searchTag}</label>
+            <input 
+              type="text" 
                 value={filters.assetTag}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetTag: e.target.value }))}
-                placeholder={t.tagPlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-              />
-            </div>
+              placeholder={t.tagPlaceholder}
+              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            />
+          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-muted">{t.searchDesc}</label>
-              <input 
-                type="text" 
+           <div className="space-y-2">
+            <label className="text-sm font-medium text-muted">{t.searchDesc}</label>
+            <input 
+              type="text" 
                 value={filters.assetDesc}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetDesc: e.target.value }))}
-                placeholder={t.descPlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-              />
-            </div>
-            
-            <div className="flex gap-3 pt-2">
+              placeholder={t.descPlaceholder}
+              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+            />
+          </div>
+          
+          <div className="flex gap-3 pt-2">
               <button 
                 onClick={handleSearch}
                 className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
               >
-                {t.search}
-              </button>
-              <button 
-                onClick={handleReset}
-                className="flex-1 py-2 border border-border bg-surface text-foreground rounded-lg text-sm font-medium hover:bg-border/80 transition-colors"
-              >
-                {t.reset}
-              </button>
-            </div>
+               {t.search}
+             </button>
+             <button 
+               onClick={handleReset}
+               className="flex-1 py-2 border border-border bg-surface text-foreground rounded-lg text-sm font-medium hover:bg-border/80 transition-colors"
+             >
+               {t.reset}
+             </button>
           </div>
-        </aside>
+        </div>
+      </aside>
       )}
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-        {/* Header Section */}
+         {/* Header Section */}
         <div className="bg-white dark:bg-gray-900 border-b border-border py-6 px-8 flex-shrink-0">
           <h1 className="text-3xl font-bold mb-2 text-foreground">{t.title}</h1>
           <p className="text-muted">{t.subtitle}</p>
@@ -388,7 +388,7 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
               </button>
             )}
           </div>
-        </div>
+         </div>
 
         {/* Breadcrumb */}
         {breadcrumbPath.length > 1 && (
@@ -411,9 +411,9 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
           </div>
         )}
 
-        {/* Toolbar */}
-        <div className="border-b border-border bg-background p-4 flex flex-col md:flex-row items-center justify-between gap-4 flex-shrink-0">
-          <div className="flex items-center gap-2 text-sm text-muted">
+         {/* Toolbar */}
+         <div className="border-b border-border bg-background p-4 flex flex-col md:flex-row items-center justify-between gap-4 flex-shrink-0">
+            <div className="flex items-center gap-2 text-sm text-muted">
             {!showFilterPanel && (
               <button
                 onClick={() => setShowFilterPanel(true)}
@@ -422,28 +422,28 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
                 <Search size={16} />
               </button>
             )}
-            <span>{t.title}</span>
-          </div>
-          
-          <div className="relative w-full md:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
-            <input 
-              type="text" 
-              value={resultSearch}
-              onChange={(e) => setResultSearch(e.target.value)}
-              placeholder={t.searchInResult}
-              className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
-            />
-          </div>
-        </div>
+               <span>{t.title}</span>
+            </div>
+            
+            <div className="relative w-full md:w-64">
+               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
+               <input 
+                 type="text" 
+                 value={resultSearch}
+                 onChange={(e) => setResultSearch(e.target.value)}
+                 placeholder={t.searchInResult}
+                 className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
+               />
+            </div>
+         </div>
 
-        {/* Action Bar */}
-        <div className="bg-surface/50 p-4 border-b border-border flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
-          <div className="text-sm text-muted">
+         {/* Action Bar */}
+         <div className="bg-surface/50 p-4 border-b border-border flex flex-wrap items-center justify-between gap-4 flex-shrink-0">
+            <div className="text-sm text-muted">
             {folderCount} {t.totalFolders}, {fileCount} {t.totalFiles}
-          </div>
-          
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
+            </div>
+            
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
             <ActionButton 
               icon={FolderPlus} 
               label={t.newFolder} 
@@ -470,21 +470,21 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
               onClick={handleMultiDelete}
               disabled={selectedAssets.size === 0}
             />
-            <div className="w-px h-6 bg-border mx-2"></div>
-            <div className="flex items-center gap-2">
+               <div className="w-px h-6 bg-border mx-2"></div>
+               <div className="flex items-center gap-2">
               <input 
                 type="checkbox" 
                 checked={selectedAssets.size === assets.length && assets.length > 0}
                 onChange={handleSelectAll}
                 className="rounded border-muted w-4 h-4"
               />
-              <span className="text-sm text-muted">{t.selectAll}</span>
+                  <span className="text-sm text-muted">{t.selectAll}</span>
+               </div>
             </div>
-          </div>
-        </div>
+         </div>
 
-        {/* Asset Grid */}
-        <div className="p-6 bg-surface/20 flex-1 overflow-y-auto custom-scrollbar">
+         {/* Asset Grid */}
+         <div className="p-6 bg-surface/20 flex-1 overflow-y-auto custom-scrollbar">
           {loading ? (
             <div className="flex items-center justify-center h-64">
               <Loader2 size={32} className="animate-spin text-indigo-600" />
@@ -496,7 +496,7 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
-              {filteredAssets.map(asset => (
+               {filteredAssets.map(asset => (
                 <AssetCard 
                   key={asset.id} 
                   asset={asset}
@@ -505,7 +505,7 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
                   onFolderClick={() => handleFolderClick(asset)}
                   onDelete={() => handleDelete(asset)}
                 />
-              ))}
+               ))}
             </div>
           )}
 
@@ -531,7 +531,7 @@ const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
               </button>
             </div>
           )}
-        </div>
+         </div>
       </main>
     </div>
   );
@@ -592,10 +592,10 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
           onClick={(e) => e.stopPropagation()}
           className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
         />
-      </div>
-      
-      {/* More Menu */}
-      <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+       </div>
+       
+       {/* More Menu */}
+       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <div className="relative">
           <button 
             onClick={(e) => {
@@ -604,19 +604,19 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
             }}
             className="p-1 rounded-md hover:bg-surface text-muted hover:text-foreground"
           >
-            <MoreVertical size={16} />
+             <MoreVertical size={16} />
           </button>
         </div>
-      </div>
+       </div>
 
-      {/* Thumbnail / Icon */}
-      <div className="flex-1 flex items-center justify-center mb-4 min-h-[120px] bg-surface/30 rounded-lg overflow-hidden">
-        {isFolder ? (
-          <div className="relative">
+       {/* Thumbnail / Icon */}
+       <div className="flex-1 flex items-center justify-center mb-4 min-h-[120px] bg-surface/30 rounded-lg overflow-hidden">
+          {isFolder ? (
+             <div className="relative">
             <div className="w-20 h-16 bg-orange-200 dark:bg-orange-900/30 rounded-lg shadow-sm relative z-10 flex items-center justify-center">
               <Folder size={32} className="text-orange-600 dark:text-orange-400" />
-            </div>
-          </div>
+                </div>
+             </div>
         ) : thumbnailUrl ? (
           <img 
             src={thumbnailUrl} 
@@ -638,37 +638,37 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
               }
             }}
           />
-        ) : (
-          <div className="text-slate-400">
+             ) : (
+               <div className="text-slate-400">
             {fileType === 'audio' && <FileAudio size={48} />}
             {fileType === 'video' && <Film size={48} />}
             {fileType === 'image' && <ImageIcon size={48} />}
             {fileType === 'file' && <Folder size={48} />}
-          </div>
-        )}
-      </div>
+               </div>
+          )}
+       </div>
 
-      {/* Info */}
-      <div className="text-center">
+       {/* Info */}
+       <div className="text-center">
         <h3 className="font-semibold text-sm text-foreground truncate mb-1" title={asset.assetName || '未命名'}>
           {asset.assetName || '未命名'}
         </h3>
         <p className="text-xs text-muted mb-2">{asset.assetTag || (isFolder ? '文件夹' : '文件')}</p>
-        
+          
         {asset.assetDesc && (
           <p className="text-xs text-muted truncate mb-2" title={asset.assetDesc}>
             {asset.assetDesc}
           </p>
-        )}
-      </div>
-      
-      {/* Footer Date */}
+             )}
+       </div>
+       
+       {/* Footer Date */}
       {asset.createTime && (
-        <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
+       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
           <span className="text-[10px] text-muted">
             {new Date(asset.createTime).toLocaleDateString()}
           </span>
-        </div>
+       </div>
       )}
     </div>
   );

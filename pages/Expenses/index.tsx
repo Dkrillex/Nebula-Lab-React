@@ -298,7 +298,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12">
-              <div className="text-left">
+             <div className="text-left">
                 {currentMode === 'balance' ? (
                   <>
                     <div className="text-5xl md:text-6xl font-bold mb-2 flex items-baseline gap-2 text-foreground">
@@ -322,7 +322,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                   <>
                     <div className="text-5xl md:text-6xl font-bold mb-2 flex items-baseline gap-2 text-foreground">
                       {quotaLoading ? '...' : formatPoints(totalPoints)}
-                    </div>
+                </div>
                     <div className="text-muted font-medium flex items-center gap-2 flex-wrap">
                       <span>{t.buttons.points}</span>
                       {userAccounts.length > 0 && (
@@ -331,12 +331,12 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                           <span>共 {userAccounts.length} 个账户</span>
                         </>
                       )}
-                    </div>
+                </div>
                   </>
                 )}
-              </div>
-              
-              <div className="flex flex-wrap justify-center md:justify-end gap-3">
+             </div>
+             
+             <div className="flex flex-wrap justify-center md:justify-end gap-3">
                 <button 
                   onClick={handleRefresh}
                   disabled={loading || quotaLoading}
@@ -346,7 +346,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                   {t.buttons.refresh}
                 </button>
               </div>
-            </div>
+             </div>
           </div>
         </div>
       </div>
@@ -408,7 +408,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
 
            {/* Cards Grid - 积分模式 */}
            {currentMode === 'points' && !loading && scoreList.length > 0 && (
-             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                {scoreList.map((score) => {
                  return (
                    <div key={score.id}>
@@ -454,7 +454,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                >
                  下一页
                </button>
-             </div>
+           </div>
            )}
         </div>
       </div>
