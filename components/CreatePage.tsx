@@ -10,6 +10,8 @@ import {
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
+  activeMenu: string;
+  onMenuChange: (id: string) => void;
   t: {
     greeting: string;
     greetingSuffix: string;
@@ -55,8 +57,7 @@ interface CreatePageProps {
   };
 }
 
-const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
-  const [activeMenu, setActiveMenu] = useState('textToImage');
+const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMenuChange }) => {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -70,7 +71,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     if (item.path) {
       onNavigate(item.path);
     } else {
-      setActiveMenu(item.id);
+      onMenuChange(item.id);
     }
   };
 
@@ -81,8 +82,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
       icon: Box, 
       label: t.sideMenu.modelCenter,
       children: [
-        { id: 'aiExperience', icon: Sparkles, label: t.sideMenu.aiExperience },
-        { id: 'modelSquare', icon: Grid, label: t.sideMenu.modelSquare, path: '#' },
+        { id: 'aiExperience', icon: Sparkles, label: t.sideMenu.aiExperience, path: '#chat' },
+        { id: 'modelSquare', icon: Grid, label: t.sideMenu.modelSquare, path: '#models' },
         { id: 'apiKeys', icon: Key, label: t.sideMenu.apiKeys, path: '#keys' },
         { id: 'apiDocs', icon: FileText, label: t.sideMenu.apiDocs, path: '#' },
       ]
@@ -106,9 +107,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
       icon: UserCircle, 
       label: t.sideMenu.personalCenter,
       children: [
-        { id: 'assets', icon: Folder, label: t.sideMenu.assets },
-        { id: 'pricing', icon: CreditCard, label: t.sideMenu.pricing },
-        { id: 'expenses', icon: DollarSign, label: t.sideMenu.expenses },
+        { id: 'assets', icon: Folder, label: t.sideMenu.assets, path: '#assets' },
+        { id: 'pricing', icon: CreditCard, label: t.sideMenu.pricing, path: '#pricing' },
+        { id: 'expenses', icon: DollarSign, label: t.sideMenu.expenses, path: '#expenses' },
       ]
     },
   ];

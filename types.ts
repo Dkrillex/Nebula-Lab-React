@@ -11,6 +11,8 @@ export interface AIModel {
   isNew?: boolean;
   isFree?: boolean;
   tags: string[];
+  capabilities?: string[]; // e.g., 'chat', 'code', 'reasoning'
+  billingType?: 'token' | 'time'; // token or second
 }
 
 export interface NavItem {
@@ -29,9 +31,43 @@ export interface APIKey {
   expiration: string | 'never';
 }
 
+export interface ExpenseRecord {
+  id: string;
+  modelName: string;
+  cost: number;
+  type: 'consumption' | 'recharge';
+  duration: string;
+  inputTokens: number;
+  outputTokens: number;
+  timestamp: string;
+  icon?: string; // URL or 'robot' placeholder
+}
+
+export interface Asset {
+  id: string;
+  name: string;
+  type: 'folder' | 'image' | 'video' | 'audio';
+  date: string;
+  tag?: string; 
+  description?: string;
+  thumbnail?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: number;
+}
+
 export type Language = 'en' | 'zh';
 
-export type View = 'home' | 'create' | 'keys';
+export type View = 'home' | 'create' | 'keys' | 'chat' | 'models' | 'expenses' | 'pricing' | 'assets';
+
+export interface TabItem {
+  view: View;
+  activeTool?: string; // Only for 'create' view
+}
 
 // --- Ruoyi API Response Interfaces ---
 

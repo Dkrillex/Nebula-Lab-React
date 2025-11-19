@@ -26,7 +26,7 @@ export function tansParams(params: any) {
   return result;
 }
 
-export const errorCode: Record<number, string> = {
+export const errorCode: Record<string | number, string> = {
   '401': '认证失败，无法访问系统资源',
   '403': '当前操作没有权限',
   '404': '访问资源不存在',

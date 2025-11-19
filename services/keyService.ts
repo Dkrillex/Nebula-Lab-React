@@ -1,13 +1,13 @@
 
 import { request } from '../lib/request';
-import { APIKey, PaginatedResponse } from '../types';
+import { APIKey } from '../types';
 
 export const keyService = {
   /**
    * Get all API keys for the current user
    */
   getKeys: (page = 1, limit = 10) => {
-    return request.get<PaginatedResponse<APIKey>>('/api-keys', { params: { page, limit } });
+    return request.get<APIKey>('/api-keys', { params: { page, limit } });
   },
 
   /**
