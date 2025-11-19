@@ -113,7 +113,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
-      <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
+      <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
         {menuStructure.map((item) => {
           const hasChildren = 'children' in item && item.children;
           const Icon = item.icon;
