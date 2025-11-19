@@ -44,7 +44,7 @@ async function http<T = any>(endpoint: string, options: RequestOptions = {}): Pr
   const isToken = options.isToken ?? true;
   const timeout = options.timeout ?? API_TIMEOUT;
   const params = options.params;
-  const customHeaders = options.headers;
+  const customHeaders = options.headers || {};
   
   // Extract other RequestInit properties (excluding custom options already extracted)
   const { 
@@ -75,6 +75,9 @@ async function http<T = any>(endpoint: string, options: RequestOptions = {}): Pr
   let isEncrypted = false;
   let encryptKeyHeader: string | null = null;
   
+  // Check if body is FormData
+  const isFormData = requestBody instanceof FormData;
+
   if (encrypt && requestBody && typeof requestBody === 'string') {
     try {
       console.log('[Encrypt] Starting encryption, original body:', requestBody);
@@ -113,23 +116,28 @@ async function http<T = any>(endpoint: string, options: RequestOptions = {}): Pr
   }
 
   // 3. Headers Handling
-  const headers: HeadersInit = {
-    'Content-Type': isEncrypted 
-      ? 'text/plain;charset=utf-8'  // Encrypted payload is sent as plain text
-      : 'application/json;charset=utf-8',
+  const headers: any = {
     // Add ClientID header (required by backend)
     'Clientid': CLIENT_ID,
     ...customHeaders,
   };
 
+  // Only set default Content-Type if not present and NOT FormData
+  // FormData needs browser to set boundary automatically
+  if (!headers['Content-Type'] && !isFormData) {
+    headers['Content-Type'] = isEncrypted 
+      ? 'text/plain;charset=utf-8'  // Encrypted payload is sent as plain text
+      : 'application/json;charset=utf-8';
+  }
+
   // Add encrypt-key header if encryption is enabled
   if (isEncrypted && encryptKeyHeader) {
-    (headers as any)['encrypt-key'] = encryptKeyHeader;
+    headers['encrypt-key'] = encryptKeyHeader;
   }
 
   // Inject Token
   if (getToken() && isToken) {
-    (headers as any)['Authorization'] = 'Bearer ' + getToken();
+    headers['Authorization'] = 'Bearer ' + getToken();
   }
 
   const config: RequestInit = {
@@ -219,11 +227,23 @@ export const request = {
   get: <T = any>(url: string, options?: RequestOptions) => 
     http<T>(url, { ...options, method: 'GET' }),
 
-  post: <T = any>(url: string, body: any, options?: RequestOptions) => 
-    http<T>(url, { ...options, method: 'POST', body: JSON.stringify(body) }),
+  post: <T = any>(url: string, body: any, options?: RequestOptions) => {
+    const isFormData = body instanceof FormData;
+    return http<T>(url, { 
+      ...options, 
+      method: 'POST', 
+      body: isFormData ? body : JSON.stringify(body) 
+    });
+  },
 
-  put: <T = any>(url: string, body: any, options?: RequestOptions) => 
-    http<T>(url, { ...options, method: 'PUT', body: JSON.stringify(body) }),
+  put: <T = any>(url: string, body: any, options?: RequestOptions) => {
+    const isFormData = body instanceof FormData;
+    return http<T>(url, { 
+      ...options, 
+      method: 'PUT', 
+      body: isFormData ? body : JSON.stringify(body) 
+    });
+  },
 
   delete: <T = any>(url: string, options?: RequestOptions) => 
     http<T>(url, { ...options, method: 'DELETE' }),

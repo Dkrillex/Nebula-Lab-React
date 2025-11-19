@@ -504,21 +504,21 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
   };
   
   return (
-    <div className="w-full h-full bg-gradient-to-br from-indigo-500 via-purple-500 to-indigo-800 p-4 md:p-8 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-8 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
       
       {/* Header */}
-      <div className="text-center text-white space-y-2 flex-shrink-0">
+      <div className="text-center text-gray-800 dark:text-gray-100 space-y-2 flex-shrink-0">
         <h1 className="text-3xl font-bold tracking-wide">{t.title}</h1>
-        <p className="text-indigo-100 text-sm opacity-90">{t.subtitle}</p>
+        <p className="text-gray-600 dark:text-gray-400 text-sm opacity-90">{t.subtitle}</p>
       </div>
 
       {/* Top Tabs */}
       <div className="flex justify-center">
-        <div className="bg-white/10 backdrop-blur-md p-1 rounded-full flex gap-1">
+        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-1 rounded-full flex gap-1">
           <button
             onClick={() => setActiveTab('video')}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-              activeTab === 'video' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'
+              activeTab === 'video' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <PenTool size={14} />
@@ -527,7 +527,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
           <button
             onClick={() => setActiveTab('product')}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-              activeTab === 'product' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'
+              activeTab === 'product' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <span className="text-lg leading-none">🎨</span>
@@ -536,7 +536,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
           <button
             onClick={() => setActiveTab('singing')}
             className={`px-6 py-2 rounded-full text-sm font-medium transition-all flex items-center gap-2 ${
-              activeTab === 'singing' ? 'bg-white text-indigo-600 shadow-sm' : 'text-white hover:bg-white/10'
+              activeTab === 'singing' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
             }`}
           >
             <Mic size={14} />

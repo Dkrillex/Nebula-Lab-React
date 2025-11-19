@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
           <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
               <div className="flex items-center gap-2 mb-2 text-indigo-500">
                 <Sparkles size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">Pro Feature</span>
+                <span className="text-xs font-bold uppercase tracking-wider">Pro Feature111</span>
               </div>
               <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
               <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-border rounded hover:bg-foreground hover:text-background transition-colors">

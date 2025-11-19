@@ -142,9 +142,9 @@ const Layout: React.FC = () => {
       </main>
 
       {/* Conditional Footer rendering based on route can be handled here or CSS */}
-      {currentView !== 'chat' && currentView !== 'models' && currentView !== 'expenses' && currentView !== 'pricing' && currentView !== 'assets' && (
+      {/* {currentView !== 'chat' && currentView !== 'models' && currentView !== 'expenses' && currentView !== 'pricing' && currentView !== 'assets' && (
         <Footer t={t.footer} />
-      )}
+      )} */}
       
       <AuthModal 
         isOpen={isAuthModalOpen} 

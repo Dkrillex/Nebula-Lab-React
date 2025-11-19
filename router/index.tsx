@@ -74,12 +74,12 @@ export const router = createHashRouter([
         element: <CreatePageWrapper />,
       },
       {
-        path: 'assets',
-        element: <AssetsPageWrapper />,
-      },
-      {
         element: <DashboardLayout />,
         children: [
+          {
+            path: 'assets',
+            element: <AssetsPageWrapper />,
+          },
           {
             path: 'chat',
             element: <ChatPageWrapper />,

@@ -229,6 +229,61 @@ interface Translation {
         generate: string;
       };
     };
+    styleTransfer: {
+      title: string;
+      subtitle: string;
+      modes: {
+        standard: {
+          title: string;
+          desc: string;
+        };
+        creative: {
+          title: string;
+          desc: string;
+        };
+        clothing: {
+          title: string;
+          desc: string;
+        };
+      };
+      standard: {
+        productTitle: string;
+        productDesc: string;
+        uploadProduct: string;
+        areaTitle: string;
+        areaDesc: string;
+        uploadTemplate: string;
+        selectTemplate: string;
+        support: string;
+      };
+      clothing: {
+        garmentTitle: string;
+        garmentDesc: string;
+        uploadGarment: string;
+        modelTitle: string;
+        uploadModel: string;
+        types: {
+          top: string;
+          bottom: string;
+          full: string;
+        };
+      };
+      creative: {
+        productTitle: string;
+        promptTitle: string;
+        addRef: string;
+        tryExample: string;
+        aiPolish: string;
+        promptPlaceholder: string;
+        uploadProduct: string;
+        support: string;
+      };
+      common: {
+        generate: string;
+        resultTitle: string;
+        resultPlaceholder: string;
+      };
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -641,6 +696,61 @@ export const translations: Record<string, Translation> = {
           previewPlaceholder: 'Please enter text.',
           tryExample: 'Try Example',
           generate: 'Generate after settings'
+        }
+      },
+      styleTransfer: {
+        title: 'Style Transfer',
+        subtitle: 'Transform object styles across different scenes',
+        modes: {
+          standard: {
+            title: 'Standard Mode',
+            desc: 'Use templates for style transfer'
+          },
+          creative: {
+            title: 'Creative Mode',
+            desc: 'Use prompts for creative transformation'
+          },
+          clothing: {
+            title: 'Clothing Mode',
+            desc: 'Virtual try-on for garments'
+          }
+        },
+        standard: {
+          productTitle: 'Product Image',
+          productDesc: 'Upload the product image you want to transform',
+          uploadProduct: 'Upload Product Image',
+          areaTitle: 'Template Area',
+          areaDesc: 'Upload template image or select from templates',
+          uploadTemplate: 'Upload Template Image',
+          selectTemplate: 'Select Template',
+          support: 'JPG, PNG, WEBP'
+        },
+        clothing: {
+          garmentTitle: 'Garment Image',
+          garmentDesc: 'Upload the garment image',
+          uploadGarment: 'Upload Garment',
+          modelTitle: 'Model Image',
+          uploadModel: 'Upload Model',
+          types: {
+            top: 'Top',
+            bottom: 'Bottom',
+            full: 'Full Body'
+          }
+        },
+        creative: {
+          productTitle: 'Product Image',
+          promptTitle: 'Prompt',
+          addRef: 'Add Reference',
+          tryExample: 'Try Example',
+          aiPolish: 'AI Polish',
+          promptPlaceholder: 'Describe the scene you want to place the product in, e.g., Place the product in a modern office environment with a clean and professional background...',
+          uploadProduct: 'Upload Product Image',
+          support: 'JPG, PNG, WEBP'
+        },
+        common: {
+          generate: 'Generate',
+          resultTitle: 'Generation Result',
+          resultPlaceholder: 'Upload images and enter prompts to start your style transfer journey'
         }
       }
     },
@@ -1082,6 +1192,61 @@ export const translations: Record<string, Translation> = {
           previewPlaceholder: '请输入文本。',
           tryExample: '试用示例',
           generate: '设置完成后可生成'
+        }
+      },
+      styleTransfer: {
+        title: '万物迁移',
+        subtitle: 'AI智能笔触勾勒产品跨场景展示',
+        modes: {
+          standard: {
+            title: '标准模式',
+            desc: '使用模板进行风格迁移'
+          },
+          creative: {
+            title: '创意模式',
+            desc: '使用提示词进行创意变换'
+          },
+          clothing: {
+            title: '服装模式',
+            desc: '虚拟试衣换装'
+          }
+        },
+        standard: {
+          productTitle: '产品图片',
+          productDesc: '上传您想要变换的产品图片',
+          uploadProduct: '上传产品图片',
+          areaTitle: '模板区域',
+          areaDesc: '上传模板图片或从模板库中选择',
+          uploadTemplate: '上传模板图片',
+          selectTemplate: '选择模板',
+          support: 'JPG, PNG, WEBP'
+        },
+        clothing: {
+          garmentTitle: '服装图片',
+          garmentDesc: '上传服装图片',
+          uploadGarment: '上传服装',
+          modelTitle: '模特图片',
+          uploadModel: '上传模特',
+          types: {
+            top: '上衣',
+            bottom: '下装',
+            full: '全身'
+          }
+        },
+        creative: {
+          productTitle: '产品图片',
+          promptTitle: '提示词',
+          addRef: '添加参考',
+          tryExample: '试用示例',
+          aiPolish: 'AI润色',
+          promptPlaceholder: '描述您想要放置产品的场景，例如：将产品放置在现代化的办公环境中，背景简洁专业，突出产品特点...',
+          uploadProduct: '上传产品图片',
+          support: 'JPG, PNG, WEBP'
+        },
+        common: {
+          generate: '生成',
+          resultTitle: '生成结果',
+          resultPlaceholder: '上传图片并输入提示词，开始您的风格迁移之旅'
         }
       }
     },
