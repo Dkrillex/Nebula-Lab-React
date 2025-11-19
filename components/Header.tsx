@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
@@ -36,6 +36,11 @@ const Header: React.FC<HeaderProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
+  
+  // 标签页滚动相关
+  const tabsContainerRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   
   const toggleLang = () => {
     setLang(lang === 'en' ? 'zh' : 'en');
@@ -176,6 +181,45 @@ const Header: React.FC<HeaderProps> = ({
     return tab.view;
   };
 
+  // 检查是否可以滚动
+  const checkScrollability = () => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+    
+    setCanScrollLeft(container.scrollLeft > 0);
+    setCanScrollRight(container.scrollLeft < container.scrollWidth - container.clientWidth - 1);
+  };
+
+  // 滚动标签页
+  const scrollTabs = (direction: 'left' | 'right') => {
+    const container = tabsContainerRef.current;
+    if (!container) return;
+    
+    const scrollAmount = 200; // 每次滚动200px
+    const newScrollLeft = direction === 'left' 
+      ? container.scrollLeft - scrollAmount 
+      : container.scrollLeft + scrollAmount;
+    
+    container.scrollTo({
+      left: newScrollLeft,
+      behavior: 'smooth'
+    });
+  };
+
+  // 监听标签页变化和滚动事件
+  useEffect(() => {
+    checkScrollability();
+    const container = tabsContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', checkScrollability);
+      window.addEventListener('resize', checkScrollability);
+      return () => {
+        container.removeEventListener('scroll', checkScrollability);
+        window.removeEventListener('resize', checkScrollability);
+      };
+    }
+  }, [visitedViews]);
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
       {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
@@ -210,34 +254,62 @@ const Header: React.FC<HeaderProps> = ({
               </button>
             </div>
           ) : (
-            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full px-2 mask-fade-right">
-              {visitedViews && visitedViews.map((tab, index) => {
-                const isActive = tab.view === currentView && 
-                                 (tab.view !== 'create' || tab.activeTool === activeTool);
-                return (
-                  <div 
-                    key={`${tab.view}-${tab.activeTool || index}`}
-                    onClick={() => onTabClick && onTabClick(tab)}
-                    className={`
-                      group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
-                      ${isActive 
-                        ? 'bg-surface border-border text-foreground shadow-sm' 
-                        : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
-                    `}
-                  >
-                    {tab.view === 'home' && <Home size={12} />}
-                    <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
-                    {visitedViews.length > 1 && (
-                      <button 
-                        onClick={(e) => onTabClose && onTabClose(e, index)}
-                        className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="flex items-center gap-1 w-full relative">
+              {/* 左箭头 */}
+              {canScrollLeft && (
+                <button
+                  onClick={() => scrollTabs('left')}
+                  className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
+                  aria-label="Scroll left"
+                >
+                  <ChevronLeft size={16} />
+                </button>
+              )}
+              
+              {/* 标签页容器 */}
+              <div 
+                ref={tabsContainerRef}
+                className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              >
+                {visitedViews && visitedViews.map((tab, index) => {
+                  const isActive = tab.view === currentView && 
+                                   (tab.view !== 'create' || tab.activeTool === activeTool);
+                  return (
+                    <div 
+                      key={`${tab.view}-${tab.activeTool || index}`}
+                      onClick={() => onTabClick && onTabClick(tab)}
+                      className={`
+                        group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
+                        ${isActive 
+                          ? 'bg-surface border-border text-foreground shadow-sm' 
+                          : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
+                      `}
+                    >
+                      {tab.view === 'home' && <Home size={12} />}
+                      <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
+                      {visitedViews.length > 1 && (
+                        <button 
+                          onClick={(e) => onTabClose && onTabClose(e, index)}
+                          className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
+                        >
+                          <X size={12} />
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              
+              {/* 右箭头 */}
+              {canScrollRight && (
+                <button
+                  onClick={() => scrollTabs('right')}
+                  className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
+                  aria-label="Scroll right"
+                >
+                  <ChevronRightIcon size={16} />
+                </button>
+              )}
             </div>
           )}
         </div>
