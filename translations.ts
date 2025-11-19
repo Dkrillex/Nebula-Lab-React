@@ -140,6 +140,48 @@ interface Translation {
       };
       examples: string;
     };
+    imgToVideo: {
+      title: string;
+      subtitle: string;
+      tabs: {
+        traditional: string;
+        startEnd: string;
+        advanced: string;
+      };
+      upload: {
+        label: string;
+        button: string;
+        desc: string;
+      };
+      generationSettings: string;
+      prompt: {
+        label: string;
+        placeholder: string;
+        polish: string;
+        maxLength: number;
+      };
+      quality: {
+        label: string;
+        options: {
+            lite: string;
+            pro: string;
+            best: string;
+        };
+      };
+      duration: {
+        label: string;
+        units: string;
+      };
+      negativePrompt: {
+        label: string;
+        placeholder: string;
+      };
+      generate: string;
+      result: {
+        label: string;
+        emptyState: string;
+      };
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -431,6 +473,48 @@ export const translations: Record<string, Translation> = {
           makeSame: 'One-click Make Same'
         },
         examples: 'Excellent Examples'
+      },
+      imgToVideo: {
+        title: 'Image to Video',
+        subtitle: 'Upload images and describe text to let AI generate exquisite video works for you',
+        tabs: {
+          traditional: 'Traditional Mode',
+          startEnd: 'Start/End Frame',
+          advanced: 'Advanced Mode'
+        },
+        upload: {
+          label: 'Upload Image',
+          button: 'Upload Image',
+          desc: 'Supports JPG, PNG formats'
+        },
+        generationSettings: 'Generation Settings',
+        prompt: {
+          label: 'Prompt',
+          placeholder: 'Please describe the video content you want to generate',
+          polish: 'AI Polish',
+          maxLength: 1500
+        },
+        quality: {
+          label: 'Quality Selection',
+          options: {
+            lite: 'Lite',
+            pro: 'Pro',
+            best: 'Best'
+          }
+        },
+        duration: {
+          label: 'Video Duration',
+          units: 's'
+        },
+        negativePrompt: {
+          label: 'Negative Prompt (Optional)',
+          placeholder: 'List content you do not want to see in the video. Example: animation, blur, distortion...'
+        },
+        generate: '4 Credits',
+        result: {
+          label: 'Generation Result',
+          emptyState: 'Upload image and enter description text to start your AI video creation journey'
+        }
       }
     },
     chatPage: {
@@ -749,6 +833,48 @@ export const translations: Record<string, Translation> = {
           makeSame: '一键做同款'
         },
         examples: '优秀案例'
+      },
+      imgToVideo: {
+        title: '图生视频',
+        subtitle: '通过上传图片和描述文字，让AI为您生成精美的视频作品',
+        tabs: {
+          traditional: '传统模式',
+          startEnd: '首尾帧模式',
+          advanced: '高级模式'
+        },
+        upload: {
+          label: '上传图片',
+          button: '上传图片',
+          desc: '支持 JPG、PNG 格式'
+        },
+        generationSettings: '生成设置',
+        prompt: {
+          label: '提示词',
+          placeholder: '请描述您想要生成的视频内容',
+          polish: 'AI润色',
+          maxLength: 1500
+        },
+        quality: {
+          label: '质量选择',
+          options: {
+            lite: 'Lite',
+            pro: 'Pro',
+            best: 'Best'
+          }
+        },
+        duration: {
+          label: '视频时长',
+          units: '秒'
+        },
+        negativePrompt: {
+          label: '负面提示词（可选）',
+          placeholder: '列出您不想在视频中看到的内容类型。示例：动画、模糊、扭曲、变形、低质量、拼贴、颗粒、微标、抽象、插图、计算机生成、扭曲......'
+        },
+        generate: '4 积分',
+        result: {
+          label: '生成结果',
+          emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'
+        }
       }
     },
     chatPage: {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { 
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 import TextToImagePage from './components/TextToImagePage';
 import ViralVideoPage from './components/ViralVideoPage';
+import ImageToVideoPage from './components/ImageToVideoPage';
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
@@ -56,6 +58,7 @@ interface CreatePageProps {
     tabs: string[];
     textToImage?: any;
     viralVideo?: any;
+    imgToVideo?: any;
   };
 }
 
@@ -130,6 +133,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     }
     if (activeMenu === 'viralVideo' && t.viralVideo) {
       return <ViralVideoPage t={t.viralVideo} />;
+    }
+    if (activeMenu === 'imgToVideo' && t.imgToVideo) {
+      return <ImageToVideoPage t={t.imgToVideo} />;
     }
     
     // Default Create Dashboard (when no tool or dashboard selected)
