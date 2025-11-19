@@ -47,7 +47,7 @@ export const modelsService = {
    * Endpoint: GET /api/models/list
    */
   getModelsList: (params?: ModelsQuery) => {
-    return request.get<ApiResponse<{ rows: ModelsVO[]; total: number }>>('/models/list', {
+    return request.get<ApiResponse<{ rows: ModelsVO[]; total: number }>>('/api/models/list', {
       params
     });
   },

@@ -1028,8 +1028,8 @@ export const translations: Record<string, Translation> = {
       searchPlaceholder: '搜索模型...',
       signIn: '登录',
       nav: [
-        { label: '文档', href: '#' },
-        { label: '创作', href: '#create' },
+        { label: 'AI大模型', href: '#' },
+        { label: '创作中心', href: '#create' },
         { label: '密钥', href: '#keys' },
         { label: '活动', href: '#' },
         { label: '积分', href: '#expenses' },
