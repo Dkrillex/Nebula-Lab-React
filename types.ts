@@ -1,4 +1,5 @@
 
+
 export interface AIModel {
   id: string;
   name: string;
@@ -78,6 +79,7 @@ export interface ApiResponse<T = any> {
   data?: T;      // For single objects
   rows?: T[];    // For list/pagination
   total?: number; // For list/pagination
+  [key: string]: any; // Support for flattened response structures (e.g. token, user at root)
 }
 
 // Auth Response (Ruoyi /login returns token directly in the object)

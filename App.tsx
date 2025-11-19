@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Hero from './components/Hero';
@@ -14,7 +13,7 @@ import PricingPage from './components/PricingPage';
 import AssetsPage from './components/AssetsPage';
 import { Language, View, TabItem } from './types';
 import { translations } from './translations';
-import { authService } from './services/authService'; // Example import
+import { authService } from './services/authService'; 
 
 const App: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
@@ -26,7 +25,6 @@ const App: React.FC = () => {
   // Tabs / Tags View State
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
 
-  // Example: Auth State for connected backend
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -38,15 +36,24 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
-  // Example: Initial Token Check
-  useEffect(() => {
-    const token = localStorage.getItem('auth_token');
+  // Check token and fetch user info
+  const checkAuth = async () => {
+    const token = localStorage.getItem('token');
     if (token) {
-      // In a real app, verify token or fetch profile here
-      // authService.getProfile().then(res => {
-      //   if(res.success) setUser(res.data);
-      // }).catch(() => localStorage.removeItem('auth_token'));
+       try {
+         const res = await authService.getInfo();
+         if (res.code === 200 && res.user) {
+           setUser(res.user);
+         }
+       } catch (e) {
+         console.error('Auth check failed', e);
+         // localStorage.removeItem('token'); // Optional: clear invalid token
+       }
     }
+  };
+
+  useEffect(() => {
+    checkAuth();
   }, []);
 
   // Update Visited Views (Tabs) when navigation changes
@@ -184,6 +191,7 @@ const App: React.FC = () => {
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
+        onLoginSuccess={checkAuth}
         t={t.auth}
       />
     </div>

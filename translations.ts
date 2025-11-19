@@ -99,6 +99,27 @@ interface Translation {
       inpaintingDesc: string;
     };
     tabs: string[];
+    textToImage: {
+      title: string;
+      subtitle: string;
+      inputLabel: string;
+      inputPlaceholder: string;
+      aiPolish: string;
+      settingsTitle: string;
+      aspectRatio: string;
+      generateConfig: string;
+      generate: string;
+      resultTitle: string;
+      emptyState: string;
+      ratios: {
+        square: string;
+        landscape43: string;
+        portrait34: string;
+        widescreen: string;
+        mobile: string;
+        photo: string;
+      }
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -349,7 +370,28 @@ export const translations: Record<string, Translation> = {
         inpainting: 'AI Inpainting',
         inpaintingDesc: 'Remove or replace objects'
       },
-      tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product']
+      tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
+      textToImage: {
+        title: 'AI Image Generation',
+        subtitle: 'Generate exquisite images from text descriptions',
+        inputLabel: 'Text Description',
+        inputPlaceholder: 'Describe the image you want to generate, e.g., A cute little cat in a sunlit garden...',
+        aiPolish: 'AI Polish',
+        settingsTitle: 'Generation Settings',
+        aspectRatio: 'Image Size',
+        generateConfig: 'Config',
+        generate: 'Generate',
+        resultTitle: 'Generation Result',
+        emptyState: 'Enter description to start your AI art journey',
+        ratios: {
+          square: 'Square',
+          landscape43: 'Landscape',
+          portrait34: 'Portrait',
+          widescreen: 'Widescreen',
+          mobile: 'Mobile',
+          photo: 'Photo'
+        }
+      }
     },
     chatPage: {
       settingsTitle: 'Dialogue Settings',
@@ -626,7 +668,28 @@ export const translations: Record<string, Translation> = {
         inpainting: '万物编辑',
         inpaintingDesc: 'AI智能图像编辑，支持涂抹消除'
       },
-      tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商']
+      tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
+      textToImage: {
+        title: 'AI生图',
+        subtitle: '通过输入文字描述，让AI为您生成精美的图片作品',
+        inputLabel: '文字描述',
+        inputPlaceholder: '描述您想要生成的图片，例如：一只可爱的小猫坐在阳光下的花园里，周围开满了五颜六色的花朵，画风唯美，光线柔和...',
+        aiPolish: 'AI润色',
+        settingsTitle: '生成设置',
+        aspectRatio: '图片尺寸',
+        generateConfig: '生成配置',
+        generate: '立即生成',
+        resultTitle: '生成结果',
+        emptyState: '输入描述文字，开始您的AI艺术创作之旅',
+        ratios: {
+          square: '正方形',
+          landscape43: '横屏',
+          portrait34: '竖屏',
+          widescreen: '宽屏',
+          mobile: '竖屏',
+          photo: '摄影'
+        }
+      }
     },
     chatPage: {
       settingsTitle: '对话设置',

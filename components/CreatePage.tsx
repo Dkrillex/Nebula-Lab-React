@@ -7,6 +7,7 @@ import {
   Key, FileText, Scissors, Film, Repeat, Mic, Hammer, 
   Folder, CreditCard, DollarSign, UserCircle, Grid
 } from 'lucide-react';
+import TextToImagePage from './TextToImagePage';
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
@@ -54,6 +55,7 @@ interface CreatePageProps {
       inpaintingDesc: string;
     };
     tabs: string[];
+    textToImage?: any;
   };
 }
 
@@ -230,111 +232,115 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMe
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)]">
-        <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
-          {/* Hero Greeting */}
-          <div className="text-center mb-12">
-            <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-8">
-              {t.greeting} <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent flex-inline items-center gap-2">{t.greetingSuffix} <Sparkles className="inline-block w-8 h-8 text-yellow-400" /></span>
-            </h1>
+        {activeMenu === 'textToImage' && t.textToImage ? (
+          <TextToImagePage t={t.textToImage} />
+        ) : (
+          <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+            {/* Hero Greeting */}
+            <div className="text-center mb-12">
+              <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-8">
+                {t.greeting} <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent flex-inline items-center gap-2">{t.greetingSuffix} <Sparkles className="inline-block w-8 h-8 text-yellow-400" /></span>
+              </h1>
 
-            {/* Input Box */}
-            <div className="max-w-3xl mx-auto relative">
-              <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
-                <textarea 
-                  placeholder={t.inputPlaceholder}
-                  className="w-full h-32 resize-none bg-transparent p-6 text-lg focus:outline-none text-foreground placeholder-muted/60"
-                />
-                <div className="flex items-center justify-between px-4 py-3 bg-background/50 border-t border-border/50">
-                  <div className="flex items-center gap-2">
-                    <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors">
-                      <Upload size={16} />
-                      {t.upload}
-                    </button>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted hidden sm:inline">Enter {t.send} · Shift + Enter New Line</span>
-                    <button className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all shadow-md shadow-primary/20">
-                      <ArrowRight size={20} />
-                    </button>
+              {/* Input Box */}
+              <div className="max-w-3xl mx-auto relative">
+                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
+                  <textarea 
+                    placeholder={t.inputPlaceholder}
+                    className="w-full h-32 resize-none bg-transparent p-6 text-lg focus:outline-none text-foreground placeholder-muted/60"
+                  />
+                  <div className="flex items-center justify-between px-4 py-3 bg-background/50 border-t border-border/50">
+                    <div className="flex items-center gap-2">
+                      <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors">
+                        <Upload size={16} />
+                        {t.upload}
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted hidden sm:inline">Enter {t.send} · Shift + Enter New Line</span>
+                      <button className="h-10 w-10 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all shadow-md shadow-primary/20">
+                        <ArrowRight size={20} />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Quick Actions Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
-            <ActionCard 
-              icon={<Video className="text-blue-500" size={24} />} 
-              title={t.shortcuts.video} 
-              desc={t.shortcuts.videoDesc} 
-              color="bg-blue-500/10"
-            />
-            <ActionCard 
-              icon={<Image className="text-purple-500" size={24} />} 
-              title={t.shortcuts.avatar} 
-              desc={t.shortcuts.avatarDesc} 
-              color="bg-purple-500/10"
-            />
-            <ActionCard 
-              icon={<Wand2 className="text-pink-500" size={24} />} 
-              title={t.shortcuts.transform} 
-              desc={t.shortcuts.transformDesc} 
-              color="bg-pink-500/10"
-            />
-            <ActionCard 
-              icon={<PenTool className="text-orange-500" size={24} />} 
-              title={t.shortcuts.sketch} 
-              desc={t.shortcuts.sketchDesc} 
-              color="bg-orange-500/10"
-            />
-            <ActionCard 
-              icon={<Eraser className="text-green-500" size={24} />} 
-              title={t.shortcuts.inpainting} 
-              desc={t.shortcuts.inpaintingDesc} 
-              color="bg-green-500/10"
-            />
-          </div>
-
-          {/* Gallery Section */}
-          <div className="space-y-6">
-            {/* Tabs */}
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
-              {t.tabs.map((tab, index) => (
-                <button 
-                  key={tab}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${index === 0 ? 'bg-foreground text-background' : 'bg-surface text-muted hover:text-foreground hover:bg-border'}`}
-                >
-                  {tab}
-                </button>
-              ))}
+            {/* Quick Actions Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-12">
+              <ActionCard 
+                icon={<Video className="text-blue-500" size={24} />} 
+                title={t.shortcuts.video} 
+                desc={t.shortcuts.videoDesc} 
+                color="bg-blue-500/10"
+              />
+              <ActionCard 
+                icon={<Image className="text-purple-500" size={24} />} 
+                title={t.shortcuts.avatar} 
+                desc={t.shortcuts.avatarDesc} 
+                color="bg-purple-500/10"
+              />
+              <ActionCard 
+                icon={<Wand2 className="text-pink-500" size={24} />} 
+                title={t.shortcuts.transform} 
+                desc={t.shortcuts.transformDesc} 
+                color="bg-pink-500/10"
+              />
+              <ActionCard 
+                icon={<PenTool className="text-orange-500" size={24} />} 
+                title={t.shortcuts.sketch} 
+                desc={t.shortcuts.sketchDesc} 
+                color="bg-orange-500/10"
+              />
+              <ActionCard 
+                icon={<Eraser className="text-green-500" size={24} />} 
+                title={t.shortcuts.inpainting} 
+                desc={t.shortcuts.inpaintingDesc} 
+                color="bg-green-500/10"
+              />
             </div>
 
-            {/* Masonry Gallery (Simulated with Columns) */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Column 1 */}
-              <div className="flex flex-col gap-4">
-                <GalleryItem color="bg-red-100 dark:bg-red-900/20" height="h-64" />
-                <GalleryItem color="bg-orange-100 dark:bg-orange-900/20" height="h-48" />
+            {/* Gallery Section */}
+            <div className="space-y-6">
+              {/* Tabs */}
+              <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                {t.tabs.map((tab, index) => (
+                  <button 
+                    key={tab}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${index === 0 ? 'bg-foreground text-background' : 'bg-surface text-muted hover:text-foreground hover:bg-border'}`}
+                  >
+                    {tab}
+                  </button>
+                ))}
               </div>
-              {/* Column 2 */}
-              <div className="flex flex-col gap-4">
-                <GalleryItem color="bg-blue-100 dark:bg-blue-900/20" height="h-48" />
-                <GalleryItem color="bg-indigo-100 dark:bg-indigo-900/20" height="h-72" />
-              </div>
-              {/* Column 3 */}
-              <div className="flex flex-col gap-4">
-                <GalleryItem color="bg-green-100 dark:bg-green-900/20" height="h-56" />
-                <GalleryItem color="bg-emerald-100 dark:bg-emerald-900/20" height="h-48" />
-              </div>
-              {/* Column 4 */}
-              <div className="flex flex-col gap-4">
-                <GalleryItem color="bg-purple-100 dark:bg-purple-900/20" height="h-48" />
-                <GalleryItem color="bg-pink-100 dark:bg-pink-900/20" height="h-64" />
+
+              {/* Masonry Gallery (Simulated with Columns) */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {/* Column 1 */}
+                <div className="flex flex-col gap-4">
+                  <GalleryItem color="bg-red-100 dark:bg-red-900/20" height="h-64" />
+                  <GalleryItem color="bg-orange-100 dark:bg-orange-900/20" height="h-48" />
+                </div>
+                {/* Column 2 */}
+                <div className="flex flex-col gap-4">
+                  <GalleryItem color="bg-blue-100 dark:bg-blue-900/20" height="h-48" />
+                  <GalleryItem color="bg-indigo-100 dark:bg-indigo-900/20" height="h-72" />
+                </div>
+                {/* Column 3 */}
+                <div className="flex flex-col gap-4">
+                  <GalleryItem color="bg-green-100 dark:bg-green-900/20" height="h-56" />
+                  <GalleryItem color="bg-emerald-100 dark:bg-emerald-900/20" height="h-48" />
+                </div>
+                {/* Column 4 */}
+                <div className="flex flex-col gap-4">
+                  <GalleryItem color="bg-purple-100 dark:bg-purple-900/20" height="h-48" />
+                  <GalleryItem color="bg-pink-100 dark:bg-pink-900/20" height="h-64" />
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </main>
     </div>
   );

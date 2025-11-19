@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Smartphone, Lock, Mail, KeyRound } from 'lucide-react';
+import { X, Smartphone, Lock, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { authService } from '../services/authService';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onLoginSuccess?: () => void;
   t: {
     loginTitle: string;
     tabPassword: string;
@@ -22,16 +24,26 @@ interface AuthModalProps {
   };
 }
 
-const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
+const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, t }) => {
   const [mode, setMode] = useState<'password' | 'phone'>('password');
   const [isClosing, setIsClosing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
+
+  // Form States
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
 
   // Reset state when opening
   useEffect(() => {
     if (isOpen) {
       setIsClosing(false);
       setMode('password');
+      setErrorMsg('');
+      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -48,20 +60,43 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
     setTimeout(() => {
       onClose();
       setIsClosing(false);
-    }, 200); // Match animation duration
+    }, 200); 
   };
 
   const handleSendCode = () => {
-    if (countdown === 0) {
+    if (countdown === 0 && phone) {
       setCountdown(60);
-      // Simulate API call
+      // Call SMS API here if implemented
+      // authService.sendSmsCode(phone); 
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    handleClose();
+    setErrorMsg('');
+    setIsLoading(true);
+
+    try {
+      if (mode === 'password') {
+        // Standard Ruoyi Login
+        const res = await authService.login({ username, password });
+        if (res.code === 200 && res.token) {
+          localStorage.setItem('token', res.token);
+          if (onLoginSuccess) onLoginSuccess();
+          handleClose();
+        } else {
+          setErrorMsg(res.msg || 'Login failed');
+        }
+      } else {
+        // Phone Login logic (if backend supports it)
+        // const res = await authService.login({ username: phone, code, uuid: '...' });
+        setErrorMsg('Phone login not fully configured with backend yet.');
+      }
+    } catch (err: any) {
+      setErrorMsg(err.message || 'An error occurred during login');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isOpen) return null;
@@ -114,6 +149,12 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
         <div className="p-6">
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             
+            {errorMsg && (
+              <div className="p-3 rounded bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
+                {errorMsg}
+              </div>
+            )}
+
             {mode === 'password' ? (
               <>
                 <div className="space-y-1.5">
@@ -122,6 +163,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
                     <input 
                       type="text" 
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
                       placeholder={t.accountPlaceholder}
                       className="w-full rounded-lg border border-border bg-background px-9 py-2.5 text-sm text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       required
@@ -134,6 +177,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
                     <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
                     <input 
                       type="password" 
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
                       placeholder={t.passwordPlaceholder}
                       className="w-full rounded-lg border border-border bg-background px-9 py-2.5 text-sm text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       required
@@ -149,6 +194,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
                     <Smartphone className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
                     <input 
                       type="tel" 
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
                       placeholder={t.phonePlaceholder}
                       className="w-full rounded-lg border border-border bg-background px-9 py-2.5 text-sm text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       required
@@ -160,6 +207,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
                   <div className="flex gap-3">
                     <input 
                       type="text" 
+                      value={code}
+                      onChange={(e) => setCode(e.target.value)}
                       placeholder={t.codePlaceholder}
                       className="flex-1 rounded-lg border border-border bg-background px-3 py-2.5 text-sm text-foreground placeholder-muted focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                       required
@@ -167,7 +216,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
                     <button
                       type="button"
                       onClick={handleSendCode}
-                      disabled={countdown > 0}
+                      disabled={countdown > 0 || !phone}
                       className="min-w-[100px] rounded-lg border border-border bg-surface px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted/10 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                     >
                       {countdown > 0 ? `${countdown}s` : t.sendCode}
@@ -179,8 +228,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, t }) => {
 
             <button 
               type="submit"
-              className="mt-4 w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/20 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all"
+              disabled={isLoading}
+              className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/20 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
+              {isLoading && <Loader2 size={16} className="animate-spin" />}
               {t.signIn}
             </button>
           </form>
