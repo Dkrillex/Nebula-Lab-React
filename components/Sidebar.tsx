@@ -148,13 +148,13 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
                             onClick={() => handleMenuClick(child)}
                             className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                               isChildActive 
-                                ? 'bg-foreground text-background shadow-sm' 
+                                ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 dark:from-indigo-400/30 dark:to-purple-400/30 text-indigo-700 dark:text-indigo-100' 
                                 : 'text-muted hover:text-foreground hover:bg-border/50'
                             }`}
                             title={isCollapsed ? child.label : undefined}
                           >
                             <div className="relative flex items-center gap-2">
-                                {isChildActive && !isCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-foreground rounded-r"></div>}
+                                {isChildActive && !isCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-r"></div>}
                                 <ChildIcon size={16} />
                                 {!isCollapsed && isExternalLink && <ExternalLink size={12} className="opacity-60" />}
                             </div>
@@ -174,7 +174,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
               onClick={() => handleMenuClick(item)}
               className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 isActive 
-                  ? 'bg-foreground text-background shadow-sm' 
+                  ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 dark:from-indigo-400/30 dark:to-purple-400/30 text-indigo-700 dark:text-indigo-100' 
                   : 'text-muted hover:text-foreground hover:bg-border/50'
               }`}
               title={isCollapsed ? item.label : undefined}
@@ -194,7 +194,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
                 <span className="text-xs font-bold uppercase tracking-wider">Pro Feature111</span>
               </div>
               <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
-              <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-border rounded hover:bg-foreground hover:text-background transition-colors">
+              <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
                 Upgrade
               </button>
           </div>
