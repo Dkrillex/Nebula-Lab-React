@@ -9,18 +9,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.2.0",
-    "lucide-react": "^0.554.0",
-    "react-dom": "^19.2.0",
+    "@remix-run/router": "1.15.3",
     "@vitejs/plugin-react": "^5.1.1",
-    "vite": "^7.2.2",
-    "path": "^0.12.7",
-    "zustand": "5.0.3",
     "crypto-js": "4.2.0",
+    "jsencrypt": "^3.5.4",
+    "lucide-react": "^0.554.0",
+    "path": "^0.12.7",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "react-router": "6.22.3",
     "react-router-dom": "6.22.3",
-    "@remix-run/router": "1.15.3",
-    "url": "^0.11.4"
+    "url": "^0.11.4",
+    "vite": "^7.2.2",
+    "zustand": "5.0.3"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",

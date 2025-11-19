@@ -1,7 +1,7 @@
 
 import { request } from '../lib/request';
-import { LoginResponse, UserInfo } from '../types';
-import { generateAesKey, encryptWithAes, encryptBase64 } from '../utils/crypto';
+import { LoginResponse, UserInfoResp } from '../types';
+import { CLIENT_ID, GRANT_TYPE, TENANT_ID } from '../constants';
 
 export const authService = {
   /**
@@ -9,15 +9,18 @@ export const authService = {
    * Endpoint: /login
    */
   login: (data: { username?: string; password?: string; code?: string; uuid?: string }) => {
-    // Note: If your backend requires encryption, you would typically:
-    // 1. Generate AES Key
-    // const aesKey = generateAesKey();
-    // 2. Encrypt Password
-    // const encryptedPassword = encryptWithAes(data.password || '', aesKey);
-    // 3. Send encrypted password and key (often key is RSA encrypted)
-    // For now, we proceed with standard submission.
-    
-    return request.post<LoginResponse>('/auth/login', data, { isToken: false });
+    const loginData = {
+      ...data,
+      clientId: CLIENT_ID,
+      grantType: GRANT_TYPE,
+      tenantId: TENANT_ID,
+    };
+    console.log('login request data:', loginData);
+    return request.post<LoginResponse>(
+      '/auth/login',
+      loginData,
+      { isToken: false, encrypt: true }
+    );
   },
 
   /**
@@ -25,7 +28,7 @@ export const authService = {
    * Endpoint: /getInfo
    */
   getInfo: () => {
-    return request.get<UserInfo>('/getInfo');
+    return request.get<UserInfoResp>('/system/user/getInfo');
   },
 
   /**

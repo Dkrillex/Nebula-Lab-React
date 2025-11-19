@@ -82,13 +82,21 @@ export interface ApiResponse<T = any> {
   [key: string]: any; // Support for flattened response structures (e.g. token, user at root)
 }
 
-// Auth Response (Ruoyi /login returns token directly in the object)
+// Auth Response (Login API returns)
 export interface LoginResponse {
-  token: string;
+  access_token: string;
+  client_id: string;
+  expire_in: number;
+  /** 是否首次登录（自动注册） */
+  is_first_login?: boolean;
+  /** 默认密码（仅首次登录时返回） */
+  default_password?: string;
 }
 
-// User Info Response (Ruoyi /getInfo)
-export interface UserInfo {
+// User Info Response from backend (/system/user/getInfo)
+export interface UserInfoResp {
+  permissions: string[];
+  roles: string[];
   user: {
     userId: number;
     userName: string;
@@ -96,7 +104,41 @@ export interface UserInfo {
     email: string;
     phonenumber: string;
     avatar: string;
+    inviteCode?: string;
+    channelId?: number;
+    channelName?: string;
+    nebulaApiId?: number;
+    deptId?: number;
+    deptName?: string;
+    tenantId?: string;
+    userType?: string;
+    [key: string]: any;
   };
+  team?: Array<{
+    teamId: number;
+    teamName: string;
+    teamType: string;
+    [key: string]: any;
+  }>;
+}
+
+// Frontend UserInfo format (simplified for store)
+export interface UserInfo {
+  userId: number;
+  username: string;
+  realName: string;
+  email: string;
+  avatar: string;
   roles: string[];
   permissions: string[];
+  inviteCode?: string;
+  channelId?: number;
+  channelName?: string;
+  nebulaApiId?: number;
+  team?: Array<{
+    teamId: number;
+    teamName: string;
+    teamType: string;
+    [key: string]: any;
+  }>;
 }

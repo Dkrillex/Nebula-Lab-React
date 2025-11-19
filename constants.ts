@@ -5,6 +5,18 @@ import { AIModel, ExpenseRecord, Asset } from './types';
 export const API_BASE_URL = '/api'; // Uses local proxy
 export const API_TIMEOUT = 10000; // 10 seconds
 
+// Client ID for authentication
+export const CLIENT_ID = 'e5cd7e4891bf95d1d19206ce24a7b32e';
+export const GRANT_TYPE = 'password';
+export const TENANT_ID = '000000';
+
+// RSA密钥配置
+// RSA公钥 - 用于请求加密（加密AES密钥）
+export const RSA_PUBLIC_KEY = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWmOzbfj64K8ZIgOdHnzkXSOVOZbFu/TJhZ7rFAN+eaGkl3C4buccQd/EjEsj9ir7ijT7h96MCAwEAAQ==';
+
+// RSA私钥 - 用于响应解密（解密后端返回的加密数据）
+export const RSA_PRIVATE_KEY = 'MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=';
+
 export const MODELS: AIModel[] = [
   {
     id: 'openai/gpt-5.1-codex',

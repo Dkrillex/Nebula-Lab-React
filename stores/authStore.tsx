@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
 import { authService } from '../services/authService';
-import { UserInfo } from '../types';
+import { UserInfo, LoginResponse, UserInfoResp } from '../types';
 
 interface AuthState {
   user: UserInfo | null;
@@ -10,27 +11,77 @@ interface AuthState {
   login: (params: { username?: string; password?: string; code?: string; uuid?: string }) => Promise<void>;
   logout: () => Promise<void>;
   fetchUserInfo: () => Promise<void>;
+  setUserInfo: (userInfo: UserInfo | null) => void;
 }
 
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  token: localStorage.getItem('token'),
-  loading: false,
-  isAuthenticated: !!localStorage.getItem('token'),
+// localStorage keys
+const STORAGE_KEYS = {
+  TOKEN: 'token',
+  USER_INFO: 'userInfo',
+};
+
+// Initialize user info from localStorage if available
+const getInitialUserInfo = (): UserInfo | null => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.USER_INFO);
+    if (stored) {
+      return JSON.parse(stored) as UserInfo;
+    }
+  } catch (error) {
+    console.warn('Failed to parse user info from localStorage:', error);
+  }
+  return null;
+};
+
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set, get) => ({
+      user: getInitialUserInfo(),
+      token: localStorage.getItem(STORAGE_KEYS.TOKEN),
+      loading: false,
+      isAuthenticated: !!localStorage.getItem(STORAGE_KEYS.TOKEN),
 
   login: async (params) => {
     set({ loading: true });
     try {
       const res = await authService.login(params);
-      // Ruoyi returns code 200 and token in the root or data
-      if (res.code === 200 && res.token) {
-        const newToken = res.token;
-        localStorage.setItem('token', newToken);
-        set({ token: newToken, isAuthenticated: true });
+      console.log('Login response:', res);
+      
+      // Handle different response formats:
+      // 1. { code, msg, data } format where data contains LoginResponse
+      // 2. Direct LoginResponse format
+      let loginData: LoginResponse | null = null;
+      
+      if (res.code === 200) {
+        // Response wrapped in { code, msg, data }
+        if (res.data) {
+          loginData = res.data;
+        } else if ((res as any).access_token) {
+          // Direct LoginResponse format
+          loginData = res as unknown as LoginResponse;
+        }
+      } else if ((res as any).access_token) {
+        // Direct LoginResponse format without code wrapper
+        loginData = res as unknown as LoginResponse;
+      }
+      
+      if (loginData?.access_token) {
+        const { access_token, is_first_login, default_password } = loginData;
+        localStorage.setItem(STORAGE_KEYS.TOKEN, access_token);
+        set({ token: access_token, isAuthenticated: true });
+        console.log('Token saved:', access_token.substring(0, 20) + '...');
+        
         // Fetch user info immediately after login
         await get().fetchUserInfo();
+        
+        // Handle first login prompt if needed
+        if (is_first_login && default_password) {
+          console.warn('首次登录，默认密码:', default_password);
+          // You can add a modal or notification here to prompt user to change password
+        }
       } else {
-        throw new Error(res.msg || 'Login failed');
+        console.error('Login response structure:', res);
+        throw new Error(res.msg || '登录响应格式错误，缺少 access_token');
       }
     } finally {
       set({ loading: false });
@@ -39,21 +90,76 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   fetchUserInfo: async () => {
     const token = get().token;
-    if (!token) return;
+    if (!token) {
+      console.warn('No token available, cannot fetch user info');
+      return;
+    }
 
     try {
       const res = await authService.getInfo();
+      console.log('GetInfo response:', res);
+      
+      // Handle response format: { code, msg, data } or direct UserInfoResp
+      let userInfoResp: UserInfoResp | null = null;
+      
       if (res.code === 200) {
-        // The Ruoyi /getInfo response structure usually has { user, roles, permissions }
-        set({ user: res as unknown as UserInfo });
-      } else {
-        throw new Error('Failed to fetch user info');
+        if (res.data) {
+          userInfoResp = res.data as unknown as UserInfoResp;
+        } else if ((res as unknown as any).user) {
+          // Direct UserInfoResp format
+          userInfoResp = res as unknown as UserInfoResp;
+        }
+      } else if ((res as unknown as any).user) {
+        // Direct UserInfoResp format without code wrapper
+        userInfoResp = res as unknown as UserInfoResp;
       }
+
+      if (!userInfoResp || !userInfoResp.user) {
+        throw new Error('获取用户信息失败：响应格式错误');
+      }
+
+      // Transform backend format to frontend format
+      const { permissions = [], roles = [], user, team = [] } = userInfoResp;
+      
+      const userInfo: UserInfo = {
+        userId: user.userId,
+        username: user.userName,
+        realName: user.nickName,
+        email: user.email || '',
+        avatar: user.avatar || '',
+        roles: roles,
+        permissions: permissions,
+        inviteCode: user.inviteCode,
+        channelId: user.channelId,
+        channelName: user.channelName,
+        nebulaApiId: user.nebulaApiId,
+        team: team,
+      };
+
+      // Save to store and localStorage
+      get().setUserInfo(userInfo);
+      
+      console.log('User info saved:', {
+        userId: userInfo.userId,
+        username: userInfo.username,
+        realName: userInfo.realName,
+      });
     } catch (error) {
       console.error("Failed to fetch user info", error);
       // If token is invalid/expired, logout
       get().logout();
     }
+  },
+
+  setUserInfo: (userInfo: UserInfo | null) => {
+    if (userInfo) {
+      // Save to localStorage
+      localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(userInfo));
+    } else {
+      // Clear from localStorage
+      localStorage.removeItem(STORAGE_KEYS.USER_INFO);
+    }
+    set({ user: userInfo });
   },
 
   logout: async () => {
@@ -62,8 +168,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (e) {
       console.error(e);
     }
-    localStorage.removeItem('token');
+    // Clear all auth data
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER_INFO);
     set({ token: null, user: null, isAuthenticated: false });
     window.location.href = '/'; // Force redirect/reload to clear state completely
   },
-}));
+    }),
+    {
+      name: 'auth-storage', // unique name for localStorage key
+      partialize: (state) => ({
+        user: state.user,
+        token: state.token,
+        isAuthenticated: state.isAuthenticated,
+      }),
+    }
+  )
+);

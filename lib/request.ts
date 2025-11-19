@@ -1,12 +1,15 @@
 
-import { API_BASE_URL, API_TIMEOUT } from '../constants';
+import { API_BASE_URL, API_TIMEOUT, CLIENT_ID } from '../constants';
 import { ApiResponse } from '../types';
 import { tansParams, errorCode } from '../utils/ruoyi';
+import { generateAesKey, encryptWithAes, encryptBase64 } from '../utils/crypto';
+import { encrypt as rsaEncrypt } from '../utils/jsencrypt';
 
 interface RequestOptions extends RequestInit {
   params?: Record<string, any>;
   timeout?: number;
   isToken?: boolean; // Default true
+  encrypt?: boolean; // Default true
   repeatSubmit?: boolean; // Default true (simulated)
 }
 
@@ -36,11 +39,20 @@ function getToken() {
  * Internal fetch wrapper mimicking Ruoyi Axios Interceptors
  */
 async function http<T = any>(endpoint: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+  // Extract custom options first to avoid conflicts with RequestInit properties
+  const encrypt = options.encrypt ?? false;
+  const isToken = options.isToken ?? true;
+  const timeout = options.timeout ?? API_TIMEOUT;
+  const params = options.params;
+  const customHeaders = options.headers;
+  
+  // Extract other RequestInit properties (excluding custom options already extracted)
   const { 
-    params, 
-    timeout = API_TIMEOUT, 
-    isToken = true,
-    headers: customHeaders,
+    params: _params,
+    timeout: _timeout,
+    isToken: _isToken,
+    encrypt: _encrypt,
+    headers: _headers,
     ...customConfig 
   } = options;
 
@@ -58,11 +70,62 @@ async function http<T = any>(endpoint: string, options: RequestOptions = {}): Pr
     }
   }
 
-  // 2. Headers Handling
+  // 2. Encrypt body if needed
+  let requestBody = customConfig.body;
+  let isEncrypted = false;
+  let encryptKeyHeader: string | null = null;
+  
+  if (encrypt && requestBody && typeof requestBody === 'string') {
+    try {
+      console.log('[Encrypt] Starting encryption, original body:', requestBody);
+      // Parse the JSON body
+      const bodyData = JSON.parse(requestBody);
+      
+      // Generate AES key
+      const aesKey = generateAesKey();
+      
+      // Encrypt the entire body data as JSON string
+      const encryptedData = encryptWithAes(JSON.stringify(bodyData), aesKey);
+      
+      // Encode AES key to base64
+      const base64AesKey = encryptBase64(aesKey);
+      
+      // Encrypt AES key with RSA public key
+      const rsaEncryptedKey = rsaEncrypt(base64AesKey);
+      if (rsaEncryptedKey) {
+        encryptKeyHeader = rsaEncryptedKey;
+      } else {
+        throw new Error('RSA加密AES密钥失败');
+      }
+      
+      // Send encrypted data directly as base64 string (CryptoJS returns base64 by default)
+      requestBody = encryptedData;
+      isEncrypted = true;
+      console.log('[Encrypt] Encryption successful, encrypted body:', typeof encryptedData === 'string' ? encryptedData.substring(0, 100) + '...' : encryptedData);
+    } catch (error) {
+      console.warn('[Encrypt] Encryption failed, sending original body:', error);
+      // If encryption fails, send original body
+      isEncrypted = false;
+      encryptKeyHeader = null;
+    }
+  } else {
+    console.log('[Encrypt] Encryption skipped:', { encrypt, hasBody: !!requestBody, bodyType: typeof requestBody });
+  }
+
+  // 3. Headers Handling
   const headers: HeadersInit = {
-    'Content-Type': 'application/json;charset=utf-8',
+    'Content-Type': isEncrypted 
+      ? 'text/plain;charset=utf-8'  // Encrypted payload is sent as plain text
+      : 'application/json;charset=utf-8',
+    // Add ClientID header (required by backend)
+    'Clientid': CLIENT_ID,
     ...customHeaders,
   };
+
+  // Add encrypt-key header if encryption is enabled
+  if (isEncrypted && encryptKeyHeader) {
+    (headers as any)['encrypt-key'] = encryptKeyHeader;
+  }
 
   // Inject Token
   if (getToken() && isToken) {
@@ -71,6 +134,7 @@ async function http<T = any>(endpoint: string, options: RequestOptions = {}): Pr
 
   const config: RequestInit = {
     ...customConfig,
+    body: requestBody,
     headers,
     signal: controller.signal,
   };
