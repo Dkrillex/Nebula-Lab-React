@@ -48,6 +48,18 @@ const Header: React.FC<HeaderProps> = ({
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
+    
+    // 检查是否需要登录的路径
+    const path = href.replace('#', '');
+    const requiresAuth = path === 'keys' || path === 'expenses';
+    
+    if (requiresAuth && !isAuthenticated) {
+      // 未登录，弹出登录窗口
+      onSignIn();
+      setShowUserMenu(false);
+      return;
+    }
+    
     onNavClick(href);
     setShowUserMenu(false);
   };
@@ -90,6 +102,16 @@ const Header: React.FC<HeaderProps> = ({
       window.open(item.externalLink, '_blank', 'noopener,noreferrer');
       setShowMobileMenu(false);
     } else if (item.path) {
+      // 检查是否需要登录的路径
+      const requiresAuth = item.path === '/keys' || item.path === '/expenses';
+      
+      if (requiresAuth && !isAuthenticated) {
+        // 未登录，弹出登录窗口
+        onSignIn();
+        setShowMobileMenu(false);
+        return;
+      }
+      
       navigate(item.path);
       setShowMobileMenu(false);
     } else if (item.tool) {

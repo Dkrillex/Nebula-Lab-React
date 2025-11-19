@@ -2,7 +2,11 @@ import React, { useState } from 'react';
 import { Outlet, useOutletContext } from 'react-router-dom';
 import Sidebar from './Sidebar';
 
-const DashboardLayout: React.FC = () => {
+interface DashboardLayoutProps {
+  onSignIn?: () => void; // 登录弹窗回调
+}
+
+const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onSignIn }) => {
   const { t } = useOutletContext<any>();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -12,6 +16,7 @@ const DashboardLayout: React.FC = () => {
         t={t.createPage.sideMenu} 
         isCollapsed={isSidebarCollapsed} 
         setIsCollapsed={setIsSidebarCollapsed}
+        onSignIn={onSignIn}
       />
       
       {/* Main Content Area */}

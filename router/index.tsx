@@ -61,6 +61,11 @@ const ProfilePageWrapper = () => {
   return <ProfilePage t={t.profilePage} />;
 };
 
+const DashboardLayoutWrapper = () => {
+  const { onSignIn } = useOutletContext<any>();
+  return <DashboardLayout onSignIn={onSignIn} />;
+};
+
 export const router = createHashRouter([
   {
     path: '/',
@@ -71,7 +76,7 @@ export const router = createHashRouter([
         element: <HomeWrapper />,
       },
       {
-        element: <DashboardLayout />,
+        element: <DashboardLayoutWrapper />,
         children: [
           {
             path: 'create',

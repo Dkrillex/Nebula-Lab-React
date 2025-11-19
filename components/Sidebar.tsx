@@ -6,17 +6,20 @@ import {
   UserCircle, Folder, CreditCard, DollarSign, 
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink
 } from 'lucide-react';
+import { useAuthStore } from '../stores/authStore';
 
 interface SidebarProps {
   t: any; // Translations for sideMenu
   isCollapsed: boolean;
   setIsCollapsed: (val: boolean) => void;
+  onSignIn?: () => void; // 登录弹窗回调
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => {
+const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSignIn }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { isAuthenticated } = useAuthStore();
   
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
 
@@ -61,6 +64,17 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
       // 外链，在新窗口打开
       window.open(item.externalLink, '_blank', 'noopener,noreferrer');
     } else if (item.path) {
+      // 检查是否需要登录的路径
+      const requiresAuth = item.path === '/keys' || item.path === '/expenses';
+      
+      if (requiresAuth && !isAuthenticated) {
+        // 未登录，弹出登录窗口
+        if (onSignIn) {
+          onSignIn();
+        }
+        return;
+      }
+      
       navigate(item.path);
     } else if (item.tool) {
       navigate(`/create?tool=${item.tool}`);
