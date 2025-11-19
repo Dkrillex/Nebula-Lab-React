@@ -1,15 +1,14 @@
-
 import React from 'react';
 import { createHashRouter, Navigate, useOutletContext } from 'react-router-dom';
 import Layout from '../components/Layout';
-import Home from '../components/Home';
-import CreatePage from '../components/CreatePage';
-import KeysPage from '../components/KeysPage';
-import ChatPage from '../components/ChatPage';
-import ModelSquarePage from '../components/ModelSquarePage';
-import ExpensesPage from '../components/ExpensesPage';
-import PricingPage from '../components/PricingPage';
-import AssetsPage from '../components/AssetsPage';
+import Home from '../pages/Home';
+import CreatePage from '../pages/Create';
+import KeysPage from '../pages/Keys';
+import ChatPage from '../pages/Chat';
+import ModelSquarePage from '../pages/Models';
+import ExpensesPage from '../pages/Expenses';
+import PricingPage from '../pages/Pricing';
+import AssetsPage from '../pages/Assets';
 
 // Wrapper components to extract props from Outlet Context
 const HomeWrapper = () => {
