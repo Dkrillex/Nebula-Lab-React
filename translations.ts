@@ -120,6 +120,26 @@ interface Translation {
         photo: string;
       }
     };
+    viralVideo: {
+      title: string;
+      tabs: {
+        upload: string;
+        link: string;
+      };
+      uploadArea: {
+        title: string;
+        desc: string;
+        limitation: string;
+        selectFromPortfolio: string;
+        uploadLocal: string;
+      };
+      process: {
+        uploadImages: string;
+        generateVideo: string;
+        makeSame: string;
+      };
+      examples: string;
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -391,6 +411,26 @@ export const translations: Record<string, Translation> = {
           mobile: 'Mobile',
           photo: 'Photo'
         }
+      },
+      viralVideo: {
+        title: 'Import multiple images, generate product marketing videos',
+        tabs: {
+          upload: 'Upload Product Assets',
+          link: 'Input Product Link'
+        },
+        uploadArea: {
+          title: 'Please upload 4-10 product assets',
+          desc: 'Image size 20KB-15MB, resolution >400*400, <8192*8192',
+          limitation: 'Supports same-SKU clothing/footwear category materials (model images need portrait rights), other categories coming soon',
+          selectFromPortfolio: 'Select from Portfolio',
+          uploadLocal: 'Upload from Local'
+        },
+        process: {
+          uploadImages: 'Upload Product Images',
+          generateVideo: 'Generate Broadcast Video',
+          makeSame: 'One-click Make Same'
+        },
+        examples: 'Excellent Examples'
       }
     },
     chatPage: {
@@ -689,6 +729,26 @@ export const translations: Record<string, Translation> = {
           mobile: '竖屏',
           photo: '摄影'
         }
+      },
+      viralVideo: {
+        title: '导入多张图片素材，生成商品营销视频',
+        tabs: {
+          upload: '上传商品素材',
+          link: '输入商品链接'
+        },
+        uploadArea: {
+          title: '请上传 4-10 张商品素材',
+          desc: '图片大小20KB~15MB之间，分辨率大于400*400，小于8192*8192 图片规则',
+          limitation: '暂仅支持同一SKU服饰鞋袜类目的商品素材（模特图需有肖像权），其他类目敬请期待',
+          selectFromPortfolio: '从作品选择',
+          uploadLocal: '从本地上传'
+        },
+        process: {
+          uploadImages: '上传商品图片',
+          generateVideo: '生成口播视频',
+          makeSame: '一键做同款'
+        },
+        examples: '优秀案例'
       }
     },
     chatPage: {

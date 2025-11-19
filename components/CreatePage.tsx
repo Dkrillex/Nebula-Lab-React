@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Image, Video, Wand2, Eraser, Upload, ArrowRight, Sparkles, 
   PenTool, Star, User, Clock, ChevronDown, ChevronRight, 
@@ -8,11 +9,10 @@ import {
   Folder, CreditCard, DollarSign, UserCircle, Grid
 } from 'lucide-react';
 import TextToImagePage from './TextToImagePage';
+import ViralVideoPage from './ViralVideoPage';
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
-  activeMenu: string;
-  onMenuChange: (id: string) => void;
   t: {
     greeting: string;
     greetingSuffix: string;
@@ -56,10 +56,15 @@ interface CreatePageProps {
     };
     tabs: string[];
     textToImage?: any;
+    viralVideo?: any;
   };
 }
 
-const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMenuChange }) => {
+const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Default to textToImage if no tool is specified, or empty string
+  const activeMenu = searchParams.get('tool') || 'textToImage';
+  
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -67,6 +72,10 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMe
     setExpandedGroups(prev => 
       prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
     );
+  };
+
+  const onMenuChange = (id: string) => {
+    setSearchParams({ tool: id });
   };
 
   const handleMenuClick = (item: any) => {
@@ -116,126 +125,20 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMe
     },
   ];
 
-  return (
-    <div className="flex min-h-[calc(100vh-64px)] bg-background">
-      {/* Sidebar */}
-      <aside 
-        className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
-          {menuStructure.map((item) => {
-            // Check if it's a group or leaf
-            const hasChildren = 'children' in item && item.children;
-            const Icon = item.icon;
-            const isExpanded = expandedGroups.includes(item.id);
-            const isActive = activeMenu === item.id;
-
-            if (hasChildren) {
-              return (
-                <div key={item.id} className="space-y-1">
-                   <button
-                    onClick={() => toggleGroup(item.id)}
-                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-border/30 transition-colors`}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                   >
-                     <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-                       <Icon size={18} />
-                       {!isSidebarCollapsed && <span>{item.label}</span>}
-                     </div>
-                     {!isSidebarCollapsed && (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-                   </button>
-                   
-                   {isExpanded && (
-                     <div className={`space-y-1 ${isSidebarCollapsed ? '' : 'pl-4'}`}>
-                       {item.children?.map(child => {
-                         const ChildIcon = child.icon;
-                         // Active if it's the selected tool OR if it matches the current path logic (simplified here)
-                         const isChildActive = activeMenu === child.id;
-                         
-                         return (
-                           <button
-                             key={child.id}
-                             onClick={() => handleMenuClick(child)}
-                             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                               isChildActive 
-                                 ? 'bg-foreground text-background shadow-sm' 
-                                 : 'text-muted hover:text-foreground hover:bg-border/50'
-                             }`}
-                             title={isSidebarCollapsed ? child.label : undefined}
-                           >
-                             <div className="relative">
-                                {isChildActive && !isSidebarCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-foreground rounded-r"></div>}
-                                <ChildIcon size={16} />
-                             </div>
-                             {!isSidebarCollapsed && child.label}
-                           </button>
-                         );
-                       })}
-                     </div>
-                   )}
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleMenuClick(item)}
-                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-foreground text-background shadow-sm' 
-                    : 'text-muted hover:text-foreground hover:bg-border/50'
-                }`}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <Icon size={18} />
-                {!isSidebarCollapsed && item.label}
-              </button>
-            );
-          })}
-        </div>
-        
-        <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
-          {!isSidebarCollapsed ? (
-            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
-               <div className="flex items-center gap-2 mb-2 text-indigo-500">
-                 <Sparkles size={16} />
-                 <span className="text-xs font-bold uppercase tracking-wider">Pro Feature</span>
-               </div>
-               <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
-               <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-border rounded hover:bg-foreground hover:text-background transition-colors">
-                 Upgrade
-               </button>
-            </div>
-          ) : (
-            <div className="flex justify-center py-2">
-              <button 
-                className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-colors"
-                title="Upgrade to Pro"
-              >
-                <Sparkles size={18} />
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className={`flex items-center justify-center p-2 rounded-lg text-muted hover:bg-border/50 hover:text-foreground transition-colors ${isSidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)]">
-        {activeMenu === 'textToImage' && t.textToImage ? (
-          <TextToImagePage t={t.textToImage} />
-        ) : (
-          <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
+  const renderContent = () => {
+    if (activeMenu === 'textToImage' && t.textToImage) {
+      return <TextToImagePage t={t.textToImage} />;
+    }
+    if (activeMenu === 'viralVideo' && t.viralVideo) {
+      return <ViralVideoPage t={t.viralVideo} />;
+    }
+    
+    // Default Create Dashboard (when no tool or dashboard selected)
+    // For now, defaulting to TextToImage if 'tool' param is missing, handled by init state.
+    // But if activeMenu doesn't match a component, we show dashboard.
+    
+    return (
+      <div className="container mx-auto px-4 py-8 md:py-12 max-w-6xl">
             {/* Hero Greeting */}
             <div className="text-center mb-12">
               <h1 className="text-3xl md:text-5xl font-bold text-foreground mb-8">
@@ -340,7 +243,126 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate, activeMenu, onMe
               </div>
             </div>
           </div>
-        )}
+    );
+  };
+
+  return (
+    <div className="flex min-h-[calc(100vh-64px)] bg-background">
+      {/* Sidebar */}
+      <aside 
+        className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out ${
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        }`}
+      >
+        <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
+          {menuStructure.map((item) => {
+            // Check if it's a group or leaf
+            const hasChildren = 'children' in item && item.children;
+            const Icon = item.icon;
+            const isExpanded = expandedGroups.includes(item.id);
+            const isActive = activeMenu === item.id;
+
+            if (hasChildren) {
+              return (
+                <div key={item.id} className="space-y-1">
+                   <button
+                    onClick={() => toggleGroup(item.id)}
+                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-border/30 transition-colors`}
+                    title={isSidebarCollapsed ? item.label : undefined}
+                   >
+                     <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
+                       <Icon size={18} />
+                       {!isSidebarCollapsed && <span>{item.label}</span>}
+                     </div>
+                     {!isSidebarCollapsed && (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+                   </button>
+                   
+                   {isExpanded && (
+                     <div className={`space-y-1 ${isSidebarCollapsed ? '' : 'pl-4'}`}>
+                       {item.children?.map(child => {
+                         const ChildIcon = child.icon;
+                         // Active if it's the selected tool
+                         const isChildActive = activeMenu === child.id;
+                         
+                         return (
+                           <button
+                             key={child.id}
+                             onClick={() => handleMenuClick(child)}
+                             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                               isChildActive 
+                                 ? 'bg-foreground text-background shadow-sm' 
+                                 : 'text-muted hover:text-foreground hover:bg-border/50'
+                             }`}
+                             title={isSidebarCollapsed ? child.label : undefined}
+                           >
+                             <div className="relative">
+                                {isChildActive && !isSidebarCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-foreground rounded-r"></div>}
+                                <ChildIcon size={16} />
+                             </div>
+                             {!isSidebarCollapsed && child.label}
+                           </button>
+                         );
+                       })}
+                     </div>
+                   )}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleMenuClick(item)}
+                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                  isActive 
+                    ? 'bg-foreground text-background shadow-sm' 
+                    : 'text-muted hover:text-foreground hover:bg-border/50'
+                }`}
+                title={isSidebarCollapsed ? item.label : undefined}
+              >
+                <Icon size={18} />
+                {!isSidebarCollapsed && item.label}
+              </button>
+            );
+          })}
+        </div>
+        
+        <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
+          {!isSidebarCollapsed ? (
+            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
+               <div className="flex items-center gap-2 mb-2 text-indigo-500">
+                 <Sparkles size={16} />
+                 <span className="text-xs font-bold uppercase tracking-wider">Pro Feature</span>
+               </div>
+               <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
+               <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-border rounded hover:bg-foreground hover:text-background transition-colors">
+                 Upgrade
+               </button>
+            </div>
+          ) : (
+            <div className="flex justify-center py-2">
+              <button 
+                className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-colors"
+                title="Upgrade to Pro"
+              >
+                <Sparkles size={18} />
+              </button>
+            </div>
+          )}
+
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className={`flex items-center justify-center p-2 rounded-lg text-muted hover:bg-border/50 hover:text-foreground transition-colors ${isSidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}
+            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)]">
+        {renderContent()}
       </main>
     </div>
   );
@@ -369,3 +391,4 @@ const GalleryItem = ({ color, height }: { color: string, height: string }) => (
 );
 
 export default CreatePage;
+    
