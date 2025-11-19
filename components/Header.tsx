@@ -1,5 +1,5 @@
 import React from 'react';
-import { Command, Moon, Sun, Menu, Globe, ChevronRight, X, Home, User as UserIcon, LogOut } from 'lucide-react';
+import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, LogOut } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 
@@ -51,66 +51,12 @@ const Header: React.FC<HeaderProps> = ({
     return tab.view;
   };
 
-  const renderBreadcrumbs = () => {
-    if (!sideMenuMap || currentView === 'home') return null;
-
-    const crumbs = [{ label: sideMenuMap.home, href: '#' }];
-
-    if (currentView === 'create') {
-      crumbs.push({ label: sideMenuMap.creationCenter, href: '#create' });
-      if (activeTool && sideMenuMap[activeTool]) {
-        crumbs.push({ label: sideMenuMap[activeTool], href: '' });
-      }
-    } else if (currentView === 'models') {
-      crumbs.push({ label: sideMenuMap.modelCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.modelSquare, href: '#models' });
-    } else if (currentView === 'chat') {
-      crumbs.push({ label: sideMenuMap.modelCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.aiExperience, href: '#chat' });
-    } else if (currentView === 'keys') {
-      crumbs.push({ label: sideMenuMap.modelCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.apiKeys, href: '#keys' });
-    } else if (currentView === 'expenses') {
-      crumbs.push({ label: sideMenuMap.personalCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.expenses, href: '#expenses' });
-    } else if (currentView === 'pricing') {
-      crumbs.push({ label: sideMenuMap.personalCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.pricing, href: '#pricing' });
-    } else if (currentView === 'assets') {
-      crumbs.push({ label: sideMenuMap.personalCenter, href: '' });
-      crumbs.push({ label: sideMenuMap.assets, href: '#assets' });
-    }
-
-    return (
-      <nav className="hidden md:flex items-center gap-1 ml-6 pl-6 border-l border-border/60 h-6">
-        {crumbs.map((crumb, index) => (
-          <React.Fragment key={index}>
-            {index > 0 && <ChevronRight size={14} className="text-muted/60" />}
-            {crumb.href && index < crumbs.length - 1 ? (
-               <a 
-                 href={crumb.href} 
-                 onClick={(e) => { if(crumb.href) handleNavClick(e, crumb.href) }}
-                 className="text-xs md:text-sm text-muted hover:text-foreground transition-colors"
-               >
-                 {crumb.label}
-               </a>
-            ) : (
-              <span className={`text-xs md:text-sm ${index === crumbs.length - 1 ? 'font-medium text-foreground' : 'text-muted'}`}>
-                {crumb.label}
-              </span>
-            )}
-          </React.Fragment>
-        ))}
-      </nav>
-    );
-  };
-
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
-      {/* Main Toolbar */}
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Left: Logo & Name & Breadcrumbs */}
-        <div className="flex items-center gap-2 md:gap-4">
+      {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
+      <div className="w-full flex h-16 items-center px-4 gap-4">
+        {/* Left: Logo & Name */}
+        <div className="flex-shrink-0 flex items-center gap-2 md:gap-4">
           <div 
             className="flex items-center gap-2 cursor-pointer"
             onClick={(e) => handleNavClick(e, '#')}
@@ -123,27 +69,56 @@ const Header: React.FC<HeaderProps> = ({
               </svg>
             </div>
             <span className="text-lg font-bold tracking-tight text-foreground hidden sm:block">
-              OpenRouter
+              NebulaLab
             </span>
           </div>
-          
-          {/* Breadcrumbs */}
-          {renderBreadcrumbs()}
         </div>
 
-        {/* Center: Command Search (Visual Only) - Only show on Home view */}
-        {currentView === 'home' && (
-          <div className="hidden md:flex flex-1 items-center justify-center px-6 max-w-md mx-auto">
-            <button className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted hover:text-foreground hover:border-secondary transition-colors shadow-sm">
-              <Command size={14} />
-              <span>{t.searchPlaceholder}</span>
-              <span className="ml-auto text-xs opacity-70">⌘K</span>
-            </button>
-          </div>
-        )}
+        {/* Center: Command Search (Home) OR Tags View (Other Pages) */}
+        <div className="flex-1 flex items-center min-w-0 overflow-hidden">
+          {currentView === 'home' ? (
+            <div className="hidden md:flex w-full items-center justify-center px-6 max-w-md mx-auto">
+              <button className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted hover:text-foreground hover:border-secondary transition-colors shadow-sm">
+                <Command size={14} />
+                <span>{t.searchPlaceholder}</span>
+                <span className="ml-auto text-xs opacity-70">⌘K</span>
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 overflow-x-auto custom-scrollbar w-full px-2 mask-fade-right">
+              {visitedViews && visitedViews.map((tab, index) => {
+                const isActive = tab.view === currentView && 
+                                 (tab.view !== 'create' || tab.activeTool === activeTool);
+                return (
+                  <div 
+                    key={`${tab.view}-${tab.activeTool || index}`}
+                    onClick={() => onTabClick && onTabClick(tab)}
+                    className={`
+                      group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
+                      ${isActive 
+                        ? 'bg-surface border-border text-foreground shadow-sm' 
+                        : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
+                    `}
+                  >
+                    {tab.view === 'home' && <Home size={12} />}
+                    <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
+                    {visitedViews.length > 1 && (
+                      <button 
+                        onClick={(e) => onTabClose && onTabClose(e, index)}
+                        className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
 
         {/* Right: Nav & Actions */}
-        <div className={`flex items-center gap-4 ${currentView !== 'home' ? 'ml-auto' : ''}`}>
+        <div className="flex-shrink-0 flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
             {t.nav.map((item) => {
               const isActive = item.href === '#create' && currentView === 'create';
@@ -216,39 +191,6 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
-
-      {/* Tags View (Opened Tabs) */}
-      {visitedViews && visitedViews.length > 0 && (
-        <div className="w-full border-t border-border bg-surface/50 h-10 flex items-center px-4 gap-2 overflow-x-auto custom-scrollbar">
-          {visitedViews.map((tab, index) => {
-            const isActive = tab.view === currentView && 
-                             (tab.view !== 'create' || tab.activeTool === activeTool);
-            return (
-              <div 
-                key={`${tab.view}-${tab.activeTool || index}`}
-                onClick={() => onTabClick && onTabClick(tab)}
-                className={`
-                  group flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
-                  ${isActive 
-                    ? 'bg-background border-border text-foreground shadow-sm' 
-                    : 'bg-transparent border-transparent text-muted hover:bg-background/50 hover:text-foreground'}
-                `}
-              >
-                {tab.view === 'home' && <Home size={12} />}
-                <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
-                {visitedViews.length > 1 && (
-                  <button 
-                    onClick={(e) => onTabClose && onTabClose(e, index)}
-                    className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
-                  >
-                    <X size={12} />
-                  </button>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      )}
     </header>
   );
 };
