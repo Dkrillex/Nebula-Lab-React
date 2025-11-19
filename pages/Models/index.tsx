@@ -1,7 +1,7 @@
 
-import React, { useState, useMemo } from 'react';
-import { Search, Filter, SearchIcon, ChevronDown, Box } from 'lucide-react';
-import { MODELS } from '../../constants';
+import React, { useState, useMemo, useEffect } from 'react';
+import { SearchIcon, ChevronDown, Box } from 'lucide-react';
+import { modelService } from '../../services/modelService';
 import { AIModel } from '../../types';
 
 interface ModelSquarePageProps {
@@ -37,6 +37,9 @@ interface ModelSquarePageProps {
 }
 
 const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
+  const [models, setModels] = useState<AIModel[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   const [search, setSearch] = useState('');
   const [selectedVendor, setSelectedVendor] = useState('All');
   const [selectedCapability, setSelectedCapability] = useState('All');
@@ -44,16 +47,27 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   const [currency, setCurrency] = useState('USD');
   const [unit, setUnit] = useState('M');
 
-  // Extract unique options for filters
-  const vendors = useMemo(() => ['All', ...new Set(MODELS.map(m => m.provider))], []);
-  const capabilities = useMemo(() => {
-    const caps = new Set<string>();
-    MODELS.forEach(m => m.capabilities?.forEach(c => caps.add(c)));
-    return ['All', ...Array.from(caps)];
+  // Fetch models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      setLoading(true);
+      const data = await modelService.getModels();
+      setModels(data);
+      setLoading(false);
+    };
+    fetchModels();
   }, []);
 
+  // Extract unique options for filters from the fetched models
+  const vendors = useMemo(() => ['All', ...new Set(models.map(m => m.provider))], [models]);
+  const capabilities = useMemo(() => {
+    const caps = new Set<string>();
+    models.forEach(m => m.capabilities?.forEach(c => caps.add(c)));
+    return ['All', ...Array.from(caps)];
+  }, [models]);
+
   const filteredModels = useMemo(() => {
-    return MODELS.filter(m => {
+    return models.filter(m => {
       const matchesSearch = m.name.toLowerCase().includes(search.toLowerCase()) || 
                             m.id.toLowerCase().includes(search.toLowerCase());
       const matchesVendor = selectedVendor === 'All' || m.provider === selectedVendor;
@@ -65,7 +79,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
       
       return matchesSearch && matchesVendor && matchesCapability && matchesBilling;
     });
-  }, [search, selectedVendor, selectedCapability, selectedBilling]);
+  }, [models, search, selectedVendor, selectedCapability, selectedBilling]);
 
   const handleReset = () => {
     setSearch('');
@@ -101,7 +115,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
             options={vendors} 
             value={selectedVendor} 
             onChange={setSelectedVendor} 
-            count={MODELS.length}
+            count={models.length}
           />
 
           {/* Capability Filter */}
@@ -110,7 +124,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
             options={capabilities} 
             value={selectedCapability} 
             onChange={setSelectedCapability} 
-            count={MODELS.length}
+            count={models.length}
           />
 
           {/* Billing Type */}
@@ -122,7 +136,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
                   onChange={(e) => setSelectedBilling(e.target.value)}
                   className="w-full h-10 appearance-none rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                 >
-                  <option value="All">{t.filters.all} ({MODELS.length})</option>
+                  <option value="All">{t.filters.all} ({models.length})</option>
                   <option value="Token">Token</option>
                   <option value="Time">Time</option>
                 </select>
@@ -192,9 +206,13 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
 
         {/* Grid */}
         <div className="p-6 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 bg-surface/30 min-h-full">
-          {filteredModels.map(model => (
-            <ModelCard key={model.id} model={model} t={t} />
-          ))}
+          {loading ? (
+            <div className="col-span-full text-center py-20 text-muted">Loading models...</div>
+          ) : (
+            filteredModels.map(model => (
+              <ModelCard key={model.id} model={model} t={t} />
+            ))
+          )}
         </div>
       </div>
     </div>
@@ -227,7 +245,7 @@ const ModelCard = ({ model, t }: { model: AIModel, t: ModelSquarePageProps['t'] 
     if (p.includes('google')) return 'bg-blue-500';
     if (p.includes('claude')) return 'bg-orange-700';
     if (p.includes('meta')) return 'bg-blue-600';
-    if (p.includes('万象')) return 'bg-purple-600';
+    if (p.includes('万象') || p.includes('alibaba') || p.includes('qwen')) return 'bg-purple-600';
     return 'bg-slate-600';
   };
 

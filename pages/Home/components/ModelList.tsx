@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { Search, ArrowUpRight } from 'lucide-react';
-import { MODELS } from '../../../constants';
+import { modelService } from '../../../services/modelService';
 import { AIModel } from '../../../types';
 
 interface ModelListProps {
@@ -20,16 +21,29 @@ interface ModelListProps {
 }
 
 const ModelList: React.FC<ModelListProps> = ({ t }) => {
+  const [models, setModels] = useState<AIModel[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+
+  // Fetch models on mount
+  useEffect(() => {
+    const fetchModels = async () => {
+      setLoading(true);
+      const data = await modelService.getModels();
+      setModels(data);
+      setLoading(false);
+    };
+    fetchModels();
+  }, []);
 
   const filteredModels = useMemo(() => {
     const lower = search.toLowerCase();
-    return MODELS.filter(m => 
+    return models.filter(m => 
       m.name.toLowerCase().includes(lower) || 
       m.provider.toLowerCase().includes(lower) ||
       m.id.toLowerCase().includes(lower)
     );
-  }, [search]);
+  }, [models, search]);
 
   const formatPrice = (price: number) => {
     if (price === 0) return t.free;
@@ -37,6 +51,7 @@ const ModelList: React.FC<ModelListProps> = ({ t }) => {
   };
 
   const formatContext = (ctx: number) => {
+    if (ctx === 0) return '-'; // API might not provide context
     if (ctx >= 1000000) return `${ctx / 1000000}M`;
     if (ctx >= 1000) return `${ctx / 1000}k`;
     return ctx.toString();
@@ -77,17 +92,21 @@ const ModelList: React.FC<ModelListProps> = ({ t }) => {
 
         {/* Table Body */}
         <div className="divide-y divide-border">
-          {filteredModels.map((model) => (
-            <ModelRow 
-              key={model.id} 
-              model={model} 
-              formatContext={formatContext} 
-              formatPrice={formatPrice} 
-              t={t}
-            />
-          ))}
+          {loading ? (
+             <div className="py-12 text-center text-muted">Loading...</div>
+          ) : (
+            filteredModels.map((model) => (
+              <ModelRow 
+                key={model.id} 
+                model={model} 
+                formatContext={formatContext} 
+                formatPrice={formatPrice} 
+                t={t}
+              />
+            ))
+          )}
           
-          {filteredModels.length === 0 && (
+          {!loading && filteredModels.length === 0 && (
              <div className="py-12 text-center text-muted">
                {t.noResults} "{search}"
              </div>
