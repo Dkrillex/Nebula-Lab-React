@@ -40,9 +40,68 @@ export const authService = {
   },
 
   /**
-   * (Custom) Send SMS Code - Not standard Ruoyi, keeping for UI compatibility
+   * Send SMS Code
+   * Endpoint: /resource/sms/code
    */
-  sendSmsCode: (phone: string) => {
-    return request.get('/captcha/sms', { params: { phone } });
-  }
+  sendSmsCode: (phonenumber: string, options?: { type?: number; checkUser?: boolean; countryCode?: string }) => {
+    const { type = 1, checkUser = false, countryCode } = options || {};
+    return request.get('/resource/sms/code', {
+      params: {
+        phonenumber,
+        type,
+        checkUser,
+        ...(countryCode ? { countryCode } : {}),
+      },
+      isToken: false,
+    });
+  },
+
+  /**
+   * Phone Login (SMS Code)
+   * Endpoint: /auth/login
+   */
+  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string }) => {
+    const loginData = {
+      ...data,
+      clientId: CLIENT_ID,
+      grantType: 'sms',
+      tenantId: data.tenantId || TENANT_ID,
+    };
+    console.log('phone login request data:', loginData);
+    return request.post<LoginResponse>(
+      '/auth/login',
+      loginData,
+      { isToken: false, encrypt: true }
+    );
+  },
+
+  /**
+   * Register
+   * Endpoint: /auth/register
+   */
+  register: (data: {
+    username: string;
+    password: string;
+    phoneNumber?: string;
+    code?: string;
+    tenantId?: string;
+    userType?: string;
+    registerSystem?: string;
+    invitedCode?: string;
+    countryCode?: string;
+  }) => {
+    const registerData = {
+      ...data,
+      clientId: CLIENT_ID,
+      tenantId: data.tenantId || TENANT_ID,
+      userType: data.userType || 'sys_user',
+      registerSystem: data.registerSystem || '1',
+    };
+    console.log('register request data:', registerData);
+    return request.post(
+      '/auth/register',
+      registerData,
+      { isToken: false, encrypt: true }
+    );
+  },
 };

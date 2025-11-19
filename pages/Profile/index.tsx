@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { profileService, UserProfile, UpdateProfileParams } from '../../services/profileService';
 import { useAuthStore } from '../../stores/authStore';
-import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2 } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2 } from 'lucide-react';
 import { uploadService } from '../../services/uploadService';
+import EnterprisePage from '../Enterprise';
 
 interface ProfilePageProps {
   t: {
@@ -10,6 +12,7 @@ interface ProfilePageProps {
     subtitle: string;
     basicInfo: string;
     accountSecurity: string;
+    enterpriseManagement?: string;
     avatar: string;
     uploadAvatar: string;
     labels: {
@@ -37,11 +40,15 @@ interface ProfilePageProps {
       reset: string;
       changePassword: string;
     };
+    enterprisePage?: any;
   };
 }
 
 const ProfilePage: React.FC<ProfilePageProps> = ({ t }) => {
   const { user, fetchUserInfo } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [activeTab, setActiveTab] = useState<'basic' | 'security' | 'enterprise'>('basic');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -53,6 +60,19 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ t }) => {
   });
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // 从URL参数获取当前标签页
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab === 'enterprise') {
+      setActiveTab('enterprise');
+    } else if (tab === 'security') {
+      setActiveTab('security');
+    } else {
+      setActiveTab('basic');
+    }
+  }, [location.search]);
 
   useEffect(() => {
     loadProfile();
@@ -129,14 +149,77 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ t }) => {
     );
   }
 
+  const handleTabChange = (tab: 'basic' | 'security' | 'enterprise') => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(location.search);
+    if (tab === 'basic') {
+      params.delete('tab');
+    } else {
+      params.set('tab', tab);
+    }
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
   return (
-    <div className="container mx-auto px-4 py-8 max-w-5xl">
-      <div className="mb-8">
+    <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">{t.title}</h1>
         <p className="text-muted">{t.subtitle}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Tabs */}
+      <div className="mb-6 border-b border-border">
+        <div className="flex gap-4">
+          <button
+            onClick={() => handleTabChange('basic')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'basic'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <User size={18} />
+              {t.basicInfo}
+            </div>
+          </button>
+          <button
+            onClick={() => handleTabChange('security')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'security'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Shield size={18} />
+              {t.accountSecurity}
+            </div>
+          </button>
+          <button
+            onClick={() => handleTabChange('enterprise')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'enterprise'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Building2 size={18} />
+              {t.enterpriseManagement || '企业管理'}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Enterprise Management Tab */}
+      {activeTab === 'enterprise' && (
+        <EnterprisePage t={t.enterprisePage || t} />
+      )}
+
+      {/* Basic Info & Security Tabs */}
+      {activeTab !== 'enterprise' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Panel - Avatar & Basic Info */}
         <div className="lg:col-span-1">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-6 flex flex-col items-center">
@@ -313,6 +396,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ t }) => {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

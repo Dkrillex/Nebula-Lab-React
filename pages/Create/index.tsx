@@ -1,18 +1,18 @@
 
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Image, Video, Wand2, Eraser, Upload, ArrowRight, Sparkles, 
-  PenTool, Star, User, Clock, ChevronDown, ChevronRight, 
-  Layers, Users, PanelLeftClose, PanelLeftOpen, Home, Box, 
-  Key, FileText, Scissors, Film, Repeat, Mic, Hammer, 
-  Folder, CreditCard, DollarSign, UserCircle, Grid, Loader2, Heart
+  PenTool, Star, User, Clock, 
+  Layers, Users, 
+  Loader2, Heart
 } from 'lucide-react';
 import TextToImagePage from './components/TextToImagePage';
 import ViralVideoPage from './components/ViralVideoPage';
 import ImageToVideoPage from './components/ImageToVideoPage';
 import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
+import WorkshopPage from './components/WorkshopPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 
 interface CreatePageProps {
@@ -69,11 +69,10 @@ interface CreatePageProps {
 
 const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   // Default to home (dashboard) if no tool is specified
   const activeMenu = searchParams.get('tool') || 'home';
   
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
-  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -83,62 +82,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     pageSize: 20
   });
 
-  const toggleGroup = (groupId: string) => {
-    setExpandedGroups(prev => 
-      prev.includes(groupId) ? prev.filter(id => id !== groupId) : [...prev, groupId]
-    );
-  };
-
   const onMenuChange = (id: string) => {
     setSearchParams({ tool: id });
   };
-
-  const handleMenuClick = (item: any) => {
-    if (item.path) {
-      onNavigate(item.path);
-    } else {
-      onMenuChange(item.id);
-    }
-  };
-
-  const menuStructure = [
-    { id: 'home', icon: Home, label: t.sideMenu.home, path: '/create' },
-    { 
-      id: 'modelCenter', 
-      icon: Box, 
-      label: t.sideMenu.modelCenter,
-      children: [
-        { id: 'aiExperience', icon: Sparkles, label: t.sideMenu.aiExperience, path: '#chat' },
-        { id: 'modelSquare', icon: Grid, label: t.sideMenu.modelSquare, path: '#models' },
-        { id: 'apiKeys', icon: Key, label: t.sideMenu.apiKeys, path: '#keys' },
-        { id: 'apiDocs', icon: FileText, label: t.sideMenu.apiDocs, path: '#' },
-      ]
-    },
-    { 
-      id: 'creationCenter', 
-      icon: Layers, 
-      label: t.sideMenu.creationCenter,
-      children: [
-        { id: 'viralVideo', icon: Scissors, label: t.sideMenu.viralVideo },
-        { id: 'digitalHuman', icon: User, label: t.sideMenu.digitalHuman },
-        { id: 'imgToVideo', icon: Film, label: t.sideMenu.imgToVideo },
-        { id: 'textToImage', icon: Image, label: t.sideMenu.textToImage },
-        { id: 'styleTransfer', icon: Repeat, label: t.sideMenu.styleTransfer },
-        { id: 'voiceClone', icon: Mic, label: t.sideMenu.voiceClone },
-        { id: 'workshop', icon: Hammer, label: t.sideMenu.workshop },
-      ]
-    },
-    { 
-      id: 'personalCenter', 
-      icon: UserCircle, 
-      label: t.sideMenu.personalCenter,
-      children: [
-        { id: 'assets', icon: Folder, label: t.sideMenu.assets, path: '#assets' },
-        { id: 'pricing', icon: CreditCard, label: t.sideMenu.pricing, path: '#pricing' },
-        { id: 'expenses', icon: DollarSign, label: t.sideMenu.expenses, path: '#expenses' },
-      ]
-    },
-  ];
 
   // Creative Types Data
   const creativeTypes = [
@@ -286,6 +232,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     if (activeMenu === 'styleTransfer' && t.styleTransfer) {
       return <StyleTransferPage t={t.styleTransfer} />;
     }
+    if (activeMenu === 'workshop' && t.workshop) {
+      return <WorkshopPage t={t.workshop} />;
+    }
     
     // Default Create Dashboard
     return (
@@ -417,123 +366,8 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] bg-background">
-      {/* Sidebar */}
-      <aside 
-        className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        }`}
-      >
-        <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar">
-          {menuStructure.map((item) => {
-            // Check if it's a group or leaf
-            const hasChildren = 'children' in item && item.children;
-            const Icon = item.icon;
-            const isExpanded = expandedGroups.includes(item.id);
-            const isActive = activeMenu === item.id;
-
-            if (hasChildren) {
-              return (
-                <div key={item.id} className="space-y-1">
-                   <button
-                    onClick={() => toggleGroup(item.id)}
-                    className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-border/30 transition-colors`}
-                    title={isSidebarCollapsed ? item.label : undefined}
-                   >
-                     <div className={`flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'}`}>
-                       <Icon size={18} />
-                       {!isSidebarCollapsed && <span>{item.label}</span>}
-                     </div>
-                     {!isSidebarCollapsed && (isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
-                   </button>
-                   
-                   {isExpanded && (
-                     <div className={`space-y-1 ${isSidebarCollapsed ? '' : 'pl-4'}`}>
-                       {item.children?.map(child => {
-                         const ChildIcon = child.icon;
-                         // Active if it's the selected tool
-                         const isChildActive = activeMenu === child.id;
-                         
-                         return (
-                           <button
-                             key={child.id}
-                             onClick={() => handleMenuClick(child)}
-                             className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                               isChildActive 
-                                 ? 'bg-foreground text-background shadow-sm' 
-                                 : 'text-muted hover:text-foreground hover:bg-border/50'
-                             }`}
-                             title={isSidebarCollapsed ? child.label : undefined}
-                           >
-                             <div className="relative">
-                                {isChildActive && !isSidebarCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-foreground rounded-r"></div>}
-                                <ChildIcon size={16} />
-                             </div>
-                             {!isSidebarCollapsed && child.label}
-                           </button>
-                         );
-                       })}
-                     </div>
-                   )}
-                </div>
-              );
-            }
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => handleMenuClick(item)}
-                className={`w-full flex items-center ${isSidebarCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-foreground text-background shadow-sm' 
-                    : 'text-muted hover:text-foreground hover:bg-border/50'
-                }`}
-                title={isSidebarCollapsed ? item.label : undefined}
-              >
-                <Icon size={18} />
-                {!isSidebarCollapsed && item.label}
-              </button>
-            );
-          })}
-        </div>
-        
-        <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
-          {!isSidebarCollapsed ? (
-            <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
-               <div className="flex items-center gap-2 mb-2 text-indigo-500">
-                 <Sparkles size={16} />
-                 <span className="text-xs font-bold uppercase tracking-wider">Pro Feature</span>
-               </div>
-               <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
-               <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-border rounded hover:bg-foreground hover:text-background transition-colors">
-                 Upgrade
-               </button>
-            </div>
-          ) : (
-            <div className="flex justify-center py-2">
-              <button 
-                className="p-2 rounded-lg bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20 transition-colors"
-                title="Upgrade to Pro"
-              >
-                <Sparkles size={18} />
-              </button>
-            </div>
-          )}
-
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className={`flex items-center justify-center p-2 rounded-lg text-muted hover:bg-border/50 hover:text-foreground transition-colors ${isSidebarCollapsed ? 'mx-auto' : 'ml-auto'}`}
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {isSidebarCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)]">
-        {renderContent()}
-      </main>
+    <div className="w-full">
+      {renderContent()}
     </div>
   );
 };

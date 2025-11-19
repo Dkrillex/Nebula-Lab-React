@@ -12,6 +12,7 @@ import ExpensesPage from '../pages/Expenses';
 import PricingPage from '../pages/Pricing';
 import AssetsPage from '../pages/Assets';
 import ProfilePage from '../pages/Profile';
+import PrivacyPage from '../pages/Privacy';
 
 // Wrapper components to extract props from Outlet Context
 const HomeWrapper = () => {
@@ -70,12 +71,12 @@ export const router = createHashRouter([
         element: <HomeWrapper />,
       },
       {
-        path: 'create',
-        element: <CreatePageWrapper />,
-      },
-      {
         element: <DashboardLayout />,
         children: [
+          {
+            path: 'create',
+            element: <CreatePageWrapper />,
+          },
           {
             path: 'assets',
             element: <AssetsPageWrapper />,
@@ -105,6 +106,10 @@ export const router = createHashRouter([
             element: <ProfilePageWrapper />,
           }
         ]
+      },
+      {
+        path: 'privacy',
+        element: <PrivacyPage />,
       },
       {
         path: '*',

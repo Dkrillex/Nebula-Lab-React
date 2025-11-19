@@ -50,10 +50,17 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   // Fetch models on mount
   useEffect(() => {
     const fetchModels = async () => {
-      setLoading(true);
-      const data = await modelService.getModels();
-      setModels(data);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const data = await modelService.getModels();
+        console.log('📋 模型广场获取到的数据:', data);
+        setModels(data || []);
+      } catch (error) {
+        console.error('❌ 获取模型列表失败:', error);
+        setModels([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchModels();
   }, []);

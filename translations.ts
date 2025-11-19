@@ -86,6 +86,7 @@ interface Translation {
       assets: string;
       pricing: string;
       expenses: string;
+      profile: string;
     };
     shortcuts: {
       video: string;
@@ -284,6 +285,22 @@ interface Translation {
         resultPlaceholder: string;
       };
     };
+    workshop: {
+      title: string;
+      description: string;
+      allTools: string;
+      image: string;
+      video: string;
+      audio: string;
+      others: string;
+      tools: {
+        [key: string]: {
+          title: string;
+          description: string;
+          emoji: string;
+        };
+      };
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -414,6 +431,7 @@ interface Translation {
     subtitle: string;
     basicInfo: string;
     accountSecurity: string;
+    enterpriseManagement?: string;
     avatar: string;
     uploadAvatar: string;
     labels: {
@@ -441,6 +459,7 @@ interface Translation {
       reset: string;
       changePassword: string;
     };
+    enterprisePage?: any;
   };
   footer: {
     privacy: string;
@@ -554,7 +573,8 @@ export const translations: Record<string, Translation> = {
         workshop: 'Workshop',
         assets: 'Assets',
         pricing: 'Pricing',
-        expenses: 'My Expenses'
+        expenses: 'My Expenses',
+        profile: 'Profile',
       },
       shortcuts: {
         video: 'AI Viral Video',
@@ -751,6 +771,47 @@ export const translations: Record<string, Translation> = {
           generate: 'Generate',
           resultTitle: 'Generation Result',
           resultPlaceholder: 'Upload images and enter prompts to start your style transfer journey'
+        }
+      },
+      workshop: {
+        title: 'Creation Workshop',
+        description: 'Explore creative AI tools',
+        allTools: 'All Tools',
+        image: 'Image',
+        video: 'Video',
+        audio: 'Audio',
+        others: 'Others',
+        tools: {
+          translation: {
+            title: 'AI Face Swap',
+            description: 'Use AI technology for face replacement',
+            emoji: '🧍'
+          },
+          tts: {
+            title: 'Text to Speech',
+            description: 'Convert text to natural speech',
+            emoji: '🎤'
+          },
+          glbViewer: {
+            title: '3D Model Viewer',
+            description: 'View and manipulate 3D models',
+            emoji: '🤖'
+          },
+          customPrompt: {
+            title: 'Custom Prompt',
+            description: 'Generate images with custom prompts',
+            emoji: '✍️'
+          },
+          imageTranslation: {
+            title: 'Image Translation',
+            description: 'Transform images into different styles',
+            emoji: '🧍'
+          },
+          aiTemplate: {
+            title: 'AI Template',
+            description: 'Quickly generate content with AI templates',
+            emoji: '🖼️'
+          }
         }
       }
     },
@@ -1050,7 +1111,8 @@ export const translations: Record<string, Translation> = {
         workshop: '创作工坊',
         assets: '素材管理',
         pricing: '定价列表',
-        expenses: '我的费用'
+        expenses: '我的费用',
+        profile: '个人中心',
       },
       shortcuts: {
         video: 'AI混剪爆款视频',
@@ -1248,6 +1310,47 @@ export const translations: Record<string, Translation> = {
           resultTitle: '生成结果',
           resultPlaceholder: '上传图片并输入提示词，开始您的风格迁移之旅'
         }
+      },
+      workshop: {
+        title: '创作工坊',
+        description: '探索创意AI工具',
+        allTools: '全部工具',
+        image: '图片',
+        video: '视频',
+        audio: '音频',
+        others: '其他',
+        tools: {
+          translation: {
+            title: 'AI换脸',
+            description: '使用AI技术进行人脸替换',
+            emoji: '🧍'
+          },
+          tts: {
+            title: '文本转语音',
+            description: '将文本转换为自然语音',
+            emoji: '🎤'
+          },
+          glbViewer: {
+            title: '3D模型查看器',
+            description: '查看和操作3D模型',
+            emoji: '🤖'
+          },
+          customPrompt: {
+            title: '自定义提示词',
+            description: '使用自定义提示词生成图像',
+            emoji: '✍️'
+          },
+          imageTranslation: {
+            title: '图像翻译',
+            description: '将图像转换为不同风格',
+            emoji: '🧍'
+          },
+          aiTemplate: {
+            title: 'AI模板',
+            description: '使用AI模板快速生成内容',
+            emoji: '🖼️'
+          }
+        }
       }
     },
     chatPage: {
@@ -1407,6 +1510,7 @@ export const translations: Record<string, Translation> = {
       subtitle: '管理您的账户信息和安全设置',
       basicInfo: '基本资料',
       accountSecurity: '账号安全',
+      enterpriseManagement: '企业管理',
       avatar: '头像',
       uploadAvatar: '更换头像',
       labels: {
@@ -1433,6 +1537,38 @@ export const translations: Record<string, Translation> = {
         save: '保存配置',
         reset: '重置',
         changePassword: '修改密码'
+      },
+      enterprisePage: {
+        title: '企业管理',
+        channelManagement: '渠道管理',
+        teamManagement: '团队管理',
+        channelName: '渠道名称',
+        whetherShareAssets: '是否共享资产',
+        yes: '是',
+        no: '否',
+        createTime: '创建时间',
+        updateTime: '更新时间',
+        edit: '编辑',
+        addUserChannelRelation: '新增用户渠道关联',
+        pleaseEnterChannelName: '请输入渠道名称',
+        pleaseSelectWhetherShareAssets: '请选择是否共享资产',
+        teamName: '团队名称',
+        status: '状态',
+        normal: '正常',
+        disabled: '停用',
+        remark: '备注',
+        addNewTeam: '新增团队',
+        refresh: '刷新',
+        searchTeamName: '搜索团队名称',
+        viewMembers: '查看成员',
+        inviteMembers: '邀请成员',
+        addMembers: '添加成员',
+        delete: '删除',
+        pleaseEnterTeamName: '请输入团队名称',
+        pleaseEnterTeamRemark: '请输入团队备注',
+        teamRole: '团队角色',
+        teamRoleInputHint: '请输入团队角色，如:开发者、测试员、观察者,一个团队最多支持10个角色',
+        pleaseEnterTeamRolesExample: '请输入团队角色，多个用逗号分隔'
       }
     },
     footer: {

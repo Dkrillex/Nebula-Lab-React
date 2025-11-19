@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { RefreshCw, Bot, Gem, Wallet, ShieldCheck } from 'lucide-react';
-import { expenseService, ExpenseLog, UserQuotaInfo } from '../../services/expenseService';
+import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
 
 interface ExpensesPageProps {
@@ -29,8 +29,17 @@ interface ExpensesPageProps {
 
 const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
   const { user } = useAuthStore();
+  // 模式切换：'balance' 余额模式，'points' 积分模式
+  const [currentMode, setCurrentMode] = useState<'balance' | 'points'>('balance');
+  
+  // 余额相关状态
   const [quotaInfo, setQuotaInfo] = useState<UserQuotaInfo | null>(null);
   const [expenseLogs, setExpenseLogs] = useState<ExpenseLog[]>([]);
+  
+  // 积分相关状态
+  const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
+  const [scoreList, setScoreList] = useState<ScoreRecord[]>([]);
+  
   const [loading, setLoading] = useState(false);
   const [quotaLoading, setQuotaLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -63,7 +72,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
     }
   };
 
-  // 获取费用记录列表
+  // 获取费用记录列表（余额模式）
   const fetchExpenseLogs = async (page: number = pagination.current) => {
     if (!user?.nebulaApiId) {
       console.warn('用户信息中缺少 nebulaApiId');
@@ -95,18 +104,104 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
     }
   };
 
+  // 获取积分账户列表
+  const fetchUserAccounts = async () => {
+    if (!user?.userId) {
+      console.warn('用户信息中缺少 userId');
+      return;
+    }
+
+    try {
+      setQuotaLoading(true);
+      const res = await expenseService.getUserAccounts({
+        userId: user.userId,
+      });
+
+      // 处理响应格式
+      if (res.code === 200) {
+        const accounts = res.rows || res.data || [];
+        setUserAccounts(accounts);
+      }
+    } catch (error) {
+      console.error('获取积分账户失败:', error);
+    } finally {
+      setQuotaLoading(false);
+    }
+  };
+
+  // 获取积分流水列表（积分模式）
+  const fetchScoreList = async (page: number = pagination.current) => {
+    if (!user?.userId) {
+      console.warn('用户信息中缺少 userId');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await expenseService.getScoreList({
+        createBy: user.userId,
+        pageNum: page,
+        pageSize: pagination.pageSize,
+      });
+
+      // 处理响应格式
+      if (res.code === 200) {
+        const scores = res.rows || res.data || [];
+        setScoreList(scores);
+        setPagination(prev => ({
+          ...prev,
+          current: page,
+          total: res.total || scores.length,
+        }));
+      }
+    } catch (error) {
+      console.error('获取积分流水失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 根据模式初始化数据
+  const initData = async () => {
+    if (currentMode === 'balance') {
+      // 余额模式：获取余额信息和消费日志
+      if (user?.nebulaApiId) {
+        await Promise.all([fetchQuotaInfo(), fetchExpenseLogs(1)]);
+      }
+    } else if (currentMode === 'points') {
+      // 积分模式：获取积分账户和积分流水
+      if (user?.userId) {
+        await Promise.all([fetchUserAccounts(), fetchScoreList(1)]);
+      }
+    }
+  };
+
   // 刷新所有数据
   const handleRefresh = async () => {
-    await Promise.all([fetchQuotaInfo(), fetchExpenseLogs(1)]);
+    await initData();
   };
+
+  // 切换模式
+  const handleModeChange = (mode: 'balance' | 'points') => {
+    setCurrentMode(mode);
+    setPagination(prev => ({
+      ...prev,
+      current: 1,
+      pageSize: mode === 'points' ? 10 : 9,
+    }));
+  };
+
+  // 监听模式切换
+  useEffect(() => {
+    initData();
+  }, [currentMode, user?.nebulaApiId, user?.userId]);
 
   // 初始化加载数据
   useEffect(() => {
-    if (user?.nebulaApiId) {
-      fetchQuotaInfo();
-      fetchExpenseLogs(1);
+    if (user?.nebulaApiId || user?.userId) {
+      initData();
     }
-  }, [user?.nebulaApiId]);
+  }, [user?.nebulaApiId, user?.userId]);
 
   // 格式化数字显示（参考旧项目）
   const formatPoints = (points: null | number | string | undefined): string => {
@@ -160,6 +255,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
   const balance = Number(quotaInfo?.quotaRmb) || 0;
   const points = Number(quotaInfo?.score) || 0;
   const memberLevel = quotaInfo?.memberLevel || '';
+  
+  // 计算总积分（积分模式）
+  const totalPoints = userAccounts.reduce((sum, account) => {
+    return sum + (Number(account.userPoints) || 0);
+  }, 0);
 
   return (
     <div className="bg-background min-h-screen pb-12">
@@ -170,30 +270,73 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
           <h1 className="text-3xl font-bold mb-2 text-foreground">{t.title}</h1>
           <p className="text-muted opacity-90 mb-8">{t.subtitle}</p>
           
-          <div className="bg-background rounded-2xl p-6 md:p-10 border border-border shadow-sm flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12">
-             <div className="text-left">
-                <div className="text-5xl md:text-6xl font-bold mb-2 flex items-baseline gap-2 text-foreground">
-                  <span className="text-3xl opacity-80">￥</span> 
-                  {quotaLoading ? '...' : formatPoints(balance)}
-                </div>
-                <div className="text-muted font-medium flex items-center gap-2 flex-wrap">
-                  <span>{t.balanceLabel}</span>
-                  <span className="opacity-60">|</span>
-                  <span>{t.convertPoints}:</span>
-                  <span className="text-yellow-600 dark:text-yellow-400">{formatPoints(points)}</span>
-                  {memberLevel && (
-                    <>
+          <div className="bg-background rounded-2xl p-6 md:p-10 border border-border shadow-sm">
+            {/* 模式切换器 */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <button
+                onClick={() => handleModeChange('balance')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  currentMode === 'balance'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-surface text-muted hover:bg-surface/80'
+                }`}
+              >
+                <Wallet size={18} />
+                {t.buttons.balance}
+              </button>
+              <button
+                onClick={() => handleModeChange('points')}
+                className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
+                  currentMode === 'points'
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-surface text-muted hover:bg-surface/80'
+                }`}
+              >
+                <Gem size={18} />
+                {t.buttons.points}
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12">
+              <div className="text-left">
+                {currentMode === 'balance' ? (
+                  <>
+                    <div className="text-5xl md:text-6xl font-bold mb-2 flex items-baseline gap-2 text-foreground">
+                      <span className="text-3xl opacity-80">￥</span> 
+                      {quotaLoading ? '...' : formatPoints(balance)}
+                    </div>
+                    <div className="text-muted font-medium flex items-center gap-2 flex-wrap">
+                      <span>{t.balanceLabel}</span>
                       <span className="opacity-60">|</span>
-                      <span>{memberLevel}{t.buttons.freeMember}</span>
-                    </>
-                  )}
-                </div>
-             </div>
-             
-             <div className="flex flex-wrap justify-center md:justify-end gap-3">
-                <ActionButton icon={Gem} label={t.buttons.points} color="bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300" />
-                <ActionButton icon={Wallet} label={t.buttons.balance} color="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300" />
-                <ActionButton icon={ShieldCheck} label={t.buttons.freeMember} color="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300" />
+                      <span>{t.convertPoints}:</span>
+                      <span className="text-yellow-600 dark:text-yellow-400">{formatPoints(points)}</span>
+                      {memberLevel && (
+                        <>
+                          <span className="opacity-60">|</span>
+                          <span>{memberLevel}{t.buttons.freeMember}</span>
+                        </>
+                      )}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-5xl md:text-6xl font-bold mb-2 flex items-baseline gap-2 text-foreground">
+                      {quotaLoading ? '...' : formatPoints(totalPoints)}
+                    </div>
+                    <div className="text-muted font-medium flex items-center gap-2 flex-wrap">
+                      <span>{t.buttons.points}</span>
+                      {userAccounts.length > 0 && (
+                        <>
+                          <span className="opacity-60">|</span>
+                          <span>共 {userAccounts.length} 个账户</span>
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              
+              <div className="flex flex-wrap justify-center md:justify-end gap-3">
                 <button 
                   onClick={handleRefresh}
                   disabled={loading || quotaLoading}
@@ -202,7 +345,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                   <RefreshCw size={16} className={loading || quotaLoading ? 'animate-spin' : ''} />
                   {t.buttons.refresh}
                 </button>
-             </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -213,7 +357,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
            <div className="flex items-center justify-between mb-6 border-l-4 border-indigo-500 pl-4">
               <h2 className="text-xl font-bold text-foreground">{t.recordsTitle}</h2>
               <button 
-                onClick={() => fetchExpenseLogs(pagination.current)}
+                onClick={() => {
+                  if (currentMode === 'balance') {
+                    fetchExpenseLogs(pagination.current);
+                  } else {
+                    fetchScoreList(pagination.current);
+                  }
+                }}
                 disabled={loading}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-sm hover:bg-indigo-700 transition-colors shadow disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -223,38 +373,66 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
            </div>
 
            {/* Loading State */}
-           {loading && expenseLogs.length === 0 && (
+           {loading && (
+             (currentMode === 'balance' && expenseLogs.length === 0) ||
+             (currentMode === 'points' && scoreList.length === 0)
+           ) && (
              <div className="flex items-center justify-center py-20">
                <RefreshCw className="animate-spin text-indigo-600" size={32} />
              </div>
            )}
 
            {/* Empty State */}
-           {!loading && expenseLogs.length === 0 && (
+           {!loading && (
+             (currentMode === 'balance' && expenseLogs.length === 0) ||
+             (currentMode === 'points' && scoreList.length === 0)
+           ) && (
              <div className="text-center py-20 text-muted">
-               <p>暂无费用记录</p>
+               <p>{currentMode === 'balance' ? '暂无费用记录' : '暂无积分流水'}</p>
              </div>
            )}
 
-           {/* Cards Grid */}
-           {!loading && expenseLogs.length > 0 && (
+           {/* Cards Grid - 余额模式 */}
+           {currentMode === 'balance' && !loading && expenseLogs.length > 0 && (
              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {expenseLogs.map((log) => {
-                  const record = convertLogToExpenseRecord(log);
-                  return (
-                    <div key={log.id}>
-                      <ExpenseCard record={record} t={t} />
-                    </div>
-                  );
-                })}
+               {expenseLogs.map((log) => {
+                 const record = convertLogToExpenseRecord(log);
+                 return (
+                   <div key={log.id}>
+                     <ExpenseCard record={record} t={t} />
+                   </div>
+                 );
+               })}
+             </div>
+           )}
+
+           {/* Cards Grid - 积分模式 */}
+           {currentMode === 'points' && !loading && scoreList.length > 0 && (
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+               {scoreList.map((score) => {
+                 return (
+                   <div key={score.id}>
+                     <ScoreCard score={score} t={t} />
+                   </div>
+                 );
+               })}
              </div>
            )}
 
            {/* Pagination */}
-           {!loading && expenseLogs.length > 0 && pagination.total > pagination.pageSize && (
+           {!loading && (
+             (currentMode === 'balance' && expenseLogs.length > 0) ||
+             (currentMode === 'points' && scoreList.length > 0)
+           ) && pagination.total > pagination.pageSize && (
              <div className="flex items-center justify-center gap-2 mt-6">
                <button
-                 onClick={() => fetchExpenseLogs(pagination.current - 1)}
+                 onClick={() => {
+                   if (currentMode === 'balance') {
+                     fetchExpenseLogs(pagination.current - 1);
+                   } else {
+                     fetchScoreList(pagination.current - 1);
+                   }
+                 }}
                  disabled={pagination.current <= 1}
                  className="px-3 py-1.5 rounded-lg bg-background border border-border hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
                >
@@ -264,7 +442,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                  第 {pagination.current} 页 / 共 {Math.ceil(pagination.total / pagination.pageSize)} 页
                </span>
                <button
-                 onClick={() => fetchExpenseLogs(pagination.current + 1)}
+                 onClick={() => {
+                   if (currentMode === 'balance') {
+                     fetchExpenseLogs(pagination.current + 1);
+                   } else {
+                     fetchScoreList(pagination.current + 1);
+                   }
+                 }}
                  disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
                  className="px-3 py-1.5 rounded-lg bg-background border border-border hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
                >
@@ -307,12 +491,12 @@ const ExpenseCard = ({ record, t }: {
        {/* 卡片头部：模型名称和金额 */}
        <div className="mb-4">
           <div className="flex items-center gap-3 mb-3">
-             <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
-                <Bot size={18} />
-             </div>
-             <span className="font-semibold text-foreground truncate">{record.modelName}</span>
+          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+             <Bot size={18} />
           </div>
-          
+          <span className="font-semibold text-foreground truncate">{record.modelName}</span>
+       </div>
+       
           {/* 金额显示：消费为红色，充值为绿色（参考旧项目） */}
           <div className={`px-3 py-2 rounded-lg border ${
             isConsumption 
@@ -383,6 +567,96 @@ const ExpenseCard = ({ record, t }: {
           <ClockIcon />
           {record.timestamp}
        </div>
+    </div>
+  );
+};
+
+// 积分流水卡片组件
+const ScoreCard = ({ score, t }: { 
+  score: ScoreRecord, 
+  t: ExpensesPageProps['t'] 
+}) => {
+  const scoreValue = Number(score.score) || 0;
+  const isPositive = scoreValue > 0;
+  const assetTypeMap: Record<number, string> = {
+    1: '图片',
+    2: '视频',
+    3: '音频',
+    4: '其他',
+  };
+  const statusMap: Record<string, string> = {
+    '1': '已完成',
+    '0': '进行中',
+    '-1': '失败',
+  };
+  
+  return (
+    <div className="bg-background border border-border rounded-xl p-5 shadow-sm hover:shadow-md transition-all hover:border-indigo-200 dark:hover:border-indigo-800">
+      {/* 卡片头部：积分值 */}
+      <div className="mb-4">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
+            <Gem size={18} />
+          </div>
+          <span className="font-semibold text-foreground">
+            {assetTypeMap[score.assetType] || '未知类型'}
+          </span>
+        </div>
+        
+        {/* 积分显示 */}
+        <div className={`px-3 py-2 rounded-lg border ${
+          isPositive 
+            ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-900/30' 
+            : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-900/30'
+        }`}>
+          <span className={`font-bold text-sm ${
+            isPositive 
+              ? 'text-green-600 dark:text-green-400' 
+              : 'text-red-600 dark:text-red-400'
+          }`}>
+            {isPositive ? '+' : ''}{scoreValue}
+          </span>
+        </div>
+      </div>
+      
+      {/* 卡片主体：详细信息 */}
+      <div className="grid grid-cols-2 gap-y-3 gap-x-2 text-xs mb-4">
+        {/* 任务ID */}
+        {score.taskId && (
+          <div>
+            <span className="text-muted block mb-0.5">任务ID:</span>
+            <span className="font-medium text-foreground">{score.taskId}</span>
+          </div>
+        )}
+        
+        {/* 状态 */}
+        <div>
+          <span className="text-muted block mb-0.5">状态:</span>
+          <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium border ${
+            score.status === '1'
+              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800'
+              : score.status === '0'
+              ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800'
+              : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800'
+          }`}>
+            {statusMap[String(score.status)] || score.status}
+          </span>
+        </div>
+        
+        {/* 资产类型 */}
+        <div>
+          <span className="text-muted block mb-0.5">资产类型:</span>
+          <span className="font-medium text-foreground">{assetTypeMap[score.assetType] || '未知'}</span>
+        </div>
+      </div>
+      
+      {/* 卡片底部：时间 */}
+      {score.createTime && (
+        <div className="pt-3 border-t border-border text-[10px] text-muted flex items-center gap-1">
+          <ClockIcon />
+          {score.createTime}
+        </div>
+      )}
     </div>
   );
 };

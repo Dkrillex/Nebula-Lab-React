@@ -4,7 +4,7 @@ import {
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
   UserCircle, Folder, CreditCard, DollarSign, 
-  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen 
+  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -24,7 +24,17 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
   const getActiveId = () => {
     const path = location.pathname.substring(1);
     if (path === 'create') {
-      return searchParams.get('tool') || 'textToImage';
+      const tool = searchParams.get('tool');
+      // Map tool to menu ID
+      if (tool === 'viralVideo') return 'viralVideo';
+      if (tool === 'digitalHuman') return 'digitalHuman';
+      if (tool === 'imgToVideo') return 'imgToVideo';
+      if (tool === 'textToImage') return 'textToImage';
+      if (tool === 'styleTransfer') return 'styleTransfer';
+      if (tool === 'voiceClone') return 'voiceClone';
+      if (tool === 'workshop') return 'workshop';
+      // Default to home if no tool or tool is 'home'
+      return 'home';
     }
     // Map paths to IDs
     if (path === 'chat') return 'aiExperience';
@@ -33,6 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
     if (path === 'expenses') return 'expenses';
     if (path === 'pricing') return 'pricing';
     if (path === 'assets') return 'assets';
+    if (path === 'profile') return 'profile';
     if (path === '') return 'home';
     return '';
   };
@@ -46,7 +57,10 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
   };
 
   const handleMenuClick = (item: any) => {
-    if (item.path) {
+    if (item.externalLink) {
+      // 外链，在新窗口打开
+      window.open(item.externalLink, '_blank', 'noopener,noreferrer');
+    } else if (item.path) {
       navigate(item.path);
     } else if (item.tool) {
       navigate(`/create?tool=${item.tool}`);
@@ -63,7 +77,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
         { id: 'aiExperience', icon: Sparkles, label: t.aiExperience, path: '/chat' },
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
-        { id: 'apiDocs', icon: FileText, label: t.apiDocs, path: '#' },
+        { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
       ]
     },
     { 
@@ -88,6 +102,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
         { id: 'assets', icon: Folder, label: t.assets, path: '/assets' },
         { id: 'pricing', icon: CreditCard, label: t.pricing, path: '/pricing' },
         { id: 'expenses', icon: DollarSign, label: t.expenses, path: '/expenses' },
+        { id: 'profile', icon: UserCircle, label: t.profile || '个人中心', path: '/profile' },
       ]
     },
   ];
@@ -124,7 +139,8 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
                     <div className={`space-y-1 ${isCollapsed ? '' : 'pl-4'}`}>
                       {item.children?.map((child: any) => {
                         const ChildIcon = child.icon;
-                        const isChildActive = activeMenu === child.id;
+                        const isChildActive = activeMenu === child.id && !child.externalLink;
+                        const isExternalLink = !!child.externalLink;
                         
                         return (
                           <button
@@ -137,11 +153,12 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
                             }`}
                             title={isCollapsed ? child.label : undefined}
                           >
-                            <div className="relative">
+                            <div className="relative flex items-center gap-2">
                                 {isChildActive && !isCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-foreground rounded-r"></div>}
                                 <ChildIcon size={16} />
+                                {!isCollapsed && isExternalLink && <ExternalLink size={12} className="opacity-60" />}
                             </div>
-                            {!isCollapsed && child.label}
+                            {!isCollapsed && <span className="flex-1">{child.label}</span>}
                           </button>
                         );
                       })}
@@ -192,13 +209,39 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed }) => 
           </div>
         )}
 
-        <button
-          onClick={() => setIsCollapsed(!isCollapsed)}
-          className={`flex items-center justify-center p-2 rounded-lg text-muted hover:bg-border/50 hover:text-foreground transition-colors ${isCollapsed ? 'mx-auto' : 'ml-auto'}`}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
-        </button>
+        {/* 隐私协议、备案信息和折叠按钮在同一行 */}
+        <div className="flex items-center gap-2">
+          {!isCollapsed && (
+            <>
+              <div className="flex items-center gap-2 text-xs text-muted flex-1">
+                <a 
+                  href="/privacy" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors"
+                >
+                  隐私协议
+                </a>
+                <span className="text-border">|</span>
+                <a 
+                  href="https://beian.miit.gov.cn" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors"
+                >
+                  备案信息
+                </a>
+              </div>
+            </>
+          )}
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className={`flex items-center justify-center p-2 rounded-lg text-muted hover:bg-border/50 hover:text-foreground transition-colors flex-shrink-0 ${isCollapsed ? 'mx-auto' : ''}`}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen size={20} /> : <PanelLeftClose size={20} />}
+          </button>
+        </div>
       </div>
     </aside>
   );

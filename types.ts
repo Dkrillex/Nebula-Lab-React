@@ -182,3 +182,95 @@ export interface UploadedFile {
   duration?: number; // 音频/视频时长（秒）
   thumbnail?: string; // 缩略图URL
 }
+
+// ==================== 渠道管理相关 Types ====================
+
+export interface LabChannelVO {
+  channelId: string | number;
+  channelName: string;
+  userId: string | number;
+  userApiId: string | number;
+  userName?: string;
+  isShare: number; // 0-否 1-是
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface LabChannelForm {
+  channelId?: string | number;
+  channelName?: string;
+  userId?: string | number;
+  userApiId?: string | number;
+  userName?: string;
+  isShare?: number;
+}
+
+export interface LabChannelQuery {
+  pageNum?: number;
+  pageSize?: number;
+  channelId?: string | number;
+  channelName?: string;
+  userId?: string | number;
+  userApiId?: string | number;
+  isShare?: number;
+  params?: any;
+}
+
+// ==================== 团队管理相关 Types ====================
+
+export interface LabTeamVO {
+  teamId: string | number;
+  teamName: string;
+  channelId: string | number;
+  teamType?: string; // normal-普通,project-项目,temporary-临时
+  parentId?: string | number;
+  status: number; // 1-正常,0-停用
+  remark?: string;
+  channel?: {
+    channelId: string | number;
+    channelName: string;
+  };
+}
+
+export interface LabTeamForm {
+  teamId?: string | number;
+  teamName?: string;
+  channelId?: string | number;
+  teamType?: string;
+  parentId?: string | number;
+  status?: number;
+  remark?: string;
+  teamRoles?: string[]; // 团队角色列表
+}
+
+export interface LabTeamQuery {
+  pageNum?: number;
+  pageSize?: number;
+  teamName?: string;
+  channelId?: string | number;
+  teamType?: string;
+  parentId?: string | number;
+  status?: number;
+  params?: any;
+}
+
+// ==================== 团队成员相关 Types ====================
+
+export interface TeamUserVO {
+  userId: string | number;
+  userName: string;
+  email?: string;
+  nickName?: string;
+  userAuthType?: number; // 1-普通成员,2-队长,3-管理员
+  roleName?: string;
+  quotaRmb?: number;
+  usedQuotaRmb?: number;
+  memberLevel?: string;
+}
+
+export interface TeamUserForm {
+  userId: string | number;
+  teamId: string | number;
+  userAuthType?: number;
+  roleId?: string | number;
+}

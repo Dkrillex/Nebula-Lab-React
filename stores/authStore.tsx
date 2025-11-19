@@ -9,6 +9,7 @@ interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
   login: (params: { username?: string; password?: string; code?: string; uuid?: string }) => Promise<void>;
+  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string }) => Promise<void>;
   logout: () => Promise<void>;
   fetchUserInfo: () => Promise<void>;
   setUserInfo: (userInfo: UserInfo | null) => void;
@@ -38,7 +39,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: getInitialUserInfo(),
       token: localStorage.getItem(STORAGE_KEYS.TOKEN),
-      loading: false,
+  loading: false,
       isAuthenticated: !!localStorage.getItem(STORAGE_KEYS.TOKEN),
 
   login: async (params) => {
@@ -81,6 +82,46 @@ export const useAuthStore = create<AuthState>()(
         }
       } else {
         console.error('Login response structure:', res);
+        throw new Error(res.msg || '登录响应格式错误，缺少 access_token');
+      }
+    } finally {
+      set({ loading: false });
+    }
+  },
+
+  phoneLogin: async (params) => {
+    set({ loading: true });
+    try {
+      const res = await authService.phoneLogin({
+        phonenumber: params.phonenumber,
+        smsCode: params.smsCode,
+        countryCode: params.countryCode,
+      });
+      console.log('Phone login response:', res);
+      
+      // Handle different response formats
+      let loginData: LoginResponse | null = null;
+      
+      if (res.code === 200) {
+        if (res.data) {
+          loginData = res.data;
+        } else if ((res as any).access_token) {
+          loginData = res as unknown as LoginResponse;
+        }
+      } else if ((res as any).access_token) {
+        loginData = res as unknown as LoginResponse;
+      }
+      
+      if (loginData?.access_token) {
+        const { access_token } = loginData;
+        localStorage.setItem(STORAGE_KEYS.TOKEN, access_token);
+        set({ token: access_token, isAuthenticated: true });
+        console.log('Token saved:', access_token.substring(0, 20) + '...');
+        
+        // Fetch user info immediately after login
+        await get().fetchUserInfo();
+      } else {
+        console.error('Phone login response structure:', res);
         throw new Error(res.msg || '登录响应格式错误，缺少 access_token');
       }
     } finally {
