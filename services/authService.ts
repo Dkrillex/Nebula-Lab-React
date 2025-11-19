@@ -1,6 +1,7 @@
 
 import { request } from '../lib/request';
 import { LoginResponse, UserInfo } from '../types';
+import { generateAesKey, encryptWithAes, encryptBase64 } from '../utils/crypto';
 
 export const authService = {
   /**
@@ -8,8 +9,15 @@ export const authService = {
    * Endpoint: /login
    */
   login: (data: { username?: string; password?: string; code?: string; uuid?: string }) => {
-    // Ruoyi typically takes username/password/code/uuid
-    return request.post<LoginResponse>('/login', data, { isToken: false });
+    // Note: If your backend requires encryption, you would typically:
+    // 1. Generate AES Key
+    // const aesKey = generateAesKey();
+    // 2. Encrypt Password
+    // const encryptedPassword = encryptWithAes(data.password || '', aesKey);
+    // 3. Send encrypted password and key (often key is RSA encrypted)
+    // For now, we proceed with standard submission.
+    
+    return request.post<LoginResponse>('/auth/login', data, { isToken: false });
   },
 
   /**

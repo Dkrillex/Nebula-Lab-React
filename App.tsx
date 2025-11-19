@@ -13,7 +13,7 @@ import PricingPage from './components/PricingPage';
 import AssetsPage from './components/AssetsPage';
 import { Language, View, TabItem } from './types';
 import { translations } from './translations';
-import { authService } from './services/authService'; 
+import { useAuthStore } from './stores/authStore';
 
 const App: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
@@ -25,7 +25,8 @@ const App: React.FC = () => {
   // Tabs / Tags View State
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
 
-  const [user, setUser] = useState<any>(null);
+  // Zustand Store
+  const { fetchUserInfo, isAuthenticated } = useAuthStore();
 
   useEffect(() => {
     const root = document.documentElement;
@@ -36,25 +37,12 @@ const App: React.FC = () => {
     }
   }, [isDark]);
 
-  // Check token and fetch user info
-  const checkAuth = async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-       try {
-         const res = await authService.getInfo();
-         if (res.code === 200 && res.user) {
-           setUser(res.user);
-         }
-       } catch (e) {
-         console.error('Auth check failed', e);
-         // localStorage.removeItem('token'); // Optional: clear invalid token
-       }
-    }
-  };
-
+  // Initialize User Info
   useEffect(() => {
-    checkAuth();
-  }, []);
+    if (isAuthenticated) {
+      fetchUserInfo();
+    }
+  }, [isAuthenticated]);
 
   // Update Visited Views (Tabs) when navigation changes
   useEffect(() => {
@@ -191,7 +179,7 @@ const App: React.FC = () => {
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => setIsAuthModalOpen(false)} 
-        onLoginSuccess={checkAuth}
+        onLoginSuccess={() => fetchUserInfo()}
         t={t.auth}
       />
     </div>

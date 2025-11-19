@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Smartphone, Lock, Mail, KeyRound, Loader2 } from 'lucide-react';
-import { authService } from '../services/authService';
+import { useAuthStore } from '../stores/authStore';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -25,9 +25,9 @@ interface AuthModalProps {
 }
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, t }) => {
+  const { login, loading } = useAuthStore();
   const [mode, setMode] = useState<'password' | 'phone'>('password');
   const [isClosing, setIsClosing] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -43,7 +43,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       setIsClosing(false);
       setMode('password');
       setErrorMsg('');
-      setIsLoading(false);
     }
   }, [isOpen]);
 
@@ -74,28 +73,19 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
-    setIsLoading(true);
 
     try {
       if (mode === 'password') {
-        // Standard Ruoyi Login
-        const res = await authService.login({ username, password });
-        if (res.code === 200 && res.token) {
-          localStorage.setItem('token', res.token);
-          if (onLoginSuccess) onLoginSuccess();
-          handleClose();
-        } else {
-          setErrorMsg(res.msg || 'Login failed');
-        }
+        await login({ username, password });
+        if (onLoginSuccess) onLoginSuccess();
+        handleClose();
       } else {
-        // Phone Login logic (if backend supports it)
-        // const res = await authService.login({ username: phone, code, uuid: '...' });
-        setErrorMsg('Phone login not fully configured with backend yet.');
+        // Phone Login logic 
+        // await login({ username: phone, code });
+        setErrorMsg('Phone login not configured.');
       }
     } catch (err: any) {
       setErrorMsg(err.message || 'An error occurred during login');
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -228,10 +218,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
 
             <button 
               type="submit"
-              disabled={isLoading}
+              disabled={loading}
               className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-primary/20 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading && <Loader2 size={16} className="animate-spin" />}
+              {loading && <Loader2 size={16} className="animate-spin" />}
               {t.signIn}
             </button>
           </form>

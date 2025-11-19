@@ -1,7 +1,7 @@
-
 import React from 'react';
-import { Command, Moon, Sun, Menu, Globe, ChevronRight, X, Home } from 'lucide-react';
+import { Command, Moon, Sun, Menu, Globe, ChevronRight, X, Home, User as UserIcon, LogOut } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
+import { useAuthStore } from '../stores/authStore';
 
 interface HeaderProps {
   isDark: boolean;
@@ -27,6 +27,7 @@ const Header: React.FC<HeaderProps> = ({
   isDark, toggleTheme, lang, setLang, onSignIn, onNavClick, 
   currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, t 
 }) => {
+  const { user, logout, isAuthenticated } = useAuthStore();
   
   const toggleLang = () => {
     setLang(lang === 'en' ? 'zh' : 'en');
@@ -177,12 +178,37 @@ const Header: React.FC<HeaderProps> = ({
                {isDark ? <Moon size={20} /> : <Sun size={20} />}
              </button>
              
-             <button 
-               onClick={onSignIn}
-               className="hidden sm:inline-flex h-9 items-center justify-center rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:opacity-90 shadow-sm"
-             >
-               {t.signIn}
-             </button>
+             {isAuthenticated && user ? (
+               <div className="flex items-center gap-3 pl-2">
+                  <div className="flex items-center gap-2">
+                     {user.user?.avatar ? (
+                       <img src={user.user.avatar} alt="User" className="w-8 h-8 rounded-full object-cover border border-border" />
+                     ) : (
+                       <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white">
+                         <UserIcon size={16} />
+                       </div>
+                     )}
+                     <div className="hidden md:flex flex-col items-start">
+                       <span className="text-xs font-semibold text-foreground leading-none">{user.user?.nickName || user.user?.userName || 'User'}</span>
+                       <span className="text-[10px] text-muted leading-none mt-1">{user.roles?.[0] || 'Member'}</span>
+                     </div>
+                  </div>
+                  <button 
+                    onClick={logout}
+                    className="text-muted hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
+                    title="Sign out"
+                  >
+                    <LogOut size={18} />
+                  </button>
+               </div>
+             ) : (
+               <button 
+                 onClick={onSignIn}
+                 className="hidden sm:inline-flex h-9 items-center justify-center rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background transition-colors hover:opacity-90 shadow-sm"
+               >
+                 {t.signIn}
+               </button>
+             )}
              
              <button className="md:hidden text-muted">
                <Menu size={24} />
