@@ -182,6 +182,43 @@ interface Translation {
         emptyState: string;
       };
     };
+    digitalHuman: {
+      title: string;
+      subtitle: string;
+      tabs: {
+        video: string;
+        product: string;
+        singing: string;
+      };
+      leftPanel: {
+        myDigitalHuman: string;
+        uploadTitle: string;
+        uploadFormat: string;
+        uploadDesc: string;
+        personalTemplate: string;
+        publicTemplate: string;
+        customUpload: string;
+      };
+      rightPanel: {
+        modeSelection: string;
+        mode1: string;
+        mode2: string;
+        scriptContent: string;
+        textToSpeech: string;
+        importAudio: string;
+        textPlaceholder: string;
+        textLimit: number;
+        voiceType: string;
+        aiVoice: string;
+        publicVoice: string;
+        selectVoice: string;
+        aiSubtitle: string;
+        selectSubtitleStyle: string;
+        previewPlaceholder: string;
+        tryExample: string;
+        generate: string;
+      };
+    };
   };
   chatPage: {
     settingsTitle: string;
@@ -514,6 +551,43 @@ export const translations: Record<string, Translation> = {
         result: {
           label: 'Generation Result',
           emptyState: 'Upload image and enter description text to start your AI video creation journey'
+        }
+      },
+      digitalHuman: {
+        title: 'Digital Human Video Creation',
+        subtitle: 'Upload your digital human video and audio content to let AI generate professional digital human video works for you',
+        tabs: {
+          video: 'Digital Human Video',
+          product: 'Product Digital Human',
+          singing: 'Singing Digital Human'
+        },
+        leftPanel: {
+          myDigitalHuman: 'My Digital Human',
+          uploadTitle: 'Upload Digital Human Video',
+          uploadFormat: '(mp4, mov, webm)',
+          uploadDesc: 'Need front-facing digital human video, duration 4s~3min',
+          personalTemplate: 'Personal Template',
+          publicTemplate: 'Public Template',
+          customUpload: 'Custom Upload'
+        },
+        rightPanel: {
+          modeSelection: 'Mode Selection',
+          mode1: 'Digital Human 1',
+          mode2: 'Digital Human 2',
+          scriptContent: 'Script Content',
+          textToSpeech: 'Text to Speech',
+          importAudio: 'Import Audio',
+          textPlaceholder: 'Enter the text for AI dubbing here, e.g.: Welcome to our product showcase, let me introduce our latest features in detail...',
+          textLimit: 8000,
+          voiceType: 'Voice Type',
+          aiVoice: 'AI Dubbing Voice',
+          publicVoice: 'Public Voice',
+          selectVoice: 'Select Voice',
+          aiSubtitle: 'AI Generated Subtitles',
+          selectSubtitleStyle: 'Select Subtitle Style',
+          previewPlaceholder: 'Please enter text.',
+          tryExample: 'Try Example',
+          generate: 'Generate after settings'
         }
       }
     },
@@ -874,6 +948,43 @@ export const translations: Record<string, Translation> = {
         result: {
           label: '生成结果',
           emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'
+        }
+      },
+      digitalHuman: {
+        title: '数字人视频创作',
+        subtitle: '上传您的数字人视频和音频内容，让AI为您生成专业的数字人视频作品',
+        tabs: {
+          video: '数字人视频',
+          product: '产品数字人',
+          singing: '唱歌数字人'
+        },
+        leftPanel: {
+          myDigitalHuman: '我的数字人',
+          uploadTitle: '上传数字人视频',
+          uploadFormat: '(mp4, mov, webm)',
+          uploadDesc: '需要正脸数字人视频，时长4秒~3分钟',
+          personalTemplate: '个人模板',
+          publicTemplate: '公共模板',
+          customUpload: '自定义上传数字人'
+        },
+        rightPanel: {
+          modeSelection: '模式选择',
+          mode1: '数字人1',
+          mode2: '数字人2',
+          scriptContent: '脚本内容',
+          textToSpeech: '文本转语音',
+          importAudio: '导入音频',
+          textPlaceholder: '在此输入需要AI配音的文本，例如：欢迎来到我们的产品展示，让我为您详细介绍我们最新的功能特点...',
+          textLimit: 8000,
+          voiceType: '音色类型',
+          aiVoice: 'AI配音音色',
+          publicVoice: '公共音色',
+          selectVoice: '选择音色',
+          aiSubtitle: 'AI生成字幕',
+          selectSubtitleStyle: '选择字幕样式',
+          previewPlaceholder: '请输入文本。',
+          tryExample: '试用示例',
+          generate: '设置完成后可生成'
         }
       }
     },

@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { Search, Filter, SearchIcon, ChevronDown, Box } from 'lucide-react';
 import { MODELS } from '../../constants';
@@ -74,9 +75,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   };
 
   return (
-    <div className="bg-background min-h-screen flex">
+    <div className="bg-background min-h-full flex">
       {/* Left Sidebar Filter */}
-      <aside className="w-72 bg-surface border-r border-border p-5 flex-shrink-0 hidden lg:block h-[calc(100vh-64px)] overflow-y-auto sticky top-16 custom-scrollbar">
+      <aside className="w-72 bg-surface border-r border-border p-5 flex-shrink-0 hidden lg:block h-[calc(100vh-64px)] overflow-y-auto sticky top-0 custom-scrollbar">
         <div className="font-semibold mb-6 text-lg">{t.filterSearch}</div>
         
         <div className="space-y-6">
@@ -177,7 +178,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
       {/* Main Content */}
       <div className="flex-1 min-w-0">
         {/* Header */}
-        <div className="h-16 border-b border-border bg-background sticky top-16 z-10 px-6 flex items-center justify-between">
+        <div className="h-16 border-b border-border bg-background sticky top-0 z-10 px-6 flex items-center justify-between">
            <div className="flex items-center gap-2 text-sm text-muted">
               <span className="text-foreground font-medium text-lg mr-2">{t.title}</span>
               <span>{t.filters.all} {filteredModels.length} {t.totalModels}</span>

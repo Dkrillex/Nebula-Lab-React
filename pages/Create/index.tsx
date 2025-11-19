@@ -11,6 +11,7 @@ import {
 import TextToImagePage from './components/TextToImagePage';
 import ViralVideoPage from './components/ViralVideoPage';
 import ImageToVideoPage from './components/ImageToVideoPage';
+import DigitalHumanPage from './components/DigitalHumanPage';
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
@@ -59,6 +60,7 @@ interface CreatePageProps {
     textToImage?: any;
     viralVideo?: any;
     imgToVideo?: any;
+    digitalHuman?: any;
   };
 }
 
@@ -136,6 +138,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     }
     if (activeMenu === 'imgToVideo' && t.imgToVideo) {
       return <ImageToVideoPage t={t.imgToVideo} />;
+    }
+    if (activeMenu === 'digitalHuman' && t.digitalHuman) {
+      return <DigitalHumanPage t={t.digitalHuman} />;
     }
     
     // Default Create Dashboard (when no tool or dashboard selected)

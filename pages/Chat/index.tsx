@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Settings, Trash2, Save, Plus, RefreshCw, Send, Bot, User, 
@@ -91,7 +92,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-64px)] bg-surface text-foreground overflow-hidden">
+    <div className="flex h-full bg-surface text-foreground overflow-hidden">
       
       {/* Left Settings Sidebar */}
       <aside className={`

@@ -1,6 +1,8 @@
+
 import React from 'react';
 import { createHashRouter, Navigate, useOutletContext } from 'react-router-dom';
 import Layout from '../components/Layout';
+import DashboardLayout from '../components/DashboardLayout';
 import Home from '../pages/Home';
 import CreatePage from '../pages/Create';
 import KeysPage from '../pages/Keys';
@@ -66,28 +68,33 @@ export const router = createHashRouter([
         element: <CreatePageWrapper />,
       },
       {
-        path: 'keys',
-        element: <KeysPageWrapper />,
-      },
-      {
-        path: 'chat',
-        element: <ChatPageWrapper />,
-      },
-      {
-        path: 'models',
-        element: <ModelSquarePageWrapper />,
-      },
-      {
-        path: 'expenses',
-        element: <ExpensesPageWrapper />,
-      },
-      {
-        path: 'pricing',
-        element: <PricingPageWrapper />,
-      },
-      {
         path: 'assets',
         element: <AssetsPageWrapper />,
+      },
+      {
+        element: <DashboardLayout />,
+        children: [
+          {
+            path: 'chat',
+            element: <ChatPageWrapper />,
+          },
+          {
+            path: 'keys',
+            element: <KeysPageWrapper />,
+          },
+          {
+            path: 'models',
+            element: <ModelSquarePageWrapper />,
+          },
+          {
+            path: 'expenses',
+            element: <ExpensesPageWrapper />,
+          },
+          {
+            path: 'pricing',
+            element: <PricingPageWrapper />,
+          },
+        ]
       },
       {
         path: '*',
