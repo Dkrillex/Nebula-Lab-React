@@ -142,3 +142,43 @@ export interface UserInfo {
     [key: string]: any;
   }>;
 }
+
+// ==================== 数字人视频相关类型 ====================
+
+// 数字人信息
+export interface AiAvatar {
+  aiavatarId: string;
+  aiavatarName: string;
+  coverUrl: string;
+  gender: string;
+  previewVideoUrl: string;
+  thumbnailUrl: string;
+}
+
+// 语音信息
+export interface Voice {
+  voiceId: string;
+  voiceName: string;
+  gender?: string;
+  age?: string;
+  accent?: string;
+  style?: string;
+  bestSupportLanguage?: string;
+  demoAudioUrl?: string;
+}
+
+// 字幕信息
+export interface Caption {
+  captionId: string;
+  thumbnail: string;
+}
+
+// 上传的文件信息
+export interface UploadedFile {
+  fileId: string;
+  fileName: string;
+  fileUrl?: string;
+  format: string;
+  duration?: number; // 音频/视频时长（秒）
+  thumbnail?: string; // 缩略图URL
+}

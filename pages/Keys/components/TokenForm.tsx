@@ -1,0 +1,592 @@
+import React, { useState, useEffect } from 'react';
+import { X, Eye, EyeOff, Copy, Key as KeyIcon } from 'lucide-react';
+import { keyService, TokenVO, TokenForm as TokenFormType } from '../../../services/keyService';
+import { modelService } from '../../../services/modelService';
+import { useAuthStore } from '../../../stores/authStore';
+import { AIModel } from '../../../types';
+
+interface TokenFormProps {
+  visible: boolean;
+  token?: TokenVO | null;
+  isViewMode?: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}
+
+const TokenForm: React.FC<TokenFormProps> = ({
+  visible,
+  token,
+  isViewMode = false,
+  onClose,
+  onSuccess,
+}) => {
+  const { user } = useAuthStore();
+  const [formData, setFormData] = useState<Partial<TokenFormType>>({
+    name: '',
+    status: 1,
+    unlimitedQuota: 0,
+    quotaRmb: undefined,
+    modelLimitsEnabled: 0,
+    modelLimits: [],
+    expiredTime: null,
+    nebulaApiId: user?.nebulaApiId,
+  });
+  const [expiredTimeDate, setExpiredTimeDate] = useState<string>('');
+  const [keyVisible, setKeyVisible] = useState(false);
+  const [modelOptions, setModelOptions] = useState<Array<{ label: string; value: string }>>([]);
+  const [modelSearchValue, setModelSearchValue] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // 加载模型列表
+  const loadModels = async (search?: string) => {
+    try {
+      const models = await modelService.getModels(search);
+      setModelOptions(
+        models.map((model) => ({
+          label: model.name,
+          value: model.name,
+        }))
+      );
+    } catch (error) {
+      console.error('加载模型列表失败:', error);
+    }
+  };
+
+  // 初始化表单数据
+  useEffect(() => {
+    if (visible) {
+      if (token) {
+        // 编辑或查看模式
+        const quotaRmb =
+          token.unlimitedQuota === 0 && (token.remainQuota || token.usedQuota)
+            ? Number(((token.remainQuota + token.usedQuota) * 7.3 / 500000).toFixed(2))
+            : undefined;
+
+        setFormData({
+          id: token.id,
+          name: token.name,
+          status: token.status,
+          unlimitedQuota: token.unlimitedQuota,
+          quotaRmb,
+          modelLimitsEnabled: token.modelLimitsEnabled,
+          modelLimits: token.modelLimits
+            ? (typeof token.modelLimits === 'string'
+                ? token.modelLimits.split(',').filter((item) => item.trim())
+                : token.modelLimits)
+            : [],
+          expiredTime: token.expiredTime,
+          nebulaApiId: user?.nebulaApiId,
+        });
+
+        // 设置过期时间显示（参考旧项目：-1 表示永不过期，0 表示已过期）
+        if (token.expiredTime && token.expiredTime !== null && token.expiredTime !== -1 && token.expiredTime !== 0) {
+          let timestamp: number;
+          if (typeof token.expiredTime === 'string') {
+            timestamp = new Date(token.expiredTime).getTime();
+          } else {
+            // 时间戳可能是秒或毫秒
+            timestamp = token.expiredTime > 1000000000000 ? token.expiredTime : token.expiredTime * 1000;
+          }
+          const date = new Date(timestamp);
+          setExpiredTimeDate(date.toISOString().slice(0, 16));
+        } else {
+          // 永不过期时，设置为空字符串（表示永不过期）
+          setExpiredTimeDate('');
+        }
+      } else {
+        // 新建模式
+        setFormData({
+          name: '',
+          status: 1,
+          unlimitedQuota: 0,
+          quotaRmb: undefined,
+          modelLimitsEnabled: 0,
+          modelLimits: [],
+          expiredTime: null,
+          nebulaApiId: user?.nebulaApiId,
+        });
+        setExpiredTimeDate('');
+      }
+      setKeyVisible(false);
+      loadModels();
+    }
+  }, [visible, token, user?.nebulaApiId]);
+
+  // 验证表单
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.name?.trim()) {
+      newErrors.name = '请输入令牌名称';
+    }
+
+    if (formData.unlimitedQuota === 0) {
+      if (!formData.quotaRmb || formData.quotaRmb <= 0) {
+        newErrors.quotaRmb = '请输入总额度（必须大于0）';
+      }
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // 提交表单
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const submitData: TokenFormType = {
+        ...formData,
+        nebulaApiId: user?.nebulaApiId,
+      } as TokenFormType;
+
+      // 转换 quotaRmb 为 remainQuota
+      if (submitData.quotaRmb && submitData.quotaRmb > 0) {
+        submitData.remainQuota = Math.round(submitData.quotaRmb * (500000 / 7.3));
+      }
+
+      // 处理过期时间（参考旧项目：-1 表示永不过期）
+      if (expiredTimeDate) {
+        submitData.expiredTime = Math.floor(new Date(expiredTimeDate).getTime() / 1000);
+      } else {
+        submitData.expiredTime = -1; // 永不过期（使用 -1，参考旧项目）
+      }
+
+      // 处理模型限制
+      if (Array.isArray(submitData.modelLimits)) {
+        submitData.modelLimits = submitData.modelLimits.join(',');
+      }
+
+      if (token?.id) {
+        // 更新
+        await keyService.updateToken({
+          ...submitData,
+          id: token.id,
+          userId: token.userId,
+          key: token.key,
+        });
+      } else {
+        // 新建
+        await keyService.createToken(submitData);
+      }
+
+      onSuccess();
+      onClose();
+    } catch (error) {
+      console.error('保存失败:', error);
+      alert('保存失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 设置快捷过期时间
+  const setQuickExpire = (type: 'never' | 'hour' | 'day' | 'month') => {
+    const now = new Date();
+    let targetTime: Date;
+
+    switch (type) {
+      case 'never':
+        setExpiredTimeDate('');
+        return;
+      case 'hour':
+        targetTime = new Date(now.getTime() + 60 * 60 * 1000);
+        break;
+      case 'day':
+        targetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+        break;
+      case 'month':
+        targetTime = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+        break;
+      default:
+        return;
+    }
+
+    setExpiredTimeDate(targetTime.toISOString().slice(0, 16));
+  };
+
+  // 掩码密钥
+  const maskKey = (key?: string) => {
+    if (!key) return '****';
+    const len = key.length;
+    if (len <= 4) return '*'.repeat(len);
+    return `${key.slice(0, 2)}${'*'.repeat(len - 4)}${key.slice(-2)}`;
+  };
+
+  // 复制密钥
+  const copyKey = async () => {
+    if (token?.key) {
+      try {
+        await navigator.clipboard.writeText(`sk-${token.key}`);
+        alert('密钥已复制');
+      } catch (error) {
+        console.error('复制失败:', error);
+      }
+    }
+  };
+
+  // 格式化过期时间显示
+  const getExpiredTimeDisplay = (): string => {
+    if (!token?.expiredTime || token.expiredTime === null) {
+      return '永不过期';
+    }
+    if (token.expiredTime === -1) {
+      return '永不过期';
+    }
+
+    let timestamp: number;
+    if (typeof token.expiredTime === 'string') {
+      timestamp = new Date(token.expiredTime).getTime();
+    } else {
+      timestamp = token.expiredTime > 1000000000000 ? token.expiredTime : token.expiredTime * 1000;
+    }
+
+    if (timestamp < Date.now()) {
+      return '已过期';
+    }
+
+    return new Date(timestamp).toLocaleString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    }).replace(/\//g, '-');
+  };
+
+  if (!visible) return null;
+
+  return (
+    <>
+      {/* 遮罩层 */}
+      <div 
+        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity"
+        onClick={onClose}
+        style={{ opacity: visible ? 1 : 0 }}
+      />
+      
+      {/* 抽屉 */}
+      <div 
+        className={`fixed right-0 top-0 bottom-0 z-50 bg-surface border-l border-border shadow-2xl w-full md:max-w-2xl transition-transform duration-300 ease-in-out flex flex-col ${
+          visible ? 'translate-x-0' : 'translate-x-full'
+        }`}
+        style={{ maxHeight: '100vh' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-indigo-500 to-purple-600 flex-shrink-0">
+          <div className="flex items-center gap-3 text-white">
+            {token && (
+              <>
+                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
+                  <KeyIcon size={20} />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold">{token.name || token.id}</h2>
+                </div>
+              </>
+            )}
+            {!token && <h2 className="text-lg font-semibold">新建 API 密钥</h2>}
+          </div>
+          <button
+            onClick={onClose}
+            className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto p-6 min-h-0">
+          <div className="space-y-4">
+            {/* 令牌名称 */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                名称 <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={formData.name || ''}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                disabled={isViewMode}
+                className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground ${
+                  errors.name ? 'border-red-500' : 'border-border'
+                } disabled:opacity-50`}
+                placeholder="请输入令牌名称"
+              />
+              {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+            </div>
+
+            {/* API密钥（仅查看模式） */}
+            {isViewMode && token?.key && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">API密钥</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={keyVisible ? `sk-${token.key}` : `sk-${maskKey(token.key)}`}
+                    readOnly
+                    className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground font-mono"
+                  />
+                  <button
+                    onClick={() => setKeyVisible(!keyVisible)}
+                    className="p-2 border border-border rounded-lg hover:bg-surface transition-colors"
+                    title={keyVisible ? '隐藏密钥' : '显示密钥'}
+                  >
+                    {keyVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                  <button
+                    onClick={copyKey}
+                    className="p-2 border border-border rounded-lg hover:bg-surface transition-colors"
+                    title="复制密钥"
+                  >
+                    <Copy size={16} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 启用模型限制 */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                启用模型限制
+              </label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.modelLimitsEnabled === 1}
+                    onChange={() => setFormData({ ...formData, modelLimitsEnabled: 1 })}
+                    disabled={isViewMode}
+                    className="disabled:opacity-50"
+                  />
+                  <span>是</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.modelLimitsEnabled === 0}
+                    onChange={() => setFormData({ ...formData, modelLimitsEnabled: 0 })}
+                    disabled={isViewMode}
+                    className="disabled:opacity-50"
+                  />
+                  <span>否</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 模型限制 */}
+            {formData.modelLimitsEnabled === 1 && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  模型限制
+                </label>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={modelSearchValue}
+                    onChange={(e) => {
+                      setModelSearchValue(e.target.value);
+                      loadModels(e.target.value);
+                    }}
+                    disabled={isViewMode}
+                    placeholder="搜索模型..."
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground disabled:opacity-50"
+                  />
+                  <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-2">
+                    {modelOptions.map((model) => {
+                      const isSelected = Array.isArray(formData.modelLimits)
+                        ? formData.modelLimits.includes(model.value)
+                        : false;
+                      return (
+                        <label
+                          key={model.value}
+                          className="flex items-center gap-2 p-2 hover:bg-surface rounded cursor-pointer"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              const current = Array.isArray(formData.modelLimits)
+                                ? formData.modelLimits
+                                : [];
+                              if (e.target.checked) {
+                                setFormData({
+                                  ...formData,
+                                  modelLimits: [...current, model.value],
+                                });
+                              } else {
+                                setFormData({
+                                  ...formData,
+                                  modelLimits: current.filter((v) => v !== model.value),
+                                });
+                              }
+                            }}
+                            disabled={isViewMode}
+                            className="disabled:opacity-50"
+                          />
+                          <span className="text-sm">{model.label}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 无限额度 */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">无限额度</label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.unlimitedQuota === 1}
+                    onChange={() => setFormData({ ...formData, unlimitedQuota: 1 })}
+                    disabled={isViewMode}
+                    className="disabled:opacity-50"
+                  />
+                  <span>是</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={formData.unlimitedQuota === 0}
+                    onChange={() => setFormData({ ...formData, unlimitedQuota: 0 })}
+                    disabled={isViewMode}
+                    className="disabled:opacity-50"
+                  />
+                  <span>否</span>
+                </label>
+              </div>
+            </div>
+
+            {/* 总额度 */}
+            {formData.unlimitedQuota === 0 && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  总额度（人民币） <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={formData.quotaRmb || ''}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      quotaRmb: e.target.value ? Number(e.target.value) : undefined,
+                    })
+                  }
+                  disabled={isViewMode}
+                  min="0.01"
+                  step="0.01"
+                  className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground ${
+                    errors.quotaRmb ? 'border-red-500' : 'border-border'
+                  } disabled:opacity-50`}
+                  placeholder="请输入人民币额度"
+                />
+                {errors.quotaRmb && (
+                  <p className="text-red-500 text-xs mt-1">{errors.quotaRmb}</p>
+                )}
+              </div>
+            )}
+
+            {/* 已用额度（仅查看模式） */}
+            {isViewMode && token && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">已用额度</label>
+                <div className="text-orange-600 font-semibold">
+                  ￥{((token.usedQuota || 0) * 7.3 / 500000).toFixed(2)}
+                </div>
+              </div>
+            )}
+
+            {/* 剩余额度（仅查看模式） */}
+            {isViewMode && token && token.unlimitedQuota === 0 && (
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">剩余额度</label>
+                <div className="text-green-600 font-semibold">
+                  ￥{((token.remainQuota || 0) * 7.3 / 500000).toFixed(2)}
+                </div>
+              </div>
+            )}
+
+            {/* 过期时间 */}
+            <div>
+              <label className="block text-sm font-medium text-foreground mb-2">
+                过期时间 {isViewMode ? '' : <span className="text-red-500">*</span>}
+              </label>
+              {isViewMode ? (
+                <div className="px-3 py-2 border border-border rounded-lg bg-background">
+                  {getExpiredTimeDisplay()}
+                </div>
+              ) : (
+                <>
+                  <input
+                    type="datetime-local"
+                    value={expiredTimeDate}
+                    onChange={(e) => setExpiredTimeDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
+                  />
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <button
+                      onClick={() => setQuickExpire('never')}
+                      className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
+                    >
+                      永不过期
+                    </button>
+                    <button
+                      onClick={() => setQuickExpire('hour')}
+                      className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
+                    >
+                      1小时
+                    </button>
+                    <button
+                      onClick={() => setQuickExpire('day')}
+                      className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
+                    >
+                      1天
+                    </button>
+                    <button
+                      onClick={() => setQuickExpire('month')}
+                      className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
+                    >
+                      1个月
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-border flex-shrink-0">
+          {!isViewMode && (
+            <button
+              onClick={handleSubmit}
+              disabled={loading}
+              className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? '保存中...' : '保存'}
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="px-6 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
+          >
+            关闭
+          </button>
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default TokenForm;
+

@@ -66,8 +66,8 @@ interface CreatePageProps {
 
 const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [searchParams, setSearchParams] = useSearchParams();
-  // Default to textToImage if no tool is specified, or empty string
-  const activeMenu = searchParams.get('tool') || 'textToImage';
+  // Default to home (dashboard) if no tool is specified
+  const activeMenu = searchParams.get('tool') || 'home';
   
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -91,7 +91,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   };
 
   const menuStructure = [
-    { id: 'home', icon: Home, label: t.sideMenu.home, path: '#' },
+    { id: 'home', icon: Home, label: t.sideMenu.home, path: '/create' },
     { 
       id: 'modelCenter', 
       icon: Box, 

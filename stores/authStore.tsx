@@ -121,12 +121,20 @@ export const useAuthStore = create<AuthState>()(
       // Transform backend format to frontend format
       const { permissions = [], roles = [], user, team = [] } = userInfoResp;
       
+      let avatar = user.avatar || '';
+      // 如果是相对路径，添加 /api 前缀以利用代理
+      if (avatar && !avatar.startsWith('http') && !avatar.startsWith('data:')) {
+        // 移除开头的 / 以避免双重斜杠（虽然双重斜杠通常也能工作）
+        const cleanPath = avatar.startsWith('/') ? avatar.substring(1) : avatar;
+        avatar = `/api/${cleanPath}`;
+      }
+      
       const userInfo: UserInfo = {
         userId: user.userId,
         username: user.userName,
         realName: user.nickName,
         email: user.email || '',
-        avatar: user.avatar || '',
+        avatar: avatar,
         roles: roles,
         permissions: permissions,
         inviteCode: user.inviteCode,

@@ -1,4 +1,3 @@
-
 import { NavItem } from './types';
 
 interface Translation {
@@ -6,6 +5,7 @@ interface Translation {
     searchPlaceholder: string;
     signIn: string;
     nav: NavItem[];
+    profile: string; // Add this
   };
   hero: {
     status: string;
@@ -46,6 +46,7 @@ interface Translation {
     display: {
       currency: string;
       unit: string;
+      amount: string;
     };
     card: {
       new: string;
@@ -118,7 +119,16 @@ interface Translation {
         widescreen: string;
         mobile: string;
         photo: string;
-      }
+      };
+      tabs: {
+        textToImage: string;
+        imageToImage: string;
+      };
+      imageToImage: {
+        uploadTitle: string;
+        uploadDesc: string;
+        uploadHint: string;
+      };
     };
     viralVideo: {
       title: string;
@@ -344,6 +354,39 @@ interface Translation {
     totalFiles: string;
     searchInResult: string;
   };
+  profilePage: {
+    title: string;
+    subtitle: string;
+    basicInfo: string;
+    accountSecurity: string;
+    avatar: string;
+    uploadAvatar: string;
+    labels: {
+      nickname: string;
+      phone: string;
+      email: string;
+      gender: string;
+      createTime: string;
+      role: string;
+      dept: string;
+      password: string;
+    };
+    placeholders: {
+      nickname: string;
+      phone: string;
+      email: string;
+    };
+    gender: {
+      male: string;
+      female: string;
+      unknown: string;
+    };
+    buttons: {
+      save: string;
+      reset: string;
+      changePassword: string;
+    };
+  };
   footer: {
     privacy: string;
     terms: string;
@@ -378,8 +421,8 @@ export const translations: Record<string, Translation> = {
         { label: 'Create', href: '#create' },
         { label: 'Keys', href: '#keys' },
         { label: 'Activity', href: '#' },
-        { label: 'Credits', href: '#expenses' },
-      ]
+      ],
+      profile: 'Profile',
     },
     hero: {
       status: 'All systems operational',
@@ -420,6 +463,7 @@ export const translations: Record<string, Translation> = {
       display: {
         currency: 'Currency',
         unit: 'Unit',
+        amount: 'Amount',
       },
       card: {
         new: 'New',
@@ -489,6 +533,15 @@ export const translations: Record<string, Translation> = {
           widescreen: 'Widescreen',
           mobile: 'Mobile',
           photo: 'Photo'
+        },
+        tabs: {
+          textToImage: 'Text to Image',
+          imageToImage: 'Image to Image'
+        },
+        imageToImage: {
+          uploadTitle: 'Upload Reference Image',
+          uploadDesc: 'Click or drag to upload image',
+          uploadHint: 'Supports JPG, PNG formats, max 10MB'
         }
       },
       viralVideo: {
@@ -743,6 +796,39 @@ export const translations: Record<string, Translation> = {
       totalFiles: 'Files',
       searchInResult: 'Search in result',
     },
+    profilePage: {
+      title: 'Personal Center',
+      subtitle: 'Manage your account information and security settings',
+      basicInfo: 'Basic Information',
+      accountSecurity: 'Account Security',
+      avatar: 'Avatar',
+      uploadAvatar: 'Change Avatar',
+      labels: {
+        nickname: 'Nickname',
+        phone: 'Phone Number',
+        email: 'Email',
+        gender: 'Gender',
+        createTime: 'Registration Time',
+        role: 'Role',
+        dept: 'Department',
+        password: 'Password'
+      },
+      placeholders: {
+        nickname: 'Enter your nickname',
+        phone: 'Enter your phone number',
+        email: 'Enter your email'
+      },
+      gender: {
+        male: 'Male',
+        female: 'Female',
+        unknown: 'Unknown'
+      },
+      buttons: {
+        save: 'Save Changes',
+        reset: 'Reset',
+        changePassword: 'Change Password'
+      }
+    },
     footer: {
       privacy: 'Privacy',
       terms: 'Terms',
@@ -776,7 +862,8 @@ export const translations: Record<string, Translation> = {
         { label: '密钥', href: '#keys' },
         { label: '活动', href: '#' },
         { label: '积分', href: '#expenses' },
-      ]
+      ],
+      profile: '个人中心',
     },
     hero: {
       status: '系统运行正常',
@@ -817,6 +904,7 @@ export const translations: Record<string, Translation> = {
       display: {
         currency: '货币:',
         unit: '单位:',
+        amount: '数量:',
       },
       card: {
         new: '新发布',
@@ -886,6 +974,15 @@ export const translations: Record<string, Translation> = {
           widescreen: '宽屏',
           mobile: '竖屏',
           photo: '摄影'
+        },
+        tabs: {
+          textToImage: '文生图',
+          imageToImage: '图生图'
+        },
+        imageToImage: {
+          uploadTitle: '上传参考图片',
+          uploadDesc: '点击或拖拽上传图片',
+          uploadHint: '支持 JPG、PNG 格式，最大10MB'
         }
       },
       viralVideo: {
@@ -1139,6 +1236,39 @@ export const translations: Record<string, Translation> = {
       totalFolders: '个文件夹',
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
+    },
+    profilePage: {
+      title: '个人中心',
+      subtitle: '管理您的账户信息和安全设置',
+      basicInfo: '基本资料',
+      accountSecurity: '账号安全',
+      avatar: '头像',
+      uploadAvatar: '更换头像',
+      labels: {
+        nickname: '用户昵称',
+        phone: '手机号码',
+        email: '用户邮箱',
+        gender: '性别',
+        createTime: '注册时间',
+        role: '角色',
+        dept: '所属部门',
+        password: '用户密码'
+      },
+      placeholders: {
+        nickname: '请输入用户昵称',
+        phone: '请输入手机号码',
+        email: '请输入邮箱地址'
+      },
+      gender: {
+        male: '男',
+        female: '女',
+        unknown: '未知'
+      },
+      buttons: {
+        save: '保存配置',
+        reset: '重置',
+        changePassword: '修改密码'
+      }
     },
     footer: {
       privacy: '隐私政策',

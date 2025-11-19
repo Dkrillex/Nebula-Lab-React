@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { HelpCircle, Check, MessageSquare } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { HelpCircle } from 'lucide-react';
+import { pricingService, PriceListVO } from '../../services/pricingService';
 
 interface PricingPageProps {
   t: {
@@ -35,25 +36,72 @@ interface PricingPageProps {
 }
 
 const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
-  const [starterMultiplier, setStarterMultiplier] = useState(1);
-  const [businessMultiplier, setBusinessMultiplier] = useState(1);
+  const [priceList, setPriceList] = useState<PriceListVO[]>([]);
   const [invoiceEnabled, setInvoiceEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const starterBasePrice = 86;
-  const starterBaseCredits = 50.00;
-  
-  const businessBasePrice = 398;
-  const businessBaseCredits = 250.00;
+  useEffect(() => {
+    fetchPriceList();
+  }, []);
+
+  const fetchPriceList = async () => {
+    try {
+      setLoading(true);
+      const res = await pricingService.getPriceList({
+        productPeriod: '4',
+        systemType: '1',
+        productType: '1927740719643607041',
+      });
+      
+      if (res.rows) {
+        const sortedList = res.rows.sort((a, b) => {
+          const priceA = Number(a.productPrice);
+          const priceB = Number(b.productPrice);
+
+          // 0优先
+          if (priceA === 0) return -1;
+          if (priceB === 0) return 1;
+
+          // 9999最后
+          if (priceA === 9999) return 1;
+          if (priceB === 9999) return -1;
+
+          // 其余按正常价格升序
+          return priceA - priceB;
+        });
+
+        // Initialize productQuantity to 1 for all items
+        sortedList.forEach(item => {
+          item.productQuantity = 1;
+        });
+
+        setPriceList(sortedList);
+      }
+    } catch (error) {
+      console.error('Failed to fetch price list:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuantityChange = (id: number | string, quantity: number) => {
+    setPriceList(prev => prev.map(item => {
+      if (item.id === id) {
+        return { ...item, productQuantity: quantity };
+      }
+      return item;
+    }));
+  };
 
   return (
     <div className="bg-surface/30 min-h-screen pb-12 font-sans">
-      {/* Header Background */}
-      <div className="w-full bg-gradient-to-b from-indigo-500 to-indigo-600 dark:from-indigo-700 dark:to-indigo-900 text-white pt-12 pb-24 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2">{t.title}</h1>
-        <p className="text-indigo-100 opacity-90 max-w-2xl mx-auto">{t.subtitle}</p>
+      {/* Header */}
+      <div className="w-full pt-12 pb-8 px-4 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">{t.title}</h1>
+        <p className="text-muted opacity-90 max-w-2xl mx-auto">{t.subtitle}</p>
       </div>
 
-      <div className="container mx-auto px-4 max-w-6xl -mt-16">
+      <div className="container mx-auto px-4 max-w-6xl">
         
         {/* Configuration Bar */}
         <div className="bg-background rounded-xl shadow-sm border border-border p-4 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -90,60 +138,42 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          
-          {/* Starter Card */}
-          <PricingCard 
-             title={t.starter.title}
-             price={starterBasePrice * starterMultiplier}
-             credits={starterBaseCredits * starterMultiplier}
-             features={t.starter.features}
-             multiplier={starterMultiplier}
-             setMultiplier={setStarterMultiplier}
-             labels={t.labels}
-             borderColor="border-indigo-200 dark:border-indigo-800"
-             btnColor="bg-indigo-600 hover:bg-indigo-700"
-          />
+          {loading ? (
+             <div className="col-span-full text-center py-12">Loading...</div>
+          ) : (
+            priceList.map((item) => {
+              const price = Number(item.productPrice);
+              const isEnterprise = price === 9999;
+              const isFree = price === 0;
 
-          {/* Business Card */}
-          <PricingCard 
-             title={t.business.title}
-             price={businessBasePrice * businessMultiplier}
-             credits={businessBaseCredits * businessMultiplier}
-             features={t.business.features}
-             multiplier={businessMultiplier}
-             setMultiplier={setBusinessMultiplier}
-             labels={t.labels}
-             borderColor="border-blue-200 dark:border-blue-800"
-             btnColor="bg-blue-600 hover:bg-blue-700"
-          />
+              // Determine styles based on price type
+              let borderColor = 'border-indigo-200 dark:border-indigo-800';
+              let btnColor = 'bg-indigo-600 hover:bg-indigo-700';
+              
+              if (isEnterprise) {
+                borderColor = 'border-purple-400 dark:border-purple-600';
+                btnColor = 'bg-purple-600 hover:bg-purple-700';
+              } else if (isFree) {
+                borderColor = 'border-green-200 dark:border-green-800';
+                btnColor = 'bg-green-600 hover:bg-green-700';
+              } else if (item.productName === 'Business') {
+                borderColor = 'border-blue-200 dark:border-blue-800';
+                btnColor = 'bg-blue-600 hover:bg-blue-700';
+              }
 
-          {/* Enterprise Card */}
-          <div className="bg-background border-2 border-purple-400 dark:border-purple-600 rounded-2xl p-6 md:p-8 flex flex-col shadow-lg hover:shadow-xl transition-shadow relative overflow-hidden">
-             {/* Decorative Background */}
-             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -mr-8 -mt-8"></div>
-
-             <div className="text-center mb-6">
-               <h3 className="text-xl font-bold text-foreground mb-2">{t.enterprise.title}</h3>
-               <div className="text-4xl font-bold text-purple-600 dark:text-purple-400 h-16 flex items-center justify-center">
-                 {t.enterprise.slogan}
-               </div>
-             </div>
-
-             <div className="my-6 border-t border-border/50"></div>
-
-             <div className="flex-1 space-y-4 mb-8">
-               {t.enterprise.features.map((feature, idx) => (
-                 <div key={idx} className="flex items-center justify-center text-sm text-muted">
-                    {feature}
-                 </div>
-               ))}
-             </div>
-
-             <button className="w-full py-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white font-bold transition-colors shadow-md">
-               {t.labels.contact}
-             </button>
-          </div>
-
+              return (
+                <PricingCard
+                  key={item.id}
+                  item={item}
+                  isEnterprise={isEnterprise}
+                  onQuantityChange={(q) => handleQuantityChange(item.id, q)}
+                  labels={t.labels}
+                  borderColor={borderColor}
+                  btnColor={btnColor}
+                />
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -151,82 +181,99 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
 };
 
 interface PricingCardProps {
-  title: string;
-  price: number;
-  credits: number;
-  features: string[];
-  multiplier: number;
-  setMultiplier: (val: number) => void;
+  item: PriceListVO;
+  isEnterprise: boolean;
+  onQuantityChange: (quantity: number) => void;
   labels: any;
   borderColor: string;
   btnColor: string;
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
-  title, price, credits, features, multiplier, setMultiplier, labels, borderColor, btnColor 
+  item, isEnterprise, onQuantityChange, labels, borderColor, btnColor 
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
+  const price = Number(item.productPrice);
+  const quantity = item.productQuantity || 1;
+  const totalPoints = Number(item.productScore) * quantity;
+  const totalPrice = price * quantity;
 
   return (
-    <div className={`bg-background border ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`bg-background border ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow ${isEnterprise ? 'relative overflow-hidden' : ''}`}>
       
-      <div className="text-center mb-2">
-        <h3 className="text-xl font-bold text-foreground">{title}</h3>
+      <div className="text-center mb-2 relative z-10">
+        <h3 className="text-xl font-bold text-foreground">{isEnterprise ? 'Enterprise' : item.productName}</h3>
+        {isEnterprise && <div className="text-sm text-muted mt-1">{item.productDescription}</div>}
       </div>
 
-      <div className="text-center mb-2">
-        <div className="text-4xl font-bold text-primary">
-          ¥ {price}
+      <div className="text-center mb-2 relative z-10">
+        <div className="text-4xl font-bold text-primary h-16 flex items-center justify-center">
+          {isEnterprise ? "Let's talk!" : `¥ ${totalPrice}`}
         </div>
-        <div className="text-sm text-muted mt-1">
-          {labels.credits} {credits.toFixed(2)}
-        </div>
+        {!isEnterprise && (
+          <div className="text-sm text-muted mt-1">
+            {labels.credits} {totalPoints.toFixed(2)}
+          </div>
+        )}
       </div>
 
-      <div className="my-6 pt-6 border-t border-border">
-         <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
-         
-         {/* Custom Slider */}
-         <div className="relative mb-8 px-1">
-            {/* Track */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
-            
-            {/* Progress */}
-            <div 
-              className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
-              style={{ width: `${((Math.min(multiplier, 5) - 1) / 4) * 100}%` }}
-            ></div>
+      <div className="my-6 border-t border-border relative z-10"></div>
 
-            {/* Steps */}
-            <div className="relative flex justify-between">
-              {steps.slice(0, 5).map((step) => (
-                <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => setMultiplier(step)}>
-                  <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= multiplier ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
-                  <span className={`text-[10px] ${step === multiplier ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {step}倍
-                  </span>
+      {!isEnterprise && (
+        <div className="pt-0 border-t border-transparent mb-6">
+           <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
+           
+           {/* Custom Slider */}
+           <div className="relative mb-8 px-1">
+              {/* Track */}
+              <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
+              
+              {/* Progress */}
+              <div 
+                className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
+                style={{ width: `${((Math.min(quantity, 5) - 1) / 4) * 100}%` }}
+              ></div>
+
+              {/* Steps */}
+              <div className="relative flex justify-between">
+                {steps.slice(0, 5).map((step) => (
+                  <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
+                    <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
+                    <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
+                      {step}倍
+                    </span>
+                  </div>
+                ))}
+                <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(6)}>
+                   <div className={`w-3 h-3 rounded-full border-2 transition-all ${quantity === 6 ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
+                   <span className={`text-[10px] ${quantity === 6 ? 'text-foreground font-bold' : 'text-muted'}`}>
+                      {labels.custom}
+                   </span>
                 </div>
-              ))}
-              <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => setMultiplier(6)}>
-                 <div className={`w-3 h-3 rounded-full border-2 transition-all ${multiplier === 6 ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
-                 <span className={`text-[10px] ${multiplier === 6 ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {labels.custom}
-                 </span>
               </div>
-            </div>
-         </div>
-      </div>
-
-      <div className="flex-1 space-y-3 mb-8 text-center">
-         {features.map((feature, idx) => (
-           <div key={idx} className="text-xs text-muted/80">
-             {feature}
            </div>
-         ))}
+        </div>
+      )}
+
+      <div className="flex-1 space-y-3 mb-8 text-center relative z-10">
+         {/* Use productDescription as features list if strictly text, or just display it. 
+             The reference code just displays productDescription. 
+             If it's multiline, we can split it. */}
+         {!isEnterprise && item.productDescription && (
+            <div className="text-xs text-muted/80 whitespace-pre-line">
+               {item.productDescription}
+            </div>
+         )}
+         {isEnterprise && (
+            // For Enterprise, render some placeholder features or use description
+             <div className="text-xs text-muted/80">
+                Contact us for custom solutions
+             </div>
+         )}
       </div>
 
-      <button className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md`}>
-        {labels.buy}
+      <button className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md relative z-10`}>
+        {isEnterprise ? labels.contact : labels.buy}
       </button>
     </div>
   );

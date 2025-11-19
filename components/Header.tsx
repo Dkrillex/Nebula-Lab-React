@@ -1,5 +1,5 @@
-import React from 'react';
-import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, LogOut } from 'lucide-react';
+import React, { useState } from 'react';
+import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, LogOut, Settings, CreditCard } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 
@@ -20,6 +20,7 @@ interface HeaderProps {
     searchPlaceholder: string;
     signIn: string;
     nav: NavItem[];
+    profile?: string;
   };
 }
 
@@ -28,6 +29,7 @@ const Header: React.FC<HeaderProps> = ({
   currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, t 
 }) => {
   const { user, logout, isAuthenticated } = useAuthStore();
+  const [showUserMenu, setShowUserMenu] = useState(false);
   
   const toggleLang = () => {
     setLang(lang === 'en' ? 'zh' : 'en');
@@ -36,18 +38,22 @@ const Header: React.FC<HeaderProps> = ({
   const handleNavClick = (e: React.MouseEvent, href: string) => {
     e.preventDefault();
     onNavClick(href);
+    setShowUserMenu(false);
   };
 
   const getTabLabel = (tab: TabItem) => {
     if (!sideMenuMap) return tab.view;
     if (tab.view === 'home') return sideMenuMap.home;
-    if (tab.view === 'create') return sideMenuMap[tab.activeTool!] || tab.activeTool;
+    if (tab.view === 'create') {
+      return tab.activeTool ? (sideMenuMap[tab.activeTool] || tab.activeTool) : sideMenuMap.home;
+    }
     if (tab.view === 'models') return sideMenuMap.modelSquare;
     if (tab.view === 'chat') return sideMenuMap.aiExperience;
     if (tab.view === 'keys') return sideMenuMap.apiKeys;
     if (tab.view === 'expenses') return sideMenuMap.expenses;
     if (tab.view === 'pricing') return sideMenuMap.pricing;
     if (tab.view === 'assets') return sideMenuMap.assets;
+    if (tab.view === 'profile') return t.profile || 'Profile';
     return tab.view;
   };
 
@@ -154,27 +160,56 @@ const Header: React.FC<HeaderProps> = ({
              </button>
              
              {isAuthenticated && user ? (
-               <div className="flex items-center gap-3 pl-2">
-                  <div className="flex items-center gap-2">
-                     {user.user?.avatar ? (
-                       <img src={user.user.avatar} alt="User" className="w-8 h-8 rounded-full object-cover border border-border" />
+               <div className="flex items-center gap-3 pl-2 relative">
+                  <div 
+                    className="flex items-center gap-2 cursor-pointer group"
+                    onClick={() => setShowUserMenu(!showUserMenu)}
+                  >
+                     {user.avatar ? (
+                       <img src={user.avatar} alt="User" className="w-8 h-8 rounded-full object-cover border border-border group-hover:border-indigo-500 transition-colors" />
                      ) : (
-                       <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white">
+                       <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white group-hover:bg-indigo-600 transition-colors">
                          <UserIcon size={16} />
                        </div>
                      )}
                      <div className="hidden md:flex flex-col items-start">
-                       <span className="text-xs font-semibold text-foreground leading-none">{user.user?.nickName || user.user?.userName || 'User'}</span>
+                       <span className="text-xs font-semibold text-foreground leading-none">{user.realName || user.username || 'User'}</span>
                        <span className="text-[10px] text-muted leading-none mt-1">{user.roles?.[0] || 'Member'}</span>
                      </div>
                   </div>
-                  <button 
-                    onClick={logout}
-                    className="text-muted hover:text-red-500 transition-colors p-1.5 rounded-md hover:bg-red-50 dark:hover:bg-red-900/20"
-                    title="Sign out"
-                  >
-                    <LogOut size={18} />
-                  </button>
+
+                  {/* Dropdown Menu */}
+                  {showUserMenu && (
+                    <div className="absolute top-full right-0 mt-2 w-48 bg-surface border border-border rounded-xl shadow-lg overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                      <div className="p-1">
+                        <button 
+                          onClick={(e) => handleNavClick(e, '#profile')}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
+                        >
+                          <UserIcon size={16} />
+                          {t.profile || 'Profile'}
+                        </button>
+                        <button 
+                          onClick={(e) => handleNavClick(e, '#expenses')}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
+                        >
+                          <CreditCard size={16} />
+                          Expenses
+                        </button>
+                        <div className="h-px bg-border my-1"></div>
+                        <button 
+                          onClick={() => {
+                            logout();
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                        >
+                          <LogOut size={16} />
+                          Sign out
+                        </button>
+                      </div>
+                    </div>
+                  )}
                </div>
              ) : (
                <button 
@@ -191,6 +226,14 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Overlay to close menu */}
+      {showUserMenu && (
+        <div 
+          className="fixed inset-0 z-40 bg-transparent"
+          onClick={() => setShowUserMenu(false)}
+        ></div>
+      )}
     </header>
   );
 };

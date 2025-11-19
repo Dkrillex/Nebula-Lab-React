@@ -11,6 +11,7 @@ import ModelSquarePage from '../pages/Models';
 import ExpensesPage from '../pages/Expenses';
 import PricingPage from '../pages/Pricing';
 import AssetsPage from '../pages/Assets';
+import ProfilePage from '../pages/Profile';
 
 // Wrapper components to extract props from Outlet Context
 const HomeWrapper = () => {
@@ -54,6 +55,11 @@ const AssetsPageWrapper = () => {
   return <AssetsPage t={t.assetsPage} />;
 };
 
+const ProfilePageWrapper = () => {
+  const { t } = useOutletContext<any>();
+  return <ProfilePage t={t.profilePage} />;
+};
+
 export const router = createHashRouter([
   {
     path: '/',
@@ -94,6 +100,10 @@ export const router = createHashRouter([
             path: 'pricing',
             element: <PricingPageWrapper />,
           },
+          {
+            path: 'profile',
+            element: <ProfilePageWrapper />,
+          }
         ]
       },
       {

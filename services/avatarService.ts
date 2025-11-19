@@ -1,0 +1,295 @@
+import { request } from '../lib/request';
+import { ApiResponse } from '../types';
+
+// ==================== 数字人营销视频 API ====================
+
+// 数字人信息
+export interface AiAvatar {
+  aiavatarId: string;
+  aiavatarName: string;
+  coverUrl: string;
+  gender: string;
+  previewVideoUrl: string;
+  thumbnailUrl: string;
+}
+
+// 语音信息
+export interface Voice {
+  voiceId: string;
+  voiceName: string;
+  gender?: string;
+  age?: string;
+  accent?: string;
+  style?: string;
+  bestSupportLanguage?: string;
+  demoAudioUrl?: string;
+}
+
+// 字幕信息
+export interface Caption {
+  captionId: string;
+  thumbnail: string;
+}
+
+// 提交任务参数
+export interface SubmitMarketingTaskParams {
+  aiavatarId?: string; // 数字人ID
+  aspectRatio?: string; // 分辨率：9:16, 3:4, 1:1, 4:3, 16:9
+  captionId?: string; // 字幕ID
+  endcardAspectRatio?: string; // 片尾分辨率
+  endcardBackgroundColor?: string; // 片尾背景颜色：black, white
+  endcardFileId?: string; // 片尾文件ID
+  fileIds?: string[]; // 自定义素材文件ID列表
+  language?: string; // 语言：en, zh-CN等
+  logoFileId?: string; // logo文件ID
+  preview?: boolean; // 是否预览模式
+  productDescription?: string; // 产品描述
+  productLink?: string; // 产品链接
+  productName?: string; // 产品名称
+  videoLengthType?: number; // 视频长度类型：1:30-50s; 2:15-30s; 3:30-45s; 4:45-60s
+  voiceId?: string; // 音色ID
+  isDiyScript?: boolean; // 是否使用自定义脚本
+  diyScriptDescription?: string; // 自定义脚本内容
+}
+
+// 提交任务结果
+export interface SubmitTaskResult {
+  taskId: string;
+  status: string;
+  errorMsg?: string;
+}
+
+// 查询任务结果
+export interface QueryTaskResult {
+  taskId: string;
+  status: string; // init/running/success/fail
+  errorMsg?: string;
+  previewVideos?: PreviewVideo[];
+  exportVideos?: ExportVideo[];
+  productName?: string;
+  productDescription?: string;
+}
+
+// 预览视频
+export interface PreviewVideo {
+  videoUrl?: string;
+  coverUrl?: string;
+  title?: string;
+  description?: string;
+  videoDuration?: number;
+  scriptId?: number;
+  status?: string;
+}
+
+// 导出视频
+export interface ExportVideo {
+  videoUrl?: string;
+  coverUrl?: string;
+  title?: string;
+  description?: string;
+  videoDuration?: number;
+  scriptId?: number;
+  status?: string;
+  mediaId?: string;
+  taskId?: string;
+}
+
+// 上传凭证
+export interface UploadCredential {
+  fileId: string;
+  fileName: string;
+  format: string;
+  uploadUrl: string;
+}
+
+// 产品抓取结果
+export interface ScraperTaskResult {
+  taskId: string;
+  status: string;
+  errorMsg?: string;
+  productName?: string;
+  productDescription?: string;
+  productLink?: string;
+  productImages?: ProductImage[];
+  productVideos?: ProductVideo[];
+}
+
+export interface ProductImage {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+  fileUrl: string;
+  format: string;
+}
+
+export interface ProductVideo {
+  fileId: string;
+  fileName: string;
+  fileType: string;
+  fileUrl: string;
+  format: string;
+}
+
+// ==================== 数字人视频创作 API ====================
+
+// 提交视频创作任务参数
+export interface SubmitVideoCreationTaskParams {
+  avatarSourceFrom: number | string; // 数字人来源：0-用户上传的视频；1-公模列表；2-私模；3-图片
+  videoFileId?: number | string; // 用户上传的视频文件ID（avatarSourceFrom=0时必传）
+  aiAvatarId?: number | string; // 公模数字人ID（avatarSourceFrom=1时必传）
+  audioSourceFrom: number | string; // 音频来源：0-用户上传音频；1-文本转语音
+  audioFileId?: number | string; // 用户上传的音频文件ID（audioSourceFrom=0时必传）
+  ttsText?: string; // 文本转语音内容（audioSourceFrom=1时必传）
+  voiceoverId?: number | string; // 音色ID（audioSourceFrom=1时必传）
+  noticeUrl?: string; // 通知URL
+  score: string; // 积分
+  modeType?: number; // 模式类型：0-avatar1, 1-avatar2
+  captionId?: string; // 字幕样式ID
+  imageFileId?: number | string; // 图片文件ID（avatarSourceFrom=3时必传）
+  isSave2CustomAiAvatar?: boolean; // 是否保存为私模
+  audioDuration?: number; // 音频时长
+  deductPoints?: number; // 扣除积分
+}
+
+// 查询视频创作任务结果
+export interface QueryVideoCreationTaskResult {
+  taskId: string;
+  status: string; // init/running/success/fail
+  taskStatus?: string;
+  errorMsg?: string;
+  inputVideoFileId?: string;
+  inputAudioFileId?: string;
+  outputVideoUrl?: string;
+  productReplaceResult?: Array<{
+    key: string;
+    url: string;
+  }>;
+}
+
+// ==================== API Service ====================
+
+export const avatarService = {
+  /**
+   * 获取数字人列表（营销视频）
+   * Endpoint: GET /tp/v1/AiAvatarQuery
+   */
+  getAiAvatarList: (params?: { pageNo?: number; pageSize?: number; gender?: string; isCustom?: boolean }) => {
+    return request.get<ApiResponse<{ data: AiAvatar[]; pageNo: number; pageSize: number; total: number }>>(
+      '/tp/v1/AiAvatarQuery',
+      { params }
+    );
+  },
+
+  /**
+   * 获取语音列表（营销视频）
+   * Endpoint: GET /tp/v1/VoiceQuery
+   */
+  getVoiceList: (params?: { pageNo?: number; pageSize?: number }) => {
+    return request.get<ApiResponse<{ data: Voice[]; pageNo: number; pageSize: number; total: number }>>(
+      '/tp/v1/VoiceQuery',
+      { params }
+    );
+  },
+
+  /**
+   * 获取字幕列表（营销视频）
+   * Endpoint: GET /tp/v1/CaptionList
+   */
+  getCaptionList: () => {
+    return request.get<ApiResponse<Caption[]>>('/tp/v1/CaptionList');
+  },
+
+  /**
+   * 提交营销视频任务
+   * Endpoint: POST /tp/v1/SubmitTask
+   */
+  submitMarketingTask: (data: SubmitMarketingTaskParams) => {
+    return request.post<ApiResponse<SubmitTaskResult>>('/tp/v1/SubmitTask', data);
+  },
+
+  /**
+   * 查询营销视频任务
+   * Endpoint: GET /tp/v1/queryTask
+   */
+  queryMarketingTask: (taskId: string) => {
+    return request.get<ApiResponse<QueryTaskResult>>('/tp/v1/queryTask', {
+      params: {
+        taskId,
+        needCloudFrontUrl: true,
+      },
+    });
+  },
+
+  /**
+   * 获取上传凭证
+   * Endpoint: GET /tp/v1/GetUploadCredential
+   */
+  getUploadCredential: (format: string) => {
+    return request.get<ApiResponse<UploadCredential>>('/tp/v1/GetUploadCredential', {
+      params: {
+        format,
+        needAccelerateUrl: true,
+      },
+    });
+  },
+
+  /**
+   * 提交产品链接抓取任务
+   * Endpoint: POST /tp/v1/submitScraperTask
+   */
+  submitScraperTask: (productLink: string) => {
+    return request.post<ApiResponse<ScraperTaskResult>>(
+      `/tp/v1/submitScraperTask?productLink=${encodeURIComponent(productLink)}`,
+      {}
+    );
+  },
+
+  /**
+   * 查询产品链接抓取任务
+   * Endpoint: GET /tp/v1/queryScraperTask
+   */
+  queryScraperTask: (taskId: string) => {
+    return request.get<ApiResponse<ScraperTaskResult>>('/tp/v1/queryScraperTask', {
+      params: {
+        taskId,
+        needCloudFrontUrl: false,
+      },
+    });
+  },
+
+  /**
+   * 导出视频
+   * Endpoint: POST /tp/v1/export
+   */
+  exportVideo: (params: { scriptId: number; taskId: string; score: string }) => {
+    return request.post<ApiResponse<{ taskId: string; status: string; errorMsg?: string }>>(
+      `/tp/v1/export?scriptId=${params.scriptId}&taskId=${params.taskId}&score=${params.score}`,
+      {}
+    );
+  },
+
+  /**
+   * 提交视频创作任务
+   * Endpoint: POST /tp/v1/VideoAvatar/submitTask
+   */
+  submitVideoCreationTask: (data: SubmitVideoCreationTaskParams) => {
+    return request.post<ApiResponse<{ taskId: string; status: string; errorMsg?: string }>>(
+      '/tp/v1/VideoAvatar/submitTask',
+      data
+    );
+  },
+
+  /**
+   * 查询视频创作任务
+   * Endpoint: GET /tp/v1/VideoAvatar/queryTask
+   */
+  queryVideoCreationTask: (taskId: string) => {
+    return request.get<ApiResponse<QueryVideoCreationTaskResult>>('/tp/v1/VideoAvatar/queryTask', {
+      params: {
+        taskId,
+        needCloudFrontUrl: true,
+      },
+    });
+  },
+};
+
