@@ -82,6 +82,11 @@ interface Translation {
       styleTransfer: string;
       voiceClone: string;
       workshop: string;
+      faceSwap: string;
+      ttsTool: string;
+      glbViewer: string;
+      imageTranslation: string;
+      videoTranslation: string;
       // Personal Center items
       assets: string;
       pricing: string;
@@ -515,10 +520,9 @@ export const translations: Record<string, Translation> = {
       searchPlaceholder: 'Search models...',
       signIn: 'Sign in',
       nav: [
-        { label: 'Docs', href: '#' },
-        { label: 'Create', href: '#create' },
-        { label: 'Keys', href: '#keys' },
-        { label: 'Activity', href: '#' },
+        { label: 'Model Center', href: '/models' },
+        { label: 'Creation Center', href: '/create' },
+        { label: 'Personal Center', href: '/profile' },
       ],
       profile: 'Profile',
     },
@@ -1081,11 +1085,9 @@ export const translations: Record<string, Translation> = {
       searchPlaceholder: '搜索模型...',
       signIn: '登录',
       nav: [
-        { label: '模型中心', href: '#' },
-        { label: '创作中心', href: '#create' },
-        // { label: '密钥', href: '#keys' },
-        // { label: '活动', href: '#' },
-        { label: '个人中心', href: '#profile' },
+        { label: '模型中心', href: '/models' },
+        { label: '创作中心', href: '/create' },
+        { label: '个人中心', href: '/profile' },
       ],
       profile: '个人中心',
     },

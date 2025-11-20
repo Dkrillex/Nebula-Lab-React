@@ -1,46 +1,24 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { HelpCircle, Check, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
+import { orderService, OrderInfo } from '../../services/orderService';
+import { useAuthStore } from '../../stores/authStore';
+import BaseModal from '../../components/BaseModal';
 
-interface PricingPageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    paymentCycle: string;
-    questions: string;
-    paymentMethod: string;
-    wechatPay: string;
-    invoice: string;
-    invoiceLabel: string;
-    starter: {
-      title: string;
-      features: string[];
-    };
-    business: {
-      title: string;
-      features: string[];
-    };
-    enterprise: {
-      title: string;
-      slogan: string;
-      features: string[];
-    };
-    labels: {
-      credits: string;
-      quantity: string;
-      custom: string;
-      buy: string;
-      contact: string;
-    };
-  };
-}
+interface PricingPageProps {}
 
-const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
+const PricingPage: React.FC<PricingPageProps> = () => {
+  const outletContext = useOutletContext<{ t: any }>();
+  const t = outletContext?.t?.pricingPage;
+  const { user } = useAuthStore();
+
+  // Hooks must be called unconditionally at the top level
   const [priceList, setPriceList] = useState<PriceListVO[]>([]);
   const [invoiceEnabled, setInvoiceEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
-
+  
   // Payment State
   const [paymentType, setPaymentType] = useState('wechat');
   const [wxPayModalOpen, setWxPayModalOpen] = useState(false);
@@ -52,13 +30,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const alipayPollTimer = useRef<NodeJS.Timeout | null>(null);
 
-  const paymentOptions = [
-    { value: 'wechat', label: t.wechatPay, color: 'bg-green-500' },
-    { value: 'Alipay', label: 'Alipay', color: 'bg-blue-500' },
-    { value: 'AlipayHK', label: 'AlipayHK', color: 'bg-blue-600' },
-    // Add more options as needed from the reference if required
-  ];
-
+  // Effects
   useEffect(() => {
     fetchPriceList();
     return () => {
@@ -324,6 +296,22 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
     setPayStatus('pending');
   };
 
+  // Early return if t is missing, AFTER all hooks are called
+  if (!t) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Loader2 className="animate-spin text-muted" size={24} />
+      </div>
+    );
+  }
+
+  const paymentOptions = [
+    { value: 'wechat', label: t.wechatPay, color: 'bg-green-500' },
+    { value: 'Alipay', label: 'Alipay', color: 'bg-blue-500' },
+    { value: 'AlipayHK', label: 'AlipayHK', color: 'bg-blue-600' },
+    // Add more options as needed from the reference if required
+  ];
+
   return (
     <div className="bg-surface/30 min-h-screen pb-12 font-sans">
       {/* Header */}
@@ -504,11 +492,7 @@ interface PricingCardProps {
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
-<<<<<<< HEAD
   item, isEnterprise, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, borderColor, btnColor 
-=======
-  item, isEnterprise, onQuantityChange, onBuy, loading, labels, borderColor, btnColor
->>>>>>> e782ea9d81be3c115e7796b5457ab27a38c801e7
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
   const price = Number(item.productPrice);

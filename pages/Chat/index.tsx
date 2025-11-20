@@ -107,8 +107,17 @@ const ChatPage: React.FC = () => {
         status: 1,
         tags,
       });
-
-      if (res.code === 200 && res.rows) {
+        console.log("res",res)
+      
+      // 兼容直接返回 { rows, total } 的格式
+      if (res && Array.isArray(res.rows)) {
+        const modelList = res.rows;
+        setModels(modelList);
+        if (modelList.length > 0 && !selectedModel) {
+          setSelectedModel(modelList[0].modelName || '');
+        }
+      }
+      else if (res.code === 200 && res.rows) {
         const modelList = Array.isArray(res.rows) ? res.rows : [];
         setModels(modelList);
         if (modelList.length > 0 && !selectedModel) {

@@ -2,9 +2,42 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAppOutletContext } from '../../router';
 import { modelService, ModelListResponse } from '../../services/modelService';
 import { AIModel } from '../../types';
-import { useAppOutletContext } from '../../router';
+
+interface ModelSquarePageProps {
+  t: {
+    title: string;
+    totalModels: string;
+    filterSearch: string;
+    filters: {
+      searchPlaceholder: string;
+      nameLabel: string;
+      vendorLabel: string;
+      capabilityLabel: string;
+      billingLabel: string;
+      endpointLabel?: string;
+      displayLabel: string;
+      all: string;
+      reset: string;
+      hideFilters: string;
+    };
+    display: {
+      currency: string;
+      unit: string;
+    };
+    card: {
+      new: string;
+      perMillion: string;
+      perSecond: string;
+      actions: {
+        calculate: string;
+        chat: string;
+      };
+    };
+  };
+}
 
 interface FilterOption {
   value: string;
@@ -23,9 +56,8 @@ const getBillingTypeLabel = (quotaType?: number): string => {
 };
 
 const ModelSquarePage: React.FC = () => {
-  const { t: rawT } = useAppOutletContext();
-  const t = rawT.modelSquare;
-
+  const { t: rootT } = useAppOutletContext();
+  const t = rootT.modelSquare as ModelSquarePageProps['t'];
   const navigate = useNavigate();
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -605,18 +637,18 @@ const FilterDropdown = ({ label, options, value, onChange }: {
   </div>
 );
 
-const ModelCard = ({ 
+const ModelCard: React.FC<{ 
+  model: AIModel; 
+  t: ModelSquarePageProps['t'];
+  formatPrice: (model: AIModel, priceType?: 'discount' | 'origin') => string;
+  formatPriceUnit: (model: AIModel) => string;
+  onOpenDetail: (model: AIModel) => void;
+}> = ({ 
   model, 
   t, 
   formatPrice, 
   formatPriceUnit, 
   onOpenDetail 
-}: { 
-  model: AIModel; 
-  t: any; // Simplified type
-  formatPrice: (model: AIModel, priceType?: 'discount' | 'origin') => string;
-  formatPriceUnit: (model: AIModel) => string;
-  onOpenDetail: (model: AIModel) => void;
 }) => {
   const getHeaderStyle = () => {
     const p = model.provider.toLowerCase();

@@ -150,7 +150,54 @@ const CreatePage: React.FC = () => {
       
       console.log('📋 模板列表 API 响应:', res, '请求参数:', currentParams);
       
-      if (res.code === 200) {
+      // 兼容直接返回 { rows, total } 的格式
+      if (res && Array.isArray(res.rows)) {
+         const newRows = res.rows;
+         const total = res.total || 0;
+         const processedRows = newRows.map(item => ({
+           ...item,
+           isLike: item.isLike ?? false
+         }));
+         
+         // ...数据更新逻辑（保持不变，直接从原来的 if (res.code === 200) 块中复制）
+         console.log('📋 处理后的模板数据:', processedRows.length, '条，当前页码:', currentParams.pageNum, '总数:', total);
+        
+        // 更新数据
+        setLabTemplateData(prev => {
+          const updatedData = currentParams.pageNum === 1
+            ? processedRows
+            : [...prev, ...processedRows];
+          
+          console.log('📋 更新模板数据:', {
+            isFirstPage: currentParams.pageNum === 1,
+            newRows: processedRows.length,
+            prevCount: prev.length,
+            updatedCount: updatedData.length
+          });
+          
+          // 判断是否还有更多数据
+          if (total > 0) {
+            const hasMoreData = updatedData.length < total;
+            setHasMore(hasMoreData);
+            console.log('📋 使用 total 判断:', {
+              loaded: updatedData.length,
+              total,
+              hasMore: hasMoreData
+            });
+          } else {
+            const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
+            setHasMore(hasMoreData);
+            console.log('📋 使用返回数据量判断:', {
+              returned: processedRows.length,
+              pageSize: currentParams.pageSize,
+              hasMore: hasMoreData
+            });
+          }
+          
+          return updatedData;
+        });
+      }
+      else if (res.code === 200) {
         const newRows = Array.isArray(res.rows) ? res.rows : [];
         const total = res.total || 0;
         const processedRows = newRows.map(item => ({
@@ -173,9 +220,7 @@ const CreatePage: React.FC = () => {
             updatedCount: updatedData.length
           });
           
-          // 判断是否还有更多数据：
-          // 1. 如果有 total 字段，比较已加载的数据量和总数
-          // 2. 如果没有 total 字段，使用返回数据量是否等于 pageSize 来判断
+          // 判断是否还有更多数据
           if (total > 0) {
             const hasMoreData = updatedData.length < total;
             setHasMore(hasMoreData);
@@ -185,7 +230,6 @@ const CreatePage: React.FC = () => {
               hasMore: hasMoreData
             });
           } else {
-            // 如果没有 total 字段，使用返回数据量判断
             const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
             setHasMore(hasMoreData);
             console.log('📋 使用返回数据量判断:', {

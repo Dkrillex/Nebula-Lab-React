@@ -138,6 +138,22 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     },
   ];
 
+  const getActiveCategory = () => {
+    const path = location.pathname;
+    if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys')) return 'modelCenter';
+    if (path.startsWith('/create')) return 'creationCenter';
+    if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
+    return 'creationCenter';
+  };
+
+  const activeCategory = getActiveCategory();
+
+  const displayedItems = React.useMemo(() => {
+     const categoryItem = menuStructure.find(item => item.id === activeCategory);
+     // If found category has children, return them. Otherwise return empty or the category itself (unlikely given structure)
+     return categoryItem?.children || [];
+  }, [activeCategory, menuStructure]);
+
   return (
     <aside 
       className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out flex-shrink-0 ${
@@ -145,7 +161,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       }`}
     >
       <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {menuStructure.map((item) => {
+        {displayedItems.map((item: any) => {
           const hasChildren = 'children' in item && item.children;
           const Icon = item.icon;
           const isExpanded = expandedGroups.includes(item.id);

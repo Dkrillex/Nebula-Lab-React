@@ -50,8 +50,8 @@ const Header: React.FC<HeaderProps> = ({
     e.preventDefault();
     
     // 检查是否需要登录的路径
-    const path = href.replace('#', '');
-    const requiresAuth = path === 'keys' || path === 'expenses';
+    const path = href.startsWith('/') ? href.substring(1) : href.replace('#', '');
+    const requiresAuth = path === 'keys' || path === 'expenses' || path === 'profile';
     
     if (requiresAuth && !isAuthenticated) {
       // 未登录，弹出登录窗口
@@ -341,7 +341,12 @@ const Header: React.FC<HeaderProps> = ({
         <div className="flex-shrink-0 flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
             {t.nav.map((item) => {
-              const isActive = item.href === '#create' && currentView === 'create';
+              // Determine if item is active based on current view/path
+              const isActive = 
+                (item.href === '/models' && ['models', 'chat', 'keys'].includes(currentView)) ||
+                (item.href === '/create' && currentView === 'create') ||
+                (item.href === '/profile' && ['profile', 'assets', 'pricing', 'expenses'].includes(currentView));
+
               return (
                 <a 
                   key={item.label} 

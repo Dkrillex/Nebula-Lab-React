@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react';
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
-import { useAppOutletContext } from '../../router';
 
-const KeysPage: React.FC = () => {
-  const { t: rawT } = useAppOutletContext();
-  const t = rawT.keysPage;
-  
+interface KeysPageProps {}
+
+const KeysPage: React.FC<KeysPageProps> = () => {
+  const outletContext = useOutletContext<{ t: any }>();
+  const t = outletContext?.t?.keysPage;
+
   const { user } = useAuthStore();
   const [tokens, setTokens] = useState<TokenVO[]>([]);
   const [loading, setLoading] = useState(false);
@@ -39,8 +41,19 @@ const KeysPage: React.FC = () => {
         userId: user.nebulaApiId,
         name: keyword || undefined,
       });
-
-      if (res.code === 200) {
+      console.log(res)
+      
+      // 兼容直接返回 { rows, total } 的格式（没有 code 字段的情况）
+      if (res && Array.isArray(res.rows)) {
+        const rows = res.rows;
+        setTokens(rows);
+        setPagination(prev => ({
+          ...prev,
+          current: pageNum,
+          total: res.total || rows.length,
+        }));
+      }
+      else if (res.code === 200) {
         const rows = res.rows || res.data || [];
         setTokens(rows);
         setPagination(prev => ({
@@ -227,6 +240,14 @@ const KeysPage: React.FC = () => {
   const handlePageChange = (newPage: number) => {
     fetchTokens(newPage);
   };
+
+  if (!t) {
+    return (
+      <div className="flex justify-center items-center min-h-[80vh]">
+        <RefreshCw className="animate-spin text-muted" size={24} />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl min-h-[80vh]">

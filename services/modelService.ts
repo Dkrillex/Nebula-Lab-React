@@ -21,14 +21,20 @@ export const modelService = {
           pageNum: 1, 
           pageSize: 1000,
           modelName: search 
-        } 
+        },
+        isTransformResponse: false // 获取原始响应以访问 billingTypes, exchangeRate 等额外字段
       });
       
       console.log('📋 模型广场 API 响应:', res);
 
       // 处理不同的响应格式
       let rows: any[] = [];
-      if (res.code === 200) {
+      
+      // 优先处理直接包含 rows 的结构（如: { rows: [], total: 0, success: true }）
+      if (res && Array.isArray(res.rows)) {
+        rows = res.rows;
+      }
+      else if (res.code === 200) {
         // 标准格式：{ code: 200, rows: [...], total: ... }
         if (res.rows && Array.isArray(res.rows)) {
           rows = res.rows;
