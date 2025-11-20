@@ -67,14 +67,14 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
     gender: 'male' as 'male' | 'female',
   });
   const [videoPreviewStates, setVideoPreviewStates] = useState<Record<string, boolean>>({});
-
+  
   // Load Avatars when modal opens
   useEffect(() => {
     if (showAvatarModal) {
       loadAvatarList();
     }
   }, [showAvatarModal, avatarPagination.current, avatarPagination.pageSize, avatarPagination.gender, isCustomAvatar]);
-
+  
   const loadAvatarList = async () => {
     try {
       setAvatarLoading(true);
@@ -111,7 +111,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
       setAvatarLoading(false);
     }
   };
-
+  
   const handleFileUpload = async (file: File, type: 'video' | 'audio' | 'image') => {
     try {
       setUploading(true);
@@ -191,14 +191,14 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
           </button>
         </div>
       </div>
-      
+
       {errorMessage && (
         <div className="flex items-center gap-2 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm flex-shrink-0">
             <AlertCircle size={16} />
             <span>{errorMessage}</span>
             <button onClick={() => setErrorMessage(null)} className="ml-auto"><X size={14}/></button>
-        </div>
-      )}
+          </div>
+          )}
 
       <div className="flex-1 overflow-hidden min-h-0">
           {activeTab === 'video' && (

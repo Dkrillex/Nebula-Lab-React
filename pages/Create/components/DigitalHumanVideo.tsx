@@ -64,17 +64,18 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       const res = await avatarService.getVoiceList({ pageNo: 1, pageSize: 100 });
       let voiceData: Voice[] = [];
       if (res.code === 200) {
-        if ((res as any).result?.data) {
+        if ((res as any).result?.data && Array.isArray((res as any).result.data)) {
           voiceData = (res as any).result.data;
-        } else if (res.data?.result?.data) {
+        } else if (res.data?.result?.data && Array.isArray(res.data.result.data)) {
           voiceData = res.data.result.data;
-        } else if (res.data && (res.data as any).data) {
+        } else if (res.data && (res.data as any).data && Array.isArray((res.data as any).data)) {
            voiceData = (res.data as any).data;
         }
       }
       setVoiceList(voiceData || []);
     } catch (error) {
       console.error('Failed to load voice list:', error);
+      setVoiceList([]);
     } finally {
       setVoiceLoading(false);
     }
@@ -86,14 +87,24 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       let captionData: Caption[] = [];
       if (res.code === 200) {
         if ((res as any).result) {
-            captionData = (res as any).result;
+            // Check if result is array, or result.data is array
+            if (Array.isArray((res as any).result)) {
+                captionData = (res as any).result;
+            } else if ((res as any).result.data && Array.isArray((res as any).result.data)) {
+                captionData = (res as any).result.data;
+            }
         } else if (res.data) {
-            captionData = res.data as any;
+            if (Array.isArray(res.data)) {
+                captionData = res.data as any;
+            } else if ((res.data as any).data && Array.isArray((res.data as any).data)) {
+                captionData = (res.data as any).data;
+            }
         }
       }
       setCaptionList(captionData || []);
     } catch (error) {
       console.error('Failed to load caption list:', error);
+      setCaptionList([]); // Ensure empty array on error
     }
   };
 

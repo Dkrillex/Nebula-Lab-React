@@ -53,7 +53,15 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     try {
       const res = await avatarService.getProductAvatarCategories();
       if (res.code === 200) {
-        setCategories([{ categoryId: -1, categoryName: '全部' }, ...(res.result || [])]);
+        let categoriesData: ProductAvatarCategory[] = [];
+        if ((res as any).data?.result) {
+            categoriesData = (res as any).data.result;
+        } else if (res.result) {
+            categoriesData = res.result;
+        } else if (res.data && Array.isArray(res.data)) {
+            categoriesData = res.data;
+        }
+        setCategories([{ categoryId: -1, categoryName: '全部' }, ...(categoriesData || [])]);
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error);
@@ -69,9 +77,20 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         categoryIds: selectedCategory === -1 ? '' : String(selectedCategory)
       });
       if (res.code === 200) {
-        setAvatars(res.result?.data || []);
-        if (!selectedAvatar && res.result?.data?.length > 0) {
-            setSelectedAvatar(res.result.data[0]);
+        let avatarData: ProductAvatar[] = [];
+        if ((res as any).data?.result?.data) {
+            // For structure: { code: 200, data: { result: { data: [...] } } }
+            avatarData = (res as any).data.result.data;
+        } else if ((res as any).result?.data) {
+            // For structure: { code: 200, result: { data: [...] } }
+            avatarData = (res as any).result.data;
+        } else if (res.data && Array.isArray(res.data)) {
+            avatarData = res.data;
+        }
+
+        setAvatars(avatarData || []);
+        if (!selectedAvatar && avatarData?.length > 0) {
+            setSelectedAvatar(avatarData[0]);
         }
       }
     } catch (error) {
