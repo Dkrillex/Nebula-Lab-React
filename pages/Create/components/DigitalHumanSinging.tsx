@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2, Plus, Video } from 'lucide-react';
 import { avatarService } from '../../../services/avatarService';
+import AddMaterialModal from '../../../components/AddMaterialModal';
 
 interface DigitalHumanSingingProps {
   t: any;
@@ -21,12 +22,27 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   const [generating, setGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
+  const [taskId, setTaskId] = useState<string | null>(null);
   
+  // Drag and Drop states
+  const [isImageDragOver, setIsImageDragOver] = useState(false);
+  const [isAudioDragOver, setIsAudioDragOver] = useState(false);
+
+  // Add Material Modal
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
-    const file = e.target.files?.[0];
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    };
+  }, []);
+
+  const onUpload = async (file: File, type: 'image' | 'audio') => {
     if (file) {
       try {
         const uploaded = await handleFileUpload(file, type);
@@ -35,6 +51,56 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
       } catch (error) {
         // Handled by parent
       }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
+    const file = e.target.files?.[0];
+    if (file) onUpload(file, type);
+  };
+
+  // Drag and Drop Handlers
+  const handleDragOver = (e: React.DragEvent, type: 'image' | 'audio') => {
+    e.preventDefault();
+    if (type === 'image') setIsImageDragOver(true);
+    else setIsAudioDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent, type: 'image' | 'audio') => {
+    e.preventDefault();
+    if (type === 'image') setIsImageDragOver(false);
+    else setIsAudioDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent, type: 'image' | 'audio') => {
+    e.preventDefault();
+    if (type === 'image') setIsImageDragOver(false);
+    else setIsAudioDragOver(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      if (type === 'image' && !file.type.startsWith('image/')) {
+        alert('请上传图片文件');
+        return;
+      }
+      if (type === 'audio' && !file.type.startsWith('audio/')) {
+        alert('请上传音频文件');
+        return;
+      }
+      onUpload(file, type);
+    }
+  };
+
+  const clearAll = () => {
+    setImageFile(null);
+    setAudioFile(null);
+    setResultVideoUrl(null);
+    setGenerating(false);
+    setProgress(0);
+    setTaskId(null);
+    if (pollTimerRef.current) {
+      clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
     }
   };
 
@@ -54,8 +120,9 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
       });
 
       if ((res as any).task_id || (res.data as any)?.task_id) {
-          const taskId = (res as any).task_id || (res.data as any)?.task_id;
-          pollTask(taskId);
+          const newTaskId = (res as any).task_id || (res.data as any)?.task_id;
+          setTaskId(newTaskId);
+          pollTask(newTaskId);
       } else {
           throw new Error('任务提交失败');
       }
@@ -66,14 +133,14 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     }
   };
 
-  const pollTask = async (taskId: string) => {
+  const pollTask = async (currentTaskId: string) => {
       const interval = 5000;
-      const maxAttempts = 60;
+      const maxAttempts = 60; // 5 minutes
       let attempts = 0;
 
       const check = async () => {
           try {
-              const res = await avatarService.querySingingAvatarTask(taskId);
+              const res = await avatarService.querySingingAvatarTask(currentTaskId);
               const data = (res as any).data || res; // Handle response structure
               const status = data.status;
 
@@ -81,30 +148,43 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                   setResultVideoUrl(data.video_url);
                   setProgress(100);
                   setGenerating(false);
+                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+                  alert('生成成功！');
               } else if (status === 'failed') {
                   setErrorMessage(data.error_msg || '生成失败');
                   setGenerating(false);
+                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
               } else {
                   // Mock progress
                   setProgress(prev => Math.min(prev + Math.floor(Math.random() * 5), 95));
                   attempts++;
-                  if (attempts < maxAttempts) setTimeout(check, interval);
-                  else {
+                  if (attempts >= maxAttempts) {
                       setErrorMessage('任务超时');
                       setGenerating(false);
+                      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
                   }
               }
           } catch (e) {
               console.error('Poll error', e);
               attempts++;
-              if (attempts < maxAttempts) setTimeout(check, interval);
-              else {
+              if (attempts >= maxAttempts) {
                   setGenerating(false);
                   setErrorMessage('查询失败');
+                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
               }
           }
       };
-      check();
+      
+      // Clear existing timer
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      // Start new timer
+      pollTimerRef.current = setInterval(check, interval);
+      check(); // Initial check
+  };
+
+  const handleAddToMaterials = () => {
+    if (!resultVideoUrl) return;
+    setShowMaterialModal(true);
   };
 
   return (
@@ -112,99 +192,221 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
        {/* Left: Uploads */}
        <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-6">
            {/* Image Upload */}
-           <div>
-               <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">上传图片</h3>
+           <div className="space-y-3">
+               <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传图片</h3>
                <div 
                    onClick={() => imageInputRef.current?.click()}
-                   className={`relative aspect-[9/16] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${imageFile ? 'border-indigo-500' : 'border-gray-300 dark:border-gray-600'}`}
+                   onDragOver={(e) => handleDragOver(e, 'image')}
+                   onDragLeave={(e) => handleDragLeave(e, 'image')}
+                   onDrop={(e) => handleDrop(e, 'image')}
+                   className={`relative aspect-[9/16] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
+                     ${imageFile 
+                        ? 'border-indigo-500 bg-gray-50 dark:bg-gray-900' 
+                        : isImageDragOver 
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02] shadow-md' 
+                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                     }
+                   `}
                >
-                   <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => onUpload(e, 'image')} className="hidden" />
+                   <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
                    {imageFile ? (
-                       <>
-                           <img src={imageFile.url} className="w-full h-full object-contain rounded-xl p-1" />
-                           <button onClick={(e) => { e.stopPropagation(); setImageFile(null); }} className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600">×</button>
-                       </>
+                       <div className="relative w-full h-full p-2 group">
+                           <img src={imageFile.url} className="w-full h-full object-contain rounded-lg" alt="Uploaded" />
+                           <button 
+                              onClick={(e) => { e.stopPropagation(); setImageFile(null); }} 
+                              className="absolute top-3 right-3 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
+                              title="删除图片"
+                           >
+                              <X size={16} />
+                           </button>
+                       </div>
                    ) : (
-                       <div className="text-center text-gray-500">
-                           <ImageIcon size={32} className="mx-auto mb-2" />
-                           <p className="text-sm">点击上传人像图片</p>
-                           <p className="text-xs mt-1 text-gray-400">建议正脸高清照片</p>
+                       <div className="text-center text-gray-500 p-6">
+                           <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                              <ImageIcon size={32} className="text-indigo-600 dark:text-indigo-400" />
+                           </div>
+                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">点击或拖拽上传图片</p>
+                           <p className="text-xs text-gray-400">支持 PNG, JPG, WEBP • 建议正脸高清</p>
                        </div>
                    )}
                </div>
            </div>
 
            {/* Audio Upload */}
-           <div>
-               <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">上传音频</h3>
+           <div className="space-y-3">
+               <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传音频</h3>
                <div 
                    onClick={() => audioInputRef.current?.click()}
-                   className={`relative h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${audioFile ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+                   onDragOver={(e) => handleDragOver(e, 'audio')}
+                   onDragLeave={(e) => handleDragLeave(e, 'audio')}
+                   onDrop={(e) => handleDrop(e, 'audio')}
+                   className={`relative h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
+                     ${audioFile 
+                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
+                        : isAudioDragOver
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02] shadow-md'
+                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                     }
+                   `}
                >
-                   <input ref={audioInputRef} type="file" accept="audio/*" onChange={(e) => onUpload(e, 'audio')} className="hidden" />
+                   <input ref={audioInputRef} type="file" accept="audio/*" onChange={(e) => handleFileChange(e, 'audio')} className="hidden" />
                    {audioFile ? (
-                       <div className="w-full px-4">
-                           <div className="flex items-center justify-center gap-2 mb-2 text-indigo-600">
-                               <Music size={24} />
-                               <span className="font-medium truncate max-w-[200px]">{audioFile.fileId.split('/').pop() || 'Audio File'}</span>
+                       <div className="w-full px-4 flex flex-col items-center">
+                           <div className="flex items-center justify-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
+                               <Music size={24} className="animate-pulse" />
+                               <span className="font-medium truncate max-w-[200px] text-sm">{audioFile.fileId.split('/').pop() || 'Audio File'}</span>
                            </div>
-                           <audio src={audioFile.url} controls className="w-full h-8" />
-                           <button onClick={(e) => { e.stopPropagation(); setAudioFile(null); }} className="absolute top-2 right-2 bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-xs hover:bg-red-600">×</button>
+                           <audio src={audioFile.url} controls className="w-full h-8 rounded-lg shadow-sm" />
+                           <button 
+                              onClick={(e) => { e.stopPropagation(); setAudioFile(null); }} 
+                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
+                              title="删除音频"
+                           >
+                              <X size={14} />
+                           </button>
                        </div>
                    ) : (
                        <div className="text-center text-gray-500">
-                           <Music size={32} className="mx-auto mb-2" />
-                           <p className="text-sm">点击上传音频</p>
-                           <p className="text-xs mt-1 text-gray-400">mp3, wav, m4a</p>
+                           <Music size={28} className="mx-auto mb-2 text-indigo-500/70" />
+                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">点击或拖拽上传音频</p>
+                           <p className="text-xs mt-1 text-gray-400">支持 MP3, WAV, M4A</p>
                        </div>
                    )}
                </div>
            </div>
 
-           <button 
-               onClick={handleGenerate} 
-               disabled={generating || !imageFile || !audioFile}
-               className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
-           >
-               {generating ? `生成中 ${progress}%` : '生成唱歌数字人'}
-           </button>
+           {/* Actions */}
+           <div className="flex flex-col gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
+               <button 
+                   onClick={handleGenerate} 
+                   disabled={generating || !imageFile || !audioFile}
+                   className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0
+                     ${generating || !imageFile || !audioFile 
+                        ? 'bg-gray-300 dark:bg-gray-700 cursor-not-allowed shadow-none' 
+                        : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 shadow-indigo-500/30'
+                     }
+                   `}
+               >
+                   {generating ? (
+                       <>
+                         <Loader size={20} className="animate-spin" />
+                         <span>生成中 {progress}%</span>
+                       </>
+                   ) : (
+                       <>
+                         <Play size={20} fill="currentColor" />
+                         <span>生成唱歌数字人</span>
+                       </>
+                   )}
+               </button>
+               
+               <button 
+                   onClick={clearAll}
+                   disabled={!imageFile && !audioFile && !resultVideoUrl}
+                   className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                   <Trash2 size={18} />
+                   清空所有
+               </button>
+           </div>
        </div>
 
        {/* Right: Result */}
-       <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex items-center justify-center">
+       <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg flex items-center justify-center relative overflow-hidden">
+           {/* Background Pattern */}
+           <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+               <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
+           </div>
+
            {generating ? (
-               <div className="text-center">
-                   <div className="relative w-32 h-32 mx-auto mb-6">
-                       <div className="absolute inset-0 border-4 border-gray-200 rounded-full"></div>
+               <div className="text-center z-10 max-w-sm w-full">
+                   <div className="relative w-32 h-32 mx-auto mb-8">
+                       {/* Animated Circles */}
+                       <div className="absolute inset-0 border-4 border-gray-100 dark:border-gray-700 rounded-full"></div>
                        <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                       <div className="absolute inset-0 flex items-center justify-center font-bold text-xl text-indigo-600">{progress}%</div>
+                       <div className="absolute inset-0 flex items-center justify-center font-bold text-2xl text-indigo-600">{progress}%</div>
+                       
+                       {/* Floating Icons */}
+                       <div className="absolute -top-4 -right-4 text-2xl animate-bounce" style={{ animationDelay: '0s' }}>✨</div>
+                       <div className="absolute -bottom-2 -left-4 text-2xl animate-bounce" style={{ animationDelay: '0.5s' }}>🎤</div>
                    </div>
-                   <p className="text-gray-600 dark:text-gray-300">AI正在为您合成唱歌数字人...</p>
-                   <p className="text-sm text-gray-400 mt-2">这可能需要几分钟时间</p>
+                   
+                   <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">AI正在合成中...</h3>
+                   <p className="text-gray-500 dark:text-gray-400 mb-6">正在为您的照片赋予歌声，这可能需要几分钟时间。</p>
+                   
+                   {/* Progress Bar */}
+                   <div className="w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                       <div 
+                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out relative overflow-hidden"
+                          style={{ width: `${progress}%` }}
+                       >
+                          <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                       </div>
+                   </div>
                </div>
            ) : resultVideoUrl ? (
-               <div className="w-full max-w-md text-center">
-                   <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center justify-center gap-2">
-                       <CheckCircle className="text-green-500" /> 生成成功
-                   </h3>
-                   <video src={resultVideoUrl} controls className="w-full rounded-xl shadow-lg mb-6 bg-black" />
-                   <a href={resultVideoUrl} download target="_blank" className="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-medium">
-                       下载视频
-                   </a>
-                   <button onClick={() => { setResultVideoUrl(null); setImageFile(null); setAudioFile(null); }} className="block mt-4 mx-auto text-gray-500 hover:text-gray-700">
-                       重新生成
-                   </button>
+               <div className="w-full max-w-2xl text-center z-10">
+                   <div className="mb-6 flex items-center justify-center gap-2 text-green-500 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-full mx-auto w-fit">
+                       <CheckCircle size={20} />
+                       <span className="font-medium">生成成功</span>
+                   </div>
+
+                   <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video mb-8 group">
+                       <video src={resultVideoUrl} controls className="w-full h-full object-contain" />
+                   </div>
+
+                   <div className="flex flex-wrap items-center justify-center gap-4">
+                       <a 
+                          href={resultVideoUrl} 
+                          download 
+                          target="_blank" 
+                          rel="noreferrer"
+                          className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
+                       >
+                           <Video size={20} />
+                           下载视频
+                       </a>
+                       <button 
+                          onClick={handleAddToMaterials}
+                          className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
+                       >
+                           <Plus size={20} />
+                           加入素材库
+                       </button>
+                       <button 
+                          onClick={() => { setResultVideoUrl(null); setProgress(0); }} 
+                          className="px-6 py-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition"
+                       >
+                           重新生成
+                       </button>
+                   </div>
                </div>
            ) : (
-               <div className="text-center text-gray-400">
-                   <Play size={64} className="mx-auto mb-4 opacity-20" />
-                   <p className="text-lg">上传图片和音频以生成预览</p>
+               <div className="text-center text-gray-400 z-10">
+                   <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-gray-200 dark:border-gray-600">
+                       <Play size={40} className="ml-2 opacity-20" />
+                   </div>
+                   <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">准备生成</h3>
+                   <p className="max-w-xs mx-auto text-gray-500 dark:text-gray-400">请在左侧上传一张正脸照片和一段音频，AI将自动为您生成唱歌视频。</p>
                </div>
            )}
        </div>
+
+       {/* Add Material Modal */}
+       <AddMaterialModal
+          isOpen={showMaterialModal}
+          onClose={() => setShowMaterialModal(false)}
+          onSuccess={() => {
+              alert('已添加到素材库');
+          }}
+          initialData={{
+              assetName: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
+              assetUrl: resultVideoUrl || '',
+              assetType: 4 // Video
+          }}
+       />
     </div>
   );
 };
 
 export default DigitalHumanSinging;
-

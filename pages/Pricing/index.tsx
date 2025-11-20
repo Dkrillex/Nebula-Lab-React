@@ -48,6 +48,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
   // Payment State
   const [paymentType, setPaymentType] = useState('wechat');
   const [wxPayModalOpen, setWxPayModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false);
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payStatus, setPayStatus] = useState<'pending' | 'success' | 'failed'>('pending');
@@ -129,6 +130,15 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
     }));
   };
 
+  const handleCustomAmountChange = (id: number | string, amount: number) => {
+    setPriceList(prev => prev.map(item => {
+      if (item.id === id) {
+        return { ...item, totalAmount: amount };
+      }
+      return item;
+    }));
+  };
+
   const handlePayment = async (item: PriceListVO) => {
     if (!user) {
       // Handle not logged in - maybe redirect to login or show auth modal
@@ -136,9 +146,19 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
       return;
     }
 
+    // Validate custom amount
+    if (item.productQuantity === 6) {
+      const amount = Number(item.totalAmount);
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      // Optional: Check minimum amount if needed
+    }
+
     if (Number(item.productPrice) === 9999) {
         // Contact us logic
-        window.location.href = 'mailto:contact@example.com'; // Replace with actual contact
+        setContactModalOpen(true);
         return;
     }
 
@@ -388,6 +408,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
                   item={item}
                   isEnterprise={isEnterprise}
                   onQuantityChange={(q) => handleQuantityChange(item.id, q)}
+                  onCustomAmountChange={(amount) => handleCustomAmountChange(item.id, amount)}
                   onBuy={() => handlePayment(item)}
                   loading={payLoading}
              labels={t.labels}
@@ -448,6 +469,28 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
           )}
         </div>
       </BaseModal>
+
+      {/* Contact Modal */}
+      <BaseModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        title="在线咨询"
+        width="max-w-sm"
+      >
+         <div className="flex flex-col items-center justify-center py-6 text-center">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">联系我们</h3>
+            <p className="text-sm text-gray-500 mb-6">扫描下方二维码，立即咨询</p>
+            
+            <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-100 mb-6">
+               <QRCodeSVG value="https://work.weixin.qq.com/kfid/kfc123456789" size={180} />
+            </div>
+
+            <div className="text-sm text-gray-500 space-y-1">
+              <p>工作时间：周一至周五 9:00-18:00</p>
+              <p>我们将为您提供专业的服务支持</p>
+            </div>
+         </div>
+      </BaseModal>
     </div>
   );
 };
@@ -456,6 +499,7 @@ interface PricingCardProps {
   item: PriceListVO;
   isEnterprise: boolean;
   onQuantityChange: (quantity: number) => void;
+  onCustomAmountChange: (amount: number) => void;
   onBuy: () => void;
   loading: boolean;
   labels: any;
@@ -464,13 +508,24 @@ interface PricingCardProps {
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
-  item, isEnterprise, onQuantityChange, onBuy, loading, labels, borderColor, btnColor 
+  item, isEnterprise, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, borderColor, btnColor 
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
   const price = Number(item.productPrice);
   const quantity = item.productQuantity || 1;
-  const totalPoints = Number(item.productScore) * quantity;
-  const totalPrice = price * quantity;
+  const isCustom = quantity === 6;
+  
+  // Calculate points and price
+  let totalPrice = price * quantity;
+  let totalPoints = Number(item.productScore) * quantity;
+
+  if (isCustom) {
+    const customAmount = Number(item.totalAmount) || 0;
+    totalPrice = customAmount;
+    // Calculate points based on ratio
+    const ratio = price > 0 && Number(item.productScore) > 0 ? price / Number(item.productScore) : 0;
+    totalPoints = ratio > 0 ? customAmount / ratio : 0;
+  }
 
   return (
     <div className={`bg-background border ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow ${isEnterprise ? 'relative overflow-hidden' : ''}`}>
@@ -482,7 +537,35 @@ const PricingCard: React.FC<PricingCardProps> = ({
 
       <div className="text-center mb-2 relative z-10">
         <div className="text-4xl font-bold text-primary h-16 flex items-center justify-center">
-          {isEnterprise ? "Let's talk!" : `¥ ${totalPrice}`}
+          {isEnterprise ? "Let's talk!" : (
+             isCustom ? (
+               <div className="flex items-center justify-center">
+                 <span className="text-2xl mr-1">¥</span>
+                 <style>
+                   {`
+                     input[type=number]::-webkit-inner-spin-button, 
+                     input[type=number]::-webkit-outer-spin-button { 
+                       -webkit-appearance: none; 
+                       margin: 0; 
+                     }
+                     input[type=number] {
+                       -moz-appearance: textfield;
+                     }
+                   `}
+                 </style>
+                 <input 
+                   type="number" 
+                   className="w-32 text-4xl font-bold text-primary bg-transparent border-b-2 border-primary/30 focus:border-primary outline-none text-center appearance-none"
+                   value={item.totalAmount || ''}
+                   placeholder="0"
+                   onChange={(e) => onCustomAmountChange(Number(e.target.value))}
+                   min="1"
+                 />
+               </div>
+             ) : (
+               `¥ ${totalPrice}`
+             )
+          )}
         </div>
         {!isEnterprise && (
         <div className="text-sm text-muted mt-1">

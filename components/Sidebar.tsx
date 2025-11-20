@@ -169,7 +169,58 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                   {isExpanded && (
                     <div className={`space-y-1 ${isCollapsed ? '' : 'pl-4'}`}>
                       {item.children?.map((child: any) => {
+                        const hasGrandChildren = 'children' in child && child.children;
                         const ChildIcon = child.icon;
+                        
+                        if (hasGrandChildren) {
+                          const isGrandChildExpanded = expandedGroups.includes(child.id);
+                          const isChildActive = activeMenu === child.id;
+
+                          return (
+                            <div key={child.id} className="space-y-1">
+                              <button
+                                onClick={() => toggleGroup(child.id)}
+                                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-lg text-sm font-medium text-muted hover:text-foreground hover:bg-border/30 transition-colors`}
+                                title={isCollapsed ? child.label : undefined}
+                              >
+                                <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'}`}>
+                                  <ChildIcon size={18} />
+                                  {!isCollapsed && <span>{child.label}</span>}
+                                </div>
+                                {!isCollapsed && (isGrandChildExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />)}
+                              </button>
+
+                              {isGrandChildExpanded && (
+                                <div className={`space-y-1 ${isCollapsed ? '' : 'pl-4'}`}>
+                                  {child.children?.map((grandChild: any) => {
+                                    const GrandChildIcon = grandChild.icon;
+                                    const isGrandChildActive = activeMenu === grandChild.id;
+                                    
+                                    return (
+                                      <button
+                                        key={grandChild.id}
+                                        onClick={() => handleMenuClick(grandChild)}
+                                        className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3'} px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                                          isGrandChildActive 
+                                            ? 'bg-gradient-to-br from-indigo-500/20 to-purple-500/20 dark:from-indigo-400/30 dark:to-purple-400/30 text-indigo-700 dark:text-indigo-100' 
+                                            : 'text-muted hover:text-foreground hover:bg-border/50'
+                                        }`}
+                                        title={isCollapsed ? grandChild.label : undefined}
+                                      >
+                                        <div className="relative flex items-center gap-2">
+                                            {isGrandChildActive && !isCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-r"></div>}
+                                            <GrandChildIcon size={16} />
+                                        </div>
+                                        {!isCollapsed && <span className="flex-1">{grandChild.label}</span>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
                         const isChildActive = activeMenu === child.id && !child.externalLink;
                         const isExternalLink = !!child.externalLink;
                         
