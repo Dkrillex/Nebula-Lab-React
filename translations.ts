@@ -6,6 +6,7 @@ interface Translation {
     signIn: string;
     nav: NavItem[];
     profile: string; // Add this
+    notifications: string;
   };
   hero: {
     status: string;
@@ -525,6 +526,7 @@ export const translations: Record<string, Translation> = {
         { label: 'Personal Center', href: '/profile' },
       ],
       profile: 'Profile',
+      notifications: 'Notifications',
     },
     hero: {
       status: 'All systems operational',
@@ -1090,6 +1092,7 @@ export const translations: Record<string, Translation> = {
         { label: '个人中心', href: '/profile' },
       ],
       profile: '个人中心',
+      notifications: '消息通知',
     },
     hero: {
       status: '系统运行正常',

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Bell } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
+import NotificationModal from './NotificationModal';
 
 interface HeaderProps {
   isDark: boolean;
@@ -23,6 +24,7 @@ interface HeaderProps {
     signIn: string;
     nav: NavItem[];
     profile?: string;
+    notifications?: string;
   };
 }
 
@@ -33,6 +35,7 @@ const Header: React.FC<HeaderProps> = ({
   const { user, logout, isAuthenticated } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -292,6 +295,16 @@ const Header: React.FC<HeaderProps> = ({
                           <CreditCard size={16} />
                           Expenses
                         </button>
+                        <button 
+                          onClick={() => {
+                            setShowNotifications(true);
+                            setShowUserMenu(false);
+                          }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
+                        >
+                          <Bell size={16} />
+                          {t.notifications || 'Notifications'}
+                        </button>
                         <div className="h-px bg-border my-1"></div>
                   <button 
                           onClick={() => {
@@ -349,6 +362,11 @@ const Header: React.FC<HeaderProps> = ({
           onClick={() => setShowUserMenu(false)}
         ></div>
       )}
+      {/* Notification Modal */}
+      <NotificationModal 
+        isOpen={showNotifications} 
+        onClose={() => setShowNotifications(false)} 
+      />
     </header>
   );
 };
