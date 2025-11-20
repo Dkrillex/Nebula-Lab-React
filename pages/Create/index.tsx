@@ -12,6 +12,7 @@ import ViralVideoPage from './components/ViralVideoPage';
 import ImageToVideoPage from './components/ImageToVideoPage';
 import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
+import VoiceClone from './components/VoiceClone';
 import WorkshopPage from './components/WorkshopPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
@@ -144,6 +145,14 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
       description: 'Generate images from text',
       toolId: 'textToImage',
       type: 'image',
+    },
+    {
+      id: 8,
+      title: 'Voice Clone',
+      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/voice-clone.png', // Placeholder or real icon
+      description: 'Clone your voice',
+      toolId: 'voiceClone',
+      type: 'audio',
     },
     { 
       id: 7,
@@ -457,6 +466,9 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     }
     if (activeMenu === 'styleTransfer' && t.styleTransfer) {
       return <StyleTransferPage t={t.styleTransfer} />;
+    }
+    if (activeMenu === 'voiceClone') {
+      return <VoiceClone />;
     }
     if (activeMenu === 'workshop' && t.workshop) {
       return <WorkshopPage t={t.workshop} />;

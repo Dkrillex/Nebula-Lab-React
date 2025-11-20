@@ -222,12 +222,46 @@ export interface Image2MusicVideoQueryResult {
   error_msg?: string;
 }
 
+// ==================== 音色克隆 API ====================
+
+export interface VoiceCloneSubmitParams {
+  name: string;
+  originVoiceFileId: string;
+  voiceSpeed: number;
+  voiceText: string;
+  score?: number;
+}
+
+export interface Text2VoiceSubmitParams {
+  name: string;
+  voiceText: string;
+  voiceId?: string;
+  voiceSpeed: number;
+  voiceName?: string;
+  score?: number;
+}
+
+export interface VoiceCloneResult {
+  taskId: string;
+  status: string;
+  errorMsg?: string;
+  voice?: {
+    voiceId: string;
+    voiceName: string;
+    demoAudioUrl: string;
+  };
+}
+
+export interface CustomVoice {
+  assetId: string;
+  assetName: string;
+  assetUrl: string;
+  assetType: number;
+}
 
 // ==================== API Service ====================
 
 export const avatarService = {
-  // ... (Existing methods) ...
-
   // --- Product Avatar (Image Synthesis) ---
 
   getProductAvatarCategories: () => {
@@ -262,6 +296,28 @@ export const avatarService = {
     });
   },
 
+  // --- Voice Clone ---
+
+  submitVoiceCloneTask: (data: VoiceCloneSubmitParams) => {
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/submitTask', data);
+  },
+
+  queryVoiceCloneTask: (taskId: string) => {
+    return request.get<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/queryTask', {
+      params: { taskId, needCloudFrontUrl: true },
+    });
+  },
+
+  submitText2VoiceTask: (data: Text2VoiceSubmitParams) => {
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/submitTask', data);
+  },
+
+  queryText2VoiceTask: (taskId: string) => {
+    return request.get<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/queryTask', {
+      params: { taskId, needCloudFrontUrl: true },
+    });
+  },
+
   /**
    * 获取数字人列表（营销视频）
    * Endpoint: GET /tp/v1/AiAvatarQuery
@@ -277,7 +333,7 @@ export const avatarService = {
    * 获取语音列表（营销视频）
    * Endpoint: GET /tp/v1/VoiceQuery
    */
-  getVoiceList: (params?: { pageNo?: number; pageSize?: number }) => {
+  getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string }) => {
     return request.get<ApiResponse<{ data: Voice[]; pageNo: number; pageSize: number; total: number }>>(
       '/tp/v1/VoiceQuery',
       { params }
@@ -385,4 +441,3 @@ export const avatarService = {
     });
   },
 };
-
