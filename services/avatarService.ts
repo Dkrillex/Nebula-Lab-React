@@ -166,9 +166,102 @@ export interface QueryVideoCreationTaskResult {
   }>;
 }
 
+// 上传的文件信息
+export interface UploadedFile {
+  fileId: string;
+  fileName: string;
+  fileUrl?: string;
+  format: string;
+  duration?: number; // 音频/视频时长（秒）
+  thumbnail?: string; // 缩略图URL
+}
+
+// ==================== 产品数字人 (Image Synthesis) API ====================
+
+export interface ProductAvatarCategory {
+  categoryId: number;
+  categoryName: string;
+}
+
+export interface ProductAvatar {
+  avatarId: string;
+  avatarName: string;
+  avatarImagePath: string;
+  categoryId: number;
+  // Add other fields as needed
+}
+
+export interface ImageReplaceSubmitParams {
+  avatarId?: string; // ID from list
+  templateImageFileId?: string; // User uploaded avatar file ID
+  productImageFileId?: string; // Product image file ID
+  userFaceImageFileId?: string; // User face image file ID
+  imageEditPrompt: string; // Prompt
+  productSize?: string; // "1" to "6"
+}
+
+export interface ImageReplaceQueryResult {
+  taskId: string;
+  status: string;
+  resultImageUrl?: string;
+  errorMsg?: string;
+}
+
+// ==================== 唱歌数字人 API ====================
+
+export interface Image2MusicVideoSubmitParams {
+  image_url: string;
+  audio_url: string;
+  score: number; // e.g. 7
+}
+
+export interface Image2MusicVideoQueryResult {
+  task_id: string;
+  status: string; // 'done', 'processing', 'failed'
+  video_url?: string;
+  error_msg?: string;
+}
+
+
 // ==================== API Service ====================
 
 export const avatarService = {
+  // ... (Existing methods) ...
+
+  // --- Product Avatar (Image Synthesis) ---
+
+  getProductAvatarCategories: () => {
+    return request.get<ApiResponse<ProductAvatarCategory[]>>('/tp/v1/ProductAvatarCategoryQuery');
+  },
+
+  getProductAvatarList: (params: { pageNo: number; pageSize: number; categoryIds?: string }) => {
+    return request.get<ApiResponse<{ data: ProductAvatar[]; total: number }>>('/tp/v1/ProductAvatarQuery', {
+      params,
+    });
+  },
+
+  submitImageReplaceTask: (data: ImageReplaceSubmitParams) => {
+    return request.post<ApiResponse<{ taskId: string }>>('/tp/v1/ImageReplaceSubmit', data);
+  },
+
+  queryImageReplaceTask: (taskId: string) => {
+    return request.get<ApiResponse<ImageReplaceQueryResult>>('/tp/v1/ImageReplaceQuery', {
+      params: { taskId, needCloudFrontUrl: true },
+    });
+  },
+
+  // --- Singing Avatar ---
+
+  submitSingingAvatarTask: (data: Image2MusicVideoSubmitParams) => {
+    return request.post<ApiResponse<{ task_id: string }>>('/tp/v1/image2musicVideoSubmit', data);
+  },
+
+  querySingingAvatarTask: (taskId: string) => {
+    return request.get<ApiResponse<Image2MusicVideoQueryResult>>('/tp/v1/image2musicVideoQuery', {
+      params: { taskId },
+    });
+  },
+
   /**
    * 获取数字人列表（营销视频）
    * Endpoint: GET /tp/v1/AiAvatarQuery

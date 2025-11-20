@@ -457,7 +457,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
             options={endpointTypeOptions} 
             value={selectedEndpointType} 
             onChange={setSelectedEndpointType} 
-          />
+            />
 
           {/* Display Settings */}
           <div className="space-y-3 pt-4 border-t border-border">
