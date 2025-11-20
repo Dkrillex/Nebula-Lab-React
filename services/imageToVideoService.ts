@@ -18,8 +18,8 @@ export interface TraditionalI2VParams {
 export interface TextOrImage2VideoSubmitParams {
   image_urls: string[]; // 图片URL数组
   prompt?: string;      // 提示词
-  duration?: string;    // 视频时长（字符串，如 '5', '10', '12'）
-  score?: number | string; // 积分
+  duration?: number;    // 视频时长（数值，如 5, 10, 12）
+  score?: number;       // 积分
   resolution?: string;  // 分辨率：'480p', '720p', '1080p', 'best'
 }
 
@@ -34,13 +34,10 @@ export interface TraditionalI2VResult {
 // ==================== Start/End Frame Mode Types ====================
 
 export interface StartEndI2VParams {
-  imageFileId: string; // Start image ID (OSS ID)
-  file: File;          // End image file
+  imageUrls: string[]; // [startImageUrl, endImageUrl]
   prompt?: string;
-  negativePrompt?: string;
   duration?: number;
-  generatingCount?: number;
-  modelId?: string;
+  score?: number;
 }
 
 // ==================== Common Query Result Types ====================
@@ -92,13 +89,13 @@ export const imageToVideoService = {
    * Uses /tp/v1/CommonI2VSubmit for Pro/Best or /tp/v1/textOrImage2videoSubmit for Lite/Plus
    */
   submitTraditional: (data: TraditionalI2VParams) => {
-    if (data.mode === 'lite' || data.mode === 'plus') {
+    if (data.mode === 'lite' || data.mode === 'plus'|| data.mode === 'pro') {
        // Volcano Engine - textOrImage2videoSubmit
        const params: TextOrImage2VideoSubmitParams = {
          image_urls: data.imageUrl ? [data.imageUrl] : [],
          prompt: data.prompt,
-         duration: data.duration?.toString(),
-         score: data.score,
+         duration: typeof data.duration === 'string' ? parseInt(data.duration) : data.duration,
+         score: typeof data.score === 'string' ? parseFloat(data.score) : (data.score as number),
          resolution: data.mode ? qualityToResolution[data.mode] : undefined,
        };
        return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/textOrImage2videoSubmit', params);
@@ -132,32 +129,24 @@ export const imageToVideoService = {
 
   /**
    * Start/End Frame Mode Submit
-   * Endpoint: /tp/v1/MultiImg2VSubmit
-   * Requires FormData with 'file' and 'params' (JSON string)
+   * Uses /tp/v1/textOrImage2videoSubmit (Same as Traditional Lite/Plus)
    */
   submitStartEnd: (data: StartEndI2VParams) => {
-    const formData = new FormData();
-    const { file, ...rest } = data;
-    
-    // "params" field contains the JSON string of other parameters
-    formData.append('params', JSON.stringify(rest));
-    formData.append('file', file);
-
-    return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/MultiImg2VSubmit', formData, {
-      headers: {
-        // Content-Type will be set automatically to multipart/form-data by browser
-      },
-      timeout: 60000 
-    });
+    const params: TextOrImage2VideoSubmitParams = {
+      image_urls: data.imageUrls,
+      prompt: data.prompt,
+      duration: data.duration,
+      score: data.score,
+      resolution: '720p' // Default for Start/End or adjust as needed
+    };
+    return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/textOrImage2videoSubmit', params);
   },
 
   /**
    * Start/End Frame Mode Query
-   * Endpoint: /tp/v1/MultiImg2VQuery
+   * Uses /tp/v1/textOrImage2videoQuery/{taskId}
    */
   queryStartEnd: (taskId: string) => {
-     return request.get<ApiResponse<I2VTaskResult>>('/tp/v1/MultiImg2VQuery', {
-       params: { taskId, needCloudFrontUrl: true }
-     });
+     return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
   }
 };

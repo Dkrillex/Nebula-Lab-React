@@ -387,7 +387,6 @@ const Header: React.FC<HeaderProps> = ({
                      )}
                      <div className="hidden md:flex flex-col items-start">
                        <span className="text-xs font-semibold text-foreground leading-none">{user.realName || user.username || 'User'}</span>
-                       <span className="text-[10px] text-muted leading-none mt-1">{user.roles?.[0] || 'Member'}</span>
                      </div>
                   </div>
 

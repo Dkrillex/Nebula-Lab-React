@@ -23,6 +23,7 @@ export interface Voice {
   style?: string;
   bestSupportLanguage?: string;
   demoAudioUrl?: string;
+  durations?: string;
 }
 
 // 字幕信息
@@ -351,7 +352,7 @@ export const avatarService = {
    * Endpoint: GET /tp/v1/VoiceQuery
    */
   getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string }) => {
-    return request.get<ApiResponse<{ data: Voice[]; pageNo: number; pageSize: number; total: number }>>(
+    return request.get<{ result: { data: Voice[]; total: number } }>(
       '/tp/v1/VoiceQuery',
       { params }
     );

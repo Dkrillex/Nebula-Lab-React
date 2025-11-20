@@ -1065,7 +1065,7 @@ export const translations: Record<string, Translation> = {
       phoneLabel: 'Phone Number',
       phonePlaceholder: 'Enter phone number',
       codeLabel: 'Verification Code',
-      codePlaceholder: '6-digit code',
+      codePlaceholder: '4-digit code',
       sendCode: 'Send Code',
       codeSent: 'Sent!',
       signIn: 'Sign In'
@@ -1660,7 +1660,7 @@ export const translations: Record<string, Translation> = {
       phoneLabel: '手机号码',
       phonePlaceholder: '输入手机号',
       codeLabel: '验证码',
-      codePlaceholder: '6位验证码',
+      codePlaceholder: '4位验证码',
       sendCode: '获取验证码',
       codeSent: '已发送',
       signIn: '立即登录'

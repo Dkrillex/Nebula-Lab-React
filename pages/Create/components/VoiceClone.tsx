@@ -404,21 +404,15 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       });
 
       if (res.code === 200) {
-         let data: Voice[] = [];
-         let total = 0;
-         if ((res as any).result?.data) {
-             data = (res as any).result.data;
-             total = (res as any).result.total;
-         } else if (res.data?.result?.data) {
-             data = res.data.result.data;
-             total = res.data.result.total;
-         } else if (res.data && (res.data as any).data) {
-             data = (res.data as any).data;
-             total = (res.data as any).total || 0;
+         const resultData = res.data?.result;
+         console.log('resultData', resultData);
+         if (resultData) {
+             setVoiceList(resultData.data || []);
+             setVoicePagination(prev => ({ ...prev, current: page, total: resultData.total || 0 }));
+         } else {
+             setVoiceList([]);
+             setVoicePagination(prev => ({ ...prev, current: page, total: 0 }));
          }
-
-         setVoiceList(data || []);
-         setVoicePagination(prev => ({ ...prev, current: page, total }));
       }
     } catch (error) {
       console.error('Failed to fetch voices', error);
@@ -795,9 +789,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                                        </div>
                                        <div className="min-w-0">
                                            <p className={`font-bold text-sm truncate ${selectedVoice?.voiceId === voice.voiceId ? 'text-indigo-700' : 'text-gray-800'}`}>{voice.voiceName}</p>
-                                           <div className="flex gap-1 text-[10px] text-gray-500">
+                                           <div className="flex gap-1 text-[10px] text-gray-500 flex-wrap">
                                                <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.gender === 'male' ? t.male : t.female}</span>
                                                {voice.style && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.style}</span>}
+                                               {voice.accent && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.accent}</span>}
+                                               {voice.bestSupportLanguage && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.bestSupportLanguage}</span>}
                                            </div>
                                        </div>
                                    </div>

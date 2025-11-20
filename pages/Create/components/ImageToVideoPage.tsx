@@ -226,7 +226,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
           negativePrompt,
           mode: quality, // 'lite' | 'pro' | 'best'
           duration: duration,
-          score: '0.3' // Default cost
+          score: 0.3 // Default cost
         });
 
         if (res.code === 200 && res.data) {
@@ -242,17 +242,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
       } else {
         // Start/End Mode
-        if (!endImage?.file) {
+        if (!endImage?.fileUrl) { // Check fileUrl instead of file since we need the URL
            throw new Error('End image file is missing');
         }
         isStartEnd = true;
         
         const res = await imageToVideoService.submitStartEnd({
-          imageFileId: startImage!.fileId, // Start image ID
-          file: endImage!.file,            // End image File object
+          imageUrls: [startImage!.fileUrl, endImage!.fileUrl],
           prompt,
-          negativePrompt,
           duration: duration,
+          score: 0.3
         });
 
         if (res.code === 200 && res.data) {

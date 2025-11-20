@@ -93,6 +93,7 @@ export const authService = {
     const registerData = {
       ...data,
       clientId: CLIENT_ID,
+      grantType: 'password',
       tenantId: data.tenantId || TENANT_ID,
       userType: data.userType || 'sys_user',
       registerSystem: data.registerSystem || '1',
@@ -101,7 +102,7 @@ export const authService = {
     return request.post(
       '/auth/register',
       registerData,
-      { isToken: false, encrypt: true }
+      { isToken: false, encrypt: false }
     );
   },
 };
