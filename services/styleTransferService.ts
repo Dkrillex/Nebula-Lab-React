@@ -18,7 +18,10 @@ export interface AnyShootStandardParams {
 export interface AnyShootStandardResult {
   taskId: string;
   status: string;
+  errorMsg?: string;
   msg?: string;
+  subTaskId?: string;
+  noticeUuid?: string;
 }
 
 // ==================== 万物迁移（创意模式）Types ====================
@@ -101,19 +104,27 @@ export interface TemplateListParams {
 
 export interface AnyShootTaskResult {
   taskId: string;
-  status: string; // 'init', 'processing', 'success', 'fail'
+  status: string; // 'init', 'running', 'success', 'fail'
   errorMsg?: string;
-  resultImages?: string[]; // 生成的图片URL数组
   progress?: number;
+  anyfitImages?: Array<{
+    key: number;
+    url: string;
+    previewVisible?: boolean;
+  }>;
+  resultImages?: string[]; // 兼容不同格式
+  subTaskId?: string;
+  noticeUuid?: string;
 }
 
 export const styleTransferService = {
   /**
    * 标准模式提交
    * Endpoint: /tp/v2/product/anyshoot/submit (V2版本)
+   * 返回格式: { result: AnyShootStandardResult }
    */
   submitStandard: (data: AnyShootStandardParams) => {
-    return request.post<ApiResponse<AnyShootStandardResult>>('/tp/v2/product/anyshoot/submit', data, {
+    return request.post<{ result: AnyShootStandardResult }>('/tp/v2/product/anyshoot/submit', data, {
       timeout: 300000 // 5分钟超时
     });
   },
@@ -121,9 +132,10 @@ export const styleTransferService = {
   /**
    * 标准模式查询
    * Endpoint: /tp/v2/product/anyshoot/query
+   * 返回格式: { result: AnyShootTaskResult }
    */
   queryStandard: (taskId: string) => {
-    return request.get<ApiResponse<AnyShootTaskResult>>('/tp/v2/product/anyshoot/query', {
+    return request.get<{ result: AnyShootTaskResult }>('/tp/v2/product/anyshoot/query', {
       params: { taskId, needCloudFrontUrl: true }
     });
   },

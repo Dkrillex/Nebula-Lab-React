@@ -346,19 +346,15 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
     redrawAllShapes();
   };
 
-  const handleWheel = (e: React.WheelEvent) => {
+  const handleWheel = (e: WheelEvent) => {
     if (!enableZoom) return;
     e.preventDefault();
-    // e.stopPropagation(); 
-    // Note: stopPropagation might block parent scroll. 
-    // Standard behavior: if hovering canvas, zoom canvas, don't scroll page?
-    // Let's allow preventDefault to stop page scroll if intended.
-
+    
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setZoomScale(prev => Math.min(Math.max(prev + delta, 1), 3));
   };
 
-  // Keyboard events for Space key (Pan mode)
+  // Keyboard events for Space key (Pan mode) and Wheel event for Zoom
   useEffect(() => {
     if (!enableZoom) return;
 
@@ -377,9 +373,19 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 
     window.addEventListener('keydown', handleKeyDown);
     window.addEventListener('keyup', handleKeyUp);
+    
+    // Add wheel event listener with passive: false to allow preventDefault
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('wheel', handleWheel, { passive: false });
+    }
+    
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
+      if (container) {
+        container.removeEventListener('wheel', handleWheel);
+      }
     };
   }, [enableZoom]);
 
@@ -516,7 +522,6 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       onTouchStart={startDraw}
       onTouchMove={moveDraw}
       onTouchEnd={endDraw}
-      onWheel={handleWheel}
     >
       <canvas ref={mainCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
       <canvas ref={maskCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-70" />
