@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useOutletContext } from 'react-router-dom';
 import { RefreshCw, Wallet, Receipt, Clock, ArrowRightLeft } from 'lucide-react';
 import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
@@ -27,7 +28,10 @@ interface ExpensesPageProps {
   };
 }
 
-const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
+const ExpensesPage: React.FC = () => {
+  const { t: rootT } = useOutletContext<{ t: any }>();
+  const t = rootT?.expensesPage as ExpensesPageProps['t'];
+  
   const { user } = useAuthStore();
   // 模式切换：'balance' 余额模式，'points' 积分模式
   const [currentMode, setCurrentMode] = useState<'balance' | 'points'>('balance');
@@ -223,6 +227,10 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
     return sum + (Number(account.userPoints) || 0);
   }, 0);
 
+  if (!t) {
+    return null;
+  }
+
   return (
     <div className="bg-background min-h-screen pb-12 font-sans">
       
@@ -332,15 +340,15 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                       </div>
                    ) : (
                      <>
-                       {currentMode === 'balance' ? (
-                          expenseLogs.map((log) => (
-                            <ExpenseRow key={log.id} record={convertLogToExpenseRecord(log)} />
-                          ))
-                       ) : (
-                          scoreList.map((score) => (
-                            <ScoreRow key={score.id} score={score} />
-                          ))
-                       )}
+                      {currentMode === 'balance' ? (
+                         expenseLogs.map((log) => (
+                           <ExpenseRow key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
+                         ))
+                      ) : (
+                         scoreList.map((score) => (
+                           <ScoreCard key={score.id} score={score} t={t} />
+                         ))
+                      )}
                      </>
                    )}
                  </div>
@@ -384,9 +392,9 @@ const ExpenseRow: React.FC<{
     duration: string;
     totalTokens: number;
     timestamp: string;
-  }, 
-  t: ExpensesPageProps['t'] 
-}) => {
+  }; 
+  t: ExpensesPageProps['t'];
+}> = ({ record, t }) => {
   const isConsumption = record.type === 'consumption';
   
   return (
@@ -425,10 +433,10 @@ const ExpenseRow: React.FC<{
 };
 
 // 积分流水卡片组件
-const ScoreCard = ({ score, t }: { 
-  score: ScoreRecord, 
-  t: ExpensesPageProps['t'] 
-}) => {
+const ScoreCard: React.FC<{
+  score: ScoreRecord;
+  t: ExpensesPageProps['t'];
+}> = ({ score, t }) => {
   const scoreValue = Number(score.score) || 0;
   const isPositive = scoreValue > 0;
   const assetTypeMap: Record<number, string> = {

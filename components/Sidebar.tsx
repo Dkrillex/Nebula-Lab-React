@@ -235,7 +235,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                             }`}
                             title={isCollapsed ? child.label : undefined}
                           >
-                            <div className="relative flex items-center gap-2">
+                            <div className="relative flex items-center gap-3">
                                 {isChildActive && !isCollapsed && <div className="absolute -left-7 top-1/2 -translate-y-1/2 w-1 h-4 bg-gradient-to-b from-indigo-500 to-purple-500 rounded-r"></div>}
                                 <ChildIcon size={16} />
                                 {!isCollapsed && isExternalLink && <ExternalLink size={12} className="opacity-60" />}
@@ -271,14 +271,18 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
         {!isCollapsed ? (
           <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
-              <div className="flex items-center gap-2 mb-2 text-indigo-500">
+              <div className="flex items-center gap-3 mb-2 text-indigo-500">
                 <Sparkles size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">Pro Feature111</span>
+                <span className="text-xs font-bold uppercase tracking-wider">NebulaLab全新版本</span>
               </div>
-              <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p>
-              <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
+              {/* 新增个logo */}
+              <div className="flex justify-center my-3">
+                <img src="/public/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
+              </div>
+              {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
+              {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
                 Upgrade
-              </button>
+              </button> */}
           </div>
         ) : (
           <div className="flex justify-center py-2">
