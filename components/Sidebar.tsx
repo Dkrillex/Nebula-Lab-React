@@ -82,7 +82,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   };
 
   const menuStructure = [
-    { id: 'home', icon: Home, label: t.home, path: '/' },
+    { id: 'home', icon: Home, label: t.home, path: '/create' },
     { 
       id: 'modelCenter', 
       icon: Box, 

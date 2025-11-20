@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, Loader, ChevronDown, Image as ImageIcon, RefreshCcw } from 'lucide-react';
+import { Upload, X, Loader, Image as ImageIcon } from 'lucide-react';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
-import { useAuthStore } from '../../../stores/authStore';
+import UploadComponent from '../../../components/UploadComponent';
 
 interface DigitalHumanProductProps {
   t: any;
-  handleFileUpload: (file: File, type: 'image') => Promise<any>; // Use generic upload or specific
+  handleFileUpload: (file: File, type: 'image') => Promise<any>; // Kept for compatibility if needed, but we use UploadComponent mainly now
   uploading: boolean;
   setErrorMessage: (msg: string | null) => void;
 }
@@ -36,9 +36,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [generating, setGenerating] = useState(false);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
 
-  const productInputRef = useRef<HTMLInputElement>(null);
-  const faceInputRef = useRef<HTMLInputElement>(null);
-  const customAvatarInputRef = useRef<HTMLInputElement>(null);
+  // Refs for manual trigger if needed, though UploadComponent handles it
+  const productUploadRef = useRef<any>(null);
+  const faceUploadRef = useRef<any>(null);
+  const avatarUploadRef = useRef<any>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -206,20 +207,18 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         {/* Avatar Grid */}
         <div className="grid grid-cols-3 gap-3 overflow-y-auto custom-scrollbar flex-1 min-h-[300px] content-start">
             {/* Upload Custom Item */}
-            <div 
-                onClick={() => customAvatarInputRef.current?.click()}
-                className={`aspect-[9/16] border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${customAvatarImage ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+            <UploadComponent
+                uploadType="tv"
+                immediate={true}
+                onUploadComplete={(file) => {
+                    setCustomAvatarImage({ fileId: file.fileId, url: file.fileUrl || '' });
+                    setSelectedAvatar(null);
+                }}
+                className={`aspect-[9/16] ${customAvatarImage ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'}`}
             >
-                <input ref={customAvatarInputRef} type="file" accept="image/*" onChange={(e) => onUpload(e, 'avatar')} className="hidden" />
-                {customAvatarImage ? (
-                    <img src={customAvatarImage.url} className="w-full h-full object-cover rounded-lg" />
-                ) : (
-                    <>
-                        <Upload size={24} className="text-gray-400 mb-2" />
-                        <span className="text-xs text-gray-500">上传自定义</span>
-                    </>
-                )}
-            </div>
+                <Upload size={24} className="text-gray-400 mb-2" />
+                <span className="text-xs text-gray-500">上传自定义</span>
+            </UploadComponent>
 
             {loadingAvatars ? (
                 <div className="col-span-3 flex justify-center py-10"><Loader className="animate-spin text-indigo-600" /></div>
@@ -263,15 +262,20 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                                   {userFaceImage ? (
                                       <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-lg relative">
                                           <img src={userFaceImage.url} className="w-full h-full object-cover" />
-                                          <button onClick={() => setUserFaceImage(null)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center rounded-bl text-[10px]">×</button>
+                                          <button onClick={() => setUserFaceImage(null)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center rounded-bl text-[10px] z-20">×</button>
                                       </div>
                                   ) : (
-                                      <button onClick={() => faceInputRef.current?.click()} className="w-12 h-12 bg-black/60 hover:bg-black/80 text-white rounded-lg flex flex-col items-center justify-center backdrop-blur-sm border border-white/30 transition">
+                                      <UploadComponent
+                                          uploadType="tv"
+                                          immediate={true}
+                                          showPreview={false}
+                                          onUploadComplete={(file) => setUserFaceImage({ fileId: file.fileId, url: file.fileUrl || '' })}
+                                          className="w-12 h-12 bg-black/60 hover:bg-black/80 text-white rounded-lg flex flex-col items-center justify-center backdrop-blur-sm border border-white/30 transition !border-solid"
+                                      >
                                           <Upload size={16} />
                                           <span className="text-[10px] mt-1">换脸</span>
-                                      </button>
+                                      </UploadComponent>
                                   )}
-                                  <input ref={faceInputRef} type="file" accept="image/*" onChange={(e) => onUpload(e, 'face')} className="hidden" />
                               </div>
                           </div>
                       )}
@@ -283,20 +287,17 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   <h3 className="font-bold text-gray-800 dark:text-gray-200">产品配置</h3>
                   
                   {/* Product Upload */}
-                  <div onClick={() => !productImage && productInputRef.current?.click()} className={`relative h-40 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition ${productImage ? 'border-indigo-500' : 'border-gray-300 dark:border-gray-600'}`}>
-                      <input ref={productInputRef} type="file" accept="image/*" onChange={(e) => onUpload(e, 'product')} className="hidden" />
-                      {productImage ? (
-                          <>
-                            <img src={productImage.url} className="w-full h-full object-contain rounded-xl p-2" />
-                            <button onClick={(e) => { e.stopPropagation(); setProductImage(null); }} className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600">×</button>
-                          </>
-                      ) : (
-                          <div className="text-center text-gray-500">
-                              <Upload size={32} className="mx-auto mb-2" />
-                              <p className="text-sm">上传产品图片</p>
-                          </div>
-                      )}
-                  </div>
+                  <UploadComponent
+                      uploadType="tv"
+                      immediate={true}
+                      onUploadComplete={(file) => setProductImage({ fileId: file.fileId, url: file.fileUrl || '' })}
+                      className="h-40"
+                  >
+                        <div className="text-center text-gray-500">
+                            <Upload size={32} className="mx-auto mb-2" />
+                            <p className="text-sm">上传产品图片</p>
+                        </div>
+                  </UploadComponent>
 
                   {/* Product Size */}
                   {productImage && (

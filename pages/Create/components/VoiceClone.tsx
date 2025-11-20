@@ -554,25 +554,25 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   // --- Render ---
 
   return (
-    <div className="w-full h-full bg-gradient-to-br from-indigo-500 to-purple-600 p-4 md:p-8 overflow-y-auto custom-scrollbar">
+    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto custom-scrollbar">
       {/* Header */}
-      <div className="text-center mb-8 text-white">
+      <div className="text-center mb-8 text-gray-800 dark:text-gray-100">
         <h1 className="text-3xl font-bold mb-2">{pageMode === 'clone' ? t.title1 : t.title2}</h1>
-        <p className="text-white/80">{pageMode === 'clone' ? t.desc1 : t.desc2}</p>
+        <p className="text-gray-600 dark:text-gray-400">{pageMode === 'clone' ? t.desc1 : t.desc2}</p>
       </div>
 
       {/* Mode Tabs */}
       <div className="flex justify-center mb-8">
-        <div className="bg-white/10 backdrop-blur-md p-1.5 rounded-full flex gap-2 border border-white/20">
+        <div className="bg-white dark:bg-gray-800 p-1.5 rounded-full flex gap-2 border border-gray-200 dark:border-gray-700 shadow-sm">
           <button 
             onClick={() => switchMode('clone')}
-            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'clone' ? 'bg-white text-indigo-600 shadow-lg' : 'text-white/70 hover:text-white'}`}
+            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'clone' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
           >
             <span className="text-lg">🧪</span> {t.title1}
           </button>
           <button 
             onClick={() => switchMode('synthesis')}
-            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'synthesis' ? 'bg-white text-indigo-600 shadow-lg' : 'text-white/70 hover:text-white'}`}
+            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'synthesis' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
           >
             <span className="text-lg">🎨</span> {t.title2}
           </button>
