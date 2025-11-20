@@ -6,8 +6,9 @@ import { generateAesKey, encryptWithAes, encryptBase64, decryptBase64, decryptWi
 import { encrypt as rsaEncrypt, decrypt as rsaDecrypt } from '../utils/jsencrypt';
 import { useAuthStore } from '../stores/authStore';
 
-// 全局加密开关（可以通过环境变量配置）
-const ENABLE_ENCRYPT = import.meta.env.VITE_ENABLE_ENCRYPT === 'true' || false;
+// 全局加密开关（可以通过环境变量配置，默认启用）
+// 如果环境变量明确设置为 'false' 则禁用，否则启用
+const ENABLE_ENCRYPT = import.meta.env.VITE_ENABLE_ENCRYPT !== 'false';
 
 // 默认语言（可以从 localStorage 或 store 获取）
 function getLanguage(): string {
