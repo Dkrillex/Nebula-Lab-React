@@ -14,6 +14,7 @@ import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
 import WorkshopPage from './components/WorkshopPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
+import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import AuthModal from '../../components/AuthModal';
 
@@ -74,6 +75,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
+  const { setData } = useVideoGenerationStore();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   // Default to home (dashboard) if no tool is specified
@@ -410,22 +412,15 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
 
       const images = referenceMedia ? [referenceMedia] : [];
       
-      // 存储到 localStorage 以便在目标页面使用
-      localStorage.setItem(`transfer_${transferId}`, JSON.stringify({
+      // 使用 store 存储数据
+      setData(transferId, {
         images,
         sourcePrompt: item.templateDesc,
         timestamp: Date.now(),
         source: isImageType ? 'imageGenerates' : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
-      }));
-
-      navigate(targetUrl, {
-        state: {
-          transferId,
-          modelName,
-          prompt: item.templateDesc,
-          images
-        }
       });
+
+      navigate(`${targetUrl}&transferId=${transferId}&model_name=${modelName}`);
     };
 
     if (!isAuthenticated) {
@@ -537,103 +532,83 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
               ))}
             </div>
 
-            {/* Templates Masonry Grid */}
-            <div 
-              ref={masonryRef}
-              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-8"
-              style={{
-                gridAutoRows: '8px',
-                alignItems: 'start'
-              }}
-            >
-               {labTemplateData.map((item, index) => {
-                 // 调试：只在第一次渲染时打印
-                 if (index === 0) {
-                   console.log('📋 渲染模板数据，总数:', labTemplateData.length, 'hasMore:', hasMore);
-                 }
-                 return (
-                 <div 
-                   key={item.id} 
-                   className="break-inside-avoid rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer"
-                   style={{ gridRowEnd: 'span var(--row-span, 1)' }}
-                 >
-                    <div className="relative" onClick={() => handleTemplateClick(item)}>
-                       {/* Media Content */}
-                       {item.templateType === 3 || item.templateType === 4 ? (
-                          <video 
-                            src={item.templateUrl?.replace(/`/g, '')}
-                            className="w-full h-auto object-cover"
-                            loop
-                            muted
-                            playsInline
-                            onMouseEnter={(e) => {
-                              const video = e.currentTarget;
-                              video.play().catch(console.error);
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.pause();
-                            }}
-                            onLoadedMetadata={(e) => {
-                              // 计算视频高度对应的行数
-                              const video = e.currentTarget;
-                              const height = video.videoHeight || video.clientHeight;
-                              const rowSpan = Math.ceil((height + 16) / (8 + 16));
-                              e.currentTarget.closest('.break-inside-avoid')?.setAttribute('style', `grid-row-end: span ${rowSpan}`);
-                            }}
-                          />
-                       ) : (
-                          <img 
-                            src={item.templateUrl?.replace(/`/g, '')}
-                            alt={item.templateName}
-                            className="w-full h-auto object-cover"
-                            loading="lazy"
-                            onLoad={(e) => {
-                              // 计算图片高度对应的行数
-                              const img = e.currentTarget;
-                              const height = img.naturalHeight || img.clientHeight;
-                              const rowSpan = Math.ceil((height + 16) / (8 + 16));
-                              img.closest('.break-inside-avoid')?.setAttribute('style', `grid-row-end: span ${rowSpan}`);
-                            }}
-                          />
-                       )}
-                       
-                       {/* Overlay Info */}
-                       <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end min-h-[80px]">
-                          <div className="flex justify-between items-center mb-1">
-                            <h3 className="text-sm font-bold truncate pr-2">{item.templateName}</h3>
-                            <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white whitespace-nowrap">{renderDict(item.templateType)}</span>
-                          </div>
-                          <p className="text-[10px] text-white/80 line-clamp-2 mb-2">{item.templateDesc}</p>
-                          <div className="flex justify-between items-center text-xs">
-                             <button 
-                               className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm"
-                               onClick={(e) => {
-                                 e.stopPropagation();
-                                 handleDoSame(item);
-                               }}
-                             >
-                               做同款
-                             </button>
-                             <div 
-                               className="flex items-center gap-1 cursor-pointer" 
-                               onClick={(e) => clickTemplateLike(e, item, item.isLike)}
-                             >
-                                <span className="text-base">{item.isLike ? '❤️' : '🤍'}</span>
-                                <span>{item.likeCount || 0}</span>
-                             </div>
-                          </div>
-                       </div>
-                    </div>
-                 </div>
-               );
-               })}
-               
+            {/* Templates Masonry Grid - Using CSS Columns for stability */}
+            <div className="pb-8">
+              <div 
+                ref={masonryRef}
+                className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4"
+              >
+                 {labTemplateData.map((item, index) => (
+                   <div 
+                     key={item.id} 
+                     className="break-inside-avoid rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer mb-4"
+                     onClick={() => handleTemplateClick(item)}
+                   >
+                      <div className="relative">
+                         {/* Media Content */}
+                         {item.templateType === 3 || item.templateType === 4 ? (
+                            <video 
+                              src={item.templateUrl?.replace(/`/g, '')}
+                              className="w-full h-auto object-cover"
+                              loop
+                              muted
+                              playsInline
+                              onMouseEnter={(e) => {
+                                const video = e.currentTarget;
+                                video.play().catch(console.error);
+                              }}
+                              onMouseLeave={(e) => {
+                                e.currentTarget.pause();
+                              }}
+                            />
+                         ) : (
+                            <img 
+                              src={item.templateUrl?.replace(/`/g, '')}
+                              alt={item.templateName}
+                              className="w-full h-auto object-cover"
+                              loading="lazy"
+                            />
+                         )}
+                         
+                         {/* Overlay Info */}
+                         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end min-h-[80px]">
+                            <div className="flex justify-between items-center mb-1">
+                              <h3 className="text-sm font-bold truncate pr-2">{item.templateName}</h3>
+                              <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white whitespace-nowrap">{renderDict(item.templateType)}</span>
+                            </div>
+                            <p className="text-[10px] text-white/80 line-clamp-2 mb-2">{item.templateDesc}</p>
+                            <div className="flex justify-between items-center text-xs">
+                               <button 
+                                 className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm"
+                                 onClick={(e) => {
+                                   e.stopPropagation();
+                                   handleDoSame(item);
+                                 }}
+                               >
+                                 做同款
+                               </button>
+                               <div 
+                                 className="flex items-center gap-1 cursor-pointer" 
+                                 onClick={(e) => clickTemplateLike(e, item, item.isLike)}
+                               >
+                                  <span className="text-base">{item.isLike ? '❤️' : '🤍'}</span>
+                                  <span>{item.likeCount || 0}</span>
+                               </div>
+                            </div>
+                         </div>
+                      </div>
+                   </div>
+                 ))}
+              </div>
+
                {/* 无限滚动触发器 */}
                {hasMore && (
                  <div 
                    ref={sentinelRef}
-                   className="col-span-full h-20"
-                 />
+                   className="w-full h-20 flex justify-center items-center mt-4"
+                 >
+                    {loading && <Loader2 className="animate-spin text-indigo-500" size={24} />}
+                 </div>
                )}
             </div>
             

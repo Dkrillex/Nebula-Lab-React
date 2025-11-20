@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { 
   Settings, Trash2, Save, Plus, RefreshCw, Send, Bot, User, 
   MoreHorizontal, Cpu, MessageSquare, X, Copy, Loader2, Square,
@@ -8,6 +9,7 @@ import { chatService, ChatMessage, ChatRequest } from '../../services/chatServic
 import { modelsService, ModelsVO } from '../../services/modelsService';
 import { imageGenerateService, ImageGenerateRequest } from '../../services/imageGenerateService';
 import { videoGenerateService, VideoGenerateRequest } from '../../services/videoGenerateService';
+import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
 
@@ -59,7 +61,9 @@ interface ExtendedChatMessage extends ChatMessage {
 type Mode = 'chat' | 'image' | 'video';
 
 const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
+  const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
+  const { getData } = useVideoGenerationStore();
   // 模式切换：对话/图片生成/视频生成
   const [currentMode, setCurrentMode] = useState<Mode>('chat');
   
@@ -147,6 +151,44 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
   useEffect(() => {
     fetchModels();
   }, [currentMode]);
+
+  // 监听 URL 参数，处理"做同款"跳转
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    const transferId = searchParams.get('transferId');
+    const modelName = searchParams.get('model_name');
+    
+    if (mode && (mode === 'chat' || mode === 'image' || mode === 'video')) {
+      setCurrentMode(mode as Mode);
+    }
+
+    if (transferId) {
+      try {
+        const data = getData(transferId);
+        
+        if (data) {
+          console.log('📋 读取到做同款数据:', data);
+          
+          // 设置提示词
+          if (data.sourcePrompt) {
+            setInputValue(data.sourcePrompt);
+          }
+          
+          // 设置参考图
+          if (data.images && Array.isArray(data.images) && data.images.length > 0) {
+            setUploadedImages(data.images); 
+          }
+          
+          // 设置模型
+          if (modelName) {
+            setSelectedModel(modelName);
+          }
+        }
+      } catch (error) {
+        console.error('解析做同款数据失败:', error);
+      }
+    }
+  }, [searchParams, getData]);
 
   // 获取历史对话记录
   const fetchChatRecords = async () => {
