@@ -124,7 +124,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   return (
     <aside 
       className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out flex-shrink-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
+        isCollapsed ? 'w-20' : 'w-56'
       }`}
     >
       <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">

@@ -261,37 +261,37 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
            <p className="text-sm text-muted mt-1">管理您的 API 密钥以访问服务</p>
         </div>
         
-        <button 
-          onClick={handleCreate}
-          className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
-        >
-          <Plus size={16} />
-          {t.createButton}
-        </button>
-      </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="relative w-full sm:w-64">
+              <input 
+                type="text" 
+                placeholder="搜索密钥名称..." 
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-sm focus:ring-1 focus:ring-foreground focus:border-foreground transition-all outline-none"
+              />
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              </div>
+          </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="relative flex-1 max-w-md">
-            <input 
-              type="text" 
-              placeholder="搜索密钥名称..." 
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-sm focus:ring-1 focus:ring-foreground focus:border-foreground transition-all outline-none"
-            />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </div>
+          <button 
+            onClick={handleSearch}
+            disabled={loading}
+            className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-surface transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+          >
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            刷新
+          </button>
+
+          <button 
+            onClick={handleCreate}
+            className="flex items-center justify-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap"
+          >
+            <Plus size={16} />
+            {t.createButton}
+          </button>
         </div>
-        <button 
-          onClick={handleSearch}
-          disabled={loading}
-          className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-surface transition-colors flex items-center gap-2"
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          刷新
-        </button>
       </div>
 
       {/* Table Layout */}
