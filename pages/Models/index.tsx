@@ -1,6 +1,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { modelService, ModelListResponse } from '../../services/modelService';
 import { AIModel } from '../../types';
 
@@ -15,6 +16,7 @@ interface ModelSquarePageProps {
       vendorLabel: string;
       capabilityLabel: string;
       billingLabel: string;
+      endpointLabel?: string;
       displayLabel: string;
       all: string;
       reset: string;
@@ -43,6 +45,7 @@ interface FilterOption {
 }
 
 const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
+  const navigate = useNavigate();
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
   const [showFilterPanel, setShowFilterPanel] = useState(true);
@@ -52,6 +55,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   const [selectedVendor, setSelectedVendor] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedBilling, setSelectedBilling] = useState('');
+  const [selectedEndpointType, setSelectedEndpointType] = useState('');
   
   // 显示设置
   const [currency, setCurrency] = useState<'USD' | 'CNY'>('USD');
@@ -61,6 +65,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   const [vendorOptions, setVendorOptions] = useState<FilterOption[]>([]);
   const [tagOptions, setTagOptions] = useState<FilterOption[]>([]);
   const [billingTypeOptions, setBillingTypeOptions] = useState<FilterOption[]>([]);
+  const [endpointTypeOptions, setEndpointTypeOptions] = useState<FilterOption[]>([]);
   const [exchangeRate, setExchangeRate] = useState(7.3);
   
   // 分页
@@ -122,6 +127,30 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
           })
         ];
         setBillingTypeOptions(billingTypes);
+
+        // Generate Endpoint Type Options
+        const endpointMap = new Map<string, number>();
+        modelsArray.forEach(model => {
+          const types = (model as any).supportedEndpointTypesList;
+          if (Array.isArray(types)) {
+            types.forEach((type: string) => {
+              const typeStr = String(type).trim();
+              if (typeStr) {
+                endpointMap.set(typeStr, (endpointMap.get(typeStr) || 0) + 1);
+              }
+            });
+          }
+        });
+        
+        const endpointTypes: FilterOption[] = [
+          { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
+          ...Array.from(endpointMap.entries()).map(([type, count]) => ({
+            value: type,
+            label: `${type}(${count})`,
+            count
+          }))
+        ];
+        setEndpointTypeOptions(endpointTypes);
         
       } catch (error) {
         console.error('❌ 获取模型列表失败:', error);
@@ -205,8 +234,16 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
       });
     }
 
+    // 端点类型筛选
+    if (selectedEndpointType) {
+      filtered = filtered.filter(m => {
+        const types = (m as any).supportedEndpointTypesList;
+        return Array.isArray(types) && types.includes(selectedEndpointType);
+      });
+    }
+
     return filtered;
-  }, [models, search, selectedVendor, selectedTag, selectedBilling]);
+  }, [models, search, selectedVendor, selectedTag, selectedBilling, selectedEndpointType]);
 
   // 分页数据
   const paginatedModels = useMemo(() => {
@@ -227,6 +264,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
     setSelectedVendor('');
     setSelectedTag('');
     setSelectedBilling('');
+    setSelectedEndpointType('');
     setCurrentPage(1);
   };
 
@@ -365,7 +403,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   // 监听筛选变化，重置到第一页
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, selectedVendor, selectedTag, selectedBilling]);
+  }, [search, selectedVendor, selectedTag, selectedBilling, selectedEndpointType]);
 
   return (
     <div className="bg-background min-h-full flex">
@@ -412,6 +450,14 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
                   value={selectedBilling}
               onChange={setSelectedBilling} 
             />
+
+          {/* Endpoint Type (Parameter Size) */}
+          <FilterDropdown 
+            label={t.filters.endpointLabel || '端点类型'} 
+            options={endpointTypeOptions} 
+            value={selectedEndpointType} 
+            onChange={setSelectedEndpointType} 
+          />
 
           {/* Display Settings */}
           <div className="space-y-3 pt-4 border-t border-border">
@@ -694,6 +740,8 @@ const ModelDetailDrawer = ({
   currency: 'USD' | 'CNY';
   exchangeRate: number;
 }) => {
+  const navigate = useNavigate();
+
   if (!visible) return null;
 
   const getBillingTypeLabel = (quotaType?: number): string => {
@@ -706,6 +754,38 @@ const ModelDetailDrawer = ({
     return '未知';
   };
 
+  // 判断是否显示按钮
+  const shouldShowChatButton = useMemo(() => {
+    const tags = (model.tags || []).join(',');
+    return tags.includes('对话') || tags.includes('思考');
+  }, [model]);
+
+  const shouldShowImageButton = useMemo(() => {
+    const tags = (model.tags || []).join(',');
+    return tags.includes('文生图') || tags.includes('图生图');
+  }, [model]);
+
+  const shouldShowVideoButton = useMemo(() => {
+    const tags = (model.tags || []).join(',');
+    return tags.includes('文生视频') || tags.includes('图生视频');
+  }, [model]);
+
+  // 跳转处理
+  const goToChat = () => {
+    onClose();
+    navigate(`/chat?model_name=${model.name}&mode=chat`);
+  };
+
+  const goToImage = () => {
+    onClose();
+    navigate(`/chat?model_name=${model.name}&mode=image`);
+  };
+
+  const goToVideo = () => {
+    onClose();
+    navigate(`/chat?model_name=${model.name}&mode=video`);
+  };
+
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
@@ -715,8 +795,8 @@ const ModelDetailDrawer = ({
       />
       
       {/* Drawer */}
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-background shadow-xl overflow-y-auto">
-        <div className="sticky top-0 bg-background border-b border-border px-6 py-4 flex items-center justify-between z-10">
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-background shadow-xl flex flex-col">
+        <div className="flex-none bg-background border-b border-border px-6 py-4 flex items-center justify-between z-10">
           <h2 className="text-xl font-bold">模型详情</h2>
           <button
             onClick={onClose}
@@ -726,7 +806,7 @@ const ModelDetailDrawer = ({
           </button>
         </div>
         
-        <div className="p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Header */}
           <div className="flex items-start gap-4">
             <div className="w-16 h-16 rounded-lg bg-surface border border-border flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -792,6 +872,39 @@ const ModelDetailDrawer = ({
                 ))}
               </div>
             </div>
+          )}
+        </div>
+
+        {/* Bottom Actions */}
+        <div className="flex-none p-6 border-t border-border bg-background flex justify-end gap-3">
+          {shouldShowChatButton && (
+            <button
+              onClick={goToChat}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            >
+              <MessageSquare size={16} />
+              使用该模型对话
+            </button>
+          )}
+          
+          {shouldShowImageButton && (
+            <button
+              onClick={goToImage}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            >
+              <ImageIcon size={16} />
+              生成图片
+            </button>
+          )}
+          
+          {shouldShowVideoButton && (
+            <button
+              onClick={goToVideo}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
+            >
+              <VideoIcon size={16} />
+              生成视频
+            </button>
           )}
         </div>
       </div>

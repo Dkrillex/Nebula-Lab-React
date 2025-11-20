@@ -393,7 +393,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
         id: 'welcome',
         role: 'assistant',
         content: t.welcomeMessage,
-        timestamp: Date.now()
+      timestamp: Date.now()
       }
     ]);
   };
@@ -468,16 +468,16 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
     const aiMessageId = generateId();
     const aiMsg: ExtendedChatMessage = {
       id: aiMessageId,
-      role: 'assistant',
+        role: 'assistant',
       content: '',
       reasoning_content: '',
       timestamp: Date.now(),
       isStreaming: true,
       generatedImages: currentMode === 'image' ? [] : undefined,
       generatedVideos: currentMode === 'video' ? [] : undefined,
-    };
+      };
 
-    setMessages(prev => [...prev, aiMsg]);
+      setMessages(prev => [...prev, aiMsg]);
 
     // 创建AbortController
     abortControllerRef.current = new AbortController();
@@ -922,12 +922,12 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
                   加载中...
                 </div>
               ) : (
-                <select 
-                  value={selectedModel}
-                  onChange={(e) => setSelectedModel(e.target.value)}
-                  className="w-full appearance-none rounded-lg border border-border bg-surface py-2.5 pl-10 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
+              <select 
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value)}
+                className="w-full appearance-none rounded-lg border border-border bg-surface py-2.5 pl-10 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
                   disabled={models.length === 0}
-                >
+              >
                   {models.length === 0 ? (
                     <option value="">暂无可用模型</option>
                   ) : (
@@ -935,7 +935,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
                       <option key={m.id} value={m.modelName}>{m.modelName}</option>
                     ))
                   )}
-                </select>
+              </select>
               )}
             </div>
           </div>
@@ -947,33 +947,33 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
             {/* 对话模式参数 */}
             {currentMode === 'chat' && (
               <>
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{t.temperature}</span>
-                    <span className="text-primary">{temperature}</span>
-                  </div>
-                  <input 
-                    type="range" min="0" max="2" step="0.1" 
-                    value={temperature}
-                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                  <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
-                </div>
+            <div className="space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="font-medium">{t.temperature}</span>
+                 <span className="text-primary">{temperature}</span>
+               </div>
+               <input 
+                 type="range" min="0" max="2" step="0.1" 
+                 value={temperature}
+                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+               />
+               <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
+            </div>
 
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{t.presencePenalty}</span>
+            <div className="space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="font-medium">{t.presencePenalty}</span>
                     <span className="text-primary">{presencePenalty}</span>
-                  </div>
-                  <input 
-                    type="range" min="-2" max="2" step="0.1" 
+               </div>
+               <input 
+                 type="range" min="-2" max="2" step="0.1" 
                     value={presencePenalty}
                     onChange={(e) => setPresencePenalty(parseFloat(e.target.value))}
-                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                  />
-                  <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
-                </div>
+                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+               />
+               <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
+            </div>
               </>
             )}
 
@@ -1096,10 +1096,10 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
                  <span className="text-sm">加载中...</span>
                </div>
              ) : chatRecords.length === 0 ? (
-               <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2 opacity-50">
-                 <MessageSquare size={32} strokeWidth={1.5} />
-                 <span className="text-sm">{t.noHistory}</span>
-               </div>
+             <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2 opacity-50">
+               <MessageSquare size={32} strokeWidth={1.5} />
+               <span className="text-sm">{t.noHistory}</span>
+             </div>
              ) : (
                <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
                  {chatRecords.map((record) => (
@@ -1186,7 +1186,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
           {messages.map((msg) => (
             <MessageBubble
-              key={msg.id}
+              key={msg.id} 
               message={msg}
               onCopy={handleCopy}
             />
@@ -1240,7 +1240,7 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
                   </div>
                 </div>
               )}
-
+              
               <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-background/30 rounded-b-xl">
                  <div className="flex gap-2">
                    {(currentMode === 'image' || currentMode === 'video') && (
@@ -1268,13 +1268,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
                        <span className="text-xs">停止</span>
                      </button>
                    ) : (
-                     <button 
-                       onClick={handleSend}
+                   <button 
+                     onClick={handleSend}
                        disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
                        className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                     >
-                       <Send size={16} />
-                     </button>
+                   >
+                     <Send size={16} />
+                   </button>
                    )}
                  </div>
               </div>
