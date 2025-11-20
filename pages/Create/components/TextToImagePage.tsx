@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Wand2, Image as ImageIcon, Download, Share2, Maximize2, Loader2, Trash2, Upload, X } from 'lucide-react';
+import { Wand2, Image as ImageIcon, Download, Share2, Maximize2, Loader2, Trash2, Upload, X, FolderPlus } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
+import AddMaterialModal from '../../../components/AddMaterialModal';
 
 interface TextToImagePageProps {
   t: {
@@ -65,6 +66,8 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -423,6 +426,13 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                     >
                       <Download size={20} />
                     </button>
+                    <button 
+                      onClick={() => setIsAddModalOpen(true)}
+                      className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                      title="Add to Materials"
+                    >
+                      <FolderPlus size={20} />
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -453,6 +463,21 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
            )}
         </div>
       </div>
+
+      {/* Add Material Modal */}
+      <AddMaterialModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSuccess={() => {
+          // Optional: Show a success toast or update generated image state to show "added"
+          console.log('Added to materials');
+        }}
+        initialData={{
+          assetUrl: previewImage || '',
+          assetName: `Generated Image ${new Date().toLocaleString()}`,
+          assetType: 6, // Image type
+        }}
+      />
     </div>
   );
 };

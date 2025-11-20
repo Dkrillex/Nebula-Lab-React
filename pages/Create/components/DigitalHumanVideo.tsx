@@ -196,7 +196,9 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       const submitRes = await avatarService.submitVideoCreationTask(params);
       
       let newTaskId = '';
-      if ((submitRes as any).result?.taskId) {
+      if (submitRes.data && (submitRes.data as any).result?.taskId) {
+          newTaskId = (submitRes.data as any).result.taskId;
+      } else if ((submitRes as any).result?.taskId) {
           newTaskId = (submitRes as any).result.taskId;
       } else if (submitRes.data && (submitRes.data as any).taskId) {
           newTaskId = (submitRes.data as any).taskId;
