@@ -68,6 +68,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -413,7 +414,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 rounded-lg">
                     <button 
-                      onClick={() => window.open(previewImage, '_blank')}
+                      onClick={() => setIsPreviewOpen(true)}
                       className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
                       title="View Full Size"
                     >
@@ -478,6 +479,27 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
           assetType: 6, // Image type
         }}
       />
+
+      {/* Full Screen Preview Modal */}
+      {isPreviewOpen && previewImage && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsPreviewOpen(false)}
+        >
+          <button 
+            onClick={() => setIsPreviewOpen(false)}
+            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X size={32} />
+          </button>
+          <img 
+            src={previewImage} 
+            alt="Full Preview" 
+            className="max-w-full max-h-full object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 };
