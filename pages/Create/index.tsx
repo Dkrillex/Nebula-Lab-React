@@ -18,61 +18,14 @@ import { templateService, LabTemplate, LabTemplateQuery } from '../../services/t
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import AuthModal from '../../components/AuthModal';
+import { useAppOutletContext } from '../../router';
 
-interface CreatePageProps {
-  onNavigate: (path: string) => void;
-  t: {
-    greeting: string;
-    greetingSuffix: string;
-    inputPlaceholder: string;
-    send: string;
-    upload: string;
-    sideMenu: {
-      home: string;
-      modelCenter: string;
-      creationCenter: string;
-      personalCenter: string;
-      // Model Center items
-      aiExperience: string;
-      modelSquare: string;
-      apiKeys: string;
-      apiDocs: string;
-      // Creation Center items
-      viralVideo: string;
-      digitalHuman: string;
-      imgToVideo: string;
-      textToImage: string;
-      styleTransfer: string;
-      voiceClone: string;
-      workshop: string;
-      // Personal Center items
-      assets: string;
-      pricing: string;
-      expenses: string;
-    };
-    shortcuts: {
-      video: string;
-      videoDesc: string;
-      avatar: string;
-      avatarDesc: string;
-      transform: string;
-      transformDesc: string;
-      sketch: string;
-      sketchDesc: string;
-      inpainting: string;
-      inpaintingDesc: string;
-    };
-    tabs: string[];
-    textToImage?: any;
-    viralVideo?: any;
-    imgToVideo?: any;
-    digitalHuman?: any;
-    styleTransfer?: any;
-    authModal?: any;
-  };
-}
+const CreatePage: React.FC = () => {
+  const { t: rawT, handleNavClick } = useAppOutletContext();
+  // 兼容处理：如果 t 不存在（可能直接渲染而非通过 Outlet），则需要处理
+  // 但由于我们强制在 router 中使用了 OutletContext，这里假设 t 存在
+  const t = rawT.createPage;
 
-const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
@@ -81,6 +34,16 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   
   // Default to home (dashboard) if no tool is specified
   const activeMenu = searchParams.get('tool') || 'home';
+  
+  // ... (rest of the component)
+
+  const onMenuChange = (id: string) => {
+    setSearchParams({ tool: id });
+  };
+  
+  // 为了兼容 onNavigate 属性（如果子组件需要），我们可以传递 handleNavClick
+  const onNavigate = handleNavClick;
+
   
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -99,10 +62,6 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const masonryRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
-
-  const onMenuChange = (id: string) => {
-    setSearchParams({ tool: id });
-  };
 
   // Creative Types Data
   const creativeTypes = [
@@ -323,7 +282,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   }, [labTemplateData.length, activeMenu, hasMore, setupInfiniteScroll]);
 
   const handleTypeClick = (toolId: string) => {
-    onMenuChange(toolId);
+    setSearchParams({ tool: toolId });
   };
 
   const switchCategory = (id: string) => {

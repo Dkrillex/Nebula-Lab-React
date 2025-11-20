@@ -4,39 +4,7 @@ import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSqua
 import { useNavigate } from 'react-router-dom';
 import { modelService, ModelListResponse } from '../../services/modelService';
 import { AIModel } from '../../types';
-
-interface ModelSquarePageProps {
-  t: {
-    title: string;
-    totalModels: string;
-    filterSearch: string;
-    filters: {
-      searchPlaceholder: string;
-      nameLabel: string;
-      vendorLabel: string;
-      capabilityLabel: string;
-      billingLabel: string;
-      endpointLabel?: string;
-      displayLabel: string;
-      all: string;
-      reset: string;
-      hideFilters: string;
-    };
-    display: {
-      currency: string;
-      unit: string;
-    };
-    card: {
-      new: string;
-      perMillion: string;
-      perSecond: string;
-      actions: {
-        calculate: string;
-        chat: string;
-      };
-    };
-  };
-}
+import { useAppOutletContext } from '../../router';
 
 interface FilterOption {
   value: string;
@@ -54,7 +22,10 @@ const getBillingTypeLabel = (quotaType?: number): string => {
   return '未知';
 };
 
-const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
+const ModelSquarePage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.modelSquare;
+
   const navigate = useNavigate();
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -642,7 +613,7 @@ const ModelCard = ({
   onOpenDetail 
 }: { 
   model: AIModel; 
-  t: ModelSquarePageProps['t'];
+  t: any; // Simplified type
   formatPrice: (model: AIModel, priceType?: 'discount' | 'origin') => string;
   formatPriceUnit: (model: AIModel) => string;
   onOpenDetail: (model: AIModel) => void;

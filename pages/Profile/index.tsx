@@ -5,46 +5,11 @@ import { useAuthStore } from '../../stores/authStore';
 import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2 } from 'lucide-react';
 import { uploadService } from '../../services/uploadService';
 import EnterprisePage from '../Enterprise';
+import { useAppOutletContext } from '../../router';
 
-interface ProfilePageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    basicInfo: string;
-    accountSecurity: string;
-    enterpriseManagement?: string;
-    avatar: string;
-    uploadAvatar: string;
-    labels: {
-      nickname: string;
-      phone: string;
-      email: string;
-      gender: string;
-      createTime: string;
-      role: string;
-      dept: string;
-      password: string;
-    };
-    placeholders: {
-      nickname: string;
-      phone: string;
-      email: string;
-    };
-    gender: {
-      male: string;
-      female: string;
-      unknown: string;
-    };
-    buttons: {
-      save: string;
-      reset: string;
-      changePassword: string;
-    };
-    enterprisePage?: any;
-  };
-}
-
-const ProfilePage: React.FC<ProfilePageProps> = ({ t }) => {
+const ProfilePage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.profilePage;
   const { user, fetchUserInfo } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();

@@ -12,33 +12,7 @@ import { videoGenerateService, VideoGenerateRequest } from '../../services/video
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
-
-interface ChatPageProps {
-  t: {
-    settingsTitle: string;
-    selectModel: string;
-    paramsTitle: string;
-    temperature: string;
-    temperatureDesc: string;
-    presencePenalty: string;
-    presencePenaltyDesc: string;
-    shortcutsTitle: string;
-    actions: {
-      clear: string;
-      save: string;
-      new: string;
-      refresh: string;
-    };
-    historyTitle: string;
-    noHistory: string;
-    mainTitle: string;
-    statusReady: string;
-    inputPlaceholder: string;
-    send: string;
-    welcomeMessage: string;
-    footerTip: string;
-  };
-}
+import { useAppOutletContext } from '../../router';
 
 // 扩展消息类型，支持图片和视频
 interface ExtendedChatMessage extends ChatMessage {
@@ -60,7 +34,10 @@ interface ExtendedChatMessage extends ChatMessage {
 
 type Mode = 'chat' | 'image' | 'video';
 
-const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
+const ChatPage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.chatPage;
+
   const [searchParams] = useSearchParams();
   const { user } = useAuthStore();
   const { getData } = useVideoGenerationStore();

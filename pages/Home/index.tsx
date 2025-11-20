@@ -1,15 +1,11 @@
 import React from 'react';
 import Hero from './components/Hero';
 import ModelList from './components/ModelList';
+import { useAppOutletContext } from '../../router';
 
-interface HomeProps {
-  t: {
-    hero: any;
-    modelList: any;
-  }
-}
-
-const Home: React.FC<HomeProps> = ({ t }) => {
+const Home: React.FC = () => {
+  const { t } = useAppOutletContext();
+  
   return (
     <>
       <Hero t={t.hero} />

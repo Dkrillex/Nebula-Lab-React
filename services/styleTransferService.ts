@@ -12,6 +12,7 @@ export interface AnyShootStandardParams {
   generatingCount?: number;    // 生成数量 1-4
   mode?: string;               // 模式
   score?: string;              // 积分
+  location?: number[][];       // 产品位置坐标 [[x1,y1], [x2,y2], [x3,y3], [x4,y4]] (归一化坐标)
 }
 
 export interface AnyShootStandardResult {

@@ -2,32 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { RefreshCw, Bot, Gem, Wallet, ShieldCheck } from 'lucide-react';
 import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
+import { useAppOutletContext } from '../../router';
 
-interface ExpensesPageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    balanceLabel: string;
-    convertPoints: string;
-    buttons: {
-      points: string;
-      balance: string;
-      freeMember: string;
-      refresh: string;
-    };
-    recordsTitle: string;
-    refreshData: string;
-    record: {
-      type: string;
-      duration: string;
-      input: string;
-      output: string;
-      consumption: string;
-    }
-  };
-}
+const ExpensesPage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.expensesPage;
 
-const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
   const { user } = useAuthStore();
   // 模式切换：'balance' 余额模式，'points' 积分模式
   const [currentMode, setCurrentMode] = useState<'balance' | 'points'>('balance');
@@ -482,7 +462,7 @@ const ExpenseCard = ({ record, t }: {
     cacheTokens?: number;
     timestamp: string;
   }, 
-  t: ExpensesPageProps['t'] 
+  t: any // Simplified type
 }) => {
   const isConsumption = record.type === 'consumption';
   
@@ -574,7 +554,7 @@ const ExpenseCard = ({ record, t }: {
 // 积分流水卡片组件
 const ScoreCard = ({ score, t }: { 
   score: ScoreRecord, 
-  t: ExpensesPageProps['t'] 
+  t: any // Simplified type
 }) => {
   const scoreValue = Number(score.score) || 0;
   const isPositive = scoreValue > 0;

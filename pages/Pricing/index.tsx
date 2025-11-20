@@ -1,41 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
+import { useAppOutletContext } from '../../router';
 
-interface PricingPageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    paymentCycle: string;
-    questions: string;
-    paymentMethod: string;
-    wechatPay: string;
-    invoice: string;
-    invoiceLabel: string;
-    starter: {
-      title: string;
-      features: string[];
-    };
-    business: {
-      title: string;
-      features: string[];
-    };
-    enterprise: {
-      title: string;
-      slogan: string;
-      features: string[];
-    };
-    labels: {
-      credits: string;
-      quantity: string;
-      custom: string;
-      buy: string;
-      contact: string;
-    };
-  };
-}
+const PricingPage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.pricingPage;
 
-const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
   const [priceList, setPriceList] = useState<PriceListVO[]>([]);
   const [invoiceEnabled, setInvoiceEnabled] = useState(false);
   const [loading, setLoading] = useState(true);

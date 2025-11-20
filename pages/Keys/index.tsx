@@ -3,36 +3,12 @@ import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react'
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
+import { useAppOutletContext } from '../../router';
 
-interface KeysPageProps {
-  t: {
-    title: string;
-    createButton: string;
-    labels: {
-      limit: string;
-      remaining: string;
-      used: string;
-      expires: string;
-      status: string;
-    };
-    values: {
-      unlimited: string;
-      never: string;
-    };
-    actions: {
-      disable: string;
-      enable: string;
-      delete: string;
-      edit: string;
-    };
-    status: {
-      active: string;
-      disabled: string;
-    }
-  };
-}
-
-const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
+const KeysPage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.keysPage;
+  
   const { user } = useAuthStore();
   const [tokens, setTokens] = useState<TokenVO[]>([]);
   const [loading, setLoading] = useState(false);
