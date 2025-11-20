@@ -10,18 +10,34 @@ export interface ModelListResponse {
   exchangeRate: number;
 }
 
+export interface ModelQueryParams {
+  search?: string;
+  vendor?: string;
+  tag?: string;
+  quotaType?: number;
+  endpointType?: string;
+  pageNum?: number;
+  pageSize?: number;
+}
+
 export const modelService = {
   /**
    * Fetch list of available models with filter options
    */
-  getModels: async (search?: string): Promise<ModelListResponse> => {
+  getModels: async (params?: ModelQueryParams): Promise<ModelListResponse> => {
     try {
+      const queryParams = {
+        pageNum: params?.pageNum || 1,
+        pageSize: params?.pageSize || 1000,
+        modelName: params?.search,
+        vendor: params?.vendor,
+        tag: params?.tag,
+        quotaType: params?.quotaType,
+        endpointType: params?.endpointType
+      };
+
       const res = await request.get<any>('/api/pricing/list', { 
-        params: { 
-          pageNum: 1, 
-          pageSize: 1000,
-          modelName: search 
-        },
+        params: queryParams,
         isTransformResponse: false // 获取原始响应以访问 billingTypes, exchangeRate 等额外字段
       });
       

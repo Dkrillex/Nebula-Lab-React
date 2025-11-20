@@ -65,8 +65,7 @@ const SKIP_AUTH_APIS: string[] = [
   '/api/models/list',
   '/api/pricing/list',
   '/ads/labTemplate/list',
-  'tp/v1/ProductAvatarQuery',
-  'tp/v1/ProductAvatarCategoryQuery',
+  '/tp/v1/ProductAvatarQuery',
 ];
 
 /**

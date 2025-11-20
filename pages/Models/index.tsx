@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -89,12 +88,28 @@ const ModelSquarePage: React.FC = () => {
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
 
-  // Fetch models on mount
+  // Fetch models on mount and when filters change
   useEffect(() => {
     const fetchModels = async () => {
       try {
       setLoading(true);
-        const response = await modelService.getModels();
+        
+        // Map billing type string to quotaType number
+        let quotaType: number | undefined;
+        if (selectedBilling === '按量计费') quotaType = 0;
+        else if (selectedBilling === '按次计费') quotaType = 1;
+        else if (selectedBilling === '按资源类型计费') quotaType = 2;
+        else if (selectedBilling === '按秒计费') quotaType = 3;
+        else if (selectedBilling === '按全模态计费') quotaType = 4;
+        else if (selectedBilling === '按张计费') quotaType = 5;
+
+        const response = await modelService.getModels({
+          search,
+          vendor: selectedVendor,
+          tag: selectedTag,
+          quotaType,
+          endpointType: selectedEndpointType
+        });
         console.log('📋 模型广场获取到的数据:', response);
         
         // 确保 models 是数组
@@ -102,68 +117,80 @@ const ModelSquarePage: React.FC = () => {
         setModels(modelsArray);
         setExchangeRate(response?.exchangeRate || 7.3);
         
-        // 更新筛选选项
-        const vendors: FilterOption[] = [
-          { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
-          ...(Array.isArray(response?.vendors) ? response.vendors : []).map((v: any) => ({
-            value: typeof v === 'string' ? v : v.name,
-            label: typeof v === 'string' ? `${v}(${countModelsByVendor(modelsArray, v)})` : `${v.name}(${v.count || countModelsByVendor(modelsArray, v.name)})`,
-            count: typeof v === 'string' ? countModelsByVendor(modelsArray, v) : (v.count || countModelsByVendor(modelsArray, v.name))
-          }))
-        ];
-        setVendorOptions(vendors);
-        
-        const tags: FilterOption[] = [
-          { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
-          ...(Array.isArray(response?.tags) ? response.tags : []).map((tag: any) => {
-            const tagName = typeof tag === 'string' ? tag : tag.name;
-            const count = typeof tag === 'string' ? countModelsByTag(modelsArray, tag) : (tag.count || countModelsByTag(modelsArray, tagName));
-            return {
-              value: tagName,
-              label: `${tagName}(${count})`,
-              count
-            };
-          })
-        ];
-        setTagOptions(tags);
-        
-        const billingTypes: FilterOption[] = [
-          { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
-          ...(Array.isArray(response?.billingTypes) ? response.billingTypes : []).map((bt: any) => {
-            const name = typeof bt === 'string' ? bt : bt.name;
-            const count = typeof bt === 'string' ? countModelsByBillingType(modelsArray, name) : (bt.count || countModelsByBillingType(modelsArray, name));
-            return {
-              value: name,
-              label: `${name}(${count})`,
-              count
-            };
-          })
-        ];
-        setBillingTypeOptions(billingTypes);
+        // 仅在没有筛选条件时（初始加载或重置）或后端返回了完整列表时更新筛选选项
+        // 这里假设如果进行了筛选，后端返回的 options 可能是过滤后的，也可能是完整的
+        // 为了更好的体验，我们应该尽量保留所有选项，或者根据后端行为调整
+        // 如果后端在筛选时只返回匹配的 vendors，那么我们可能会丢失选项。
+        // 简单策略：如果 vendorOptions 为空，或者当前没有筛选，则更新 options
+        const isFirstLoadOrReset = !search && !selectedVendor && !selectedTag && !selectedBilling && !selectedEndpointType;
 
-        // Generate Endpoint Type Options
-        const endpointMap = new Map<string, number>();
-        modelsArray.forEach(model => {
-          const types = (model as any).supportedEndpointTypesList;
-          if (Array.isArray(types)) {
-            types.forEach((type: string) => {
-              const typeStr = String(type).trim();
-              if (typeStr) {
-                endpointMap.set(typeStr, (endpointMap.get(typeStr) || 0) + 1);
-              }
+        if (isFirstLoadOrReset || vendorOptions.length === 0) {
+            const vendors: FilterOption[] = [
+            { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
+            ...(Array.isArray(response?.vendors) ? response.vendors as any[] : []).map((v: any) => ({
+                value: typeof v === 'string' ? v : v.name,
+                label: typeof v === 'string' ? `${v}(0)` : `${v.name}(${v.count || 0})`,
+                count: typeof v === 'string' ? 0 : (v.count || 0)
+            }))
+            ];
+            setVendorOptions(vendors);
+            
+            const tags: FilterOption[] = [
+            { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
+            ...(Array.isArray(response?.tags) ? response.tags as any[] : []).map((tag: any) => {
+                const tagName = typeof tag === 'string' ? tag : tag.name;
+                const count = typeof tag === 'string' ? 0 : (tag.count || 0);
+                return {
+                value: tagName,
+                label: `${tagName}(${count})`,
+                count
+                };
+            })
+            ];
+            setTagOptions(tags);
+            
+            const billingTypes: FilterOption[] = [
+            { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
+            ...(Array.isArray(response?.billingTypes) ? response.billingTypes as any[] : []).map((bt: any) => {
+                const name = typeof bt === 'string' ? bt : bt.name;
+                const count = typeof bt === 'string' ? 0 : (bt.count || 0);
+                return {
+                value: name,
+                label: `${name}(${count})`,
+                count
+                };
+            })
+            ];
+            setBillingTypeOptions(billingTypes);
+
+            // Generate Endpoint Type Options
+            // 注意：这里如果后端没有返回 endpointTypes，我们只能从 modelsArray 统计
+            // 如果是全量加载，统计是对的。如果是分页/筛选后加载，统计可能不全。
+            // 但既然 Vben 代码似乎是全量加载（pageSize=1000），这里暂时维持从 modelsArray 统计的逻辑
+            // 如果后续发现问题，需要后端支持返回 endpointTypes 聚合
+            const endpointMap = new Map<string, number>();
+            modelsArray.forEach(model => {
+            const types = (model as any).supportedEndpointTypesList;
+            if (Array.isArray(types)) {
+                types.forEach((type: string) => {
+                const typeStr = String(type).trim();
+                if (typeStr) {
+                    endpointMap.set(typeStr, (endpointMap.get(typeStr) || 0) + 1);
+                }
+                });
+            }
             });
-          }
-        });
-        
-        const endpointTypes: FilterOption[] = [
-          { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
-          ...Array.from(endpointMap.entries()).map(([type, count]) => ({
-            value: type,
-            label: `${type}(${count})`,
-            count
-          }))
-        ];
-        setEndpointTypeOptions(endpointTypes);
+            
+            const endpointTypes: FilterOption[] = [
+            { value: '', label: `全部(${modelsArray.length})`, count: modelsArray.length },
+            ...Array.from(endpointMap.entries()).map(([type, count]) => ({
+                value: type,
+                label: `${type}(${count})`,
+                count
+            }))
+            ];
+            setEndpointTypeOptions(endpointTypes);
+        }
         
       } catch (error) {
         console.error('❌ 获取模型列表失败:', error);
@@ -172,91 +199,23 @@ const ModelSquarePage: React.FC = () => {
       setLoading(false);
       }
     };
-    fetchModels();
-  }, []);
 
-  // 辅助函数：统计供应商数量
-  const countModelsByVendor = (models: AIModel[], vendor: string): number => {
-    if (!Array.isArray(models)) return 0;
-    return models.filter(m => (m?.vendorName || m?.provider) === vendor).length;
-  };
+    // Debounce search
+    const timer = setTimeout(() => {
+      fetchModels();
+    }, 300);
 
-  // 辅助函数：统计标签数量
-  const countModelsByTag = (models: AIModel[], tag: string): number => {
-    if (!Array.isArray(models)) return 0;
-    return models.filter(m => {
-      const tagsStr = Array.isArray(m?.tags) ? m.tags.join(',') : (m?.tags as any);
-      return tagsStr && tagsStr.includes(tag);
-    }).length;
-  };
+    return () => clearTimeout(timer);
+  }, [search, selectedVendor, selectedTag, selectedBilling, selectedEndpointType]);
 
-  // 辅助函数：统计计费类型数量
-  const countModelsByBillingType = (models: AIModel[], billingType: string): number => {
-    if (!Array.isArray(models)) return 0;
-    return models.filter(m => {
-      if (billingType === '按量计费') return m.quotaType === 0;
-      if (billingType === '按次计费') return m.quotaType === 1;
-      if (billingType === '按资源类型计费') return m.quotaType === 2;
-      if (billingType === '按秒计费') return m.quotaType === 3;
-      if (billingType === '按全模态计费') return m.quotaType === 4;
-      if (billingType === '按张计费') return m.quotaType === 5;
-      return false;
-    }).length;
-  };
-
-  // 筛选后的模型列表
+  // 筛选后的模型列表 - 现在只负责返回 models，因为筛选已在服务端完成
   const filteredModels = useMemo(() => {
     // 确保 models 是数组
     if (!Array.isArray(models)) {
       return [];
     }
-    
-    let filtered = models;
-
-    // 模型名称筛选
-    if (search.trim()) {
-      filtered = filtered.filter(m => 
-        m?.name?.toLowerCase().includes(search.toLowerCase()) ||
-        m?.id?.toLowerCase().includes(search.toLowerCase())
-      );
-    }
-
-    // 供应商筛选
-    if (selectedVendor) {
-      filtered = filtered.filter(m => (m?.vendorName || m?.provider) === selectedVendor);
-    }
-
-    // 标签筛选
-    if (selectedTag) {
-      filtered = filtered.filter(m => {
-        const tagsStr = Array.isArray(m?.tags) ? m.tags.join(',') : (m?.tags as any);
-        return tagsStr && tagsStr.includes(selectedTag);
-      });
-    }
-
-    // 计费类型筛选
-    if (selectedBilling) {
-      filtered = filtered.filter(m => {
-        if (selectedBilling === '按量计费') return m?.quotaType === 0;
-        if (selectedBilling === '按次计费') return m?.quotaType === 1;
-        if (selectedBilling === '按资源类型计费') return m?.quotaType === 2;
-        if (selectedBilling === '按秒计费') return m?.quotaType === 3;
-        if (selectedBilling === '按全模态计费') return m?.quotaType === 4;
-        if (selectedBilling === '按张计费') return m?.quotaType === 5;
-        return false;
-      });
-    }
-
-    // 端点类型筛选
-    if (selectedEndpointType) {
-      filtered = filtered.filter(m => {
-        const types = (m as any).supportedEndpointTypesList;
-        return Array.isArray(types) && types.includes(selectedEndpointType);
-      });
-    }
-
-    return filtered;
-  }, [models, search, selectedVendor, selectedTag, selectedBilling, selectedEndpointType]);
+    return models;
+  }, [models]);
 
   // 分页数据
   const paginatedModels = useMemo(() => {
@@ -533,8 +492,8 @@ const ModelSquarePage: React.FC = () => {
              onClick={() => setShowFilterPanel(!showFilterPanel)}
              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border text-sm font-medium text-muted hover:text-foreground hover:bg-surface transition-colors bg-background"
            >
-              <SearchIcon size={14} />
-              {showFilterPanel ? t.filters.hideFilters : '显示筛选'}
+             <SearchIcon size={14} />
+             {showFilterPanel ? t.filters.hideFilters : '显示筛选'}
            </button>
         </div>
 

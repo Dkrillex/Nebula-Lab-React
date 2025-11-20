@@ -14,11 +14,14 @@ import {
   Download,
   Wand2,
   Trash2,
-  Music
+  Music,
+  Filter
 } from 'lucide-react';
 import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
+import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
+import UploadComponent from '../../../components/UploadComponent';
 
 interface VoiceCloneProps {
   t?: any; // Optional translation object
@@ -110,6 +113,41 @@ const defaultT = {
   resultTitle: '生成结果'
 };
 
+const selectLanguageList = [
+  { label: 'Simplified Chinese (简体中文)', value: 'zh-CN' },
+  { label: 'Traditional Chinese (繁體中文)', value: 'zh-Hant' },
+  { label: 'English', value: 'en' },
+  { label: 'Arabic (العربية)', value: 'ar' },
+  { label: 'Bulgarian (Български)', value: 'bg' },
+  { label: 'Croatian (Hrvatski)', value: 'hr' },
+  { label: 'Czech (Čeština)', value: 'cs' },
+  { label: 'Danish (Dansk)', value: 'da' },
+  { label: 'Dutch (Nederlands)', value: 'nl' },
+  { label: 'Filipino (Filipino)', value: 'fil' },
+  { label: 'Finnish (Suomi)', value: 'fi' },
+  { label: 'French (Français)', value: 'fr' },
+  { label: 'German (Deutsch)', value: 'de' },
+  { label: 'Greek (Ελληνικά)', value: 'el' },
+  { label: 'Hindi (हिन्दी)', value: 'hi' },
+  { label: 'Hungarian (Magyar)', value: 'hu' },
+  { label: 'Indonesian (Bahasa Indonesia)', value: 'id' },
+  { label: 'Italian (Italiano)', value: 'it' },
+  { label: 'Japanese (日本語)', value: 'ja' },
+  { label: 'Korean (한국어)', value: 'ko' },
+  { label: 'Malay (Bahasa Melayu)', value: 'ms' },
+  { label: 'Norwegian (Norsk)', value: 'nb' },
+  { label: 'Polish (Polski)', value: 'pl' },
+  { label: 'Portuguese (Português)', value: 'pt' },
+  { label: 'Romanian (Română)', value: 'ro' },
+  { label: 'Russian (Русский)', value: 'ru' },
+  { label: 'Slovak (Slovenčina)', value: 'sk' },
+  { label: 'Spanish (Español)', value: 'es' },
+  { label: 'Swedish (Svenska)', value: 'sv' },
+  { label: 'Turkish (Türkçe)', value: 'tr' },
+  { label: 'Ukrainian (Українська)', value: 'uk' },
+  { label: 'Vietnamese (Tiếng Việt)', value: 'vi' },
+];
+
 const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const { user } = useAuthStore();
   
@@ -128,6 +166,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [uploadMethod, setUploadMethod] = useState<'file' | 'record'>('file');
   const [isDragOver, setIsDragOver] = useState(false);
   const [audioFile, setAudioFile] = useState<UploadedFile & { file?: File; size?: number } | null>(null);
+  const [tempFile, setTempFile] = useState<File | null>(null);
   const [uploadLoading, setUploadLoading] = useState(false);
   
   // Recording Logic
@@ -170,9 +209,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [isPolling, setIsPolling] = useState(false);
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // --- Lifecycle & Effects ---
+  // --- Helper Functions ---
 
   useEffect(() => {
     if (pageMode === 'synthesis') {
@@ -188,6 +225,15 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
     };
   }, [pageMode]);
+
+  // Helper to trigger list refresh when filters change
+  useEffect(() => {
+    if (pageMode === 'synthesis') {
+       // Reset to page 1 on filter change
+       // Note: getVoiceList handles the current state values
+       getVoiceList(1);
+    }
+  }, [voiceTypeFilter, genderFilter, styleFilter, languageFilter]);
 
   // --- Helper Functions ---
 
@@ -229,8 +275,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setTaskError('');
     setIsPolling(false);
     setSearchKeyword('');
-    setGenderFilter('');
-    setStyleFilter('');
+    // Don't reset filters on clearAll to keep user preference
+    // setGenderFilter('');
+    // setStyleFilter('');
     stopAllAudio();
     if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
   };
@@ -241,58 +288,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   };
 
   // --- File Upload ---
+  // Replaced by UploadComponent
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    await processFile(file);
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) await processFile(file);
-  };
-
-  const processFile = async (file: File) => {
-    // Validate type
-    const allowedTypes = ['audio/mpeg', 'audio/mp3', 'audio/wav', 'audio/x-m4a', 'audio/m4a'];
-    if (!allowedTypes.includes(file.type) && !file.name.match(/\.(mp3|wav|m4a)$/i)) {
-      alert(t.supportAudioType);
-      return;
-    }
-    if (file.size > 50 * 1024 * 1024) {
-      alert(t.supportAudioType);
-      return;
-    }
-
-    setUploadLoading(true);
-    try {
-      const res = await uploadService.uploadFile(file);
-      if (res.code === 200 && res.data) {
-        const uploaded: UploadedFile & { file?: File; size?: number } = {
-          fileId: res.data.ossId,
-          fileName: res.data.fileName,
-          fileUrl: res.data.url,
-          format: file.name.split('.').pop() || '',
-          file: file,
-          size: file.size
-        };
-        setAudioFile(uploaded);
-        setAudioData(prev => ({ 
-            ...prev, 
-            originVoiceFileId: res.data.ossId,
-            name: prev.name || file.name.replace(/\.[^/.]+$/, '')
-        }));
-      }
-    } catch (error) {
-      console.error('Upload failed', error);
-      alert(t.uploadFail);
-    } finally {
-      setUploadLoading(false);
-    }
-  };
 
   // --- Recording ---
 
@@ -394,6 +391,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const getVoiceList = async (page = 1) => {
     setVoiceLoading(true);
     try {
+      if (voiceTypeFilter === 'public') {
+        // Public Voices
       const res = await avatarService.getVoiceList({
         pageNo: page,
         pageSize: voicePagination.pageSize,
@@ -402,15 +401,48 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         style: styleFilter,
         language: languageFilter
       });
-    console.log("getVoiceList",res)
-      if (res.code === '200') {
-         const resultData = res?.result;
+        console.log("getVoiceList Public", res);
+
+        if (res.code === '200' || res.code === 200) {
+           const resultData = (res as any).result || res.data?.result;
          if (resultData) {
              setVoiceList(resultData.data || []);
              setVoicePagination(prev => ({ ...prev, current: page, total: resultData.total || 0 }));
          } else {
              setVoiceList([]);
              setVoicePagination(prev => ({ ...prev, current: page, total: 0 }));
+           }
+        }
+      } else {
+        // Private Voices
+        // Use any cast to pass extra params not in interface if needed, or rely on standard query
+        const res = await assetsService.getAssetsList({
+          pageNum: page,
+          pageSize: voicePagination.pageSize,
+          assetType: 8,
+          assetName: searchKeyword,
+          // @ts-ignore - passing isPrivateModel even if not in interface, consistent with reference
+          isPrivateModel: '1'
+        } as any);
+        console.log("getVoiceList Private", res);
+
+        if (res.code === 200 || res.code === '200') {
+            // Map AdsAssetsVO to Voice structure
+            const rows = (res.data as any)?.rows || (res as any).rows || [];
+            const total = (res.data as any)?.total || (res as any).total || 0;
+            
+            const mappedVoices: Voice[] = rows.map((item: any) => ({
+              voiceId: item.assetId,
+              voiceName: item.assetName,
+              gender: 'unknown', // Private voices usually don't have this metadata exposed in list
+              style: 'private',
+              demoAudioUrl: item.assetUrl,
+              // Add other fields if available or default
+              language: 'unknown'
+            }));
+
+            setVoiceList(mappedVoices);
+            setVoicePagination(prev => ({ ...prev, current: page, total: total }));
          }
       }
     } catch (error) {
@@ -562,131 +594,130 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
           
           {/* Mode Selection */}
           <div className="mb-6 flex bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-1 rounded-full gap-1">
-            <button
-              onClick={() => switchMode('clone')}
+          <button 
+            onClick={() => switchMode('clone')}
               className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
                 pageMode === 'clone' 
                   ? 'bg-indigo-600 text-white shadow-sm' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-            >
+          >
               {t.title1}
-            </button>
-            <button
-              onClick={() => switchMode('synthesis')}
+          </button>
+          <button 
+            onClick={() => switchMode('synthesis')}
               className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
                 pageMode === 'synthesis' 
                   ? 'bg-indigo-600 text-white shadow-sm' 
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
               }`}
-            >
+          >
               {t.title2}
-            </button>
-          </div>
+          </button>
+      </div>
 
           <div className="space-y-6 flex-1">
             {/* Common Name Input */}
-            <div>
+               <div>
               <label className="block text-sm font-bold text-foreground mb-2">{t.audioName} <span className="text-red-500">*</span></label>
-              <div className="relative">
-                <input 
-                  value={audioData.name}
-                  onChange={(e) => setAudioData(prev => ({...prev, name: e.target.value}))}
-                  placeholder={t.audioNamePlaceholder}
+                   <div className="relative">
+                       <input 
+                          value={audioData.name}
+                          onChange={(e) => setAudioData(prev => ({...prev, name: e.target.value}))}
+                          placeholder={t.audioNamePlaceholder}
                   className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
-                  maxLength={50}
-                />
+                          maxLength={50}
+                       />
                 <span className="absolute right-3 bottom-3 text-xs text-muted-foreground opacity-70">{audioData.name.length}/50</span>
-              </div>
-            </div>
+                   </div>
+               </div>
 
             {/* CLONE MODE: Upload / Record */}
             {pageMode === 'clone' && (
-              <div>
+               <div>
                 <h3 className="font-bold text-foreground mb-3">{t.getAudio}</h3>
                 <div className="flex gap-3 mb-3">
-                    <button 
-                       onClick={() => setUploadMethod('file')}
+                           <button 
+                              onClick={() => setUploadMethod('file')}
                        className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'file' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                    >
+                           >
                         <Upload size={16} /> {t.uploadFile}
-                    </button>
-                    <button 
-                       onClick={() => setUploadMethod('record')}
+                           </button>
+                           <button 
+                              onClick={() => setUploadMethod('record')}
                        className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'record' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
-                    >
+                           >
                         <Mic size={16} /> {t.onlineRecording}
-                    </button>
-                </div>
+                           </button>
+                       </div>
 
                 {uploadMethod === 'file' ? (
-                   <div 
-                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                      onDragLeave={() => setIsDragOver(false)}
-                      onDrop={handleDrop}
-                      onClick={() => fileInputRef.current?.click()}
-                      className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                        isDragOver || audioFile ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'
-                      }`}
+                   <UploadComponent
+                      uploadType="tv"
+                      accept="audio/mpeg,audio/mp3,audio/wav,audio/x-m4a,audio/m4a,.mp3,.wav,.m4a"
+                      initialUrl={audioFile?.fileUrl}
+                      onFileSelected={(file) => setTempFile(file)}
+                      onUploadComplete={(uploaded) => {
+                          setAudioFile({
+                              ...uploaded,
+                              file: tempFile || undefined,
+                              size: tempFile?.size
+                          });
+                          setAudioData(prev => ({ 
+                              ...prev, 
+                              originVoiceFileId: uploaded.fileId,
+                              name: prev.name || uploaded.fileName.replace(/\.[^/.]+$/, '')
+                          }));
+                      }}
+                      onClear={() => {
+                          setAudioFile(null);
+                          setAudioData(prev => ({ ...prev, originVoiceFileId: '', name: '' }));
+                      }}
+                      maxSize={50}
                    >
-                      <input ref={fileInputRef} type="file" accept=".mp3,.wav,.m4a" onChange={handleFileChange} className="hidden" />
-                      {uploadLoading ? (
-                         <Loader2 size={24} className="animate-spin text-indigo-600 mb-2" />
-                      ) : audioFile ? (
-                         <FileAudio size={32} className="text-indigo-500 mb-2" />
-                      ) : (
-                         <Upload size={24} className="text-muted-foreground mb-2" />
-                      )}
-                      
-                      {audioFile ? (
-                          <div className="text-center">
-                              <p className="text-sm font-bold text-indigo-600 break-all">{audioFile.fileName}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{formatFileSize(audioFile.size)}</p>
-                          </div>
-                      ) : (
-                          <div className="text-center">
-                              <p className="text-sm font-medium text-foreground">{t.uploadAudio}</p>
-                              <p className="text-xs text-muted-foreground mt-1">{t.supportAudioType}</p>
-                          </div>
-                      )}
-                   </div>
+                      <div className="text-center text-gray-500 p-6">
+                          <Upload size={24} className="mx-auto mb-2 text-gray-400" />
+                          <p className="text-sm font-medium">{t.uploadAudio}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{t.supportAudioType}</p>
+                      </div>
+                   </UploadComponent>
                 ) : (
                    <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center">
                        <div className={`text-3xl font-mono font-bold mb-4 ${isRecording ? 'text-red-500 animate-pulse' : 'text-muted-foreground'}`}>
-                           {formatTime(recordTime)}
-                       </div>
-                       
+                                   {formatTime(recordTime)}
+                               </div>
+                               
                        <div className="flex gap-4 w-full">
-                           {!isRecording ? (
+                                   {!isRecording ? (
                                <button onClick={startRecording} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm">
                                    <Mic size={16} /> {t.startRecording}
-                               </button>
-                           ) : (
+                                       </button>
+                                   ) : (
                                <button onClick={stopRecording} className="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 text-sm">
                                    <div className="w-2 h-2 bg-white rounded-sm"></div> {t.stopRecording}
-                               </button>
-                           )}
-                       </div>
-                       
-                       {recordedAudioUrl && (
-                           <div className="w-full mt-3 pt-3 border-t border-border">
-                               <div className="flex items-center justify-between mb-2">
-                                   <span className="text-xs font-bold text-muted-foreground">{t.previewRecording}</span>
-                                   <button onClick={clearRecording} className="text-xs text-red-500 hover:underline">{t.clear}</button>
+                                       </button>
+                                   )}
                                </div>
-                               <audio src={recordedAudioUrl} controls className="w-full h-8" />
-                               <button 
-                                  onClick={uploadRecording}
-                                  disabled={recordSubmitLoading || !!audioData.originVoiceFileId}
+
+                               {recordedAudioUrl && (
+                           <div className="w-full mt-3 pt-3 border-t border-border">
+                                       <div className="flex items-center justify-between mb-2">
+                                   <span className="text-xs font-bold text-muted-foreground">{t.previewRecording}</span>
+                                           <button onClick={clearRecording} className="text-xs text-red-500 hover:underline">{t.clear}</button>
+                                       </div>
+                                       <audio src={recordedAudioUrl} controls className="w-full h-8" />
+                                       <button 
+                                          onClick={uploadRecording}
+                                          disabled={recordSubmitLoading || !!audioData.originVoiceFileId}
                                   className="w-full mt-2 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
-                               >
+                                       >
                                    {recordSubmitLoading && <Loader2 size={14} className="animate-spin" />}
                                    {audioData.originVoiceFileId ? t.recordUploadSuccess : t.uploadRecording}
-                               </button>
+                                       </button>
+                                   </div>
+                               )}
                            </div>
                        )}
-                   </div>
-                )}
               </div>
             )}
 
@@ -695,19 +726,73 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
               <>
                  <div>
                     <h3 className="font-bold text-foreground mb-3">{t.getTimbre}</h3>
-                    <div className="mb-2 relative">
-                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
-                       <input 
-                          value={searchKeyword}
-                          onChange={e => setSearchKeyword(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && getVoiceList(1)}
-                          placeholder="搜索音色..."
-                          className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
-                       />
-                    </div>
                     
+                    {/* Filter Section */}
+                    <div className="mb-3 space-y-2">
+                      <div className="flex gap-2">
+                           <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                               <input 
+                                  value={searchKeyword}
+                                  onChange={e => setSearchKeyword(e.target.value)}
+                                  onKeyDown={e => e.key === 'Enter' && getVoiceList(1)}
+                                  placeholder="搜索音色..."
+                               className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                               />
+                           </div>
+                         
+                         <select 
+                           value={voiceTypeFilter}
+                           onChange={(e) => setVoiceTypeFilter(e.target.value as 'public' | 'private')}
+                           className="w-24 px-2 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                         >
+                             <option value="public">{t.commonVoice}</option>
+                             <option value="private">{t.privateVoice}</option>
+                         </select>
+                      </div>
+
+                      <div className="flex gap-2 overflow-x-auto pb-1">
+                          {/* Language Filter - Always show */}
+                          <select 
+                            value={languageFilter}
+                            onChange={(e) => setLanguageFilter(e.target.value)}
+                            className="flex-1 min-w-[120px] px-2 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                          >
+                              {selectLanguageList.map(lang => (
+                                <option key={lang.value} value={lang.value}>{lang.label}</option>
+                              ))}
+                          </select>
+
+                          {/* Filters only for Public */}
+                          {voiceTypeFilter === 'public' && (
+                            <>
+                              <select 
+                                value={genderFilter}
+                                onChange={(e) => setGenderFilter(e.target.value)}
+                                className="w-24 px-2 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                              >
+                               <option value="">{t.allSex}</option>
+                               <option value="male">{t.male}</option>
+                               <option value="female">{t.female}</option>
+                           </select>
+
+                              <select 
+                                value={styleFilter}
+                                onChange={(e) => setStyleFilter(e.target.value)}
+                                className="w-24 px-2 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
+                              >
+                                  <option value="">{t.allStyle}</option>
+                                  <option value="UGC">{t.UGC}</option>
+                                  <option value="Advertisement">{t.Advertisement}</option>
+                              </select>
+                            </>
+                          )}
+                      </div>
+                       </div>
+
+                       {/* Voice List */}
                     <div className="h-48 overflow-y-auto custom-scrollbar border border-border rounded-xl bg-card/50">
-                       {voiceLoading ? (
+                           {voiceLoading ? (
                            <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600" /></div>
                        ) : voiceList.length > 0 ? (
                            voiceList.map(voice => (
@@ -722,7 +807,17 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                                        </div>
                                        <div className="min-w-0">
                                            <p className={`font-bold text-sm truncate ${selectedVoice?.voiceId === voice.voiceId ? 'text-indigo-600' : 'text-foreground'}`}>{voice.voiceName}</p>
-                                           <span className="text-[10px] text-muted-foreground">{voice.style || voice.gender}</span>
+                                           <div className="flex gap-1">
+                                               {voiceTypeFilter === 'public' && (
+                                                 <>
+                                                   <span className="text-[10px] text-muted-foreground bg-accent px-1 rounded">{voice.style}</span>
+                                                   <span className="text-[10px] text-muted-foreground bg-accent px-1 rounded">{voice.gender === 'male' ? t.male : t.female}</span>
+                                                 </>
+                                               )}
+                                               {voiceTypeFilter === 'private' && (
+                                                  <span className="text-[10px] text-muted-foreground bg-accent px-1 rounded">{t.privateVoice}</span>
+                                               )}
+                                           </div>
                                        </div>
                                    </div>
                                    <button 
@@ -737,7 +832,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                            <div className="flex justify-center items-center h-full text-sm text-muted-foreground">无数据</div>
                        )}
                     </div>
-                 </div>
+                       </div>
 
                  <div>
                     <label className="block text-sm font-bold text-foreground mb-2">{t.audioText} <span className="text-red-500">*</span></label>
@@ -750,13 +845,13 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                         maxLength={500}
                       />
                       <span className="absolute bottom-3 right-3 text-xs text-muted-foreground opacity-70">{audioData.text.length}/500</span>
-                    </div>
-                 </div>
+                       </div>
+                   </div>
               </>
-            )}
+               )}
 
             {/* Speed Slider */}
-            <div>
+               <div>
                <div className="flex justify-between mb-2">
                    <label className="text-sm font-bold text-foreground">{t.speakingSpeed}</label>
                    <span className="px-2 py-0.5 rounded text-xs font-bold bg-accent text-accent-foreground">{audioData.voiceSpeed}x</span>
@@ -769,9 +864,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                />
                <div className="flex justify-between text-xs text-muted-foreground mt-1">
                    <span>0.8x</span><span>1.0x</span><span>1.2x</span>
-               </div>
-            </div>
-          </div>
+           </div>
+                   </div>
+                   </div>
 
           {/* Submit Button */}
           <div className="mt-6 pt-4 border-t border-border">
@@ -790,11 +885,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                    <Wand2 size={18} />
                    {pageMode === 'clone' ? t.startCloning : t.startSynthesis}
                  </>
-               )}
+                   )}
             </button>
-          </div>
-        </div>
-
+               </div>
+                       </div>
+                       
         {/* Right Panel - Preview */}
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
            <div className="flex items-center justify-between mb-6">
@@ -816,7 +911,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
                    <p className="text-indigo-600 font-medium">{t.inProcessing} {taskProgress > 0 && `${taskProgress}%`}</p>
                    <p className="text-xs text-muted-foreground">任务ID: {taskId}</p>
-                </div>
+                           </div>
               ) : taskResult && taskResult.status === 'success' && taskResult.voice?.demoAudioUrl ? (
                 <div className="w-full max-w-md p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300">
                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
@@ -835,19 +930,19 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                       className="flex items-center justify-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition w-full"
                    >
                       <Download size={18} /> {t.downloadAudio}
-                   </a>
-                </div>
+                           </a>
+                       </div>
               ) : taskError ? (
                  <div className="flex flex-col items-center text-red-500 gap-2">
                     <AlertCircle size={48} />
                     <p className="font-bold">{t.messionPushFail}</p>
                     <p className="text-sm text-muted-foreground">{taskError}</p>
-                 </div>
+                   </div>
               ) : (
                 <div className="flex flex-col items-center text-slate-400">
                    <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
                       <Music size={40} className="text-slate-400 dark:text-slate-500" />
-                   </div>
+               </div>
                    <p className="text-sm max-w-xs text-center">{t.emptyState}</p>
               </div>
               )}

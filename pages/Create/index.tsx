@@ -14,6 +14,12 @@ import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
 import VoiceClone from './components/VoiceClone';
 import WorkshopPage from './components/WorkshopPage';
+import UseToolPage from './components/UseToolPage';
+import AiFaceSwapPage from './components/AiFaceSwapPage';
+import TtsPage from './components/TtsPage';
+import GlbViewerPage from './components/GlbViewerPage';
+import TemplateUiPage from './components/TemplateUiPage';
+import ImageTranslationPage from './components/ImageTranslationPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -476,6 +482,12 @@ const CreatePage: React.FC = () => {
     if (activeMenu === 'workshop' && t.workshop) {
       return <WorkshopPage t={t.workshop} />;
     }
+    if (activeMenu === 'useTool') return <UseToolPage />;
+    if (activeMenu === 'aiFaceSwap') return <AiFaceSwapPage />;
+    if (activeMenu === 'tts') return <TtsPage />;
+    if (activeMenu === '3dModel') return <GlbViewerPage />;
+    if (activeMenu === 'templateUi') return <TemplateUiPage />;
+    if (activeMenu === 'aIFacSwapping') return <ImageTranslationPage />;
     
     // Default Create Dashboard
     return (

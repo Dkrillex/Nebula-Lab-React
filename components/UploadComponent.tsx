@@ -32,6 +32,8 @@ interface UploadComponentProps {
   onError?: (error: Error) => void;
   // Optional: Callback when a file is selected (before upload)
   onFileSelected?: (file: File) => void;
+  // Optional: Callback when the file is cleared
+  onClear?: () => void;
 }
 
 const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
@@ -45,7 +47,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   initialUrl = '',
   maxSize = 50,
   onError,
-  onFileSelected
+  onFileSelected,
+  onClear
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
@@ -161,6 +164,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       setFile(null);
       setPreviewUrl('');
       if (fileInputRef.current) fileInputRef.current.value = '';
+      if (onClear) onClear();
   };
 
   return (
