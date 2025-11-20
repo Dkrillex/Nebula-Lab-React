@@ -200,7 +200,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
         minute: '2-digit',
       });
     }
-    
+
     const useTime = log.useTime ? `${log.useTime}s` : '0s';
     const isConsumption = String(log.type) === '2';
     const cost = Number(log.quotaRmb || log.quota || 0);
@@ -218,7 +218,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
 
   const balance = Number(quotaInfo?.quotaRmb) || 0;
   const points = Number(quotaInfo?.score) || 0;
-  
+
   const totalPoints = userAccounts.reduce((sum, account) => {
     return sum + (Number(account.userPoints) || 0);
   }, 0);
@@ -262,7 +262,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
       </div>
 
       <div className="container mx-auto px-4 py-8 max-w-5xl space-y-8">
-        
+
         {/* Balance Card */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="md:col-span-2 bg-card rounded-xl p-6 border border-border shadow-sm">
@@ -282,7 +282,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                  </>
               )}
             </div>
-            
+
             {currentMode === 'balance' && (
               <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
@@ -295,7 +295,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
 
           <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col justify-center items-start gap-3">
              <div className="text-sm font-medium text-foreground">快捷操作</div>
-             <button 
+             <button
                 onClick={handleRefresh}
                 disabled={loading || quotaLoading}
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition-colors text-sm font-medium text-white disabled:opacity-50 shadow-sm"
@@ -345,7 +345,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
                    )}
                  </div>
               )}
-              
+
               {/* Pagination Footer */}
               {!loading && pagination.total > pagination.pageSize && (
                 <div className="p-4 bg-secondary/10 flex items-center justify-center gap-4 border-t border-border/50">
@@ -375,7 +375,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = ({ t }) => {
   );
 };
 
-const ExpenseRow: React.FC<{ 
+const ExpenseRow: React.FC<{
   record: {
     id: string | number;
     modelName: string;
@@ -384,8 +384,9 @@ const ExpenseRow: React.FC<{
     duration: string;
     totalTokens: number;
     timestamp: string;
-  }
-}> = ({ record }) => {
+  }, 
+  t: ExpensesPageProps['t'] 
+}) => {
   const isConsumption = record.type === 'consumption';
   
   return (
@@ -406,7 +407,7 @@ const ExpenseRow: React.FC<{
              </div>
           </div>
        </div>
-       
+
        <div className="flex items-center justify-between sm:justify-end gap-6 pl-11 sm:pl-0">
           {isConsumption && record.totalTokens > 0 && (
             <div className="text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded hidden sm:block">
@@ -423,7 +424,11 @@ const ExpenseRow: React.FC<{
   );
 };
 
-const ScoreRow: React.FC<{ score: ScoreRecord }> = ({ score }) => {
+// 积分流水卡片组件
+const ScoreCard = ({ score, t }: { 
+  score: ScoreRecord, 
+  t: ExpensesPageProps['t'] 
+}) => {
   const scoreValue = Number(score.score) || 0;
   const isPositive = scoreValue > 0;
   const assetTypeMap: Record<number, string> = {

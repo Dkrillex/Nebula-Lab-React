@@ -6,32 +6,7 @@ import {
 } from 'lucide-react';
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
-
-interface AssetsPageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    filterSearch: string;
-    searchName: string;
-    namePlaceholder: string;
-    searchType: string;
-    chooseType: string;
-    searchTag: string;
-    tagPlaceholder: string;
-    searchDesc: string;
-    descPlaceholder: string;
-    search: string;
-    reset: string;
-    newFolder: string;
-    upload: string;
-    move: string;
-    delete: string;
-    selectAll: string;
-    totalFolders: string;
-    totalFiles: string;
-    searchInResult: string;
-  }
-}
+import { useAppOutletContext } from '../../router';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -39,7 +14,10 @@ interface BreadcrumbItem {
   dataType?: number;
 }
 
-const AssetsPage: React.FC<AssetsPageProps> = ({ t }) => {
+const AssetsPage: React.FC = () => {
+  const { t: rawT } = useAppOutletContext();
+  const t = rawT.assetsPage;
+
   const { user } = useAuthStore();
   
   // 状态管理

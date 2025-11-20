@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { HelpCircle, Check, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
-import { orderService, OrderInfo } from '../../services/orderService';
-import { useAuthStore } from '../../stores/authStore';
-import BaseModal from '../../components/BaseModal';
 
 interface PricingPageProps {
   t: {
@@ -40,11 +37,10 @@ interface PricingPageProps {
 }
 
 const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
-  const { user } = useAuthStore();
   const [priceList, setPriceList] = useState<PriceListVO[]>([]);
   const [invoiceEnabled, setInvoiceEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+
   // Payment State
   const [paymentType, setPaymentType] = useState('wechat');
   const [wxPayModalOpen, setWxPayModalOpen] = useState(false);
@@ -52,7 +48,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payStatus, setPayStatus] = useState<'pending' | 'success' | 'failed'>('pending');
-  
+
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const alipayPollTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -198,9 +194,9 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
       const res: any = await orderService.createOrder(params);
       // 根据用户反馈，数据结构包含 code, msg, data
       // 且 request.ts 返回的是整个响应对象
-      
+
       const data = res.data || res; // 尝试从 res.data 获取，如果直接是 data 则使用 res
-      
+
       if (data && data.codeUrl) {
         // 保留 totalAmount 用于显示
         const info = {
@@ -238,7 +234,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
         const res: any = await orderService.queryOrder({ outTradeNo });
         // queryOrder 可能也返回类似 {code: 200, data: { tradeState: 'SUCCESS', ... }}
         const data = res.data || res;
-        
+
         if (data && (data.tradeState === 'SUCCESS' || data.tradeState === 'REFUND')) {
           stopPolling();
           setPayStatus('success');
@@ -303,7 +299,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
       try {
         const res: any = await orderService.queryAntomPaymentResult(paymentRequestId);
         const data = res.data || res;
-        
+
         if (data.paymentStatus === 'SUCCESS') {
           setPayStatus('success');
           alert('Payment Successful!');
@@ -351,7 +347,7 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
            <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-8">
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-muted">{t.paymentMethod}</span>
-                <select 
+                <select
                   value={paymentType}
                   onChange={(e) => setPaymentType(e.target.value)}
                   className="bg-transparent border border-border rounded-md text-sm px-2 py-1 outline-none focus:border-primary"
@@ -442,15 +438,15 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
               <div className="text-center space-y-2">
                 <p className="text-sm text-gray-500">Please scan the QR code with WeChat</p>
                 <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                  ¥{orderInfo ? Number(orderInfo.totalAmount || 0).toFixed(2) : '0.00'} 
-                  {/* Note: orderInfo structure might need adjustment if totalAmount is not directly in root, 
-                      checking reference again, createOrder returns orderInfo which usually has outTradeNo and codeUrl. 
+                  ¥{orderInfo ? Number(orderInfo.totalAmount || 0).toFixed(2) : '0.00'}
+                  {/* Note: orderInfo structure might need adjustment if totalAmount is not directly in root,
+                      checking reference again, createOrder returns orderInfo which usually has outTradeNo and codeUrl.
                       We passed totalAmount in params, but createOrder response might not echo it back unless we modify service/response types.
                       For now assuming it's just the QR code.
                   */}
                 </div>
               </div>
-              
+
               <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100">
                 {orderInfo?.codeUrl ? (
                   <QRCodeSVG value={orderInfo.codeUrl} size={200} />
@@ -508,7 +504,11 @@ interface PricingCardProps {
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
+<<<<<<< HEAD
   item, isEnterprise, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, borderColor, btnColor 
+=======
+  item, isEnterprise, onQuantityChange, onBuy, loading, labels, borderColor, btnColor
+>>>>>>> e782ea9d81be3c115e7796b5457ab27a38c801e7
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
   const price = Number(item.productPrice);
@@ -625,7 +625,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
          )}
       </div>
 
-      <button 
+      <button
         onClick={onBuy}
         disabled={loading}
         className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md relative z-10 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}

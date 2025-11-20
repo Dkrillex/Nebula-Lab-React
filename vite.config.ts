@@ -33,7 +33,8 @@ export default defineConfig({
     proxy: {
       '/dev-api': {
         // target: 'http://34.96.210.20:8080',
-        target: 'http://localhost:8080',
+        // target: 'http://localhost:8080',
+        target: 'https://ai-nebula.com/prod-api',
         // target: 'http://34.96.210.20:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/dev-api/, ''),
