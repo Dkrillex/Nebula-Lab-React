@@ -3,7 +3,7 @@ import {
   Mic, 
   Upload, 
   X, 
-  Loader, 
+  Loader2, 
   Play, 
   Pause, 
   RotateCcw, 
@@ -11,7 +11,10 @@ import {
   Check, 
   AlertCircle,
   FileAudio,
-  Download
+  Download,
+  Wand2,
+  Trash2,
+  Music
 } from 'lucide-react';
 import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
@@ -103,6 +106,8 @@ const defaultT = {
   durationInvalid: '视频时长无效，需要10s~5分钟，请重新上传',
   queryFail: '查询任务状态失败',
   trialListening: '试听',
+  emptyState: '配置参数并开始生成，结果将显示在这里',
+  resultTitle: '生成结果'
 };
 
 const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
@@ -389,11 +394,6 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const getVoiceList = async (page = 1) => {
     setVoiceLoading(true);
     try {
-      // If private filter is selected, use different logic/API if needed, 
-      // but here we assume getVoiceList handles public/private via params or separate API?
-      // The reference uses `adsAssetsList` for private. For simplicity, let's assume public first.
-      // NOTE: `getVoiceList` in service currently maps to `VoiceQuery`.
-      
       const res = await avatarService.getVoiceList({
         pageNo: page,
         pageSize: voicePagination.pageSize,
@@ -402,10 +402,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         style: styleFilter,
         language: languageFilter
       });
-
-      if (res.code === 200) {
-         const resultData = res.data?.result;
-         console.log('resultData', resultData);
+    console.log("getVoiceList",res)
+      if (res.code === '200') {
+         const resultData = res?.result;
          if (resultData) {
              setVoiceList(resultData.data || []);
              setVoicePagination(prev => ({ ...prev, current: page, total: resultData.total || 0 }));
@@ -472,7 +471,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
           name: audioData.name,
           originVoiceFileId: audioData.originVoiceFileId,
           voiceSpeed: audioData.voiceSpeed,
-          voiceText: t.desc1, // Default text for cloning reference? Or empty.
+          voiceText: t.desc1,
           score: 2
         });
       } else {
@@ -545,367 +544,313 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     poll();
   };
 
-  // --- Render ---
-
   return (
-    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-8 overflow-y-auto custom-scrollbar">
+    <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="text-center mb-8 text-gray-800 dark:text-gray-100">
-        <h1 className="text-3xl font-bold mb-2">{pageMode === 'clone' ? t.title1 : t.title2}</h1>
-        <p className="text-gray-600 dark:text-gray-400">{pageMode === 'clone' ? t.desc1 : t.desc2}</p>
-      </div>
-
-      {/* Mode Tabs */}
-      <div className="flex justify-center mb-8">
-        <div className="bg-white dark:bg-gray-800 p-1.5 rounded-full flex gap-2 border border-gray-200 dark:border-gray-700 shadow-sm">
-          <button 
-            onClick={() => switchMode('clone')}
-            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'clone' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-          >
-            <span className="text-lg">🧪</span> {t.title1}
-          </button>
-          <button 
-            onClick={() => switchMode('synthesis')}
-            className={`px-6 py-2 rounded-full font-medium transition flex items-center gap-2 ${pageMode === 'synthesis' ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
-          >
-            <span className="text-lg">🎨</span> {t.title2}
-          </button>
+      <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm z-10">
+        <div className="px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-bold text-foreground">{pageMode === 'clone' ? t.title1 : t.title2}</h1>
+            <p className="text-xs text-muted-foreground mt-1 opacity-90">{pageMode === 'clone' ? t.desc1 : t.desc2}</p>
+          </div>
         </div>
       </div>
 
-      {/* Main Content - 3 Columns */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-[1600px] mx-auto">
-        
-        {/* 1. Attributes Panel */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-           <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100 flex items-center gap-4">
-               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/30">⚙️</div>
-               <div>
-                   <h3 className="font-bold text-gray-800 text-lg">{t.attribute}</h3>
-                   <p className="text-gray-500 text-sm">{t.audioParameters}</p>
-               </div>
-           </div>
-           <div className="p-6 flex-1 flex flex-col gap-6">
-               {/* Name */}
-               <div>
-                   <label className="block text-sm font-bold text-gray-700 mb-2">{t.audioName} <span className="text-red-500">*</span></label>
-                   <div className="relative">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Left Panel - Settings */}
+        <div className="w-full md:w-[400px] lg:w-[450px] bg-surface border-r border-border flex flex-col p-6 overflow-y-auto custom-scrollbar">
+          
+          {/* Mode Selection */}
+          <div className="mb-6 flex bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-1 rounded-full gap-1">
+            <button
+              onClick={() => switchMode('clone')}
+              className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+                pageMode === 'clone' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.title1}
+            </button>
+            <button
+              onClick={() => switchMode('synthesis')}
+              className={`flex-1 py-2 rounded-full text-sm font-medium transition-all ${
+                pageMode === 'synthesis' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.title2}
+            </button>
+          </div>
+
+          <div className="space-y-6 flex-1">
+            {/* Common Name Input */}
+            <div>
+              <label className="block text-sm font-bold text-foreground mb-2">{t.audioName} <span className="text-red-500">*</span></label>
+              <div className="relative">
+                <input 
+                  value={audioData.name}
+                  onChange={(e) => setAudioData(prev => ({...prev, name: e.target.value}))}
+                  placeholder={t.audioNamePlaceholder}
+                  className="w-full px-4 py-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
+                  maxLength={50}
+                />
+                <span className="absolute right-3 bottom-3 text-xs text-muted-foreground opacity-70">{audioData.name.length}/50</span>
+              </div>
+            </div>
+
+            {/* CLONE MODE: Upload / Record */}
+            {pageMode === 'clone' && (
+              <div>
+                <h3 className="font-bold text-foreground mb-3">{t.getAudio}</h3>
+                <div className="flex gap-3 mb-3">
+                    <button 
+                       onClick={() => setUploadMethod('file')}
+                       className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'file' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                    >
+                        <Upload size={16} /> {t.uploadFile}
+                    </button>
+                    <button 
+                       onClick={() => setUploadMethod('record')}
+                       className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'record' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
+                    >
+                        <Mic size={16} /> {t.onlineRecording}
+                    </button>
+                </div>
+
+                {uploadMethod === 'file' ? (
+                   <div 
+                      onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+                      onDragLeave={() => setIsDragOver(false)}
+                      onDrop={handleDrop}
+                      onClick={() => fileInputRef.current?.click()}
+                      className={`border-2 border-dashed rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                        isDragOver || audioFile ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/10' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'
+                      }`}
+                   >
+                      <input ref={fileInputRef} type="file" accept=".mp3,.wav,.m4a" onChange={handleFileChange} className="hidden" />
+                      {uploadLoading ? (
+                         <Loader2 size={24} className="animate-spin text-indigo-600 mb-2" />
+                      ) : audioFile ? (
+                         <FileAudio size={32} className="text-indigo-500 mb-2" />
+                      ) : (
+                         <Upload size={24} className="text-muted-foreground mb-2" />
+                      )}
+                      
+                      {audioFile ? (
+                          <div className="text-center">
+                              <p className="text-sm font-bold text-indigo-600 break-all">{audioFile.fileName}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{formatFileSize(audioFile.size)}</p>
+                          </div>
+                      ) : (
+                          <div className="text-center">
+                              <p className="text-sm font-medium text-foreground">{t.uploadAudio}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{t.supportAudioType}</p>
+                          </div>
+                      )}
+                   </div>
+                ) : (
+                   <div className="bg-card border border-border rounded-xl p-4 flex flex-col items-center">
+                       <div className={`text-3xl font-mono font-bold mb-4 ${isRecording ? 'text-red-500 animate-pulse' : 'text-muted-foreground'}`}>
+                           {formatTime(recordTime)}
+                       </div>
+                       
+                       <div className="flex gap-4 w-full">
+                           {!isRecording ? (
+                               <button onClick={startRecording} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm">
+                                   <Mic size={16} /> {t.startRecording}
+                               </button>
+                           ) : (
+                               <button onClick={stopRecording} className="flex-1 py-2 bg-red-500 text-white rounded-lg font-bold hover:bg-red-600 transition flex items-center justify-center gap-2 text-sm">
+                                   <div className="w-2 h-2 bg-white rounded-sm"></div> {t.stopRecording}
+                               </button>
+                           )}
+                       </div>
+                       
+                       {recordedAudioUrl && (
+                           <div className="w-full mt-3 pt-3 border-t border-border">
+                               <div className="flex items-center justify-between mb-2">
+                                   <span className="text-xs font-bold text-muted-foreground">{t.previewRecording}</span>
+                                   <button onClick={clearRecording} className="text-xs text-red-500 hover:underline">{t.clear}</button>
+                               </div>
+                               <audio src={recordedAudioUrl} controls className="w-full h-8" />
+                               <button 
+                                  onClick={uploadRecording}
+                                  disabled={recordSubmitLoading || !!audioData.originVoiceFileId}
+                                  className="w-full mt-2 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
+                               >
+                                   {recordSubmitLoading && <Loader2 size={14} className="animate-spin" />}
+                                   {audioData.originVoiceFileId ? t.recordUploadSuccess : t.uploadRecording}
+                               </button>
+                           </div>
+                       )}
+                   </div>
+                )}
+              </div>
+            )}
+
+            {/* SYNTHESIS MODE: Voice Selection & Text */}
+            {pageMode === 'synthesis' && (
+              <>
+                 <div>
+                    <h3 className="font-bold text-foreground mb-3">{t.getTimbre}</h3>
+                    <div className="mb-2 relative">
+                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
                        <input 
-                          value={audioData.name}
-                          onChange={(e) => setAudioData(prev => ({...prev, name: e.target.value}))}
-                          placeholder={t.audioNamePlaceholder}
-                          className="w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
-                          maxLength={50}
+                          value={searchKeyword}
+                          onChange={e => setSearchKeyword(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && getVoiceList(1)}
+                          placeholder="搜索音色..."
+                          className="w-full pl-9 pr-3 py-2 rounded-lg border border-border bg-background text-sm outline-none focus:ring-1 focus:ring-indigo-500"
                        />
-                       <span className="absolute right-3 bottom-3 text-xs text-gray-400">{audioData.name.length}/50</span>
-                   </div>
-               </div>
-
-               {/* Speed */}
-               <div>
-                   <div className="flex justify-between mb-2">
-                       <label className="text-sm font-bold text-gray-700">{t.speakingSpeed}</label>
-                       <span className="px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 text-sm font-bold border border-indigo-100">{audioData.voiceSpeed}x</span>
-                   </div>
-                   <input 
-                      type="range" min="0.8" max="1.2" step="0.1"
-                      value={audioData.voiceSpeed}
-                      onChange={(e) => setAudioData(prev => ({...prev, voiceSpeed: parseFloat(e.target.value)}))}
-                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                   />
-                   <div className="flex justify-between text-xs text-gray-400 mt-1">
-                       <span>0.8x</span><span>1.0x</span><span>1.2x</span>
-                   </div>
-               </div>
-
-               {/* Text (Synthesis Mode) */}
-               {pageMode === 'synthesis' && (
-                   <div className="flex-1">
-                       <label className="block text-sm font-bold text-gray-700 mb-2">{t.audioText} <span className="text-red-500">*</span></label>
-                       <div className="relative h-full min-h-[120px]">
-                           <textarea 
-                              value={audioData.text}
-                              onChange={(e) => setAudioData(prev => ({...prev, text: e.target.value}))}
-                              placeholder={t.audioTextPlaceholder}
-                              className="w-full h-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white resize-none"
-                              maxLength={500}
-                           />
-                           <span className="absolute right-3 bottom-3 text-xs text-gray-400">{audioData.text.length}/500</span>
-                       </div>
-                   </div>
-               )}
-
-               {/* Status Info */}
-               <div className="mt-auto bg-gray-50 rounded-xl p-4 border border-gray-100">
-                   <div className="flex items-center gap-2 mb-3">
-                       <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                       <span className="font-bold text-gray-700 text-sm">{pageMode === 'clone' ? t.fileStatus : t.audioStatus}</span>
-                   </div>
-                   {((pageMode === 'clone' && audioFile) || (pageMode === 'synthesis' && selectedVoice)) ? (
-                       <div className="space-y-2 text-sm">
-                           {pageMode === 'clone' && audioFile && (
-                               <>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.fileName}</span><span className="font-medium text-gray-800 truncate max-w-[120px]">{audioFile.fileName}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.fileSize}</span><span className="font-medium text-gray-800">{formatFileSize(audioFile.size)}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.fileFormat}</span><span className="uppercase font-medium text-gray-800">{audioFile.format}</span></div>
-                               </>
-                           )}
-                           {pageMode === 'synthesis' && selectedVoice && (
-                               <>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.audioName2}</span><span className="font-medium text-gray-800">{selectedVoice.voiceName}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.sex}</span><span className="font-medium text-gray-800">{selectedVoice.gender === 'male' ? t.male : t.female}</span></div>
-                                <div className="flex justify-between"><span className="text-gray-500">{t.style}</span><span className="font-medium text-gray-800">{selectedVoice.style || '-'}</span></div>
-                               </>
-                           )}
-                       </div>
-                   ) : (
-                       <div className="text-center text-gray-400 text-sm py-2">{t.inPreparation}</div>
-                   )}
-               </div>
-           </div>
-        </div>
-
-        {/* 2. Source Panel (Upload/Select) */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-            <div className="p-6 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100 flex items-center gap-4">
-               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-2xl shadow-lg shadow-green-500/30">📁</div>
-               <div>
-                   <h3 className="font-bold text-gray-800 text-lg">{pageMode === 'clone' ? t.getAudio : t.getTimbre}</h3>
-                   <p className="text-gray-500 text-sm">{pageMode === 'clone' ? t.uploadOrOnline : t.selectVoice}</p>
-               </div>
-           </div>
-           <div className="p-6 flex-1 flex flex-col">
-               {pageMode === 'clone' ? (
-                   <>
-                       {/* Method Switch */}
-                       <div className="flex gap-3 mb-6">
-                           <button 
-                              onClick={() => setUploadMethod('file')}
-                              className={`flex-1 py-3 rounded-xl border-2 font-medium transition flex flex-col items-center gap-1 ${uploadMethod === 'file' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                           >
-                               <Upload size={20} /> {t.uploadFile}
-                           </button>
-                           <button 
-                              onClick={() => setUploadMethod('record')}
-                              className={`flex-1 py-3 rounded-xl border-2 font-medium transition flex flex-col items-center gap-1 ${uploadMethod === 'record' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-                           >
-                               <Mic size={20} /> {t.onlineRecording}
-                           </button>
-                       </div>
-
-                       {/* Upload Area */}
-                       {uploadMethod === 'file' && (
-                           <div 
-                              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-                              onDragLeave={() => setIsDragOver(false)}
-                              onDrop={handleDrop}
-                              onClick={() => fileInputRef.current?.click()}
-                              className={`flex-1 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center text-center p-6 cursor-pointer transition ${isDragOver ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'}`}
-                           >
-                               <input ref={fileInputRef} type="file" accept=".mp3,.wav,.m4a" onChange={handleFileChange} className="hidden" />
-                               <div className="w-16 h-16 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mb-4">
-                                   {uploadLoading ? <Loader className="animate-spin" /> : <FileAudio size={32} />}
-                               </div>
-                               <h4 className="font-bold text-gray-700 mb-1">{t.uploadAudio}</h4>
-                               <p className="text-xs text-gray-400 max-w-[200px]">{t.supportAudioType}</p>
-                           </div>
-                       )}
-
-                       {/* Record Area */}
-                       {uploadMethod === 'record' && (
-                           <div className="flex-1 bg-gray-50 rounded-2xl p-6 flex flex-col items-center justify-center text-center border border-gray-200">
-                               <div className={`text-2xl font-mono font-bold mb-6 ${isRecording ? 'text-red-500' : 'text-gray-400'}`}>
-                                   {formatTime(recordTime)}
-                               </div>
-                               
-                               <div className="flex gap-4 mb-6">
-                                   {!isRecording ? (
-                                       <button onClick={startRecording} className="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold shadow-lg hover:bg-indigo-700 transition flex items-center gap-2">
-                                           <Mic size={18} /> {t.startRecording}
-                                       </button>
-                                   ) : (
-                                       <button onClick={stopRecording} className="px-6 py-3 bg-red-500 text-white rounded-xl font-bold shadow-lg hover:bg-red-600 transition flex items-center gap-2">
-                                           <span className="w-3 h-3 bg-white rounded-sm animate-pulse"></span> {t.stopRecording}
-                                       </button>
-                                   )}
-                               </div>
-                               
-                               <p className="text-sm text-gray-500 mb-4">{recordStatus}</p>
-
-                               {recordedAudioUrl && (
-                                   <div className="w-full bg-white p-3 rounded-xl border border-gray-200">
-                                       <div className="flex items-center justify-between mb-2">
-                                           <span className="text-xs font-bold text-gray-600">{t.previewRecording}</span>
-                                           <button onClick={clearRecording} className="text-xs text-red-500 hover:underline">{t.clear}</button>
-                                       </div>
-                                       <audio src={recordedAudioUrl} controls className="w-full h-8" />
-                                       <button 
-                                          onClick={uploadRecording}
-                                          disabled={recordSubmitLoading || !!audioData.originVoiceFileId}
-                                          className="w-full mt-3 py-2 bg-green-500 text-white rounded-lg font-bold text-sm hover:bg-green-600 disabled:opacity-50 transition"
-                                       >
-                                           {recordSubmitLoading ? <Loader className="animate-spin mx-auto" size={16} /> : (audioData.originVoiceFileId ? t.recordUploadSuccess : t.uploadRecording)}
-                                       </button>
-                                   </div>
-                               )}
-                           </div>
-                       )}
-                   </>
-               ) : (
-                   // Synthesis Mode: Voice Selection
-                   <div className="flex flex-col h-full">
-                       {/* Search & Filters */}
-                       <div className="flex gap-2 mb-4">
-                           <div className="relative flex-1">
-                               <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                               <input 
-                                  value={searchKeyword}
-                                  onChange={e => setSearchKeyword(e.target.value)}
-                                  onKeyDown={e => e.key === 'Enter' && getVoiceList(1)}
-                                  placeholder="搜索音色..."
-                                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-gray-200 text-sm outline-none focus:border-indigo-500"
-                               />
-                           </div>
-                           <select className="px-2 py-2 rounded-lg border border-gray-200 text-sm outline-none" value={genderFilter} onChange={e => setGenderFilter(e.target.value)}>
-                               <option value="">{t.allSex}</option>
-                               <option value="male">{t.male}</option>
-                               <option value="female">{t.female}</option>
-                           </select>
-                       </div>
-
-                       {/* Voice List */}
-                       <div className="flex-1 overflow-y-auto custom-scrollbar min-h-[300px] border border-gray-100 rounded-xl bg-gray-50">
-                           {voiceLoading ? (
-                               <div className="flex justify-center py-10"><Loader className="animate-spin text-indigo-600" /></div>
-                           ) : voiceList.map(voice => (
+                    </div>
+                    
+                    <div className="h-48 overflow-y-auto custom-scrollbar border border-border rounded-xl bg-card/50">
+                       {voiceLoading ? (
+                           <div className="flex justify-center items-center h-full"><Loader2 className="animate-spin text-indigo-600" /></div>
+                       ) : voiceList.length > 0 ? (
+                           voiceList.map(voice => (
                                <div 
                                   key={voice.voiceId}
                                   onClick={() => setSelectedVoice(voice)}
-                                  className={`p-3 border-b border-gray-100 cursor-pointer hover:bg-gray-100 transition flex items-center justify-between ${selectedVoice?.voiceId === voice.voiceId ? 'bg-indigo-50 hover:bg-indigo-50' : 'bg-white'}`}
+                                  className={`p-2 border-b border-border last:border-0 cursor-pointer hover:bg-accent/50 transition flex items-center justify-between ${selectedVoice?.voiceId === voice.voiceId ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}
                                >
-                                   <div className="flex items-center gap-3 overflow-hidden">
-                                       <div className={`w-10 h-10 rounded-full flex items-center justify-center text-lg ${selectedVoice?.voiceId === voice.voiceId ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
+                                   <div className="flex items-center gap-2 overflow-hidden">
+                                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm ${selectedVoice?.voiceId === voice.voiceId ? 'bg-indigo-100 text-indigo-600' : 'bg-muted'}`}>
                                            {voice.gender === 'female' ? '👩' : '👨'}
                                        </div>
                                        <div className="min-w-0">
-                                           <p className={`font-bold text-sm truncate ${selectedVoice?.voiceId === voice.voiceId ? 'text-indigo-700' : 'text-gray-800'}`}>{voice.voiceName}</p>
-                                           <div className="flex gap-1 text-[10px] text-gray-500 flex-wrap">
-                                               <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.gender === 'male' ? t.male : t.female}</span>
-                                               {voice.style && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.style}</span>}
-                                               {voice.accent && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.accent}</span>}
-                                               {voice.bestSupportLanguage && <span className="bg-gray-100 px-1.5 py-0.5 rounded">{voice.bestSupportLanguage}</span>}
-                                           </div>
+                                           <p className={`font-bold text-sm truncate ${selectedVoice?.voiceId === voice.voiceId ? 'text-indigo-600' : 'text-foreground'}`}>{voice.voiceName}</p>
+                                           <span className="text-[10px] text-muted-foreground">{voice.style || voice.gender}</span>
                                        </div>
                                    </div>
                                    <button 
                                       onClick={(e) => { e.stopPropagation(); playDemo(voice); }}
-                                      className={`p-2 rounded-full hover:bg-gray-200 transition ${currentPlayingDemo === voice.voiceId ? 'text-red-500 bg-red-50' : 'text-gray-400'}`}
+                                      className={`p-1.5 rounded-full hover:bg-accent transition ${currentPlayingDemo === voice.voiceId ? 'text-red-500' : 'text-muted-foreground'}`}
                                    >
-                                       {currentPlayingDemo === voice.voiceId ? <Pause size={16} /> : <Play size={16} />}
+                                       {currentPlayingDemo === voice.voiceId ? <Pause size={14} /> : <Play size={14} />}
                                    </button>
                                </div>
-                           ))}
-                       </div>
+                           ))
+                       ) : (
+                           <div className="flex justify-center items-center h-full text-sm text-muted-foreground">无数据</div>
+                       )}
+                    </div>
+                 </div>
 
-                       {/* Pagination */}
-                       <div className="flex justify-center gap-2 mt-4">
-                           <button onClick={() => getVoiceList(voicePagination.current - 1)} disabled={voicePagination.current <= 1} className="px-3 py-1 rounded border text-xs hover:bg-gray-50 disabled:opacity-50">{t.previousPage}</button>
-                           <span className="text-xs text-gray-500 py-1">{voicePagination.current} / {Math.ceil(voicePagination.total / voicePagination.pageSize) || 1}</span>
-                           <button onClick={() => getVoiceList(voicePagination.current + 1)} disabled={voicePagination.current >= Math.ceil(voicePagination.total / voicePagination.pageSize)} className="px-3 py-1 rounded border text-xs hover:bg-gray-50 disabled:opacity-50">{t.nextPage}</button>
-                       </div>
-                   </div>
+                 <div>
+                    <label className="block text-sm font-bold text-foreground mb-2">{t.audioText} <span className="text-red-500">*</span></label>
+                    <div className="relative">
+                      <textarea
+                        value={audioData.text}
+                        onChange={(e) => setAudioData(prev => ({...prev, text: e.target.value}))}
+                        placeholder={t.audioTextPlaceholder}
+                        className="w-full h-32 p-4 rounded-xl border border-border bg-background resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
+                        maxLength={500}
+                      />
+                      <span className="absolute bottom-3 right-3 text-xs text-muted-foreground opacity-70">{audioData.text.length}/500</span>
+                    </div>
+                 </div>
+              </>
+            )}
+
+            {/* Speed Slider */}
+            <div>
+               <div className="flex justify-between mb-2">
+                   <label className="text-sm font-bold text-foreground">{t.speakingSpeed}</label>
+                   <span className="px-2 py-0.5 rounded text-xs font-bold bg-accent text-accent-foreground">{audioData.voiceSpeed}x</span>
+               </div>
+               <input 
+                  type="range" min="0.8" max="1.2" step="0.1"
+                  value={audioData.voiceSpeed}
+                  onChange={(e) => setAudioData(prev => ({...prev, voiceSpeed: parseFloat(e.target.value)}))}
+                  className="w-full h-2 bg-secondary rounded-lg appearance-none cursor-pointer accent-indigo-600"
+               />
+               <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                   <span>0.8x</span><span>1.0x</span><span>1.2x</span>
+               </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <div className="mt-6 pt-4 border-t border-border">
+            <button 
+              onClick={handleSubmit}
+              disabled={!canSubmit() || isPolling || submitLoading}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+               {submitLoading || isPolling ? (
+                 <>
+                   <Loader2 size={18} className="animate-spin" />
+                   {t.inProcessing}
+                 </>
+               ) : (
+                 <>
+                   <Wand2 size={18} />
+                   {pageMode === 'clone' ? t.startCloning : t.startSynthesis}
+                 </>
                )}
-           </div>
+            </button>
+          </div>
         </div>
 
-        {/* 3. Effect/Result Panel */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-             <div className="p-6 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-100 flex items-center gap-4">
-               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 flex items-center justify-center text-2xl shadow-lg shadow-orange-500/30">🎨</div>
-               <div>
-                   <h3 className="font-bold text-gray-800 text-lg">{t.syntheticEffect}</h3>
-                   <p className="text-gray-500 text-sm">{t.previewRes}</p>
-               </div>
+        {/* Right Panel - Preview */}
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
+           <div className="flex items-center justify-between mb-6">
+             <h2 className="text-xl font-bold text-foreground">{t.resultTitle || '生成结果'}</h2>
+             {(taskResult || taskError) && (
+               <button 
+                 onClick={clearAll}
+                 className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+               >
+                 <RotateCcw size={14} /> {t.clearReset}
+               </button>
+             )}
            </div>
-           <div className="p-6 flex-1 flex flex-col">
-               {/* Checklist */}
-               <div className="mb-6 space-y-3">
-                   <h4 className="font-bold text-gray-700 text-sm mb-2">{t.operationProcess}</h4>
-                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                       <span className="text-sm text-gray-600 flex items-center gap-2">
-                           <span className={`w-2 h-2 rounded-full ${audioData.name ? 'bg-green-500' : 'bg-gray-300'}`}></span> {t.audioName}
-                       </span>
-                       {audioData.name ? <Check size={16} className="text-green-500" /> : <span className="text-xs text-gray-400">⏳</span>}
-                   </div>
-                   <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                       <span className="text-sm text-gray-600 flex items-center gap-2">
-                           <span className={`w-2 h-2 rounded-full ${(pageMode === 'clone' ? audioFile : selectedVoice) ? 'bg-green-500' : 'bg-gray-300'}`}></span> 
-                           {pageMode === 'clone' ? '音频文件' : '音色选择'}
-                       </span>
-                       {(pageMode === 'clone' ? audioFile : selectedVoice) ? <Check size={16} className="text-green-500" /> : <span className="text-xs text-gray-400">⏳</span>}
-                   </div>
-                   {pageMode === 'synthesis' && (
-                       <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
-                           <span className="text-sm text-gray-600 flex items-center gap-2">
-                               <span className={`w-2 h-2 rounded-full ${audioData.text ? 'bg-green-500' : 'bg-gray-300'}`}></span> {t.syntheticText}
-                           </span>
-                           {audioData.text ? <Check size={16} className="text-green-500" /> : <span className="text-xs text-gray-400">⏳</span>}
-                       </div>
-                   )}
-               </div>
 
-               {/* Task Status / Result */}
-               {(taskStatus || isPolling) && (
-                   <div className="mb-6 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                       <div className="flex items-center gap-2 mb-3">
-                           {taskStatus === 'success' ? '✅' : (taskStatus === 'fail' ? '❌' : <Loader className="animate-spin text-blue-600" size={16} />)}
-                           <span className="font-bold text-gray-700">{taskStatus === 'success' ? t.taskSuccess : (taskStatus === 'fail' ? t.messionPushFail : t.inProcessing)}</span>
-                       </div>
-                       
-                       {(isPolling || taskStatus === 'running') && (
-                           <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                               <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${taskProgress}%` }}></div>
-                           </div>
-                       )}
-
-                       {taskError && (
-                           <div className="mt-2 text-xs text-red-500 flex items-center gap-1">
-                               <AlertCircle size={12} /> {taskError}
-                           </div>
-                       )}
+           {/* Main Preview Area */}
+           <div className="flex-1 w-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
+              {(submitLoading || isPolling) ? (
+                <div className="flex flex-col items-center gap-4 z-10">
+                   <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                   <p className="text-indigo-600 font-medium">{t.inProcessing} {taskProgress > 0 && `${taskProgress}%`}</p>
+                   <p className="text-xs text-muted-foreground">任务ID: {taskId}</p>
+                </div>
+              ) : taskResult && taskResult.status === 'success' && taskResult.voice?.demoAudioUrl ? (
+                <div className="w-full max-w-md p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300">
+                   <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                      <Music size={32} />
                    </div>
-               )}
-
-               {/* Success Result */}
-               {taskResult && taskResult.status === 'success' && taskResult.voice?.demoAudioUrl && (
-                   <div className="mb-6 p-4 bg-green-50 rounded-xl border border-green-100">
-                       <h4 className="font-bold text-green-800 mb-3">{t.taskRes}</h4>
-                       <div className="flex flex-col gap-3">
-                           <audio src={taskResult.voice.demoAudioUrl} controls className="w-full h-8" />
-                           <a href={taskResult.voice.demoAudioUrl} download className="flex items-center justify-center gap-2 py-2 bg-green-600 text-white rounded-lg text-sm font-bold hover:bg-green-700 transition">
-                               <Download size={16} /> {t.downloadAudio}
-                           </a>
-                       </div>
+                   <div className="text-center">
+                      <h3 className="text-lg font-bold text-foreground">{taskResult.voice.voiceName || 'Generated Voice'}</h3>
+                      <p className="text-sm text-muted-foreground">生成成功</p>
                    </div>
-               )}
-
-               {/* Actions */}
-               <div className="mt-auto flex gap-3">
-                   <button 
-                      onClick={clearAll}
-                      disabled={isPolling}
-                      className="px-4 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 disabled:opacity-50 transition"
+                   
+                   <audio src={taskResult.voice.demoAudioUrl} controls className="w-full" />
+                   
+                   <a 
+                      href={taskResult.voice.demoAudioUrl} 
+                      download 
+                      className="flex items-center justify-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition w-full"
                    >
-                       <RotateCcw size={20} />
-                   </button>
-                   <button 
-                      onClick={handleSubmit}
-                      disabled={!canSubmit() || isPolling || submitLoading}
-                      className="flex-1 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold hover:shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50 disabled:shadow-none transition flex items-center justify-center gap-2"
-                   >
-                       {submitLoading || isPolling ? <Loader className="animate-spin" /> : (pageMode === 'clone' ? t.startCloning : t.startSynthesis)}
-                   </button>
-               </div>
+                      <Download size={18} /> {t.downloadAudio}
+                   </a>
+                </div>
+              ) : taskError ? (
+                 <div className="flex flex-col items-center text-red-500 gap-2">
+                    <AlertCircle size={48} />
+                    <p className="font-bold">{t.messionPushFail}</p>
+                    <p className="text-sm text-muted-foreground">{taskError}</p>
+                 </div>
+              ) : (
+                <div className="flex flex-col items-center text-slate-400">
+                   <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
+                      <Music size={40} className="text-slate-400 dark:text-slate-500" />
+                   </div>
+                   <p className="text-sm max-w-xs text-center">{t.emptyState}</p>
+              </div>
+              )}
            </div>
         </div>
       </div>
@@ -914,4 +859,3 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 };
 
 export default VoiceClone;
-

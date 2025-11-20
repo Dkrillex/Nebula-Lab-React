@@ -90,7 +90,7 @@ const AssetsPage: React.FC = () => {
 
       const res = await assetsService.getAssetsList(queryParams);
       
-      if (res.code === 200) {
+      if (res.rows) {
         const allAssets = res.rows || [];
         
         // 区分文件夹和文件

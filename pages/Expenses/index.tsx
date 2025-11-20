@@ -83,7 +83,7 @@ const ExpensesPage: React.FC = () => {
         userId: user.nebulaApiId,
       });
 
-      if (res.code === 200) {
+      if (res.rows) {
         const logs = res.rows || res.data || [];
         setExpenseLogs(logs);
         setPagination(prev => ({
@@ -132,7 +132,7 @@ const ExpensesPage: React.FC = () => {
         pageSize: pagination.pageSize,
       });
 
-      if (res.code === 200) {
+      if (res.rows) {
         const scores = res.rows || res.data || [];
         setScoreList(scores);
         setPagination(prev => ({
