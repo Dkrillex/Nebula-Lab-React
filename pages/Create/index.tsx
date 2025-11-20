@@ -14,12 +14,6 @@ import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
 import VoiceClone from './components/VoiceClone';
 import WorkshopPage from './components/WorkshopPage';
-import UseToolPage from './components/UseToolPage';
-import AiFaceSwapPage from './components/AiFaceSwapPage';
-import TtsPage from './components/TtsPage';
-import GlbViewerPage from './components/GlbViewerPage';
-import TemplateUiPage from './components/TemplateUiPage';
-import ImageTranslationPage from './components/ImageTranslationPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -73,60 +67,61 @@ const CreatePage: React.FC = () => {
   const creativeTypes = [
     {
       id: 1,
-      title: 'AI Viral Video', 
+      title: t.shortcuts.video, 
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/k-pop.png',
-      description: 'AI mixed cut video',
+      description: t.shortcuts.videoDesc,
       toolId: 'viralVideo',
       type: 'image',
     },
     { 
       id: 3,
-      title: 'Talking Photo',
+      title: t.shortcuts.talkingPhoto,
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/talking-pictures.png',
-      description: 'Make photos talk',
+      description: t.shortcuts.talkingPhotoDesc,
       toolId: 'digitalHuman',
       type: 'image',
     },
     {
       id: 4,
-      title: 'Digital Human',
+      title: t.shortcuts.avatar,
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/product-digital-person.png',
-      description: 'Product digital human video',
+      description: t.shortcuts.avatarDesc,
       toolId: 'digitalHuman',
       type: 'image',
     },
     {
       id: 5,
-      title: 'Style Transfer',
+      title: t.shortcuts.transform,
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/all-things-migrate-img.png',
-      description: 'Transform object styles',
+      description: t.shortcuts.transformDesc,
       toolId: 'styleTransfer', 
       type: 'image',
     },
     {
       id: 6,
-      title: 'Text to Image',
-      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/text2image.png',
-      description: 'Generate images from text',
+      title: t.shortcuts.sketch,
+      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
+      description: t.shortcuts.sketchDesc,
       toolId: 'textToImage',
       type: 'image',
     },
     {
       id: 8,
-      title: 'Voice Clone',
-      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/voice-clone.png', // Placeholder or real icon
-      description: 'Clone your voice',
+      title: t.sideMenu.voiceClone,
+      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/text2image.png', // Placeholder or real icon
+      description: t.sideMenu.voiceClone,
       toolId: 'voiceClone',
       type: 'audio',
     },
-    { 
-      id: 7,
-      title: 'Image Editing',
-      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
-      description: 'AI intelligent image editing',
-      toolId: 'textToImage', // Fallback or new tool
-      type: 'image',
-    },
+    // 后面看看多语言是不是要删掉inpainting
+    // { 
+    //   id: 7,
+    //   title: t.shortcuts.inpainting,
+    //   icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
+    //   description: t.shortcuts.inpaintingDesc,
+    //   toolId: 'textToImage', // Fallback or new tool
+    //   type: 'image',
+    // },
   ];
 
   // Categories
@@ -482,12 +477,6 @@ const CreatePage: React.FC = () => {
     if (activeMenu === 'workshop' && t.workshop) {
       return <WorkshopPage t={t.workshop} />;
     }
-    if (activeMenu === 'useTool') return <UseToolPage />;
-    if (activeMenu === 'aiFaceSwap') return <AiFaceSwapPage />;
-    if (activeMenu === 'tts') return <TtsPage />;
-    if (activeMenu === '3dModel') return <GlbViewerPage />;
-    if (activeMenu === 'templateUi') return <TemplateUiPage />;
-    if (activeMenu === 'aIFacSwapping') return <ImageTranslationPage />;
     
     // Default Create Dashboard
     return (

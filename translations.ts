@@ -105,6 +105,8 @@ interface Translation {
       sketchDesc: string;
       inpainting: string;
       inpaintingDesc: string;
+      talkingPhoto: string;
+      talkingPhotoDesc: string;
     };
     tabs: string[];
     authModal?: {
@@ -621,7 +623,9 @@ export const translations: Record<string, Translation> = {
         sketch: 'Sketch to Image',
         sketchDesc: 'Turn sketches into art',
         inpainting: 'AI Inpainting',
-        inpaintingDesc: 'Remove or replace objects'
+        inpaintingDesc: 'Remove or replace objects',
+        talkingPhoto: 'Talking Photo',
+        talkingPhotoDesc: 'Make photos talk'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
       authModal: {
@@ -1187,7 +1191,9 @@ export const translations: Record<string, Translation> = {
         sketch: 'AI生图',
         sketchDesc: 'AI将文字描述或图片生成精美图像',
         inpainting: '万物编辑',
-        inpaintingDesc: 'AI智能图像编辑，支持涂抹消除'
+        inpaintingDesc: 'AI智能图像编辑，支持涂抹消除',
+        talkingPhoto: '照片说话',
+        talkingPhotoDesc: '让照片开口说话'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
       authModal: {
