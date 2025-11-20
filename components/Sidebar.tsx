@@ -4,7 +4,8 @@ import {
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
   UserCircle, Folder, CreditCard, DollarSign, 
-  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink
+  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink,
+  RefreshCcw, MessageSquare, MonitorPlay
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 

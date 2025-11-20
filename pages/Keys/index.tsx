@@ -260,26 +260,26 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
            <h1 className="text-2xl font-semibold text-foreground tracking-tight">{t.title}</h1>
            <p className="text-sm text-muted mt-1">管理您的 API 密钥以访问服务</p>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
           <div className="relative w-full sm:w-64">
-              <input 
-                type="text" 
+            <input 
+              type="text" 
                 placeholder="搜索密钥名称..." 
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
                 className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-sm focus:ring-1 focus:ring-foreground focus:border-foreground transition-all outline-none"
-              />
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-              </div>
+            </div>
           </div>
 
-          <button 
+            <button 
             onClick={handleSearch}
-            disabled={loading}
+              disabled={loading}
             className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-surface transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
-          >
+            >
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             刷新
           </button>
@@ -290,8 +290,8 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
           >
             <Plus size={16} />
             {t.createButton}
-          </button>
-        </div>
+            </button>
+          </div>
       </div>
 
       {/* Table Layout */}
@@ -315,7 +315,7 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
                      <div className="flex flex-col items-center gap-2">
                        <RefreshCw className="animate-spin" size={20} />
                        <span>加载中...</span>
-                     </div>
+        </div>
                    </td>
                  </tr>
               ) : tokens.length === 0 ? (
@@ -326,18 +326,18 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
                  </tr>
               ) : (
                 tokens.map((token) => {
-                  const isActive = token.status === 1;
-                  const isKeyVisible = getKeyVisibility(token.id);
-                  const displayKey = isKeyVisible 
+            const isActive = token.status === 1;
+            const isKeyVisible = getKeyVisibility(token.id);
+            const displayKey = isKeyVisible 
                     ? `sk-${token.key}`
                     : `sk-${maskKey(token.key)}`;
 
-                  return (
+            return (
                     <tr key={token.id} className="group hover:bg-surface/50 transition-colors">
                       <td className="px-6 py-4">
                         <div className="font-medium text-foreground truncate max-w-[180px]" title={token.name}>
                           {token.name || token.id}
-                        </div>
+                       </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2 bg-surface/50 rounded px-2 py-1 w-fit border border-border/50">
@@ -358,14 +358,14 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
                               <Copy size={12} />
                             </button>
                           </div>
-                        </div>
+                       </div>
                       </td>
                       <td className="px-6 py-4">
                         <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
-                          isActive 
+                         isActive 
                             ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
                             : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
-                        }`}>
+                       }`}>
                           <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isActive ? 'bg-green-600 dark:bg-green-400' : 'bg-red-600 dark:bg-red-400'}`}></span>
                           {isActive ? '启用' : '禁用'}
                         </div>
@@ -375,82 +375,82 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
                           <div className="flex justify-between items-center gap-4">
                              <span className="text-muted">已用:</span>
                              <span className="font-mono">{formatUsedQuota(token)}</span>
-                          </div>
+                    </div>
                           {token.unlimitedQuota !== 1 && (
                             <div className="flex justify-between items-center gap-4">
                                <span className="text-muted">剩余:</span>
                                <span className="font-mono text-foreground">{formatRemainingQuota(token)}</span>
-                            </div>
+                  </div>
                           )}
                           {token.unlimitedQuota === 1 && (
                              <span className="text-muted">无限额度</span>
                           )}
-                        </div>
+                  </div>
                       </td>
                       <td className="px-6 py-4 text-muted">
                         {formatExpiration(token)}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <button 
+                     <button 
                             onClick={() => handleEdit(token)}
                             className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
                             title="编辑"
                           >
                             <Edit2 size={14} />
-                          </button>
-                          <button 
+                     </button>
+                     <button 
                              onClick={() => toggleStatus(token)}
                              disabled={toggleStatusLoading === token.id}
                              className={`p-1.5 rounded transition-colors ${isActive ? 'text-muted hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-muted hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'}`}
                              title={isActive ? '禁用' : '启用'}
-                          >
+                     >
                             {toggleStatusLoading === token.id ? <RefreshCw size={14} className="animate-spin"/> : (isActive ? <EyeOff size={14} /> : <Eye size={14} />)}
-                          </button>
-                          <button 
+                     </button>
+                     <button 
                             onClick={() => deleteKey(token)}
                             className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                             title="删除"
                           >
                             <Trash2 size={14} />
-                          </button>
-                        </div>
+                     </button>
+                  </div>
                       </td>
                     </tr>
-                  );
+            );
                 })
               )}
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination Footer */}
-        {!loading && pagination.total > 0 && (
+      {!loading && pagination.total > 0 && (
             <div className="px-6 py-4 border-t border-border bg-surface/30 flex items-center justify-between">
                 <span className="text-sm text-muted">
                     共 {pagination.total} 条记录
                 </span>
-                <div className="flex items-center gap-2">
-                    <button
-                        onClick={() => handlePageChange(pagination.current - 1)}
-                        disabled={pagination.current === 1}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(pagination.current - 1)}
+              disabled={pagination.current === 1}
                         className="px-2 py-1 rounded border border-border text-xs hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        上一页
-                    </button>
+            >
+              上一页
+            </button>
                     <span className="text-xs text-muted">
                         {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                    </span>
-                    <button
-                        onClick={() => handlePageChange(pagination.current + 1)}
-                        disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+            </span>
+            <button
+              onClick={() => handlePageChange(pagination.current + 1)}
+              disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
                         className="px-2 py-1 rounded border border-border text-xs hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        下一页
-                    </button>
-                </div>
-            </div>
-        )}
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      )}
       </div>
 
       {/* Token Form Modal */}
