@@ -283,23 +283,14 @@ const TokenForm: React.FC<TokenFormProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-border bg-gradient-to-r from-indigo-500 to-purple-600 flex-shrink-0">
-          <div className="flex items-center gap-3 text-white">
-            {token && (
-              <>
-                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center">
-                  <KeyIcon size={20} />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold">{token.name || token.id}</h2>
-                </div>
-              </>
-            )}
-            {!token && <h2 className="text-lg font-semibold">新建 API 密钥</h2>}
+        <div className="flex items-center justify-between p-6 border-b border-border bg-background flex-shrink-0">
+          <div className="flex items-center gap-3">
+            {token && <h2 className="text-lg font-semibold text-foreground">{token.name || token.id}</h2>}
+            {!token && <h2 className="text-lg font-semibold text-foreground">新建 API 密钥</h2>}
           </div>
           <button
             onClick={onClose}
-            className="text-white hover:bg-white/20 rounded-lg p-2 transition-colors"
+            className="text-muted hover:text-foreground hover:bg-surface rounded-lg p-2 transition-colors"
           >
             <X size={20} />
           </button>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Key, Copy, Eye, EyeOff, Trash2, Edit2, Plus, Cloud, RefreshCw } from 'lucide-react';
+import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react';
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
@@ -253,214 +253,205 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 md:py-12 min-h-[80vh]">
+    <div className="container mx-auto px-4 py-8 max-w-7xl min-h-[80vh]">
       {/* Header & Toolbar */}
-      <div className="flex flex-col gap-6 mb-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold text-foreground">{t.title}</h1>
-            <span className="px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-medium">
-              {pagination.total}
-            </span>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <button 
-              onClick={handleCreate}
-              className="flex-1 md:flex-none flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-md"
-            >
-              <Plus size={18} />
-              {t.createButton}
-            </button>
-          </div>
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-6">
+        <div>
+           <h1 className="text-2xl font-semibold text-foreground tracking-tight">{t.title}</h1>
+           <p className="text-sm text-muted mt-1">管理您的 API 密钥以访问服务</p>
         </div>
-
-        {/* Filters */}
-        <form onSubmit={handleSearch} className="flex flex-col md:flex-row gap-4 bg-surface border border-border p-4 rounded-xl shadow-sm">
-          <div className="flex-1 relative">
-            <input 
-              type="text" 
-              placeholder="搜索令牌名称..." 
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
-            />
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button 
-              type="submit"
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-surface hover:text-indigo-600 transition-colors disabled:opacity-50 bg-white dark:bg-surface"
-            >
-              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              查询
-            </button>
-          </div>
-        </form>
+        
+        <button 
+          onClick={handleCreate}
+          className="flex items-center gap-2 bg-foreground text-background hover:bg-foreground/90 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+        >
+          <Plus size={16} />
+          {t.createButton}
+        </button>
       </div>
 
-      {/* Loading State */}
-      {loading && tokens.length === 0 && (
-        <div className="flex items-center justify-center py-20">
-          <RefreshCw className="animate-spin text-indigo-600" size={32} />
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+        <div className="relative flex-1 max-w-md">
+            <input 
+              type="text" 
+              placeholder="搜索密钥名称..." 
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 rounded-md border border-border bg-background text-sm focus:ring-1 focus:ring-foreground focus:border-foreground transition-all outline-none"
+            />
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            </div>
         </div>
-      )}
+        <button 
+          onClick={handleSearch}
+          disabled={loading}
+          className="px-4 py-2 rounded-md border border-border text-sm font-medium hover:bg-surface transition-colors flex items-center gap-2"
+        >
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          刷新
+        </button>
+      </div>
 
-      {/* Empty State */}
-      {!loading && tokens.length === 0 && (
-        <div className="text-center py-20">
-          <div className="text-6xl mb-4">🔑</div>
-          <div className="text-xl font-semibold text-foreground mb-2">暂无令牌</div>
-          <div className="text-muted">点击上方按钮开始添加您的第一个令牌</div>
-        </div>
-      )}
+      {/* Table Layout */}
+      <div className="rounded-lg border border-border bg-surface/30 overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-surface border-b border-border text-muted font-medium">
+              <tr>
+                <th className="px-6 py-3 w-[200px]">名称</th>
+                <th className="px-6 py-3 w-[550px]">API Key</th>
+                <th className="px-6 py-3 w-[120px]">状态</th>
+                <th className="px-6 py-3 w-[220px]">额度使用</th>
+                <th className="px-6 py-3 w-[180px]">过期时间</th>
+                <th className="px-6 py-3 text-right w-[160px]">操作</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border bg-background">
+              {loading && tokens.length === 0 ? (
+                 <tr>
+                   <td colSpan={6} className="px-6 py-20 text-center text-muted">
+                     <div className="flex flex-col items-center gap-2">
+                       <RefreshCw className="animate-spin" size={20} />
+                       <span>加载中...</span>
+                     </div>
+                   </td>
+                 </tr>
+              ) : tokens.length === 0 ? (
+                 <tr>
+                   <td colSpan={6} className="px-6 py-20 text-center text-muted">
+                     暂无 API 密钥
+                   </td>
+                 </tr>
+              ) : (
+                tokens.map((token) => {
+                  const isActive = token.status === 1;
+                  const isKeyVisible = getKeyVisibility(token.id);
+                  const displayKey = isKeyVisible 
+                    ? `sk-${token.key}`
+                    : `sk-${maskKey(token.key)}`;
 
-      {/* Key List */}
-      {!loading && tokens.length > 0 && (
-        <div className="space-y-6">
-          {tokens.map((token) => {
-            const isActive = token.status === 1;
-            const isKeyVisible = getKeyVisibility(token.id);
-            const displayKey = isKeyVisible 
-              ? `sk-${maskKey(token.key)}` 
-              : `sk-${token.key}`;
-
-            return (
-              <div 
-                key={token.id} 
-                onClick={() => handleView(token)}
-                className={`bg-surface border border-border rounded-xl shadow-sm transition-all overflow-hidden cursor-pointer hover:shadow-md ${!isActive ? 'opacity-80' : ''}`}
-              >
-                {/* Top Border Stripe */}
-                <div className={`h-1.5 w-full ${isActive ? 'bg-indigo-500' : 'bg-slate-500'}`}></div>
-                
-                <div className="p-6">
-                  {/* Header Row */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                       <div className={`p-2 rounded-lg border flex-shrink-0 ${isActive ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-400'}`}>
-                          <Cloud size={24} />
-                       </div>
-                       <div className="flex-1 min-w-0">
-                          <h3 className={`font-semibold text-lg truncate ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-400'}`}>
-                            {token.name || token.id}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-1 text-sm text-muted">
-                            <span className="font-mono truncate">{displayKey}</span>
+                  return (
+                    <tr key={token.id} className="group hover:bg-surface/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-foreground truncate max-w-[180px]" title={token.name}>
+                          {token.name || token.id}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2 bg-surface/50 rounded px-2 py-1 w-fit border border-border/50">
+                          <span className="font-mono text-muted text-xs">{displayKey}</span>
+                          <div className="flex items-center border-l border-border/50 pl-2 ml-1 gap-1">
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleKeyVisibility(token.id);
-                              }}
-                              className="p-1 hover:bg-border rounded transition-colors"
-                              title={isKeyVisible ? '显示密钥' : '隐藏密钥'}
+                              onClick={() => toggleKeyVisibility(token.id)}
+                              className="text-muted hover:text-foreground transition-colors"
+                              title={isKeyVisible ? '隐藏' : '显示'}
                             >
-                              {isKeyVisible ? <Eye size={14} /> : <EyeOff size={14} />}
+                              {isKeyVisible ? <EyeOff size={12} /> : <Eye size={12} />}
                             </button>
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                copyKey(token.key);
-                              }}
-                              className="p-1 hover:bg-border rounded transition-colors"
-                              title="复制密钥"
+                              onClick={() => copyKey(token.key)}
+                              className="text-muted hover:text-foreground transition-colors"
+                              title="复制"
                             >
-                              <Copy size={14} />
+                              <Copy size={12} />
                             </button>
                           </div>
-                       </div>
-                    </div>
-                    
-                    <div className="flex flex-col items-end flex-shrink-0 ml-4">
-                       <span className={`text-xs font-bold px-2 py-1 rounded ${
-                         isActive 
-                           ? 'text-green-600 bg-green-100 dark:bg-green-900/30 dark:text-green-400' 
-                           : 'text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400'
-                       }`}>
-                         {isActive ? t.status.active : t.status.disabled}
-                       </span>
-                       <span className="text-[10px] text-muted mt-1">{t.labels.status}</span>
-                    </div>
-                  </div>
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                     <StatBox label={t.labels.limit} value={formatQuota(token)} color="text-blue-600 dark:text-blue-400" bgColor="bg-blue-50 dark:bg-blue-900/20" borderColor="border-blue-200 dark:border-blue-800" />
-                     <StatBox label={t.labels.remaining} value={formatRemainingQuota(token)} color="text-green-600 dark:text-green-400" bgColor="bg-green-50 dark:bg-green-900/20" borderColor="border-green-200 dark:border-green-800" />
-                     <StatBox label={t.labels.used} value={formatUsedQuota(token)} color="text-orange-600 dark:text-orange-400" bgColor="bg-orange-50 dark:bg-orange-900/20" borderColor="border-orange-200 dark:border-orange-800" />
-                     <StatBox label={t.labels.expires} value={formatExpiration(token)} color="text-pink-600 dark:text-pink-400" bgColor="bg-pink-50 dark:bg-pink-900/20" borderColor="border-pink-200 dark:border-pink-800" />
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap justify-end gap-3 pt-4 border-t border-border border-dashed">
-                     <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         toggleStatus(token);
-                       }}
-                       disabled={toggleStatusLoading === token.id}
-                       className={`px-4 py-1.5 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-                         isActive 
-                           ? 'bg-orange-500 hover:bg-orange-600 text-white' 
-                           : 'bg-green-500 hover:bg-green-600 text-white'
-                       }`}
-                     >
-                       {toggleStatusLoading === token.id ? '处理中...' : (isActive ? t.actions.disable : t.actions.enable)}
-                     </button>
-                     
-                     <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         deleteKey(token);
-                       }}
-                       className="px-4 py-1.5 rounded text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
-                     >
-                       {t.actions.delete}
-                     </button>
-                     
-                     <button 
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         handleEdit(token);
-                       }}
-                       className="px-4 py-1.5 rounded text-sm font-medium bg-indigo-500 hover:bg-indigo-600 text-white transition-colors"
-                     >
-                       {t.actions.edit}
-                     </button>
-                  </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
+                          isActive 
+                            ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' 
+                            : 'bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-800'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${isActive ? 'bg-green-600 dark:bg-green-400' : 'bg-red-600 dark:bg-red-400'}`}></span>
+                          {isActive ? '启用' : '禁用'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-col gap-1 text-xs">
+                          <div className="flex justify-between items-center gap-4">
+                             <span className="text-muted">已用:</span>
+                             <span className="font-mono">{formatUsedQuota(token)}</span>
+                          </div>
+                          {token.unlimitedQuota !== 1 && (
+                            <div className="flex justify-between items-center gap-4">
+                               <span className="text-muted">剩余:</span>
+                               <span className="font-mono text-foreground">{formatRemainingQuota(token)}</span>
+                            </div>
+                          )}
+                          {token.unlimitedQuota === 1 && (
+                             <span className="text-muted">无限额度</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-muted">
+                        {formatExpiration(token)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button 
+                            onClick={() => handleEdit(token)}
+                            className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
+                            title="编辑"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                             onClick={() => toggleStatus(token)}
+                             disabled={toggleStatusLoading === token.id}
+                             className={`p-1.5 rounded transition-colors ${isActive ? 'text-muted hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/20' : 'text-muted hover:text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20'}`}
+                             title={isActive ? '禁用' : '启用'}
+                          >
+                            {toggleStatusLoading === token.id ? <RefreshCw size={14} className="animate-spin"/> : (isActive ? <EyeOff size={14} /> : <Eye size={14} />)}
+                          </button>
+                          <button 
+                            onClick={() => deleteKey(token)}
+                            className="p-1.5 text-muted hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                            title="删除"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Pagination Footer */}
+        {!loading && pagination.total > 0 && (
+            <div className="px-6 py-4 border-t border-border bg-surface/30 flex items-center justify-between">
+                <span className="text-sm text-muted">
+                    共 {pagination.total} 条记录
+                </span>
+                <div className="flex items-center gap-2">
+                    <button
+                        onClick={() => handlePageChange(pagination.current - 1)}
+                        disabled={pagination.current === 1}
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        上一页
+                    </button>
+                    <span className="text-xs text-muted">
+                        {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
+                    </span>
+                    <button
+                        onClick={() => handlePageChange(pagination.current + 1)}
+                        disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                        className="px-2 py-1 rounded border border-border text-xs hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        下一页
+                    </button>
                 </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Pagination */}
-      {!loading && pagination.total > 0 && (
-        <div className="flex justify-center mt-8">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handlePageChange(pagination.current - 1)}
-              disabled={pagination.current === 1}
-              className="px-3 py-1 rounded border border-border hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              上一页
-            </button>
-            <span className="text-sm text-muted">
-              第 {pagination.current} 页 / 共 {Math.ceil(pagination.total / pagination.pageSize)} 页
-            </span>
-            <button
-              onClick={() => handlePageChange(pagination.current + 1)}
-              disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-              className="px-3 py-1 rounded border border-border hover:bg-surface disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
-      )}
+            </div>
+        )}
+      </div>
 
       {/* Token Form Modal */}
       <TokenForm
@@ -473,12 +464,5 @@ const KeysPage: React.FC<KeysPageProps> = ({ t }) => {
     </div>
   );
 };
-
-const StatBox = ({ label, value, color, bgColor, borderColor }: { label: string, value: string, color: string, bgColor: string, borderColor: string }) => (
-  <div className={`rounded-lg border px-4 py-3 ${bgColor} ${borderColor}`}>
-    <div className={`text-sm font-bold ${color}`}>{value}</div>
-    <div className="text-xs text-muted/80 mt-1">{label}</div>
-  </div>
-);
 
 export default KeysPage;
