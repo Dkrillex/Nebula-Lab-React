@@ -44,6 +44,16 @@ interface FilterOption {
   count: number;
 }
 
+const getBillingTypeLabel = (quotaType?: number): string => {
+  if (quotaType === 0) return '按量计费';
+  if (quotaType === 1) return '按次计费';
+  if (quotaType === 2) return '按资源类型计费';
+  if (quotaType === 3) return '按秒计费';
+  if (quotaType === 4) return '按全模态计费';
+  if (quotaType === 5) return '按张计费';
+  return '未知';
+};
+
 const ModelSquarePage: React.FC<ModelSquarePageProps> = ({ t }) => {
   const navigate = useNavigate();
   const [models, setModels] = useState<AIModel[]>([]);
@@ -716,6 +726,9 @@ const ModelCard = ({
                  </span>
               ))}
            </div>
+           <span className="text-xs text-muted border border-border px-2 py-1 rounded-md bg-surface/50">
+             {getBillingTypeLabel(model.quotaType)}
+           </span>
         </div>
       </div>
     </div>
@@ -743,16 +756,6 @@ const ModelDetailDrawer = ({
   const navigate = useNavigate();
 
   if (!visible) return null;
-
-  const getBillingTypeLabel = (quotaType?: number): string => {
-    if (quotaType === 0) return '按量计费';
-    if (quotaType === 1) return '按次计费';
-    if (quotaType === 2) return '按资源类型计费';
-    if (quotaType === 3) return '按秒计费';
-    if (quotaType === 4) return '按全模态计费';
-    if (quotaType === 5) return '按张计费';
-    return '未知';
-  };
 
   // 判断是否显示按钮
   const shouldShowChatButton = useMemo(() => {
