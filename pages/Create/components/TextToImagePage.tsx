@@ -239,9 +239,13 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
-      <div className="bg-white dark:bg-gray-900 border-b border-border py-6 px-8">
-        <h1 className="text-2xl font-bold mb-2 text-foreground">{t.title}</h1>
-        <p className="text-muted opacity-90">{t.subtitle}</p>
+      <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm z-10">
+        <div className="px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-lg font-bold text-foreground">{t.title}</h1>
+            <p className="text-xs text-muted-foreground mt-1 opacity-90">{t.subtitle}</p>
+          </div>
+        </div>
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
@@ -399,7 +403,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
            </div>
 
            {/* Main Preview Area */}
-           <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden min-h-[300px]">
+           <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
               {isGenerating && progress > 0 ? (
                 <div className="flex flex-col items-center gap-4 z-10">
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>

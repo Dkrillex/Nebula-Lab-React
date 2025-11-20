@@ -4,7 +4,8 @@ import {
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
   UserCircle, Folder, CreditCard, DollarSign, 
-  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink
+  ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink,
+  RefreshCcw, MessageSquare, MonitorPlay
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 
@@ -36,6 +37,11 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       if (tool === 'styleTransfer') return 'styleTransfer';
       if (tool === 'voiceClone') return 'voiceClone';
       if (tool === 'workshop') return 'workshop';
+      if (tool === 'faceSwap') return 'faceSwap';
+      if (tool === 'ttsTool') return 'ttsTool';
+      if (tool === 'glbViewer') return 'glbViewer';
+      if (tool === 'imageTranslation') return 'imageTranslation';
+      if (tool === 'videoTranslation') return 'videoTranslation';
       // Default to home if no tool or tool is 'home'
       return 'home';
     }
@@ -105,7 +111,18 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'textToImage', icon: Image, label: t.textToImage, tool: 'textToImage' },
         { id: 'styleTransfer', icon: Repeat, label: t.styleTransfer, tool: 'styleTransfer' },
         { id: 'voiceClone', icon: Mic, label: t.voiceClone, tool: 'voiceClone' },
-        { id: 'workshop', icon: Hammer, label: t.workshop, tool: 'workshop' },
+        { 
+          id: 'workshop', 
+          icon: Hammer, 
+          label: t.workshop, 
+          children: [
+            { id: 'faceSwap', icon: RefreshCcw, label: t.faceSwap, tool: 'faceSwap' },
+            { id: 'ttsTool', icon: MessageSquare, label: t.ttsTool, tool: 'ttsTool' },
+            { id: 'glbViewer', icon: Box, label: t.glbViewer, tool: 'glbViewer' },
+            { id: 'imageTranslation', icon: Image, label: t.imageTranslation, tool: 'imageTranslation' },
+            { id: 'videoTranslation', icon: MonitorPlay, label: t.videoTranslation, tool: 'videoTranslation' },
+          ]
+        },
       ]
     },
     { 
@@ -124,7 +141,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   return (
     <aside 
       className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out flex-shrink-0 ${
-        isCollapsed ? 'w-20' : 'w-64'
+        isCollapsed ? 'w-20' : 'w-56'
       }`}
     >
       <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
