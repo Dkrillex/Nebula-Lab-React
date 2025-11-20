@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { useAuthStore } from '../../../stores/authStore';
+import VoiceModal from './VoiceModal';
+import CaptionModal from './CaptionModal';
 
 interface DigitalHumanVideoProps {
   t: any;
@@ -32,13 +34,10 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [text, setText] = useState('');
   
   // 语音相关
-  const [voiceList, setVoiceList] = useState<Voice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<Voice | null>(null);
   const [showVoiceModal, setShowVoiceModal] = useState(false);
-  const [voiceLoading, setVoiceLoading] = useState(false);
   
   // 字幕相关
-  const [captionList, setCaptionList] = useState<Caption[]>([]);
   const [selectedCaption, setSelectedCaption] = useState<Caption | null>(null);
   const [showCaptionModal, setShowCaptionModal] = useState(false);
   
@@ -53,60 +52,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [taskStatus, setTaskStatus] = useState<'idle' | 'running' | 'success' | 'fail'>('idle');
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadVoiceList();
-    loadCaptionList();
-  }, []);
-
-  const loadVoiceList = async () => {
-    try {
-      setVoiceLoading(true);
-      const res = await avatarService.getVoiceList({ pageNo: 1, pageSize: 100 });
-      let voiceData: Voice[] = [];
-      if (res.code === 200) {
-        if ((res as any).result?.data && Array.isArray((res as any).result.data)) {
-          voiceData = (res as any).result.data;
-        } else if (res.data?.result?.data && Array.isArray(res.data.result.data)) {
-          voiceData = res.data.result.data;
-        } else if (res.data && (res.data as any).data && Array.isArray((res.data as any).data)) {
-           voiceData = (res.data as any).data;
-        }
-      }
-      setVoiceList(voiceData || []);
-    } catch (error) {
-      console.error('Failed to load voice list:', error);
-      setVoiceList([]);
-    } finally {
-      setVoiceLoading(false);
-    }
-  };
-
-  const loadCaptionList = async () => {
-    try {
-      const res = await avatarService.getCaptionList();
-      let captionData: Caption[] = [];
-      if (res.code === 200) {
-        if ((res as any).result) {
-            // Check if result is array, or result.data is array
-            if (Array.isArray((res as any).result)) {
-                captionData = (res as any).result;
-            } else if ((res as any).result.data && Array.isArray((res as any).result.data)) {
-                captionData = (res as any).result.data;
-            }
-        } else if (res.data) {
-            if (Array.isArray(res.data)) {
-                captionData = res.data as any;
-            } else if ((res.data as any).data && Array.isArray((res.data as any).data)) {
-                captionData = (res.data as any).data;
-            }
-        }
-      }
-      setCaptionList(captionData || []);
-    } catch (error) {
-      console.error('Failed to load caption list:', error);
-      setCaptionList([]); // Ensure empty array on error
-    }
-  };
+  // Removed initial load of voice/caption lists as they are now handled in Modals
 
   const handleAudioFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -376,16 +322,24 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                     <div>
                          <h3 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">{t.rightPanel.voiceType}</h3>
                          <div className="flex flex-col gap-3">
-                            <div className="flex gap-3">
-                                <div className="flex-1 relative">
-                                    <select value={selectedVoice?.voiceId || ''} onChange={(e) => setSelectedVoice(voiceList.find(v => v.voiceId === e.target.value) || null)} className="w-full h-10 appearance-none rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 text-sm text-gray-700 dark:text-gray-200 focus:border-indigo-500 outline-none cursor-pointer">
-                                        <option value="">{t.rightPanel.publicVoice}</option>
-                                        {voiceList.map(voice => (
-                                            <option key={voice.voiceId} value={voice.voiceId}>{voice.voiceName} {voice.gender && `(${voice.gender})`}</option>
-                                        ))}
-                                    </select>
-                                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" size={16} />
-                                </div>
+                            <div className="flex gap-2 items-center">
+                                {selectedVoice ? (
+                                    <div className="flex-1 flex items-center justify-between p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                                        <div className="flex flex-col">
+                                            <span className="text-sm font-medium text-indigo-700 dark:text-indigo-300">{selectedVoice.voiceName}</span>
+                                            {selectedVoice.gender && <span className="text-xs text-indigo-500">{selectedVoice.gender}</span>}
+                                        </div>
+                                        <button onClick={(e) => { e.stopPropagation(); setSelectedVoice(null); }} className="p-1 hover:bg-indigo-100 dark:hover:bg-indigo-800 rounded-full text-indigo-600"><X size={14} /></button>
+                                    </div>
+                                ) : (
+                                    <div className="flex-1 text-sm text-gray-400 italic">No voice selected</div>
+                                )}
+                                <button 
+                                    onClick={() => setShowVoiceModal(true)} 
+                                    className="px-3 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:border-indigo-500 transition-colors"
+                                >
+                                    Select Voice
+                                </button>
                             </div>
                          </div>
                     </div>
@@ -411,12 +365,21 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
              
              <div>
                  <h3 className="text-xs font-bold text-gray-700 dark:text-gray-300 mb-2">{t.rightPanel.aiSubtitle}</h3>
-                 <div className="flex flex-wrap gap-2">
-                    {captionList.map(cap => (
-                        <button key={cap.captionId} onClick={() => setSelectedCaption(cap)} className={`px-3 py-2 rounded-lg border text-sm ${selectedCaption?.captionId === cap.captionId ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 hover:border-indigo-300'}`}>
-                             <img src={cap.thumbnail} alt="caption" className="h-6 object-contain" />
-                        </button>
-                    ))}
+                 <div className="flex flex-wrap gap-2 items-center">
+                    {selectedCaption && (
+                        <div className="relative group">
+                            <div className="px-3 py-2 rounded-lg border border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20">
+                                <img src={selectedCaption.thumbnail} alt="caption" className="h-6 object-contain" />
+                            </div>
+                            <button onClick={() => setSelectedCaption(null)} className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow-md opacity-0 group-hover:opacity-100 transition-opacity"><X size={12}/></button>
+                        </div>
+                    )}
+                    <button 
+                        onClick={() => setShowCaptionModal(true)} 
+                        className="px-3 py-2 rounded-lg border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 hover:text-indigo-500 hover:border-indigo-500 transition-colors text-sm"
+                    >
+                        + Select Caption
+                    </button>
                  </div>
              </div>
           </div>
@@ -445,6 +408,20 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                </button>
           </div>
       </div>
+      
+      <VoiceModal 
+        isOpen={showVoiceModal} 
+        onClose={() => setShowVoiceModal(false)} 
+        onSelect={setSelectedVoice} 
+        selectedVoiceId={selectedVoice?.voiceId}
+      />
+      
+      <CaptionModal 
+        isOpen={showCaptionModal} 
+        onClose={() => setShowCaptionModal(false)} 
+        onSelect={setSelectedCaption} 
+        selectedCaptionId={selectedCaption?.captionId}
+      />
     </div>
   );
 };

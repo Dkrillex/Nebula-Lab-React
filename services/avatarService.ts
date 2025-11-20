@@ -176,6 +176,23 @@ export interface UploadedFile {
   thumbnail?: string; // 缩略图URL
 }
 
+export interface AdsAssetsQuery {
+  pageNo?: number;
+  pageSize?: number;
+  assetType?: number; // 8 for voice
+  isPrivateModel?: string; // '1' for private
+  [key: string]: any;
+}
+
+export interface AdsAssetsVO {
+  assetId: string;
+  assetName: string;
+  assetUrl: string;
+  rows?: any[];
+  total?: number;
+  [key: string]: any;
+}
+
 // ==================== 产品数字人 (Image Synthesis) API ====================
 
 export interface ProductAvatarCategory {
@@ -438,6 +455,15 @@ export const avatarService = {
         taskId,
         needCloudFrontUrl: true,
       },
+    });
+  },
+
+  /**
+   * 查询素材列表
+   */
+  adsAssetsList: (params?: AdsAssetsQuery) => {
+    return request.get<ApiResponse<AdsAssetsVO>>('/ads/adsAssets/list', {
+      params,
     });
   },
 };
