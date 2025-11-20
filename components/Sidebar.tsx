@@ -37,6 +37,11 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       if (tool === 'styleTransfer') return 'styleTransfer';
       if (tool === 'voiceClone') return 'voiceClone';
       if (tool === 'workshop') return 'workshop';
+      if (tool === 'faceSwap') return 'faceSwap';
+      if (tool === 'ttsTool') return 'ttsTool';
+      if (tool === 'glbViewer') return 'glbViewer';
+      if (tool === 'imageTranslation') return 'imageTranslation';
+      if (tool === 'videoTranslation') return 'videoTranslation';
       // Default to home if no tool or tool is 'home'
       return 'home';
     }
@@ -106,7 +111,18 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'textToImage', icon: Image, label: t.textToImage, tool: 'textToImage' },
         { id: 'styleTransfer', icon: Repeat, label: t.styleTransfer, tool: 'styleTransfer' },
         { id: 'voiceClone', icon: Mic, label: t.voiceClone, tool: 'voiceClone' },
-        { id: 'workshop', icon: Hammer, label: t.workshop, tool: 'workshop' },
+        { 
+          id: 'workshop', 
+          icon: Hammer, 
+          label: t.workshop, 
+          children: [
+            { id: 'faceSwap', icon: RefreshCcw, label: t.faceSwap, tool: 'faceSwap' },
+            { id: 'ttsTool', icon: MessageSquare, label: t.ttsTool, tool: 'ttsTool' },
+            { id: 'glbViewer', icon: Box, label: t.glbViewer, tool: 'glbViewer' },
+            { id: 'imageTranslation', icon: Image, label: t.imageTranslation, tool: 'imageTranslation' },
+            { id: 'videoTranslation', icon: MonitorPlay, label: t.videoTranslation, tool: 'videoTranslation' },
+          ]
+        },
       ]
     },
     { 
