@@ -14,6 +14,29 @@ export interface AIModel {
   tags: string[];
   capabilities?: string[]; // e.g., 'chat', 'code', 'reasoning'
   billingType?: 'token' | 'time'; // token or second
+  // 扩展字段，用于模型详情显示
+  quotaType?: number; // 0: 按量计费, 1: 按次计费, 2: 按资源类型计费, 3: 按秒计费, 4: 按全模态计费, 5: 按张计费
+  modelRatio?: number | string;
+  modelPrice?: number;
+  originModelPrice?: number;
+  originModelRatio?: number | string;
+  completionRatio?: number | string;
+  originCompletionRatio?: number | string;
+  vendorName?: string;
+  iconUrl?: string;
+  supportedEndpointTypes?: string;
+  supportedEndpointTypesList?: string[];
+  enableGroups?: string;
+  enableGroupsList?: string[];
+  flag?: number; // 0: 无, 1: 新, 2: 热门, 3: 高级
+  imageModelPricePerImage?: number;
+  originImageModelPricePerImage?: number;
+  imageTokenPricing?: string; // JSON string
+  originImageTokenPricing?: string; // JSON string
+  multiModalPricing?: string; // JSON string
+  originMultiModalPricing?: string; // JSON string
+  videoPricing?: string; // JSON string
+  originVideoPricing?: string; // JSON string
 }
 
 export interface NavItem {
@@ -59,6 +82,36 @@ export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+}
+
+// 历史对话相关类型
+export interface ChatRecord {
+  id: string | number;
+  title: string;
+  apiJson: string;
+  taskJson: string;
+  createTime: number;
+  updateTime: number;
+  messageCount: number;
+  model: string;
+}
+
+export interface ApiTalkVO {
+  id: string | number;
+  apiType: string;
+  apiJson: string;
+  taskJson: string;
+  ctime?: number;
+  mtime?: number;
+  createTime?: number;
+  updateTime?: number;
+}
+
+export interface ApiTalkQuery {
+  pageNum?: number;
+  pageSize?: number;
+  apiType?: string;
+  [key: string]: any;
 }
 
 export type Language = 'en' | 'zh';

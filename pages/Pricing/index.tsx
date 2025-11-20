@@ -162,12 +162,12 @@ const PricingPage: React.FC<PricingPageProps> = ({ t }) => {
               }
 
               return (
-                <PricingCard
+          <PricingCard 
                   key={item.id}
                   item={item}
                   isEnterprise={isEnterprise}
                   onQuantityChange={(q) => handleQuantityChange(item.id, q)}
-                  labels={t.labels}
+             labels={t.labels}
                   borderColor={borderColor}
                   btnColor={btnColor}
                 />
@@ -211,9 +211,9 @@ const PricingCard: React.FC<PricingCardProps> = ({
           {isEnterprise ? "Let's talk!" : `¥ ${totalPrice}`}
         </div>
         {!isEnterprise && (
-          <div className="text-sm text-muted mt-1">
+        <div className="text-sm text-muted mt-1">
             {labels.credits} {totalPoints.toFixed(2)}
-          </div>
+        </div>
         )}
       </div>
 
@@ -221,38 +221,38 @@ const PricingCard: React.FC<PricingCardProps> = ({
 
       {!isEnterprise && (
         <div className="pt-0 border-t border-transparent mb-6">
-           <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
-           
-           {/* Custom Slider */}
-           <div className="relative mb-8 px-1">
-              {/* Track */}
-              <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
-              
-              {/* Progress */}
-              <div 
-                className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
+         <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
+         
+         {/* Custom Slider */}
+         <div className="relative mb-8 px-1">
+            {/* Track */}
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
+            
+            {/* Progress */}
+            <div 
+              className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
                 style={{ width: `${((Math.min(quantity, 5) - 1) / 4) * 100}%` }}
-              ></div>
+            ></div>
 
-              {/* Steps */}
-              <div className="relative flex justify-between">
-                {steps.slice(0, 5).map((step) => (
+            {/* Steps */}
+            <div className="relative flex justify-between">
+              {steps.slice(0, 5).map((step) => (
                   <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
                     <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
                     <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
-                      {step}倍
-                    </span>
-                  </div>
-                ))}
+                    {step}倍
+                  </span>
+                </div>
+              ))}
                 <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(6)}>
                    <div className={`w-3 h-3 rounded-full border-2 transition-all ${quantity === 6 ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
                    <span className={`text-[10px] ${quantity === 6 ? 'text-foreground font-bold' : 'text-muted'}`}>
-                      {labels.custom}
-                   </span>
-                </div>
+                    {labels.custom}
+                 </span>
               </div>
-           </div>
-        </div>
+            </div>
+         </div>
+      </div>
       )}
 
       <div className="flex-1 space-y-3 mb-8 text-center relative z-10">
@@ -268,7 +268,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
             // For Enterprise, render some placeholder features or use description
              <div className="text-xs text-muted/80">
                 Contact us for custom solutions
-             </div>
+           </div>
          )}
       </div>
 

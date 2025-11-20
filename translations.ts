@@ -101,6 +101,30 @@ interface Translation {
       inpaintingDesc: string;
     };
     tabs: string[];
+    authModal?: {
+      loginTitle: string;
+      registerTitle?: string;
+      tabPassword: string;
+      tabPhone: string;
+      tabRegister?: string;
+      accountLabel: string;
+      accountPlaceholder: string;
+      passwordLabel: string;
+      passwordPlaceholder: string;
+      phoneLabel: string;
+      phonePlaceholder: string;
+      codeLabel: string;
+      codePlaceholder: string;
+      sendCode: string;
+      codeSent: string;
+      signIn: string;
+      signUp?: string;
+      usernameLabel?: string;
+      usernamePlaceholder?: string;
+      agreePolicy?: string;
+      privacyPolicy?: string;
+      terms?: string;
+    };
     textToImage: {
       title: string;
       subtitle: string;
@@ -589,6 +613,30 @@ export const translations: Record<string, Translation> = {
         inpaintingDesc: 'Remove or replace objects'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
+      authModal: {
+        loginTitle: 'Welcome Back',
+        registerTitle: 'Create Account',
+        tabPassword: 'Password',
+        tabPhone: 'Phone',
+        tabRegister: 'Register',
+        accountLabel: 'Account',
+        accountPlaceholder: 'Enter your account',
+        passwordLabel: 'Password',
+        passwordPlaceholder: 'Enter your password',
+        phoneLabel: 'Phone Number',
+        phonePlaceholder: 'Enter your phone number',
+        codeLabel: 'Verification Code',
+        codePlaceholder: 'Enter verification code',
+        sendCode: 'Send Code',
+        codeSent: 'Code Sent',
+        signIn: 'Sign In',
+        signUp: 'Sign Up',
+        usernameLabel: 'Username',
+        usernamePlaceholder: 'Enter your username',
+        agreePolicy: 'I agree to the',
+        privacyPolicy: 'Privacy Policy',
+        terms: 'Terms of Service',
+      },
       textToImage: {
         title: 'AI Image Generation',
         subtitle: 'Generate exquisite images from text descriptions',
@@ -1127,6 +1175,30 @@ export const translations: Record<string, Translation> = {
         inpaintingDesc: 'AI智能图像编辑，支持涂抹消除'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
+      authModal: {
+        loginTitle: '欢迎回来',
+        registerTitle: '创建账户',
+        tabPassword: '密码登录',
+        tabPhone: '手机登录',
+        tabRegister: '注册',
+        accountLabel: '账号',
+        accountPlaceholder: '请输入账号',
+        passwordLabel: '密码',
+        passwordPlaceholder: '请输入密码',
+        phoneLabel: '手机号',
+        phonePlaceholder: '请输入手机号',
+        codeLabel: '验证码',
+        codePlaceholder: '请输入验证码',
+        sendCode: '发送验证码',
+        codeSent: '验证码已发送',
+        signIn: '登录',
+        signUp: '注册',
+        usernameLabel: '用户名',
+        usernamePlaceholder: '请输入用户名',
+        agreePolicy: '我已阅读并同意',
+        privacyPolicy: '隐私政策',
+        terms: '服务条款',
+      },
       textToImage: {
         title: 'AI生图',
         subtitle: '通过输入文字描述，让AI为您生成精美的图片作品',

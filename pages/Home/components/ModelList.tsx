@@ -29,19 +29,31 @@ const ModelList: React.FC<ModelListProps> = ({ t }) => {
   useEffect(() => {
     const fetchModels = async () => {
       setLoading(true);
-      const data = await modelService.getModels();
-      setModels(data);
-      setLoading(false);
+      try {
+        const response = await modelService.getModels();
+        // modelService.getModels() 返回 { models: AIModel[], vendors: [], tags: [], ... }
+        const modelsArray = Array.isArray(response?.models) ? response.models : [];
+        setModels(modelsArray);
+      } catch (error) {
+        console.error('Failed to fetch models:', error);
+        setModels([]);
+      } finally {
+        setLoading(false);
+      }
     };
     fetchModels();
   }, []);
 
   const filteredModels = useMemo(() => {
+    // 确保 models 是数组
+    if (!Array.isArray(models)) {
+      return [];
+    }
     const lower = search.toLowerCase();
     return models.filter(m => 
-      m.name.toLowerCase().includes(lower) || 
-      m.provider.toLowerCase().includes(lower) ||
-      m.id.toLowerCase().includes(lower)
+      m?.name?.toLowerCase().includes(lower) || 
+      m?.provider?.toLowerCase().includes(lower) ||
+      m?.id?.toLowerCase().includes(lower)
     );
   }, [models, search]);
 

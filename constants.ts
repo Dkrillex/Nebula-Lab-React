@@ -2,7 +2,9 @@
 import { AIModel, ExpenseRecord, Asset } from './types';
 
 // Backend Configuration
-export const API_BASE_URL = '/api'; // Uses local proxy
+// 根据环境变量设置 API 基础路径
+// 生产环境使用 /prod-api，开发环境使用 /api
+export const API_BASE_URL = import.meta.env.PROD ? '/prod-api' : '/dev-api';
 export const API_TIMEOUT = 10000; // 10 seconds
 
 // Client ID for authentication

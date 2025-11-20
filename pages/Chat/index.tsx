@@ -9,6 +9,7 @@ import { modelsService, ModelsVO } from '../../services/modelsService';
 import { imageGenerateService, ImageGenerateRequest } from '../../services/imageGenerateService';
 import { videoGenerateService, VideoGenerateRequest } from '../../services/videoGenerateService';
 import { useAuthStore } from '../../stores/authStore';
+import { ChatRecord } from '../../types';
 
 interface ChatPageProps {
   t: {
@@ -92,6 +93,11 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
   const [isStreaming, setIsStreaming] = useState(false);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [progress, setProgress] = useState(0); // 用于图片/视频生成的进度
+  
+  // 历史对话相关状态
+  const [chatRecords, setChatRecords] = useState<ChatRecord[]>([]);
+  const [recordsLoading, setRecordsLoading] = useState(false);
+  const [selectedRecordId, setSelectedRecordId] = useState<string | number | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -122,11 +128,13 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
       });
 
       if (res.code === 200 && res.rows) {
-        const modelList = res.rows;
+        const modelList = Array.isArray(res.rows) ? res.rows : [];
         setModels(modelList);
         if (modelList.length > 0 && !selectedModel) {
           setSelectedModel(modelList[0].modelName || '');
         }
+      } else {
+        setModels([]);
       }
     } catch (error) {
       console.error('获取模型列表失败:', error);
@@ -139,6 +147,174 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
   useEffect(() => {
     fetchModels();
   }, [currentMode]);
+
+  // 获取历史对话记录
+  const fetchChatRecords = async () => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecords({
+        pageNum: 1,
+        pageSize: 10,
+        apiType: 'chat-completions',
+      });
+
+      console.log('📋 获取对话记录响应:', res);
+
+      let records: ChatRecord[] = [];
+      if (res.code === 200) {
+        const rows = (res as any).data?.rows || (res as any).rows || [];
+        records = rows.map((record: any) => {
+          let messageCount = 0;
+          let model = '';
+          let title = `对话 ${record.id}`;
+
+          // 从taskJson获取标题
+          try {
+            if (record.taskJson) {
+              const taskData = JSON.parse(record.taskJson);
+              if (taskData.title) {
+                title = taskData.title;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析taskJson失败:', parseError);
+          }
+
+          // 从apiJson解析消息数量和模型信息
+          try {
+            if (record.apiJson) {
+              const parsedData = JSON.parse(record.apiJson);
+              if (parsedData.messages && Array.isArray(parsedData.messages)) {
+                messageCount = parsedData.messages.length;
+              }
+              if (parsedData.settings && parsedData.settings.model) {
+                model = parsedData.settings.model;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析apiJson失败:', parseError);
+          }
+
+          return {
+            id: record.id,
+            title,
+            apiJson: record.apiJson || '',
+            taskJson: record.taskJson || '',
+            createTime: record.ctime || record.createTime || Date.now(),
+            updateTime: record.mtime || record.updateTime || Date.now(),
+            messageCount,
+            model,
+          };
+        });
+      }
+
+      console.log('📋 解析后的对话记录列表:', records);
+      setChatRecords(records);
+    } catch (error) {
+      console.error('❌ 获取对话记录失败:', error);
+      setChatRecords([]);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 加载指定的对话记录
+  const loadChatRecord = async (recordId: string | number) => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecordInfo(recordId);
+
+      if (res.code === 200) {
+        const recordData = (res as any).data || res;
+
+        // 解析聊天消息数据
+        let messages: ExtendedChatMessage[] = [];
+        let settings: any = null;
+
+        try {
+          // 只从apiJson中解析完整的对话数据
+          if (recordData.apiJson) {
+            const parsedData = JSON.parse(recordData.apiJson);
+            if (parsedData.messages && Array.isArray(parsedData.messages)) {
+              messages = parsedData.messages.map((msg: any) => ({
+                ...msg,
+                id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+                timestamp: msg.timestamp || Date.now(),
+              }));
+              settings = parsedData.settings; // 同时恢复设置
+            }
+          }
+        } catch (parseError) {
+          console.warn('解析对话内容失败:', parseError);
+        }
+
+        // 更新当前对话状态
+        setMessages(messages.length > 0 ? messages : [
+          {
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }
+        ]);
+        setSelectedRecordId(recordId);
+
+        // 恢复设置（如果有的话）
+        if (settings) {
+          if (settings.model) setSelectedModel(settings.model);
+          if (settings.temperature !== undefined) setTemperature(settings.temperature);
+          if (settings.presence_penalty !== undefined) setPresencePenalty(settings.presence_penalty);
+          console.log('⚙️ 已恢复对话设置');
+        }
+
+        console.log('📂 已加载对话记录:', recordId, '消息数量:', messages.length);
+        
+        // 滚动到底部
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
+      }
+    } catch (error) {
+      console.error('❌ 加载对话记录失败:', error);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 删除对话记录
+  const deleteChatRecord = async (recordId: string | number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('确定要删除这条对话记录吗？')) {
+      return;
+    }
+
+    try {
+      const res = await chatService.deleteChatRecord(recordId);
+      if (res.code === 200) {
+        // 如果删除的是当前选中的记录，清空消息
+        if (selectedRecordId === recordId) {
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }]);
+          setSelectedRecordId(null);
+        }
+        // 重新获取记录列表
+        await fetchChatRecords();
+      }
+    } catch (error) {
+      console.error('❌ 删除对话记录失败:', error);
+    }
+  };
+
+  // 初始化时获取历史记录
+  useEffect(() => {
+    if (user?.nebulaApiId) {
+      fetchChatRecords();
+    }
+  }, [user?.nebulaApiId]);
 
   // 清理轮询定时器
   useEffect(() => {
@@ -850,18 +1026,78 @@ const ChatPage: React.FC<ChatPageProps> = ({ t }) => {
             <div className="grid grid-cols-1 gap-2">
               <ActionButton icon={Trash2} label={t.actions.clear} onClick={handleClear} />
               <ActionButton icon={Save} label={t.actions.save} />
-              <ActionButton icon={Plus} label={t.actions.new} onClick={handleClear} />
-              <ActionButton icon={RefreshCw} label={t.actions.refresh} onClick={fetchModels} />
+              <ActionButton icon={Plus} label={t.actions.new} onClick={() => {
+                handleClear();
+                setSelectedRecordId(null);
+              }} />
+              <ActionButton icon={RefreshCw} label={t.actions.refresh} onClick={fetchChatRecords} />
             </div>
           </div>
 
           {/* History */}
           <div className="flex-1 min-h-0 flex flex-col">
-             <h3 className="font-semibold mb-4">{t.historyTitle}</h3>
-             <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2 opacity-50">
-               <MessageSquare size={32} strokeWidth={1.5} />
-               <span className="text-sm">{t.noHistory}</span>
+             <div className="flex items-center justify-between mb-4">
+               <h3 className="font-semibold">{t.historyTitle}</h3>
+               <button
+                 onClick={fetchChatRecords}
+                 disabled={recordsLoading}
+                 className="p-1 text-muted hover:text-foreground transition-colors"
+                 title="刷新历史记录"
+               >
+                 <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
+               </button>
              </div>
+             
+             {recordsLoading && chatRecords.length === 0 ? (
+               <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2">
+                 <Loader2 size={24} className="animate-spin" />
+                 <span className="text-sm">加载中...</span>
+               </div>
+             ) : chatRecords.length === 0 ? (
+               <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2 opacity-50">
+                 <MessageSquare size={32} strokeWidth={1.5} />
+                 <span className="text-sm">{t.noHistory}</span>
+               </div>
+             ) : (
+               <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
+                 {chatRecords.map((record) => (
+                   <div
+                     key={record.id}
+                     onClick={() => loadChatRecord(record.id)}
+                     className={`group relative p-2 rounded-lg cursor-pointer transition-colors ${
+                       selectedRecordId === record.id
+                         ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-100'
+                         : 'hover:bg-border/50 text-muted hover:text-foreground'
+                     }`}
+                   >
+                     <div className="flex items-start justify-between gap-2">
+                       <div className="flex-1 min-w-0">
+                         <div className="text-sm font-medium truncate">{record.title}</div>
+                         <div className="text-xs opacity-70 mt-0.5">
+                           {record.messageCount} 条消息
+                           {record.model && ` · ${record.model}`}
+                         </div>
+                         <div className="text-xs opacity-50 mt-0.5">
+                           {new Date(record.updateTime).toLocaleString('zh-CN', {
+                             month: '2-digit',
+                             day: '2-digit',
+                             hour: '2-digit',
+                             minute: '2-digit',
+                           })}
+                         </div>
+                       </div>
+                       <button
+                         onClick={(e) => deleteChatRecord(record.id, e)}
+                         className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity"
+                         title="删除记录"
+                       >
+                         <Trash2 size={12} />
+                       </button>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             )}
           </div>
         </div>
       </aside>

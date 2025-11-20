@@ -312,7 +312,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <h2 className="text-lg font-semibold text-foreground">
-            {mode === 'register' ? (t.registerTitle || '注册') : t.loginTitle}
+            {mode === 'register' ? (t.registerTitle || '注册') : t.loginTitle} 👋🏻
           </h2>
           <button 
             onClick={handleClose}

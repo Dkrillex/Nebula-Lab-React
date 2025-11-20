@@ -373,8 +373,8 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                </>
              ) : (
                <>
-                 <Wand2 size={18} />
-                 {t.generate}
+             <Wand2 size={18} />
+             {t.generate}
                </>
              )}
           </button>
@@ -431,7 +431,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                       <ImageIcon size={40} className="text-slate-400 dark:text-slate-500" />
                    </div>
                    <p className="text-sm max-w-xs text-center">{t.emptyState}</p>
-                </div>
+              </div>
               )}
            </div>
 

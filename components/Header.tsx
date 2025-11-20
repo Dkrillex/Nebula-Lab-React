@@ -293,33 +293,33 @@ const Header: React.FC<HeaderProps> = ({
                 ref={tabsContainerRef}
                 className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
               >
-                {visitedViews && visitedViews.map((tab, index) => {
-                  const isActive = tab.view === currentView && 
-                                   (tab.view !== 'create' || tab.activeTool === activeTool);
-                  return (
-                    <div 
-                      key={`${tab.view}-${tab.activeTool || index}`}
-                      onClick={() => onTabClick && onTabClick(tab)}
-                      className={`
-                        group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
-                        ${isActive 
-                          ? 'bg-surface border-border text-foreground shadow-sm' 
-                          : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
-                      `}
-                    >
-                      {tab.view === 'home' && <Home size={12} />}
-                      <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
-                      {visitedViews.length > 1 && (
-                        <button 
-                          onClick={(e) => onTabClose && onTabClose(e, index)}
-                          className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
-                        >
-                          <X size={12} />
-                        </button>
-                      )}
-                    </div>
-                  );
-                })}
+              {visitedViews && visitedViews.map((tab, index) => {
+                const isActive = tab.view === currentView && 
+                                 (tab.view !== 'create' || tab.activeTool === activeTool);
+                return (
+                  <div 
+                    key={`${tab.view}-${tab.activeTool || index}`}
+                    onClick={() => onTabClick && onTabClick(tab)}
+                    className={`
+                      group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
+                      ${isActive 
+                        ? 'bg-surface border-border text-foreground shadow-sm' 
+                        : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
+                    `}
+                  >
+                    {tab.view === 'home' && <Home size={12} />}
+                    <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
+                    {visitedViews.length > 1 && (
+                      <button 
+                        onClick={(e) => onTabClose && onTabClose(e, index)}
+                        className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
               </div>
               
               {/* 右箭头 */}

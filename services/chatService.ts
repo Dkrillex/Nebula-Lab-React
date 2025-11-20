@@ -1,5 +1,5 @@
 import { request } from '../lib/request';
-import { ApiResponse } from '../types';
+import { ApiResponse, ApiTalkVO, ApiTalkQuery } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { API_BASE_URL, CLIENT_ID } from '../constants';
 
@@ -174,6 +174,37 @@ export const chatService = {
     return request.post<ChatResponse>('/ads/playground/chat/completions', requestData, {
       timeout: 60000, // 60秒超时
     });
+  },
+
+  /**
+   * 获取对话记录列表
+   * Endpoint: GET /api/apiTalk/list
+   */
+  getChatRecords: async (params?: ApiTalkQuery): Promise<ApiResponse<{ rows: ApiTalkVO[]; total: number }>> => {
+    return request.get<{ rows: ApiTalkVO[]; total: number }>('/apiTalk/list', {
+      params: {
+        pageNum: 1,
+        pageSize: 10,
+        apiType: 'chat-completions',
+        ...params,
+      },
+    });
+  },
+
+  /**
+   * 获取对话记录详情
+   * Endpoint: GET /api/apiTalk/{id}
+   */
+  getChatRecordInfo: async (id: string | number): Promise<ApiResponse<ApiTalkVO>> => {
+    return request.get<ApiTalkVO>(`/apiTalk/${id}`);
+  },
+
+  /**
+   * 删除对话记录
+   * Endpoint: DELETE /api/apiTalk/{id}
+   */
+  deleteChatRecord: async (id: string | number): Promise<ApiResponse<void>> => {
+    return request.delete<void>(`/apiTalk/${id}`);
   },
 };
 

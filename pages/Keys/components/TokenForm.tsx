@@ -41,15 +41,18 @@ const TokenForm: React.FC<TokenFormProps> = ({
   // 加载模型列表
   const loadModels = async (search?: string) => {
     try {
-      const models = await modelService.getModels(search);
+      const response = await modelService.getModels(search);
+      // modelService.getModels() 返回 { models: AIModel[], vendors: [], tags: [], ... }
+      const modelsArray = Array.isArray(response?.models) ? response.models : [];
       setModelOptions(
-        models.map((model) => ({
+        modelsArray.map((model) => ({
           label: model.name,
           value: model.name,
         }))
       );
     } catch (error) {
       console.error('加载模型列表失败:', error);
+      setModelOptions([]);
     }
   };
 

@@ -1,11 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Image, Video, Wand2, Eraser, Upload, ArrowRight, Sparkles, 
   PenTool, Star, User, Clock, 
   Layers, Users, 
-  Loader2, Heart
+  Loader2, Heart, X
 } from 'lucide-react';
 import TextToImagePage from './components/TextToImagePage';
 import ViralVideoPage from './components/ViralVideoPage';
@@ -14,6 +14,8 @@ import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
 import WorkshopPage from './components/WorkshopPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
+import { useAuthStore } from '../../stores/authStore';
+import AuthModal from '../../components/AuthModal';
 
 interface CreatePageProps {
   onNavigate: (path: string) => void;
@@ -64,12 +66,16 @@ interface CreatePageProps {
     imgToVideo?: any;
     digitalHuman?: any;
     styleTransfer?: any;
+    authModal?: any;
   };
 }
 
 const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  
   // Default to home (dashboard) if no tool is specified
   const activeMenu = searchParams.get('tool') || 'home';
   
@@ -79,8 +85,17 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
   const [templateName, setTemplateName] = useState('');
   const [params, setParams] = useState<LabTemplateQuery>({
     pageNum: 1,
-    pageSize: 20
+    pageSize: 30 // 增加初始 pageSize，确保第一次加载更多数据
   });
+
+  // 模板详情弹窗
+  const [selectedTemplate, setSelectedTemplate] = useState<LabTemplate | null>(null);
+  const [showTemplateDetail, setShowTemplateDetail] = useState(false);
+
+  // 无限滚动相关
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const masonryRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
 
   const onMenuChange = (id: string) => {
     setSearchParams({ tool: id });
@@ -96,7 +111,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
       toolId: 'viralVideo',
       type: 'image',
     },
-    {
+    { 
       id: 3,
       title: 'Talking Photo',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/talking-pictures.png',
@@ -128,7 +143,7 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
       toolId: 'textToImage',
       type: 'image',
     },
-    {
+    { 
       id: 7,
       title: 'Image Editing',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
@@ -150,68 +165,284 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
     { id: '产品', name: t.tabs[7] || 'Product' },
   ];
 
-  useEffect(() => {
-    if (activeMenu === 'home') {
-      loadTemplates();
-    }
-  }, [activeMenu, params.pageNum, templateName]);
-
-  const loadTemplates = async () => {
+  // 加载模板数据
+  const loadTemplates = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     try {
-      // Call API - response is ApiResponse<LabTemplate> which means { rows: LabTemplate[], total: number, ... }
-      // Note: The request wrapper will return the JSON object.
-      // The user provided JSON: { total: 45, rows: [...], code: 200, msg: "..." }
-      // Our ApiResponse type has rows?: T[] and total?: number
-      const res = await templateService.getLabTemplateList({
-        ...params,
+      const currentParams = {
+        pageNum: params.pageNum || 1,
+        pageSize: params.pageSize || 30, // 统一使用 30 作为默认值
         templateName: templateName || undefined
-      });
+      };
+      
+      const res = await templateService.getLabTemplateList(currentParams);
+      
+      console.log('📋 模板列表 API 响应:', res, '请求参数:', currentParams);
       
       if (res.code === 200) {
-        const newRows = res.rows || [];
-        if (params.pageNum === 1) {
-          setLabTemplateData(newRows);
-        } else {
-          setLabTemplateData(prev => [...prev, ...newRows]);
-        }
+        const newRows = Array.isArray(res.rows) ? res.rows : [];
+        const total = res.total || 0;
+        const processedRows = newRows.map(item => ({
+          ...item,
+          isLike: item.isLike ?? false
+        }));
         
-        if (newRows.length < (params.pageSize || 20)) {
-          setHasMore(false);
-        }
+        console.log('📋 处理后的模板数据:', processedRows.length, '条，当前页码:', currentParams.pageNum, '总数:', total);
+        
+        // 更新数据
+        setLabTemplateData(prev => {
+          const updatedData = currentParams.pageNum === 1
+            ? processedRows
+            : [...prev, ...processedRows];
+          
+          console.log('📋 更新模板数据:', {
+            isFirstPage: currentParams.pageNum === 1,
+            newRows: processedRows.length,
+            prevCount: prev.length,
+            updatedCount: updatedData.length
+          });
+          
+          // 判断是否还有更多数据：
+          // 1. 如果有 total 字段，比较已加载的数据量和总数
+          // 2. 如果没有 total 字段，使用返回数据量是否等于 pageSize 来判断
+          if (total > 0) {
+            const hasMoreData = updatedData.length < total;
+            setHasMore(hasMoreData);
+            console.log('📋 使用 total 判断:', {
+              loaded: updatedData.length,
+              total,
+              hasMore: hasMoreData
+            });
+          } else {
+            // 如果没有 total 字段，使用返回数据量判断
+            const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
+            setHasMore(hasMoreData);
+            console.log('📋 使用返回数据量判断:', {
+              returned: processedRows.length,
+              pageSize: currentParams.pageSize,
+              hasMore: hasMoreData
+            });
+          }
+          
+          return updatedData;
+        });
       }
     } catch (error) {
       console.error('Failed to load templates:', error);
+      const currentPageNum = params.pageNum || 1;
+      if (currentPageNum > 1) {
+        setParams(prev => ({ ...prev, pageNum: currentPageNum - 1 }));
+      }
     } finally {
       setLoading(false);
     }
-  };
+  }, [loading, params.pageNum, params.pageSize, templateName]);
+
+  // 设置无限滚动观察器
+  const setupInfiniteScroll = useCallback(() => {
+    // 清理旧的观察器
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
+
+    if (!sentinelRef.current || !hasMore || loading) {
+      console.log('📋 无限滚动设置跳过:', { 
+        hasSentinel: !!sentinelRef.current, 
+        hasMore, 
+        loading 
+      });
+      return;
+    }
+
+    console.log('📋 设置无限滚动观察器，当前数据量:', labTemplateData.length);
+
+    observerRef.current = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting && hasMore && !loading) {
+          console.log('📋 触发加载更多，当前页码:', params.pageNum, '当前数据量:', labTemplateData.length);
+          setParams(prev => {
+            const nextPageNum = (prev.pageNum || 1) + 1;
+            console.log('📋 更新页码:', prev.pageNum, '->', nextPageNum);
+            return { ...prev, pageNum: nextPageNum };
+          });
+        }
+      },
+      { 
+        threshold: 0, 
+        rootMargin: '300px 0px' // 提前300px加载，确保用户滚动时能及时加载
+      }
+    );
+
+    if (sentinelRef.current) {
+      observerRef.current.observe(sentinelRef.current);
+      console.log('📋 已开始观察 sentinel 元素');
+    } else {
+      console.warn('📋 sentinel 元素不存在，无法设置观察器');
+    }
+  }, [hasMore, loading, params.pageNum, labTemplateData.length]);
+
+  // 当 activeMenu、pageNum 或 templateName 变化时加载数据
+  useEffect(() => {
+    if (activeMenu === 'home') {
+      console.log('📋 触发加载模板，activeMenu:', activeMenu, 'pageNum:', params.pageNum, 'templateName:', templateName);
+      loadTemplates();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMenu, params.pageNum, templateName]); // loadTemplates 已在内部使用最新的 params 和 templateName
+
+  // 设置无限滚动
+  useEffect(() => {
+    if (activeMenu === 'home' && labTemplateData.length > 0 && hasMore) {
+      // 延迟设置观察器，确保 DOM 已渲染
+      const timer = setTimeout(() => {
+        setupInfiniteScroll();
+      }, 500);
+
+      return () => {
+        clearTimeout(timer);
+        if (observerRef.current) {
+          observerRef.current.disconnect();
+          observerRef.current = null;
+        }
+      };
+    }
+  }, [labTemplateData.length, activeMenu, hasMore, setupInfiniteScroll]);
 
   const handleTypeClick = (toolId: string) => {
     onMenuChange(toolId);
   };
 
   const switchCategory = (id: string) => {
+    console.log('📋 切换分类:', id);
     setTemplateName(id);
-    setParams(prev => ({ ...prev, pageNum: 1 }));
+    setParams(prev => ({ ...prev, pageNum: 1, pageSize: 30 }));
     setHasMore(true);
+    setLabTemplateData([]);
+    // 清理观察器
+    if (observerRef.current) {
+      observerRef.current.disconnect();
+      observerRef.current = null;
+    }
   };
 
-  const clickTemplateLike = async (e: React.MouseEvent, item: LabTemplate) => {
+  // 点击模板卡片
+  const handleTemplateClick = (item: LabTemplate) => {
+    setSelectedTemplate(item);
+    setShowTemplateDetail(true);
+  };
+
+  // 点击喜欢
+  const clickTemplateLike = async (e: React.MouseEvent, item: LabTemplate, type: boolean = true) => {
     e.stopPropagation();
-    // Implement like logic here if API supports updating single item or just optimistic UI
-    // For now just a visual toggle
-    // await templateService.updateLabTemplate(...)
-    console.log('Like clicked for:', item.id);
+    
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    try {
+      let newLikeCount = 0;
+      if (type) {
+        // 取消喜欢
+        newLikeCount = (item.likeCount || 0) === 0 ? 0 : (item.likeCount || 0) - 1;
+      } else {
+        // 喜欢
+        newLikeCount = (item.likeCount || 0) + 1;
+      }
+
+      await templateService.updateLabTemplate({
+        ...item,
+        likeCount: newLikeCount,
+      });
+
+      // 更新本地状态
+      setLabTemplateData(prev => 
+        prev.map(t => 
+          t.id === item.id 
+            ? { ...t, isLike: !t.isLike, likeCount: newLikeCount }
+            : t
+        )
+      );
+
+      // 如果详情弹窗打开，也更新详情
+      if (selectedTemplate && selectedTemplate.id === item.id) {
+        setSelectedTemplate({
+          ...selectedTemplate,
+          isLike: !selectedTemplate.isLike,
+          likeCount: newLikeCount
+        });
+      }
+    } catch (error) {
+      console.error('Failed to update like:', error);
+    }
+  };
+
+  // 做同款功能
+  const handleDoSame = (item: LabTemplate) => {
+    const goToUrl = () => {
+      setShowTemplateDetail(false);
+      const isImageType = item.templateType === 1 || item.templateType === 2;
+      const isImageToVideo = item.templateType === 4;
+
+      const targetUrl = isImageType
+        ? '/chat?mode=image'
+        : '/chat?mode=video';
+
+      const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+
+      const modelName = isImageType
+        ? 'doubao-seedream-4-0-250828'
+        : 'veo-3.1-fast-generate-preview';
+
+      const referenceMedia = (() => {
+        if (item.templateType === 1) return '';
+        if (item.templateType === 2) {
+          return item.videoTemplateUrl || item.templateUrl || '';
+        }
+        if (isImageToVideo) {
+          return item.videoTemplateUrl || item.templateUrl || '';
+        }
+        return '';
+      })();
+
+      const images = referenceMedia ? [referenceMedia] : [];
+      
+      // 存储到 localStorage 以便在目标页面使用
+      localStorage.setItem(`transfer_${transferId}`, JSON.stringify({
+        images,
+        sourcePrompt: item.templateDesc,
+        timestamp: Date.now(),
+        source: isImageType ? 'imageGenerates' : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
+      }));
+
+      navigate(targetUrl, {
+        state: {
+          transferId,
+          modelName,
+          prompt: item.templateDesc,
+          images
+        }
+      });
+    };
+
+    if (!isAuthenticated) {
+      setIsAuthModalOpen(true);
+      // 登录成功后执行跳转
+      return;
+    }
+
+    goToUrl();
   };
 
   const renderDict = (type: number) => {
     const map: Record<number, string> = {
-      1: 'Text2Image',
-      2: 'Img2Img',
-      3: 'Text2Video',
-      4: 'Img2Video'
+      1: '文生图',
+      2: '图生图',
+      3: '文生视频',
+      4: '图生视频'
     };
     return map[type] || 'Unknown';
   };
@@ -307,10 +538,26 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
             </div>
 
             {/* Templates Masonry Grid */}
-            <div className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4 pb-8">
-               {labTemplateData.map((item) => (
-                 <div key={item.id} className="break-inside-avoid rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer">
-                    <div className="relative">
+            <div 
+              ref={masonryRef}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 pb-8"
+              style={{
+                gridAutoRows: '8px',
+                alignItems: 'start'
+              }}
+            >
+               {labTemplateData.map((item, index) => {
+                 // 调试：只在第一次渲染时打印
+                 if (index === 0) {
+                   console.log('📋 渲染模板数据，总数:', labTemplateData.length, 'hasMore:', hasMore);
+                 }
+                 return (
+                 <div 
+                   key={item.id} 
+                   className="break-inside-avoid rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer"
+                   style={{ gridRowEnd: 'span var(--row-span, 1)' }}
+                 >
+                    <div className="relative" onClick={() => handleTemplateClick(item)}>
                        {/* Media Content */}
                        {item.templateType === 3 || item.templateType === 4 ? (
                           <video 
@@ -318,8 +565,21 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
                             className="w-full h-auto object-cover"
                             loop
                             muted
-                            onMouseEnter={(e) => e.currentTarget.play()}
-                            onMouseLeave={(e) => e.currentTarget.pause()}
+                            playsInline
+                            onMouseEnter={(e) => {
+                              const video = e.currentTarget;
+                              video.play().catch(console.error);
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.pause();
+                            }}
+                            onLoadedMetadata={(e) => {
+                              // 计算视频高度对应的行数
+                              const video = e.currentTarget;
+                              const height = video.videoHeight || video.clientHeight;
+                              const rowSpan = Math.ceil((height + 16) / (8 + 16));
+                              e.currentTarget.closest('.break-inside-avoid')?.setAttribute('style', `grid-row-end: span ${rowSpan}`);
+                            }}
                           />
                        ) : (
                           <img 
@@ -327,6 +587,13 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
                             alt={item.templateName}
                             className="w-full h-auto object-cover"
                             loading="lazy"
+                            onLoad={(e) => {
+                              // 计算图片高度对应的行数
+                              const img = e.currentTarget;
+                              const height = img.naturalHeight || img.clientHeight;
+                              const rowSpan = Math.ceil((height + 16) / (8 + 16));
+                              img.closest('.break-inside-avoid')?.setAttribute('style', `grid-row-end: span ${rowSpan}`);
+                            }}
                           />
                        )}
                        
@@ -334,20 +601,40 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
                        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end min-h-[80px]">
                           <div className="flex justify-between items-center mb-1">
                             <h3 className="text-sm font-bold truncate pr-2">{item.templateName}</h3>
-                            <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white">{renderDict(item.templateType)}</span>
+                            <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white whitespace-nowrap">{renderDict(item.templateType)}</span>
                           </div>
                           <p className="text-[10px] text-white/80 line-clamp-2 mb-2">{item.templateDesc}</p>
                           <div className="flex justify-between items-center text-xs">
-                             <button className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm">Use Template</button>
-                             <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => clickTemplateLike(e, item)}>
-                                <Heart size={12} className={item.isLike ? "fill-red-500 text-red-500" : "text-white"} />
-                                <span>{item.likeCount}</span>
+                             <button 
+                               className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm"
+                               onClick={(e) => {
+                                 e.stopPropagation();
+                                 handleDoSame(item);
+                               }}
+                             >
+                               做同款
+                             </button>
+                             <div 
+                               className="flex items-center gap-1 cursor-pointer" 
+                               onClick={(e) => clickTemplateLike(e, item, item.isLike)}
+                             >
+                                <span className="text-base">{item.isLike ? '❤️' : '🤍'}</span>
+                                <span>{item.likeCount || 0}</span>
                              </div>
                           </div>
                        </div>
                     </div>
                  </div>
-               ))}
+               );
+               })}
+               
+               {/* 无限滚动触发器 */}
+               {hasMore && (
+                 <div 
+                   ref={sentinelRef}
+                   className="col-span-full h-20"
+                 />
+               )}
             </div>
             
             {loading && (
@@ -367,31 +654,137 @@ const CreatePage: React.FC<CreatePageProps> = ({ t, onNavigate }) => {
 
   return (
     <div className="w-full">
-      {renderContent()}
+        {renderContent()}
+        
+        {/* 模板详情弹窗 */}
+        {showTemplateDetail && selectedTemplate && (
+          <TemplateDetailModal
+            template={selectedTemplate}
+            isOpen={showTemplateDetail}
+            onClose={() => {
+              setShowTemplateDetail(false);
+              setSelectedTemplate(null);
+            }}
+            onDoSame={handleDoSame}
+            onLike={(e, type) => clickTemplateLike(e, selectedTemplate, type)}
+            renderDict={renderDict}
+          />
+        )}
+
+        {/* 登录弹窗 */}
+        {t.authModal && (
+          <AuthModal
+            isOpen={isAuthModalOpen}
+            onClose={() => setIsAuthModalOpen(false)}
+            onLoginSuccess={() => {
+              setIsAuthModalOpen(false);
+              // 如果有点击操作，可以在这里继续执行
+            }}
+            t={t.authModal}
+          />
+        )}
     </div>
   );
 };
 
-const ActionCard = ({ icon, title, desc, color }: { icon: React.ReactNode, title: string, desc: string, color: string }) => (
-  <div className="group relative overflow-hidden rounded-xl border border-border bg-surface p-5 hover:border-primary/50 transition-all cursor-pointer hover:shadow-lg hover:-translate-y-1">
-    <div className={`mb-4 inline-flex rounded-lg p-3 ${color} transition-transform group-hover:scale-110`}>
-      {icon}
-    </div>
-    <h3 className="font-semibold text-foreground mb-1 line-clamp-1">{title}</h3>
-    <p className="text-xs text-muted line-clamp-2">{desc}</p>
-  </div>
-);
+// 模板详情弹窗组件
+const TemplateDetailModal: React.FC<{
+  template: LabTemplate;
+  isOpen: boolean;
+  onClose: () => void;
+  onDoSame: (template: LabTemplate) => void;
+  onLike: (e: React.MouseEvent, type: boolean) => void;
+  renderDict: (type: number) => string;
+}> = ({ template, isOpen, onClose, onDoSame, onLike, renderDict }) => {
+  if (!isOpen) return null;
 
-const GalleryItem = ({ color, height }: { color: string, height: string }) => (
-  <div className={`w-full rounded-xl overflow-hidden relative group cursor-pointer`}>
-    <div className={`w-full ${height} ${color} transition-transform duration-500 group-hover:scale-105`}>
-        {/* Simulated Image Content */}
-        <div className="w-full h-full opacity-50 mix-blend-overlay bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      
+      {/* Modal */}
+      <div className="relative bg-background rounded-xl shadow-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden flex flex-col md:flex-row">
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+        >
+          <X size={20} />
+        </button>
+
+        {/* Left: Media */}
+        <div className="flex-1 bg-gray-50 dark:bg-gray-900 p-6 flex items-center justify-center overflow-auto">
+          {template.templateType === 3 || template.templateType === 4 ? (
+            <video
+              src={template.templateUrl?.replace(/`/g, '')}
+              className="max-w-full max-h-full object-contain"
+              controls
+              autoPlay
+              loop
+              muted
+            />
+          ) : (
+            <img
+              src={template.templateUrl?.replace(/`/g, '')}
+              alt={template.templateName}
+              className="max-w-full max-h-full object-contain"
+            />
+          )}
+        </div>
+
+        {/* Right: Info */}
+        <div className="flex-1 p-6 md:p-8 flex flex-col overflow-auto">
+          <h2 className="text-2xl font-bold mb-4">{template.templateName}</h2>
+          
+          <div className="mb-4 flex-1">
+            <p className="text-base leading-relaxed text-muted whitespace-pre-wrap">
+              {template.templateDesc}
+            </p>
+          </div>
+
+          {/* Original Image (for image-to-video) */}
+          {template.videoTemplateUrl && (
+            <div className="mb-4">
+              <p className="text-sm text-muted mb-2">原图：</p>
+              <img
+                src={template.videoTemplateUrl.replace(/`/g, '')}
+                alt="Original"
+                className="w-24 h-24 object-cover rounded-lg border border-border"
+              />
+            </div>
+          )}
+
+          {/* Like and Type */}
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => onLike(e, template.isLike ?? false)}
+                className="text-2xl hover:scale-110 transition-transform"
+              >
+                {template.isLike ? '❤️' : '🤍'}
+              </button>
+              <span className="text-sm text-muted">{template.likeCount || 0} 喜欢</span>
+            </div>
+            <span className="px-3 py-1 rounded-full bg-indigo-600 text-white text-sm">
+              {renderDict(template.templateType)}
+            </span>
+          </div>
+
+          {/* Action Button */}
+          <button
+            onClick={() => onDoSame(template)}
+            className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors"
+          >
+            做同款
+          </button>
+        </div>
+      </div>
     </div>
-    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-      <span className="text-white text-sm font-medium">Generated Art</span>
-    </div>
-  </div>
-);
+  );
+};
 
 export default CreatePage;
