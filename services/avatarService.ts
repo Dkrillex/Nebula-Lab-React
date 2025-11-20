@@ -3,6 +3,13 @@ import { ApiResponse } from '../types';
 
 // ==================== 数字人营销视频 API ====================
 
+// TopView API 专用响应格式 (不同于通用的 ApiResponse)
+export interface TopViewResult<T = any> {
+  code: string;  // TopView 使用字符串类型的 code
+  message: string;
+  result: T;
+}
+
 // 数字人信息
 export interface AiAvatar {
   aiavatarId: string;
@@ -392,7 +399,7 @@ export const avatarService = {
    * Endpoint: GET /tp/v1/GetUploadCredential
    */
   getUploadCredential: (format: string) => {
-    return request.get<ApiResponse<UploadCredential>>('/tp/v1/GetUploadCredential', {
+    return request.get<TopViewResult<UploadCredential>>('/tp/v1/GetUploadCredential', {
       params: {
         format,
         needAccelerateUrl: true,

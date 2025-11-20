@@ -63,10 +63,11 @@ interface UploadedImage {
 }
 
 interface GeneratedImage {
-  key: string;
+  key: number;
   url: string;
   revised_prompt?: string;
   b64_json?: string;
+  previewVisible?: boolean;
 }
 
 const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
@@ -174,15 +175,29 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     if (fileType === 'mpeg') fileType = 'mp3';
     if (fileType === 'quicktime') fileType = 'mp4';
 
+    console.log('准备获取上传凭证, fileType:', fileType);
     const credRes = await avatarService.getUploadCredential(fileType);
-    if (credRes.code !== 200 || !credRes.result) {
-      throw new Error(credRes.msg || 'Failed to get upload credentials');
+    console.log('上传凭证响应:', credRes);
+    
+    // TopView API 返回的 code 是字符串类型,成功时为 "200"
+    if (!credRes || !credRes.result || credRes.code !== '200') {
+      console.error('获取上传凭证失败:', credRes);
+      throw new Error(credRes?.message || 'Failed to get upload credentials');
     }
 
     const { uploadUrl, fileName, fileId, format } = credRes.result;
+    console.log('准备上传文件:', { fileName, fileId, format, fileSize: image.file.size });
 
     // PUT file to uploadUrl
-    const uploadRes = await fetch(uploadUrl, {
+    // 在开发环境使用代理避免 CORS 问题
+    let finalUploadUrl = uploadUrl;
+    if (import.meta.env.DEV) {
+      // 替换 S3 域名为代理路径
+      finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
+      console.log('使用代理上传:', finalUploadUrl);
+    }
+    
+    const uploadRes = await fetch(finalUploadUrl, {
       method: 'PUT',
       body: image.file,
       headers: {
@@ -190,9 +205,14 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       }
     });
 
+    console.log('上传响应状态:', uploadRes.status, uploadRes.statusText);
     if (!uploadRes.ok) {
-      throw new Error(`Upload failed: ${uploadRes.statusText}`);
+      const errorText = await uploadRes.text();
+      console.error('上传失败详情:', errorText);
+      throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}. Details: ${errorText}`);
     }
+
+    console.log('文件上传成功:', { fileId, fileName });
 
     return {
       ...image,
@@ -264,6 +284,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const startPolling = (taskId: string, mode: 'standard' | 'creative' | 'clothing') => {
     if (pollingInterval.current) clearInterval(pollingInterval.current);
     
+    console.log('开始轮询任务:', taskId, '模式:', mode);
+    
     pollingInterval.current = setInterval(async () => {
       try {
         let res;
@@ -275,41 +297,92 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           res = await styleTransferService.queryClothing(taskId);
         }
         
-        if (res.code === 200 && res.data) {
-          const status = res.data.status;
-          if (status === 'success' || status === 'succeeded') {
-            if (pollingInterval.current) clearInterval(pollingInterval.current);
-            if (progressInterval.current) clearInterval(progressInterval.current);
-            setProgress(100);
-            
-            // 处理结果图片 - 兼容多种返回格式
-            let imageUrls: string[] = [];
-            if (res.data.resultImages && Array.isArray(res.data.resultImages)) {
-              imageUrls = res.data.resultImages;
-            } else if (res.data.data && Array.isArray(res.data.data)) {
-              // 创意模式可能返回 data.data 数组
-              imageUrls = res.data.data.map((item: any) => item.url || item.image_url || '').filter(Boolean);
-            } else if (res.data.url) {
-              // 单个图片URL
-              imageUrls = [res.data.url];
-            }
-            
-            const images: GeneratedImage[] = imageUrls.map((url: string, index: number) => ({
-              key: `${Date.now()}_${index}`,
-              url: url
-            }));
-            setGeneratedImages(images);
-            setIsGenerating(false);
-          } else if (status === 'fail' || status === 'failed' || status === 'error') {
-            if (pollingInterval.current) clearInterval(pollingInterval.current);
-            if (progressInterval.current) clearInterval(progressInterval.current);
-            setIsGenerating(false);
-            setErrorMessage(res.data.errorMsg || res.data.error || 'Generation failed');
+        console.log('轮询查询结果:', res);
+        
+        // requestClient 已处理外层,返回格式:
+        // TopView: { result: { taskId, status, anyfitImages: [...] } }
+        // 或其他: { taskId, status, ... }
+        let taskResult;
+        if (res.result) {
+          // TopView 格式: { result: {...} }
+          taskResult = res.result;
+        } else {
+          // 直接格式
+          taskResult = res;
+        }
+        
+        const status = taskResult.status;
+        console.log('任务状态:', status);
+        
+        if (status === 'running' || status === 'init' || status === 'in_queue' || status === 'generating') {
+          // 任务进行中,更新进度
+          if (progress < 80) {
+            setProgress(prev => Math.min(80, prev + Math.floor(Math.random() * 10) + 5));
+          } else if (progress < 90) {
+            setProgress(prev => Math.min(90, prev + Math.floor(Math.random() * 5) + 1));
           }
-          // 'init', 'processing', 'running' -> continue polling
+          // 继续轮询
+        } else if (status === 'success' || status === 'succeeded' || status === 'done') {
+          // 任务成功完成
+          if (pollingInterval.current) clearInterval(pollingInterval.current);
+          if (progressInterval.current) clearInterval(progressInterval.current);
+          setProgress(100);
+          
+          console.log('任务完成,处理结果...');
+          
+          // 处理结果图片 - 兼容多种返回格式
+          let images: GeneratedImage[] = [];
+          
+          if (taskResult.anyfitImages && Array.isArray(taskResult.anyfitImages)) {
+            // 标准模式返回格式
+            images = taskResult.anyfitImages.map((item: any, index: number) => ({
+              key: item.key || index + 1,
+              url: item.url,
+              previewVisible: false
+            }));
+          } else if (taskResult.resultImages && Array.isArray(taskResult.resultImages)) {
+            images = taskResult.resultImages.map((url: string, index: number) => ({
+              key: index + 1,
+              url: url,
+              previewVisible: false
+            }));
+          } else if (taskResult.data && Array.isArray(taskResult.data)) {
+            // 创意模式可能返回 data 数组
+            images = taskResult.data.map((item: any, index: number) => ({
+              key: index + 1,
+              url: item.url || item.image_url || '',
+              revised_prompt: item.revised_prompt,
+              previewVisible: false
+            })).filter(img => img.url);
+          } else if (taskResult.url) {
+            // 单个图片URL
+            images = [{
+              key: 1,
+              url: taskResult.url,
+              previewVisible: false
+            }];
+          }
+          
+          console.log('生成的图片:', images);
+          setGeneratedImages(images);
+          
+          // 延迟重置生成状态,让用户看到 100% 进度
+          setTimeout(() => {
+            setIsGenerating(false);
+          }, 1000);
+          
+        } else if (status === 'fail' || status === 'failed' || status === 'error') {
+          // 任务失败
+          if (pollingInterval.current) clearInterval(pollingInterval.current);
+          if (progressInterval.current) clearInterval(progressInterval.current);
+          setIsGenerating(false);
+          setProgress(0);
+          const errorMsg = taskResult.errorMsg || taskResult.error || taskResult.message || 'Generation failed';
+          console.error('任务失败:', errorMsg);
+          setErrorMessage(errorMsg);
         }
       } catch (error) {
-        console.error('Polling error:', error);
+        console.error('轮询查询出错:', error);
       }
     }, 10000); // 10秒轮询一次
   };
@@ -446,17 +519,33 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         if (productMaskCanvasRef.current) {
           uploadPromises.push(productMaskCanvasRef.current.getMask().then(async (maskBlob) => {
             if (maskBlob) {
-              const maskFile = new File([maskBlob], 'mask.png', { type: 'image/png' });
+              const maskFile = new File([maskBlob], 'product_mask.png', { type: 'image/png' });
+              console.log('准备上传产品蒙版, size:', maskFile.size);
+              
               // Use TopView upload for mask
               const credRes = await avatarService.getUploadCredential('png');
-              if (credRes.code === 200 && credRes.result) {
+              if (credRes.code === '200' && credRes.result) {
                 const { uploadUrl, fileId } = credRes.result;
-                const uploadRes = await fetch(uploadUrl, {
+                console.log('产品蒙版上传凭证获取成功:', fileId);
+                
+                // 使用代理上传(开发环境)
+                let finalUploadUrl = uploadUrl;
+                if (import.meta.env.DEV) {
+                  finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
+                }
+                
+                const uploadRes = await fetch(finalUploadUrl, {
                   method: 'PUT',
                   body: maskFile,
                   headers: { 'Content-Type': 'image/png' }
                 });
-                if (uploadRes.ok) return fileId;
+                
+                if (uploadRes.ok) {
+                  console.log('产品蒙版上传成功:', fileId);
+                  return fileId;
+                } else {
+                  console.error('产品蒙版上传失败:', uploadRes.status);
+                }
               }
             }
             return undefined;
@@ -470,16 +559,32 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           uploadPromises.push(templateMaskCanvasRef.current.getMask().then(async (maskBlob) => {
             if (maskBlob) {
               const maskFile = new File([maskBlob], 'template_mask.png', { type: 'image/png' });
+              console.log('准备上传模板蒙版, size:', maskFile.size);
+              
               // Use TopView upload for mask
               const credRes = await avatarService.getUploadCredential('png');
-              if (credRes.code === 200 && credRes.result) {
+              if (credRes.code === '200' && credRes.result) {
                 const { uploadUrl, fileId } = credRes.result;
-                const uploadRes = await fetch(uploadUrl, {
+                console.log('模板蒙版上传凭证获取成功:', fileId);
+                
+                // 使用代理上传(开发环境)
+                let finalUploadUrl = uploadUrl;
+                if (import.meta.env.DEV) {
+                  finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
+                }
+                
+                const uploadRes = await fetch(finalUploadUrl, {
                   method: 'PUT',
                   body: maskFile,
                   headers: { 'Content-Type': 'image/png' }
                 });
-                if (uploadRes.ok) return fileId;
+                
+                if (uploadRes.ok) {
+                  console.log('模板蒙版上传成功:', fileId);
+                  return fileId;
+                } else {
+                  console.error('模板蒙版上传失败:', uploadRes.status);
+                }
               }
             }
             return undefined;
@@ -497,7 +602,13 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
         if (!productImageFileId) throw new Error('Failed to upload product image');
 
-        const res = await styleTransferService.submitStandard({
+        console.log('所有上传完成, 准备提交任务:');
+        console.log('- productImageFileId:', productImageFileId);
+        console.log('- templateImageFileId:', templateImageFileId);
+        console.log('- productMaskFileId:', productMaskFileId);
+        console.log('- templateMaskFileId:', templateMaskFileId);
+
+        const submitParams = {
           productImageFileId: productImageFileId!,
           productMaskFileId,
           templateImageFileId,
@@ -506,17 +617,33 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           generatingCount,
           score: String(generatingCount),
           location: location.length > 0 ? location : undefined
-        });
+        };
+        console.log('提交参数:', submitParams);
 
-        if (res.code === 200 && res.data) {
-          const taskId = res.data.taskId || res.data.id;
-          if (!taskId) {
-            throw new Error('Task ID not found');
-          }
-          startPolling(taskId, 'standard');
-        } else {
-          throw new Error(res.msg || 'Submission failed');
+        const res = await styleTransferService.submitStandard(submitParams);
+        console.log('提交任务响应:', res);
+
+        // requestClient 已处理外层,返回格式:
+        // { result: { taskId: '...', status: 'success', ... } }
+        // 或者如果有 data 字段: { data: { ... } }
+        let taskId;
+        if (res.result && res.result.taskId) {
+          // TopView 格式: { result: { taskId: ... } }
+          taskId = res.result.taskId;
+        } else if (res.taskId) {
+          // 直接格式
+          taskId = res.taskId;
+        } else if (res.id) {
+          taskId = res.id;
         }
+
+        if (!taskId) {
+          console.error('未找到 taskId:', res);
+          throw new Error('Task ID not found in response');
+        }
+
+        console.log('提交成功, taskId:', taskId);
+        startPolling(taskId, 'standard');
 
       } else if (selectedMode === 'clothing') {
         // 服装模式
