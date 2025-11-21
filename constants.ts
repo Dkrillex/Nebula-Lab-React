@@ -19,6 +19,16 @@ export const RSA_PUBLIC_KEY = 'MFwwDQYJKoZIhvcNAQEBBQADSwAwSAJBAKoR8mX0rGKLqzcWm
 // RSA私钥 - 用于响应解密（解密后端返回的加密数据）
 export const RSA_PRIVATE_KEY = 'MIIBVAIBADANBgkqhkiG9w0BAQEFAASCAT4wggE6AgEAAkEAmc3CuPiGL/LcIIm7zryCEIbl1SPzBkr75E2VMtxegyZ1lYRD+7TZGAPkvIsBcaMs6Nsy0L78n2qh+lIZMpLH8wIDAQABAkEAk82Mhz0tlv6IVCyIcw/s3f0E+WLmtPFyR9/WtV3Y5aaejUkU60JpX4m5xNR2VaqOLTZAYjW8Wy0aXr3zYIhhQQIhAMfqR9oFdYw1J9SsNc+CrhugAvKTi0+BF6VoL6psWhvbAiEAxPPNTmrkmrXwdm/pQQu3UOQmc2vCZ5tiKpW10CgJi8kCIFGkL6utxw93Ncj4exE/gPLvKcT+1Emnoox+O9kRXss5AiAMtYLJDaLEzPrAWcZeeSgSIzbL+ecokmFKSDDcRske6QIgSMkHedwND1olF8vlKsJUGK3BcdtM8w4Xq7BpSBwsloE=';
 
+//系统类型区分 1.模型中心 2.创作中心 3.两者都要
+export const SYSTEM_TYPE = {
+  MODEL_CENTER: 1,
+  CREATION_CENTER: 2,
+  BOTH: 3
+} as const;
+
+// 当前选中的系统类型 (修改此处来切换显示的模块)
+export const CURRENT_SYSTEM = SYSTEM_TYPE.BOTH;
+
 export const MODELS: AIModel[] = [
   {
     id: 'openai/gpt-5.1-codex',

@@ -20,7 +20,7 @@ const Hero: React.FC<HeroProps> = ({ t }) => {
           <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
              {t.titleSuffix}
           </span>
-      </h1>
+        </h1>
         
       <p className="text-lg text-muted max-w-xl leading-relaxed">
         <span className="text-indigo-500 font-medium">Better prices</span>, <span className="text-indigo-500 font-medium">better uptime</span>, no subscription.

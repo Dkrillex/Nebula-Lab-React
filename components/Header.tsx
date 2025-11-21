@@ -4,6 +4,7 @@ import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 
 interface HeaderProps {
   isDark: boolean;
@@ -124,6 +125,20 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, [visitedViews]);
 
+  // Filter nav items based on CURRENT_SYSTEM
+  const filteredNav = t.nav.filter(item => {
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+    if (item.href === '/profile') return true; // Always show profile
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
+      return item.href === '/models';
+    }
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.CREATION_CENTER) {
+      return item.href === '/create';
+    }
+    return false;
+  });
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
       {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
@@ -230,7 +245,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Right: Nav & Actions */}
         <div className="flex-shrink-0 flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
-            {t.nav.map((item) => {
+            {filteredNav.map((item) => {
               // Determine if item is active based on current view/path
               const isActive = 
                 (item.href === '/models' && ['models', 'chat', 'keys'].includes(currentView)) ||

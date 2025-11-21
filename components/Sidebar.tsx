@@ -283,7 +283,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
               </div>
               {/* 新增个logo */}
               <div className="flex justify-center my-3">
-                <img src="/public/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
+                <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
               </div>
               {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
               {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
