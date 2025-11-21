@@ -46,6 +46,12 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/prod-api/, ''),
       },
+      // AWS S3 加速上传代理 (解决 CORS 问题)
+      '/s3-upload': {
+        target: 'https://aigc.s3-accelerate.amazonaws.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/s3-upload/, ''),
+      },
     },
   },
 });
