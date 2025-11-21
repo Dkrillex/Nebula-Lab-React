@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Upload, Folder, File, Users, Globe, Lock } from 'lucide-react';
 import UploadComponent from './UploadComponent';
-import { assetsService, AdsAssetsForm } from '../services/assetsService';
+import { assetsService, AdsAssetsForm, AdsAssetsVO } from '../services/assetsService';
 import { useAuthStore } from '../stores/authStore';
 import { UploadedFile } from '../services/avatarService';
+import toast from 'react-hot-toast';
 
 interface AddMaterialModalProps {
   isOpen: boolean;
@@ -11,17 +12,26 @@ interface AddMaterialModalProps {
   onSuccess: () => void;
   initialIsFolder?: boolean;
   initialFolderId?: string | number; // If adding inside a folder
-  initialData?: Partial<AdsAssetsForm>; // Pre-fill data like assetUrl
+  initialData?: Partial<AdsAssetsVO>; // Pre-fill data for editing
+  isEdit?: boolean; // Whether this is an edit operation
 }
 
-// Asset Types based on reference
+// Asset Types based on reference from points.vue
+// Type mapping:
+// 1: AI混剪视频, 2: 产品数字人, 3: 数字人视频, 4: 图生视频, 5: 原创视频
+// 6: 万物迁移, 7: AI生图, 8: 声音克隆, 9: 自定义数字人, 10: 唱歌数字人
+// 11: AI换脸视频, 13: AI图片生成, 14: AI视频生成, 15: AI创作实验室
 const ASSET_TYPES = [
-  { label: '图片', value: 6 },
-  { label: '视频', value: 4 },
-  { label: '音频', value: 8 },
+  { label: 'AI生图', value: 7 },
+  { label: 'AI图片生成', value: 13 },
+  { label: '图生视频', value: 4 },
+  { label: 'AI视频生成', value: 14 },
+  { label: '原创视频', value: 5 },
+  { label: '声音克隆', value: 8 },
   { label: '产品数字人', value: 2 },
-  { label: '数字人', value: 3 },
-  // { label: '私有数字人', value: 9 },
+  { label: '数字人视频', value: 3 },
+  { label: '自定义数字人', value: 9 },
+  { label: '唱歌数字人', value: 10 },
 ];
 
 const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
@@ -30,7 +40,8 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   onSuccess,
   initialIsFolder = false,
   initialFolderId,
-  initialData
+  initialData,
+  isEdit = false
 }) => {
   const { user } = useAuthStore();
   const [isFolderMode, setIsFolderMode] = useState(initialIsFolder);
@@ -38,8 +49,9 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   
   // Form Data
   const [formData, setFormData] = useState<AdsAssetsForm>({
+    id: undefined,
     assetName: '',
-    assetType: 6, // Default to Image
+    assetType: 7, // Default to AI生图
     assetTag: '',
     assetDesc: '',
     isPrivateModel: false,
@@ -58,19 +70,21 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
     if (isOpen) {
       setIsFolderMode(initialIsFolder);
       setFormData({
+        id: initialData?.id,
         assetName: initialData?.assetName || '',
-        assetType: initialIsFolder ? undefined : (initialData?.assetType || 6),
+        assetType: initialIsFolder ? undefined : (initialData?.assetType || 7),
         assetTag: initialData?.assetTag || '',
         assetDesc: initialData?.assetDesc || '',
         isPrivateModel: initialData?.isPrivateModel || false,
         isShare: initialData?.isShare || 0,
         assetUrl: initialData?.assetUrl || '',
-        assetId: initialData?.assetId || '',
+        assetId: initialData?.assetId || (initialData as any)?.assetId || '',
         dataType: initialIsFolder ? 2 : 1,
         assetPackageId: initialFolderId,
+        teamId: (initialData as any)?.teamId,
       });
       setStorageLocation('personal');
-      setSelectedTeamId('');
+      setSelectedTeamId((initialData as any)?.teamId || '');
     }
   }, [isOpen, initialIsFolder, initialFolderId, initialData]);
 
@@ -90,18 +104,16 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       alert('请输入名称');
       return;
     }
-    if (!isFolderMode && !formData.assetUrl && formData.assetType !== 2 && formData.assetType !== 3) {
-      // For purely digital humans, maybe no upload needed? 
-      // Reference implies upload is needed for types 5 (File?) but logic says: 
-      // if (!isFolderMode && formData.assetType === '5' && !assetUrl) -> error.
-      // For general file types (Image/Video/Audio), we need a file.
-      if ([4, 6, 8].includes(formData.assetType as number) && !formData.assetUrl) {
+    // Validate file upload for types that require files (only for new files, not editing)
+    if (!isEdit && !isFolderMode && !formData.assetUrl) {
+      const typesRequiringUpload = [4, 5, 7, 8, 13, 14]; // Video, audio, image types
+      if (typesRequiringUpload.includes(formData.assetType as number)) {
         alert('请上传素材文件');
         return;
       }
     }
     
-    if ((storageLocation === 'shared' || storageLocation === 'both') && !selectedTeamId) {
+    if (!isEdit && (storageLocation === 'shared' || storageLocation === 'both') && !selectedTeamId) {
       alert('请选择团队');
       return;
     }
@@ -115,39 +127,44 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         assetType: isFolderMode ? undefined : formData.assetType,
       };
 
-      const requests: Promise<any>[] = [];
+      if (isEdit) {
+        // Edit mode: update existing asset
+        await assetsService.updateAssets(baseData);
+        alert('更新成功');
+      } else {
+        // Add mode
+        const requests: Promise<any>[] = [];
 
-      // 1. Personal
-      if (storageLocation === 'personal' || storageLocation === 'both') {
-        requests.push(assetsService.addAssets({
-          ...baseData,
-          isShare: 0,
-          teamId: undefined,
-          assetPackageId: initialFolderId // Assuming context is personal if not specified otherwise? 
-          // Logic refinement: If initialFolderId is set, we need to know if it's a personal or shared folder.
-          // For simplicity, if initialFolderId is set, we might disable location selection and just use the current context.
-          // But here we implement the 'add from root' style.
-        }));
+        // 1. Personal
+        if (storageLocation === 'personal' || storageLocation === 'both') {
+          requests.push(assetsService.addAssets({
+            ...baseData,
+            id: undefined,
+            isShare: 0,
+            teamId: undefined,
+            assetPackageId: initialFolderId
+          }));
+        }
+
+        // 2. Shared
+        if (storageLocation === 'shared' || storageLocation === 'both') {
+           requests.push(assetsService.addAssets({
+            ...baseData,
+            id: undefined,
+            isShare: 1,
+            teamId: selectedTeamId,
+            assetPackageId: undefined
+          }));
+        }
+
+        await Promise.all(requests);
       }
-
-      // 2. Shared
-      if (storageLocation === 'shared' || storageLocation === 'both') {
-         requests.push(assetsService.addAssets({
-          ...baseData,
-          isShare: 1,
-          teamId: selectedTeamId,
-          // For shared, usually we need a folder. If root is allowed, it's null/undefined.
-          assetPackageId: undefined // Or selected folder if we had a folder selector
-        }));
-      }
-
-      await Promise.all(requests);
       
       onSuccess();
       onClose();
     } catch (error) {
-      console.error('Failed to add material:', error);
-      alert('添加失败');
+      console.error('Failed to save material:', error);
+      alert(isEdit ? '更新失败' : '添加失败');
     } finally {
       setLoading(false);
     }
@@ -156,10 +173,17 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   // Calculate accept type for upload
   const getAcceptType = () => {
     switch (formData.assetType) {
-      case 6: return 'image/*';
-      case 4: return 'video/*';
-      case 8: return 'audio/*';
-      default: return '*/*';
+      case 7:  // AI生图
+      case 13: // AI图片生成
+        return 'image/*';
+      case 4:  // 图生视频
+      case 5:  // 原创视频
+      case 14: // AI视频生成
+        return 'video/*';
+      case 8:  // 声音克隆
+        return 'audio/*';
+      default: 
+        return '*/*';
     }
   };
 
@@ -179,7 +203,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {isFolderMode ? '新建文件夹' : '添加素材'}
+            {isEdit ? (isFolderMode ? '编辑文件夹' : '编辑素材') : (isFolderMode ? '新建文件夹' : '添加素材')}
           </h2>
           <button 
             onClick={onClose}
@@ -292,8 +316,8 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Storage Location (Conditional) */}
-          {/* If we are already in a folder (initialFolderId set), we might skip this or simplify it */}
-          {!initialFolderId && user?.team && user.team.length > 0 && (
+          {/* If we are already in a folder (initialFolderId set), or editing, we skip this */}
+          {!isEdit && !initialFolderId && user?.team && user.team.length > 0 && (
              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   存储位置
