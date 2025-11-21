@@ -1,15 +1,28 @@
 import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 
+export type ToolType = 'pencil' | 'eraser' | 'arrow' | 'rect' | 'ellipse' | 'text';
+
+export interface TextOptions {
+  fontFamily: string;
+  fontSize: number;
+  fontWeight: string; // 'normal' | 'bold'
+  fontStyle: string; // 'normal' | 'italic'
+}
+
 interface MaskCanvasProps {
   imageUrl: string | null;
-  tool: 'pencil' | 'eraser';
+  tool: ToolType;
   brushSize: number;
+  brushColor?: string;
+  textOptions?: TextOptions;
+  mode?: 'mask' | 'draw';
   enableZoom?: boolean;
   className?: string;
 }
 
 export interface MaskCanvasRef {
   getMask: () => Promise<Blob | null>;
+  getEditedImageBase64: () => Promise<string | null>;
   clearCanvas: () => void;
   undoLastAction: () => void;
 }
@@ -26,8 +39,10 @@ interface ImageDrawInfo {
 }
 
 interface Stroke {
-  type: 'pencil' | 'eraser';
-  path: { x: number; y: number }[]; // Normalized coordinates
+  type: ToolType;
+  path: { x: number; y: number }[]; // Normalized coordinates. For shapes: [start, end]
+  text?: string;
+  textOptions?: TextOptions;
   brushSize: number;
   color: string;
   globalCompositeOperation: GlobalCompositeOperation;
@@ -37,6 +52,9 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   imageUrl,
   tool,
   brushSize,
+  brushColor = 'rgba(255, 255, 0, 0.5)', // Default for mask mode
+  textOptions = { fontFamily: 'Arial', fontSize: 20, fontWeight: 'normal', fontStyle: 'normal' },
+  mode = 'mask', // 'mask' | 'draw'
   enableZoom = true,
   className = ''
 }, ref) => {
@@ -56,7 +74,10 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   const lastPanRef = useRef({ x: 0, y: 0 });
   const isDrawingRef = useRef(false);
   const lastDrawPosRef = useRef<{ x: number, y: number } | null>(null);
-  const drawingPathRef = useRef<{ x: number, y: number }[]>([]);
+  
+  // For shape drawing (start point)
+  const startDrawPosRef = useRef<{ x: number, y: number } | null>(null);
+  
   const currentStrokeRef = useRef<Stroke | null>(null);
   
   const drawnShapesRef = useRef<Stroke[]>([]);
@@ -170,6 +191,11 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 
     maskCtx.clearRect(0, 0, width, height);
     drawnShapesRef.current.forEach(shape => drawStroke(maskCtx, shape));
+    
+    // Draw current stroke being drawn (preview)
+    if (currentStrokeRef.current && isDrawingRef.current) {
+       drawStroke(maskCtx, currentStrokeRef.current);
+    }
   };
 
   // Coordinate Conversion
@@ -200,38 +226,87 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   };
 
   const drawStroke = (ctx: CanvasRenderingContext2D, shape: Stroke) => {
-    if (shape.path.length === 0) return;
+    if (shape.path.length === 0 && shape.type !== 'text') return;
 
     ctx.save();
     ctx.globalCompositeOperation = shape.globalCompositeOperation;
     ctx.strokeStyle = shape.color;
+    ctx.fillStyle = shape.color;
     ctx.lineWidth = shape.brushSize * zoomScale;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    ctx.beginPath();
-    
-    if (shape.path.length === 1) {
-      const p = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
-      ctx.arc(p.x, p.y, (shape.brushSize * zoomScale) / 2, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      const start = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
-      ctx.moveTo(start.x, start.y);
-      
-      for (let i = 1; i < shape.path.length; i++) {
-        const p = normalizedToCanvasCoords(shape.path[i].x, shape.path[i].y);
-        if (i === 1) {
-          ctx.lineTo(p.x, p.y);
+    if (shape.type === 'pencil' || shape.type === 'eraser') {
+        ctx.beginPath();
+        if (shape.path.length === 1) {
+          const p = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+          ctx.arc(p.x, p.y, (shape.brushSize * zoomScale) / 2, 0, Math.PI * 2);
+          ctx.fill();
         } else {
-          const prev = normalizedToCanvasCoords(shape.path[i-1].x, shape.path[i-1].y);
-          const midX = (prev.x + p.x) / 2;
-          const midY = (prev.y + p.y) / 2;
-          ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+          const start = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+          ctx.moveTo(start.x, start.y);
+          
+          for (let i = 1; i < shape.path.length; i++) {
+            const p = normalizedToCanvasCoords(shape.path[i].x, shape.path[i].y);
+            if (i === 1) {
+              ctx.lineTo(p.x, p.y);
+            } else {
+              const prev = normalizedToCanvasCoords(shape.path[i-1].x, shape.path[i-1].y);
+              const midX = (prev.x + p.x) / 2;
+              const midY = (prev.y + p.y) / 2;
+              ctx.quadraticCurveTo(prev.x, prev.y, midX, midY);
+            }
+          }
+          ctx.stroke();
         }
-      }
-      ctx.stroke();
+    } else if (shape.type === 'rect') {
+        if (shape.path.length < 2) return;
+        const start = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+        const end = normalizedToCanvasCoords(shape.path[1].x, shape.path[1].y);
+        
+        ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+    } else if (shape.type === 'ellipse') {
+        if (shape.path.length < 2) return;
+        const start = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+        const end = normalizedToCanvasCoords(shape.path[1].x, shape.path[1].y);
+        
+        const centerX = (start.x + end.x) / 2;
+        const centerY = (start.y + end.y) / 2;
+        const radiusX = Math.abs(end.x - start.x) / 2;
+        const radiusY = Math.abs(end.y - start.y) / 2;
+        
+        ctx.beginPath();
+        ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+        ctx.stroke();
+    } else if (shape.type === 'arrow') {
+        if (shape.path.length < 2) return;
+        const start = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+        const end = normalizedToCanvasCoords(shape.path[1].x, shape.path[1].y);
+        
+        const headLength = 20 * zoomScale;
+        const angle = Math.atan2(end.y - start.y, end.x - start.x);
+        
+        ctx.beginPath();
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
+        ctx.stroke();
+        
+        // Arrow head
+        ctx.beginPath();
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(end.x - headLength * Math.cos(angle - Math.PI / 6), end.y - headLength * Math.sin(angle - Math.PI / 6));
+        ctx.moveTo(end.x, end.y);
+        ctx.lineTo(end.x - headLength * Math.cos(angle + Math.PI / 6), end.y - headLength * Math.sin(angle + Math.PI / 6));
+        ctx.stroke();
+    } else if (shape.type === 'text' && shape.text && shape.textOptions) {
+        const pos = normalizedToCanvasCoords(shape.path[0].x, shape.path[0].y);
+        const { fontSize, fontFamily, fontWeight, fontStyle } = shape.textOptions;
+        
+        ctx.font = `${fontStyle} ${fontWeight} ${fontSize * zoomScale}px ${fontFamily}`;
+        ctx.fillStyle = shape.color;
+        ctx.fillText(shape.text, pos.x, pos.y);
     }
+    
     ctx.restore();
   };
 
@@ -255,38 +330,51 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       isPanningRef.current = true;
       const { x, y } = getCoords(e);
       lastPanRef.current = { x, y };
-      e.preventDefault(); // Prevent default only if panning to allow other touch actions if needed
+      e.preventDefault();
       return;
     }
 
-    isDrawingRef.current = true;
     const { x, y } = getCoords(e);
-    lastDrawPosRef.current = { x, y };
-    drawingPathRef.current = [{ x, y }];
-
     const normalizedPos = canvasToNormalizedCoords(x, y);
+
+    if (tool === 'text') {
+        const text = window.prompt('请输入文本:');
+        if (text) {
+            const newStroke: Stroke = {
+                type: 'text',
+                path: [normalizedPos],
+                text,
+                textOptions: { ...textOptions }, // Copy current options
+                brushSize,
+                color: brushColor,
+                globalCompositeOperation: 'source-over'
+            };
+            drawnShapesRef.current.push(newStroke);
+            actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+            redrawAllShapes();
+        }
+        return;
+    }
+
+    isDrawingRef.current = true;
+    lastDrawPosRef.current = { x, y };
+    startDrawPosRef.current = { x, y }; // for shapes
     
+    // Initial path
+    let initialPath = [normalizedPos];
+    if (tool === 'rect' || tool === 'ellipse' || tool === 'arrow') {
+        initialPath = [normalizedPos, normalizedPos]; // Start and end are same initially
+    }
+
     currentStrokeRef.current = {
       type: tool,
       brushSize,
-      color: tool === 'eraser' ? 'rgba(0,0,0,1)' : 'rgba(255,255,0,0.5)', // Using semi-transparent yellow for visibility
+      color: tool === 'eraser' ? 'rgba(0,0,0,1)' : brushColor, 
       globalCompositeOperation: tool === 'eraser' ? 'destination-out' : 'source-over',
-      path: [normalizedPos]
+      path: initialPath
     };
 
-    // Immediate visual feedback
-    const ctx = maskCanvasRef.current?.getContext('2d');
-    if (ctx && currentStrokeRef.current) {
-      // For the live drawing, we just draw the point/line directly
-      ctx.beginPath();
-      ctx.globalCompositeOperation = currentStrokeRef.current.globalCompositeOperation;
-      ctx.strokeStyle = currentStrokeRef.current.color;
-      ctx.lineWidth = brushSize * zoomScale;
-      ctx.lineCap = 'round';
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y); // Single point
-      ctx.stroke();
-    }
+    redrawAllShapes(); // Draw initial dot or shape
   };
 
   const moveDraw = (e: React.MouseEvent | React.TouchEvent) => {
@@ -303,28 +391,24 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 
     if (!isDrawingRef.current || !currentStrokeRef.current) return;
 
-    const lastPos = lastDrawPosRef.current;
-    if (!lastPos) return;
+    const normalizedPos = canvasToNormalizedCoords(x, y);
 
-    // Distance check
-    const dist = Math.sqrt(Math.pow(x - lastPos.x, 2) + Math.pow(y - lastPos.y, 2));
-    if (dist < 2) return;
-
-    const ctx = maskCanvasRef.current?.getContext('2d');
-    if (ctx) {
-      ctx.beginPath();
-      ctx.globalCompositeOperation = currentStrokeRef.current.globalCompositeOperation;
-      ctx.strokeStyle = currentStrokeRef.current.color;
-      ctx.lineWidth = brushSize * zoomScale;
-      ctx.lineCap = 'round';
-      ctx.moveTo(lastPos.x, lastPos.y);
-      ctx.quadraticCurveTo(lastPos.x, lastPos.y, (lastPos.x + x)/2, (lastPos.y + y)/2);
-      ctx.stroke();
+    if (tool === 'pencil' || tool === 'eraser') {
+        const lastPos = lastDrawPosRef.current;
+        if (!lastPos) return;
+        
+        // Simple distance check to avoid too many points
+        const dist = Math.sqrt(Math.pow(x - lastPos.x, 2) + Math.pow(y - lastPos.y, 2));
+        if (dist < 2) return;
+        
+        currentStrokeRef.current.path.push(normalizedPos);
+        lastDrawPosRef.current = { x, y };
+    } else if (tool === 'rect' || tool === 'ellipse' || tool === 'arrow') {
+        // Update end point
+        currentStrokeRef.current.path[1] = normalizedPos;
     }
 
-    const normalizedPos = canvasToNormalizedCoords(x, y);
-    currentStrokeRef.current.path.push(normalizedPos);
-    lastDrawPosRef.current = { x, y };
+    redrawAllShapes();
   };
 
   const endDraw = () => {
@@ -336,13 +420,22 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
     if (!isDrawingRef.current) return;
     isDrawingRef.current = false;
 
-    if (currentStrokeRef.current && currentStrokeRef.current.path.length > 0) {
-      drawnShapesRef.current.push(currentStrokeRef.current);
-      actionHistoryRef.current.push({ type: 'add', shape: currentStrokeRef.current });
+    if (currentStrokeRef.current) {
+      // Filter out tiny paths for pencil/eraser?
+      if (tool === 'pencil' || tool === 'eraser') {
+          if (currentStrokeRef.current.path.length > 0) {
+              drawnShapesRef.current.push(currentStrokeRef.current);
+              actionHistoryRef.current.push({ type: 'add', shape: currentStrokeRef.current });
+          }
+      } else {
+          // Shapes
+          drawnShapesRef.current.push(currentStrokeRef.current);
+          actionHistoryRef.current.push({ type: 'add', shape: currentStrokeRef.current });
+      }
+      
       currentStrokeRef.current = null;
     }
     
-    // Force a redraw to clean up any artifacts and ensure smooth curves from stored path
     redrawAllShapes();
   };
 
@@ -401,14 +494,6 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       const ctx = offCanvas.getContext('2d');
       if (!ctx) return null;
 
-      // Draw mask shapes onto offline canvas at original resolution
-      // Note: We need to draw them using original coordinates.
-      // Our shapes store normalized coordinates relative to the BASE draw rect (which is fitted to canvas).
-      // But wait, normalized coords were: x = baseOffsetX + relX * baseDrawWidth
-      // Where relX is 0..1 relative to image.
-      // So relX = (x - baseOffsetX) / baseDrawWidth.
-      // And actual pixel X on original image = relX * originalWidth.
-      
       const { baseOffsetX, baseOffsetY, baseDrawWidth, baseDrawHeight } = originalImageInfoRef.current;
       
       // Helper to convert normalized to original image pixel coords
@@ -423,68 +508,66 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 
       drawnShapesRef.current.forEach(shape => {
         ctx.save();
-        // For mask export: Brush is White, Eraser is Black (or transparent).
-        // Vue implementation logic:
-        // It draws the maskCanvas onto the image.
-        // Then it scans pixels: if alpha > 0, set to White(255,255,255,255), else Transparent.
-        // But here we have vector paths, so we can draw cleanly.
         
         ctx.globalCompositeOperation = shape.type === 'eraser' ? 'destination-out' : 'source-over';
-        ctx.strokeStyle = 'white'; // Mask area is white
+        ctx.fillStyle = 'white'; 
+        ctx.strokeStyle = 'white'; // Mask area is white for mask export
         
-        // Scale brush size from screen pixels to original image pixels?
-        // The brush size in props is "screen pixels".
-        // If image is 2000px wide but shown at 500px, a 10px brush covers 1/50th of screen.
-        // On image it should cover 1/50th of 2000px = 40px.
-        // Scale factor = originalWidth / baseDrawWidth.
         const scaleFactor = originalWidth / baseDrawWidth;
         ctx.lineWidth = shape.brushSize * scaleFactor;
         
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
         
-        ctx.beginPath();
-        if (shape.path.length > 0) {
-           const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
-           ctx.moveTo(start.x, start.y);
-           for(let i=1; i<shape.path.length; i++){
-              const p = normalizedToOriginal(shape.path[i].x, shape.path[i].y);
-              if (i===1) ctx.lineTo(p.x, p.y);
-              else {
-                const prev = normalizedToOriginal(shape.path[i-1].x, shape.path[i-1].y);
-                ctx.quadraticCurveTo(prev.x, prev.y, (prev.x+p.x)/2, (prev.y+p.y)/2);
-              }
-           }
-           // If single point
-           if (shape.path.length === 1) {
-             ctx.lineTo(start.x, start.y); // Needs stroke to render
-           }
-           ctx.stroke();
-           
-           // Also handle dots for single clicks better
-           if (shape.path.length === 1) {
-             ctx.fillStyle = 'white';
-             ctx.beginPath();
-             ctx.arc(start.x, start.y, (shape.brushSize * scaleFactor)/2, 0, Math.PI*2);
-             ctx.fill();
-           }
+        // Reuse logic for path vs shapes, but use normalizedToOriginal
+        if (shape.type === 'pencil' || shape.type === 'eraser') {
+            ctx.beginPath();
+            if (shape.path.length > 0) {
+                const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+                ctx.moveTo(start.x, start.y);
+                for(let i=1; i<shape.path.length; i++){
+                    const p = normalizedToOriginal(shape.path[i].x, shape.path[i].y);
+                    if (i===1) ctx.lineTo(p.x, p.y);
+                    else {
+                        const prev = normalizedToOriginal(shape.path[i-1].x, shape.path[i-1].y);
+                        ctx.quadraticCurveTo(prev.x, prev.y, (prev.x+p.x)/2, (prev.y+p.y)/2);
+                    }
+                }
+                if (shape.path.length === 1) {
+                    ctx.lineTo(start.x, start.y);
+                }
+                ctx.stroke();
+                if (shape.path.length === 1) {
+                    ctx.beginPath();
+                    ctx.arc(start.x, start.y, (shape.brushSize * scaleFactor)/2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+            }
+        } else if (shape.type === 'rect') {
+            const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+            const end = normalizedToOriginal(shape.path[1].x, shape.path[1].y);
+            ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+            ctx.fillRect(start.x, start.y, end.x - start.x, end.y - start.y); // Fill for mask?
+        } else if (shape.type === 'ellipse') {
+            const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+            const end = normalizedToOriginal(shape.path[1].x, shape.path[1].y);
+            const centerX = (start.x + end.x) / 2;
+            const centerY = (start.y + end.y) / 2;
+            const radiusX = Math.abs(end.x - start.x) / 2;
+            const radiusY = Math.abs(end.y - start.y) / 2;
+            ctx.beginPath();
+            ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+            ctx.fill(); // Fill for mask
+            ctx.stroke();
         }
+        // Arrow and Text generally ignored in mask unless strokeText? 
+        // If mask is for "area to modify", text should probably be part of it?
+        // Assuming standard mask is just highlighting area.
+        // For now, just support basic shapes filling for mask.
+        
         ctx.restore();
       });
 
-      // Convert to blob (PNG with transparency)
-      // The background should be transparent. Drawn strokes are White.
-      // This assumes the API expects a white mask on transparent background.
-      // Or black background with white mask?
-      // Vue code: 
-      // if (a && avg > 100) data = 255 (White); else data = 0 (Transparent? or Black?)
-      // data[i+3] = 255; (Alpha is always 255).
-      // So Vue code creates a Black and White image (Binary Mask).
-      // Background Black (0,0,0,255), Foreground White (255,255,255,255).
-      
-      // Let's replicate B&W mask.
-      // Fill background black first.
-      
       const finalCanvas = document.createElement('canvas');
       finalCanvas.width = originalWidth;
       finalCanvas.height = originalHeight;
@@ -496,6 +579,109 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       finalCtx.drawImage(offCanvas, 0, 0);
       
       return new Promise(resolve => finalCanvas.toBlob(resolve, 'image/png'));
+    },
+    getEditedImageBase64: async () => {
+      const { originalWidth, originalHeight } = imageDrawInfoRef.current;
+      if (originalWidth === 0 || originalHeight === 0 || !imageRef.current) return null;
+
+      const canvas = document.createElement('canvas');
+      canvas.width = originalWidth;
+      canvas.height = originalHeight;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      // 1. Draw Original Image
+      ctx.drawImage(imageRef.current, 0, 0, originalWidth, originalHeight);
+
+      // 2. Draw Shapes on top
+      const { baseOffsetX, baseOffsetY, baseDrawWidth, baseDrawHeight } = originalImageInfoRef.current;
+      
+      const normalizedToOriginal = (nx: number, ny: number) => {
+        const relX = (nx - baseOffsetX) / baseDrawWidth;
+        const relY = (ny - baseOffsetY) / baseDrawHeight;
+        return {
+          x: relX * originalWidth,
+          y: relY * originalHeight
+        };
+      };
+
+      drawnShapesRef.current.forEach(shape => {
+        ctx.save();
+        // For edited image, we use the actual shape color
+        ctx.globalCompositeOperation = shape.type === 'eraser' ? 'destination-out' : 'source-over';
+        ctx.strokeStyle = shape.color;
+        ctx.fillStyle = shape.color;
+        
+        const scaleFactor = originalWidth / baseDrawWidth;
+        ctx.lineWidth = shape.brushSize * scaleFactor;
+        
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // Replicate drawing logic for high-res export
+        if (shape.type === 'pencil' || shape.type === 'eraser') {
+             ctx.beginPath();
+             if (shape.path.length > 0) {
+                 const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+                 ctx.moveTo(start.x, start.y);
+                 for(let i=1; i<shape.path.length; i++){
+                     const p = normalizedToOriginal(shape.path[i].x, shape.path[i].y);
+                     if (i===1) ctx.lineTo(p.x, p.y);
+                     else {
+                         const prev = normalizedToOriginal(shape.path[i-1].x, shape.path[i-1].y);
+                         ctx.quadraticCurveTo(prev.x, prev.y, (prev.x+p.x)/2, (prev.y+p.y)/2);
+                     }
+                 }
+                 if (shape.path.length === 1) {
+                    ctx.lineTo(start.x, start.y);
+                 }
+                 ctx.stroke();
+                 if (shape.path.length === 1) {
+                    ctx.beginPath();
+                    ctx.arc(start.x, start.y, (shape.brushSize * scaleFactor)/2, 0, Math.PI*2);
+                    ctx.fill();
+                 }
+             }
+        } else if (shape.type === 'rect') {
+             const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+             const end = normalizedToOriginal(shape.path[1].x, shape.path[1].y);
+             ctx.strokeRect(start.x, start.y, end.x - start.x, end.y - start.y);
+        } else if (shape.type === 'ellipse') {
+             const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+             const end = normalizedToOriginal(shape.path[1].x, shape.path[1].y);
+             const centerX = (start.x + end.x) / 2;
+             const centerY = (start.y + end.y) / 2;
+             const radiusX = Math.abs(end.x - start.x) / 2;
+             const radiusY = Math.abs(end.y - start.y) / 2;
+             ctx.beginPath();
+             ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, 2 * Math.PI);
+             ctx.stroke();
+        } else if (shape.type === 'arrow') {
+             const start = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+             const end = normalizedToOriginal(shape.path[1].x, shape.path[1].y);
+             const headLength = 20 * zoomScale * scaleFactor; // Scale head
+             const angle = Math.atan2(end.y - start.y, end.x - start.x);
+             ctx.beginPath();
+             ctx.moveTo(start.x, start.y);
+             ctx.lineTo(end.x, end.y);
+             ctx.stroke();
+             ctx.beginPath();
+             ctx.moveTo(end.x, end.y);
+             ctx.lineTo(end.x - headLength * Math.cos(angle - Math.PI / 6), end.y - headLength * Math.sin(angle - Math.PI / 6));
+             ctx.moveTo(end.x, end.y);
+             ctx.lineTo(end.x - headLength * Math.cos(angle + Math.PI / 6), end.y - headLength * Math.sin(angle + Math.PI / 6));
+             ctx.stroke();
+        } else if (shape.type === 'text' && shape.text && shape.textOptions) {
+             const pos = normalizedToOriginal(shape.path[0].x, shape.path[0].y);
+             const { fontSize, fontFamily, fontWeight, fontStyle } = shape.textOptions;
+             ctx.font = `${fontStyle} ${fontWeight} ${fontSize * scaleFactor}px ${fontFamily}`;
+             ctx.fillText(shape.text, pos.x, pos.y);
+        }
+        
+        ctx.restore();
+      });
+
+      return canvas.toDataURL('image/png');
     },
     clearCanvas: () => {
       drawnShapesRef.current = [];
@@ -524,23 +710,19 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       onTouchEnd={endDraw}
     >
       <canvas ref={mainCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none" />
-      <canvas ref={maskCanvasRef} className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-70" />
+      <canvas ref={maskCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none ${mode === 'mask' ? 'opacity-70' : 'opacity-100'}`} />
       
       {/* Cursor for brush */}
-      {cursor.visible && !isSpacePressedRef.current && (
+      {cursor.visible && !isSpacePressedRef.current && (tool === 'pencil' || tool === 'eraser') && (
         <div 
-          className="pointer-events-none fixed z-50 rounded-full border-2 border-yellow-400"
+          className="pointer-events-none fixed z-50 rounded-full border-2"
           style={{
-            left: cursor.x, // Note: These are client coordinates in the event handler?
-            // Wait, getCoords returns relative to canvas.
-            // But 'fixed' position needs client coordinates.
-            // We should use absolute position relative to container.
-            // But cursor.x/y are relative to container.
             position: 'absolute',
             left: cursor.x - (brushSize * zoomScale) / 2,
             top: cursor.y - (brushSize * zoomScale) / 2,
             width: brushSize * zoomScale,
-            height: brushSize * zoomScale
+            height: brushSize * zoomScale,
+            borderColor: brushColor === '#ffffff' || brushColor === 'rgba(255,255,255,1)' ? 'black' : brushColor
           }}
         />
       )}
@@ -557,4 +739,3 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 MaskCanvas.displayName = 'MaskCanvas';
 
 export default MaskCanvas;
-

@@ -57,6 +57,7 @@ export interface VideoGenerateQueryResponse {
     video_url?: string;
     error?: string;
     progress?: number;
+
   };
 }
 
