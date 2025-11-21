@@ -101,17 +101,14 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       let uploadedFile: UploadedFile;
 
       if (uploadType === 'oss') {
+        // requestClient 已经处理了外层，直接返回 UploadResult
         const res = await uploadService.uploadFile(fileToUpload);
-        if (res.code === 200 && res.data) {
-          uploadedFile = {
-            fileId: res.data.ossId,
-            fileName: res.data.fileName,
-            fileUrl: res.data.url,
-            format: fileToUpload.name.split('.').pop() || '',
-          };
-        } else {
-            throw new Error(res.msg || 'Upload failed');
-        }
+        uploadedFile = {
+          fileId: res.ossId,
+          fileName: res.fileName,
+          fileUrl: res.url,
+          format: fileToUpload.name.split('.').pop() || '',
+        };
       } else {
         // TV OSS Upload (as per reference)
         // 1. Get credential
@@ -208,16 +205,6 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             >
                 <X size={12} />
             </button>
-            
-            {/* If manual upload is required and not uploaded yet */}
-            {!immediate && file && !uploading && (
-                 <button 
-                    onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
-                    className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"
-                 >
-                    确认上传
-                 </button>
-            )}
         </>
       ) : (
         children || (
