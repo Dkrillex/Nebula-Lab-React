@@ -130,7 +130,7 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
 
           <div 
             className={`
-              w-full bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300
+              w-full bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 lg:mt-16
               ${isProcessing ? 'border-violet-400 ring-1 ring-violet-100' : 'border-gray-200 hover:border-gray-300'}
             `}
           >
@@ -179,6 +179,15 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
                     </div>
                 )}
             </div>
+          </div>
+          
+          <div className="mt-6 flex flex-row items-center gap-4 pl-1 relative z-20">
+             <button className="h-11 rounded-lg bg-violet-600 px-6 text-sm font-medium text-white hover:bg-violet-700 transition-all flex items-center gap-2 shadow-sm">
+               立即体验 <ArrowRight size={16} />
+             </button>
+             <button className="h-11 rounded-lg border border-gray-200 bg-white px-6 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center gap-2 shadow-sm">
+               联系我们
+             </button>
           </div>
         </div>
 

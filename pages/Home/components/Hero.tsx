@@ -16,10 +16,10 @@ const Hero: React.FC<HeroProps> = ({ t }) => {
   const heroContent = (
     <div className="text-left">
       <h1 className="text-5xl font-bold tracking-tight text-foreground md:text-6xl lg:text-7xl mb-4 leading-[1.1]">
-        {t.titlePrefix} <br />
-        {t.titleSuffix}
-      </h1>
-      
+          {t.titlePrefix} <br />
+             {t.titleSuffix}
+        </h1>
+        
       <p className="text-lg text-muted max-w-xl leading-relaxed">
         <span className="text-indigo-500 font-medium">Better prices</span>, <span className="text-indigo-500 font-medium">better uptime</span>, no subscription.
       </p>
