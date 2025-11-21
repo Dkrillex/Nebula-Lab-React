@@ -212,6 +212,15 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     }
   };
 
+  // 统一处理 S3 上传 URL（开发环境使用代理）
+  const getUploadUrl = (uploadUrl: string): string => {
+    if (import.meta.env.DEV) {
+      // 替换 S3 域名为代理路径
+      return uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
+    }
+    return uploadUrl;
+  };
+
   // 上传图片到TopView (标准模式和创意模式使用)
   const uploadImageToTopView = async (image: UploadedImage): Promise<UploadedImage> => {
     if (image.fileId) return image;
@@ -235,12 +244,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     const { uploadUrl, fileName, fileId, format } = credRes.result;
     console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: image.file.size });
 
-    // PUT file to uploadUrl
-    // 在开发环境使用代理避免 CORS 问题
-    let finalUploadUrl = uploadUrl;
+    // PUT file to uploadUrl (使用统一的代理处理)
+    const finalUploadUrl = getUploadUrl(uploadUrl);
     if (import.meta.env.DEV) {
-      // 替换 S3 域名为代理路径
-      finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
       console.log('使用代理上传:', finalUploadUrl);
     }
     
@@ -606,11 +612,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 const { uploadUrl, fileId } = credRes.result;
                 console.log('产品蒙版上传凭证获取成功:', fileId);
                 
-                // 使用代理上传(开发环境)
-                let finalUploadUrl = uploadUrl;
-                if (import.meta.env.DEV) {
-                  finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
-                }
+                // 使用统一的代理处理
+                const finalUploadUrl = getUploadUrl(uploadUrl);
                 
                 const uploadRes = await fetch(finalUploadUrl, {
                   method: 'PUT',
@@ -645,11 +648,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 const { uploadUrl, fileId } = credRes.result;
                 console.log('模板蒙版上传凭证获取成功:', fileId);
                 
-                // 使用代理上传(开发环境)
-                let finalUploadUrl = uploadUrl;
-                if (import.meta.env.DEV) {
-                  finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
-                }
+                // 使用统一的代理处理
+                const finalUploadUrl = getUploadUrl(uploadUrl);
                 
                 const uploadRes = await fetch(finalUploadUrl, {
                   method: 'PUT',
@@ -1041,7 +1041,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                     <div className="w-px h-6 bg-slate-200 dark:bg-border"></div>
 
                                     {/* Colors */}
-                                    <div className="flex gap-1.5 items-center">
+                                    <div className="flex gap-2 items-center">
                                         {creativeColors.map(color => (
                                             <button
                                                 key={color}
