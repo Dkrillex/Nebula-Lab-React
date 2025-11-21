@@ -96,11 +96,13 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   };
 
   const uploadFile = async (fileToUpload: File) => {
+    console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
     try {
       let uploadedFile: UploadedFile;
 
       if (uploadType === 'oss') {
+        console.log('使用 OSS 上传方式');
         const res = await uploadService.uploadFile(fileToUpload);
         if (res.code === 200 && res.data) {
           uploadedFile = {
@@ -113,29 +115,41 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             throw new Error(res.msg || 'Upload failed');
         }
       } else {
+        console.log('使用 TV OSS 上传方式');
         // TV OSS Upload (as per reference)
         // 1. Get credential
         let fileType = fileToUpload.type.split('/')[1] || 'jpg';
         // Mapping types as in reference
         if (fileType === 'mpeg') fileType = 'mp3';
         if (fileType === 'quicktime') fileType = 'mp4';
+        // 处理视频格式
+        if (fileToUpload.type.startsWith('video/')) {
+          if (fileType === 'x-msvideo') fileType = 'avi';
+          if (fileType === 'webm') fileType = 'webm';
+          // mp4 已经是正确的格式
+        }
 
+        console.log('准备获取TopView上传凭证, fileType:', fileType);
         const credRes = await avatarService.getUploadCredential(fileType);
-        if (credRes.code !== 200 || !credRes.result) {
-           throw new Error(credRes.msg || 'Failed to get credentials');
+        console.log('上传凭证响应:', credRes);
+        
+        // TopView API 返回的 code 是字符串类型,成功时为 "200"
+        if (!credRes || !credRes.result || credRes.code !== '200') {
+          console.error('获取上传凭证失败:', credRes);
+          throw new Error(credRes?.message || 'Failed to get upload credentials');
         }
         
         const { uploadUrl, fileName, fileId, format } = credRes.result;
+        console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: fileToUpload.size });
 
         // 2. PUT file to uploadUrl
-        // 在开发环境使用代理避免 CORS 问题
+        // 使用代理上传(开发环境)
         let finalUploadUrl = uploadUrl;
         if (import.meta.env.DEV) {
-          // 替换 S3 域名为代理路径
           finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
-          console.log('使用代理上传:', finalUploadUrl);
         }
         
+        console.log('开始上传文件到:', finalUploadUrl);
         const uploadRes = await fetch(finalUploadUrl, {
             method: 'PUT',
             body: fileToUpload,
@@ -146,15 +160,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
         console.log('上传响应状态:', uploadRes.status, uploadRes.statusText);
         if (!uploadRes.ok) {
-            const errorText = await uploadRes.text();
-            console.error('上传失败详情:', {
-                status: uploadRes.status,
-                statusText: uploadRes.statusText,
-                url: finalUploadUrl,
-                errorText
-            });
-            throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}. Details: ${errorText}`);
+            console.error('上传失败:', uploadRes.status, uploadRes.statusText);
+            throw new Error(`Upload failed: ${uploadRes.statusText}`);
         }
+        
+        console.log('文件上传成功');
         
         // Construct result
         uploadedFile = {

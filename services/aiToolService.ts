@@ -2,6 +2,24 @@ import { request } from '../lib/request';
 import { useAuthStore } from '../stores/authStore';
 import { uploadService } from './uploadService';
 
+/**
+ * 从 MIME 类型提取文件扩展名
+ * @param mimeType MIME 类型，如 "image/png" 或 "image/jpeg"
+ * @returns 文件扩展名，如 "png" 或 "jpg"
+ */
+const getExtensionFromMimeType = (mimeType: string): string => {
+  // 从 MIME 类型中提取扩展名（去掉 "image/" 前缀）
+  let extension = mimeType.replace(/^image\//, '').toLowerCase();
+  
+  // 将 jpeg 转换为 jpg（常见约定）
+  if (extension === 'jpeg') {
+    extension = 'jpg';
+  }
+  
+  // 默认返回 png
+  return extension || 'png';
+};
+
 export interface AiTemplateRequest {
   prompt: string;
   user_id?: string;
@@ -67,10 +85,11 @@ export const aiToolService = {
       });
 
       if (base64ImageData) {
+        const extensionType = getExtensionFromMimeType(mimeType);
         const res = await uploadService.uploadByBase64(
           base64ImageData,
           `${fileName}-Original-image`,
-          mimeType
+          extensionType
         );
         // @ts-ignore
         const url = res.data?.url || res.url; 
@@ -80,10 +99,11 @@ export const aiToolService = {
       }
 
       if (maskBase64) {
+        const extensionType = getExtensionFromMimeType(mimeType);
         const res = await uploadService.uploadByBase64(
           maskBase64,
           `${fileName}-Mask-image`,
-          mimeType
+          extensionType
         );
         // @ts-ignore
         const url = res.data?.url || res.url;
@@ -93,10 +113,11 @@ export const aiToolService = {
       }
 
       if (secondaryImage) {
+        const extensionType = getExtensionFromMimeType(secondaryImage.mimeType);
         const res = await uploadService.uploadByBase64(
           secondaryImage.base64,
           `${fileName}-Original-two-image`,
-          secondaryImage.mimeType
+          extensionType
         );
         // @ts-ignore
         const url = res.data?.url || res.url;
