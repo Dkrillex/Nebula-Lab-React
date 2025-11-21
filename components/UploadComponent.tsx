@@ -128,7 +128,15 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         const { uploadUrl, fileName, fileId, format } = credRes.result;
 
         // 2. PUT file to uploadUrl
-        const uploadRes = await fetch(uploadUrl, {
+        // 在开发环境使用代理避免 CORS 问题
+        let finalUploadUrl = uploadUrl;
+        if (import.meta.env.DEV) {
+          // 替换 S3 域名为代理路径
+          finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
+          console.log('使用代理上传:', finalUploadUrl);
+        }
+        
+        const uploadRes = await fetch(finalUploadUrl, {
             method: 'PUT',
             body: fileToUpload,
             headers: {
@@ -136,8 +144,16 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             }
         });
 
+        console.log('上传响应状态:', uploadRes.status, uploadRes.statusText);
         if (!uploadRes.ok) {
-            throw new Error(`Upload failed: ${uploadRes.statusText}`);
+            const errorText = await uploadRes.text();
+            console.error('上传失败详情:', {
+                status: uploadRes.status,
+                statusText: uploadRes.statusText,
+                url: finalUploadUrl,
+                errorText
+            });
+            throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}. Details: ${errorText}`);
         }
         
         // Construct result
