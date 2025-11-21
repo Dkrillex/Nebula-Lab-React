@@ -192,6 +192,7 @@ const AIFaceSwappingPage: React.FC = () => {
                 提示词
               </label>
               <textarea
+                disabled  
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="请输入换脸提示词..."

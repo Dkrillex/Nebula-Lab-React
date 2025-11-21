@@ -17,6 +17,24 @@ export interface FaceSwapResult {
 }
 
 /**
+ * 从 MIME 类型提取文件扩展名
+ * @param mimeType MIME 类型，如 "image/png" 或 "image/jpeg"
+ * @returns 文件扩展名，如 "png" 或 "jpg"
+ */
+const getExtensionFromMimeType = (mimeType: string): string => {
+  // 从 MIME 类型中提取扩展名（去掉 "image/" 前缀）
+  let extension = mimeType.replace(/^image\//, '').toLowerCase();
+  
+  // 将 jpeg 转换为 jpg（常见约定）
+  if (extension === 'jpeg') {
+    extension = 'jpg';
+  }
+  
+  // 默认返回 png
+  return extension || 'png';
+};
+
+/**
  * AI 图片换脸服务
  */
 export const faceSwapService = {
@@ -39,10 +57,11 @@ export const faceSwapService = {
 
       // 上传主图
       if (params.primaryImage) {
+        const extensionType = getExtensionFromMimeType(params.primaryMimeType);
         const res = await uploadService.uploadByBase64(
           params.primaryImage,
           'FaceSwap-Original-image',
-          params.primaryMimeType
+          extensionType
         );
         const url = (res as ApiResponse<UploadResult>).data?.url || (res as any).url;
         if (url) {
@@ -52,10 +71,11 @@ export const faceSwapService = {
 
       // 上传蒙版（如果有）
       if (params.maskBase64) {
+        const extensionType = getExtensionFromMimeType(params.primaryMimeType);
         const res = await uploadService.uploadByBase64(
           params.maskBase64,
           'FaceSwap-Mask-image',
-          params.primaryMimeType
+          extensionType
         );
         const url = (res as ApiResponse<UploadResult>).data?.url || (res as any).url;
         if (url) {
@@ -65,10 +85,11 @@ export const faceSwapService = {
 
       // 上传参考图（如果有）
       if (params.secondaryImage && params.secondaryMimeType) {
+        const extensionType = getExtensionFromMimeType(params.secondaryMimeType);
         const res = await uploadService.uploadByBase64(
           params.secondaryImage,
           'FaceSwap-Reference-image',
-          params.secondaryMimeType
+          extensionType
         );
         const url = (res as ApiResponse<UploadResult>).data?.url || (res as any).url;
         if (url) {
