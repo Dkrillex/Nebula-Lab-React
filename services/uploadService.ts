@@ -13,10 +13,12 @@ export const uploadService = {
    * Endpoint: POST /resource/oss/upload
    * @param file 要上传的文件
    * @param otherData 其他参数，例如 bucketName, objectName 等
+   * @returns requestClient已处理，直接返回data部分: { url, fileName, ossId }
    */
   uploadFile: (file: File, otherData?: Record<string, any>) => {
     // Using request.upload helper which handles FormData correctly
-    return request.upload<ApiResponse<UploadResult>>('/resource/oss/upload', file, {
+    // Note: requestClient strips outer wrapper, returns UploadResult directly
+    return request.upload<UploadResult>('/resource/oss/upload', file, {
         timeout: 60000
     });
   },
@@ -26,9 +28,10 @@ export const uploadService = {
    * Endpoint: POST /resource/oss/uploadByImageUrl
    * @param imageUrl 图片URL
    * @param extensionType 文件扩展名 (e.g., 'png', 'jpg')
+   * @returns requestClient已处理，直接返回data部分: { url, fileName, ossId }
    */
   uploadByImageUrl: (imageUrl: string, extensionType: string) => {
-    return request.post<ApiResponse<UploadResult>>('/resource/oss/uploadByImageUrl', {
+    return request.post<UploadResult>('/resource/oss/uploadByImageUrl', {
       imageUrl,
       extensionType,
     });
@@ -40,9 +43,10 @@ export const uploadService = {
    * @param base64Content Base64字符串
    * @param fileName 文件名
    * @param extensionType 文件扩展名
+   * @returns requestClient已处理，直接返回data部分: { url, fileName, ossId }
    */
   uploadByBase64: (base64Content: string, fileName: string, extensionType: string) => {
-    return request.post<ApiResponse<UploadResult>>('/resource/oss/uploadByBase64', {
+    return request.post<UploadResult>('/resource/oss/uploadByBase64', {
       base64Content,
       fileName,
       extensionType,

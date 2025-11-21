@@ -8,6 +8,7 @@ import {
   RefreshCcw, MessageSquare, MonitorPlay
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 
 interface SidebarProps {
   t: any; // Translations for sideMenu
@@ -83,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     }
   };
 
-  const menuStructure = [
+  const allMenuStructure = [
     { id: 'home', icon: Home, label: t.home, path: '/create' },
     { 
       id: 'modelCenter', 
@@ -128,11 +129,27 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     },
   ];
 
+  const menuStructure = allMenuStructure.filter(item => {
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+    if (item.id === 'personalCenter') return true;
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
+      return item.id === 'modelCenter';
+    }
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.CREATION_CENTER) {
+      return item.id === 'creationCenter' || item.id === 'home';
+    }
+    return false;
+  });
+
   const getActiveCategory = () => {
     const path = location.pathname;
     if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys')) return 'modelCenter';
     if (path.startsWith('/create')) return 'creationCenter';
     if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) return 'modelCenter';
     return 'creationCenter';
   };
 
@@ -147,7 +164,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   return (
     <aside 
       className={`hidden lg:flex flex-col border-r border-border bg-surface/50 backdrop-blur-sm h-[calc(100vh-64px)] sticky top-16 transition-all duration-300 ease-in-out flex-shrink-0 ${
-        isCollapsed ? 'w-20' : 'w-56'
+        isCollapsed ? 'w-20' : 'w-52'
       }`}
     >
       <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
@@ -283,7 +300,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
               </div>
               {/* 新增个logo */}
               <div className="flex justify-center my-3">
-                <img src="/public/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
+                <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
               </div>
               {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
               {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">

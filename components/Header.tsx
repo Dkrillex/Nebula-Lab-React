@@ -4,7 +4,7 @@ import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
-import NotificationModal from './NotificationModal';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 
 interface HeaderProps {
   isDark: boolean;
@@ -19,6 +19,9 @@ interface HeaderProps {
   visitedViews?: TabItem[];
   onTabClick?: (tab: TabItem) => void;
   onTabClose?: (e: React.MouseEvent, index: number) => void;
+  onOpenNotification: () => void;
+  onMobileMenuToggle?: () => void;
+  isMobileMenuOpen?: boolean;
   t: {
     searchPlaceholder: string;
     signIn: string;
@@ -30,12 +33,11 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   isDark, toggleTheme, lang, setLang, onSignIn, onNavClick, 
-  currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, t 
+  currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, onOpenNotification, t,
+  onMobileMenuToggle, isMobileMenuOpen
 }) => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -123,6 +125,20 @@ const Header: React.FC<HeaderProps> = ({
     }
   }, [visitedViews]);
 
+  // Filter nav items based on CURRENT_SYSTEM
+  const filteredNav = t.nav.filter(item => {
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+    if (item.href === '/profile') return true; // Always show profile
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
+      return item.href === '/models';
+    }
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.CREATION_CENTER) {
+      return item.href === '/create';
+    }
+    return false;
+  });
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
       {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
@@ -133,14 +149,22 @@ const Header: React.FC<HeaderProps> = ({
             className="flex items-center gap-2 cursor-pointer"
             onClick={(e) => handleNavClick(e, '#')}
           >
-            <div className="h-8 w-8 rounded-lg bg-foreground text-background flex items-center justify-center transition-colors shadow-sm">
+                 {/* <div className="h-8 w-8 rounded-lg bg-foreground text-background flex items-center justify-center transition-colors shadow-sm"> */}
               {/* <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg> */}
-              <img src="/public/img/lab.png" alt="NebulaLab" className="w-8 h-8" />
-            </div>
+              {/* <img src="/public/img/lab.png" alt="NebulaLab" className="w-8 h-8" />
+            </div> */}
+          <div className="h-8 w-8 flex items-center justify-center">
+            {/* <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg> */}
+            <img src="/img/lab.png" alt="NebulaLab" className="w-8 h-8 object-contain" />
+          </div>
             <span className="text-lg font-bold tracking-tight text-foreground hidden sm:block">
               NebulaLab
             </span>
@@ -221,7 +245,7 @@ const Header: React.FC<HeaderProps> = ({
         {/* Right: Nav & Actions */}
         <div className="flex-shrink-0 flex items-center gap-4">
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted">
-            {t.nav.map((item) => {
+            {filteredNav.map((item) => {
               // Determine if item is active based on current view/path
               const isActive = 
                 (item.href === '/models' && ['models', 'chat', 'keys'].includes(currentView)) ||
@@ -297,7 +321,7 @@ const Header: React.FC<HeaderProps> = ({
                         </button>
                         <button 
                           onClick={() => {
-                            setShowNotifications(true);
+                            onOpenNotification();
                             setShowUserMenu(false);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
@@ -332,28 +356,16 @@ const Header: React.FC<HeaderProps> = ({
              <button 
                onClick={(e) => {
                  e.stopPropagation();
-                 setShowMobileMenu(!showMobileMenu);
+                 if (onMobileMenuToggle) onMobileMenuToggle();
                }}
                className="lg:hidden text-muted hover:text-foreground transition-colors relative z-[80]"
                aria-label="Toggle mobile menu"
              >
-               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
              </button>
           </div>
         </div>
       </div>
-      
-      {/* Mobile Menu */}
-      <MobileSidebar 
-        isOpen={showMobileMenu}
-        onClose={() => setShowMobileMenu(false)}
-        sideMenuMap={sideMenuMap}
-        t={t}
-        isAuthenticated={isAuthenticated}
-        user={user}
-        onSignIn={onSignIn}
-        logout={logout}
-      />
       
       {/* Overlay to close menu */}
       {showUserMenu && (
@@ -362,11 +374,6 @@ const Header: React.FC<HeaderProps> = ({
           onClick={() => setShowUserMenu(false)}
         ></div>
       )}
-      {/* Notification Modal */}
-      <NotificationModal 
-        isOpen={showNotifications} 
-        onClose={() => setShowNotifications(false)} 
-      />
     </header>
   );
 };

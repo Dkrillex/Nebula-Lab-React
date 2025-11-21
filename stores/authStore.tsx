@@ -45,26 +45,8 @@ export const useAuthStore = create<AuthState>()(
   login: async (params) => {
     set({ loading: true });
     try {
-      const res = await authService.login(params);
-      console.log('Login response:', res);
-      
-      // Handle different response formats:
-      // 1. { code, msg, data } format where data contains LoginResponse
-      // 2. Direct LoginResponse format
-      let loginData: LoginResponse | null = null;
-      
-      if (res.code === 200) {
-        // Response wrapped in { code, msg, data }
-        if (res.data) {
-          loginData = res.data;
-        } else if ((res as any).access_token) {
-          // Direct LoginResponse format
-          loginData = res as unknown as LoginResponse;
-        }
-      } else if ((res as any).access_token) {
-        // Direct LoginResponse format without code wrapper
-        loginData = res as unknown as LoginResponse;
-      }
+      const loginData = await authService.login(params);
+      console.log('Login response:', loginData);
       
       if (loginData?.access_token) {
         const { access_token, is_first_login, default_password } = loginData;
@@ -81,8 +63,8 @@ export const useAuthStore = create<AuthState>()(
           // You can add a modal or notification here to prompt user to change password
         }
       } else {
-        console.error('Login response structure:', res);
-        throw new Error(res.msg || '登录响应格式错误，缺少 access_token');
+        console.error('Login response structure:', loginData);
+        throw new Error('登录响应格式错误，缺少 access_token');
       }
     } finally {
       set({ loading: false });
@@ -92,25 +74,12 @@ export const useAuthStore = create<AuthState>()(
   phoneLogin: async (params) => {
     set({ loading: true });
     try {
-      const res = await authService.phoneLogin({
+      const loginData = await authService.phoneLogin({
         phonenumber: params.phonenumber,
         smsCode: params.smsCode,
         countryCode: params.countryCode,
       });
-      console.log('Phone login response:', res);
-      
-      // Handle different response formats
-      let loginData: LoginResponse | null = null;
-      
-      if (res.code === 200) {
-        if (res.data) {
-          loginData = res.data;
-        } else if ((res as any).access_token) {
-          loginData = res as unknown as LoginResponse;
-        }
-      } else if ((res as any).access_token) {
-        loginData = res as unknown as LoginResponse;
-      }
+      console.log('Phone login response:', loginData);
       
       if (loginData?.access_token) {
         const { access_token } = loginData;
@@ -121,8 +90,8 @@ export const useAuthStore = create<AuthState>()(
         // Fetch user info immediately after login
         await get().fetchUserInfo();
       } else {
-        console.error('Phone login response structure:', res);
-        throw new Error(res.msg || '登录响应格式错误，缺少 access_token');
+        console.error('Phone login response structure:', loginData);
+        throw new Error('登录响应格式错误，缺少 access_token');
       }
     } finally {
       set({ loading: false });
@@ -137,23 +106,8 @@ export const useAuthStore = create<AuthState>()(
     }
 
     try {
-      const res = await authService.getInfo();
-      console.log('GetInfo response:', res);
-      
-      // Handle response format: { code, msg, data } or direct UserInfoResp
-      let userInfoResp: UserInfoResp | null = null;
-      
-      if (res.code === 200) {
-        if (res.data) {
-          userInfoResp = res.data as unknown as UserInfoResp;
-        } else if ((res as unknown as any).user) {
-          // Direct UserInfoResp format
-          userInfoResp = res as unknown as UserInfoResp;
-        }
-      } else if ((res as unknown as any).user) {
-        // Direct UserInfoResp format without code wrapper
-        userInfoResp = res as unknown as UserInfoResp;
-      }
+      const userInfoResp = await authService.getInfo();
+      console.log('GetInfo response:', userInfoResp);
 
       if (!userInfoResp || !userInfoResp.user) {
         throw new Error('获取用户信息失败：响应格式错误');

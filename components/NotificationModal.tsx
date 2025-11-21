@@ -172,7 +172,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
           </button>
         </div>
 
-        <div className="flex-1 flex overflow-hidden border rounded-xl dark:border-gray-700">
+        <div className="flex-1 flex overflow-hidden border rounded-xl dark:border-gray-700 relative">
           {/* List */}
           <div className={`flex-1 overflow-y-auto ${selectedNotice ? 'hidden md:block md:w-1/2 border-r dark:border-gray-700' : 'w-full'}`}>
             {loading ? (

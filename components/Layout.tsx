@@ -4,14 +4,18 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
+import NotificationModal from './NotificationModal';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
+
+import MobileSidebar from './MobileSidebar';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [lang, setLang] = useState<Language>('zh');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
   
   const location = useLocation();
@@ -114,6 +118,8 @@ const Layout: React.FC = () => {
     }
   };
 
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   // Props to pass down to Outlet context if needed, 
   // but standard prop passing is usually done via routes.
   // Here we clone the element logic in Router, or use Context.
@@ -127,6 +133,7 @@ const Layout: React.FC = () => {
         lang={lang} 
         setLang={setLang} 
         onSignIn={() => setIsAuthModalOpen(true)}
+        onOpenNotification={() => setIsNotificationOpen(true)}
         onNavClick={handleNavClick}
         currentView={currentView}
         activeTool={activeTool}
@@ -135,6 +142,8 @@ const Layout: React.FC = () => {
         onTabClick={handleTabClick}
         onTabClose={handleTabClose}
         t={t.header} 
+        onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+        isMobileMenuOpen={isMobileMenuOpen}
       />
       
       <main className="flex-1">
@@ -146,11 +155,33 @@ const Layout: React.FC = () => {
         <Footer t={t.footer} />
       )} */}
       
+      <MobileSidebar 
+        isOpen={isMobileMenuOpen}
+        onClose={() => setIsMobileMenuOpen(false)}
+        sideMenuMap={t.createPage.sideMenu}
+        t={t.header}
+        isAuthenticated={isAuthenticated}
+        user={useAuthStore.getState().user}
+        onSignIn={() => {
+          setIsMobileMenuOpen(false);
+          setIsAuthModalOpen(true);
+        }}
+        logout={() => {
+           useAuthStore.getState().logout();
+           setIsMobileMenuOpen(false);
+        }}
+      />
+
       <AuthModal 
-        isOpen={isAuthModalOpen} 
+        isOpen={isAuthModalOpen}  
         onClose={() => setIsAuthModalOpen(false)} 
         onLoginSuccess={() => fetchUserInfo()}
         t={t.auth}
+      />
+
+      <NotificationModal 
+        isOpen={isNotificationOpen} 
+        onClose={() => setIsNotificationOpen(false)} 
       />
     </div>
   );

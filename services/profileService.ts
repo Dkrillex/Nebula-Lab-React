@@ -1,26 +1,50 @@
 import { request } from '../lib/request';
-import { ApiResponse } from '../types';
 
-export interface UserProfile {
-  userName: string;
-  nickName: string;
-  phonenumber: string;
-  email: string;
-  sex: string;
-  avatar: string;
-  createTime: string;
-  roleGroup?: string;
-  postGroup?: string;
-  dept?: {
+export interface UserProfileData {
+  user: {
+    userId: string;
+    tenantId: string;
+    deptId: string;
+    userName: string;
+    nickName: string;
+    userType: string;
+    email: string;
+    phonenumber: string | null;
+    sex: string;
+    avatar: string;
+    status: string;
+    loginIp: string;
+    loginDate: string;
+    remark: string | null;
+    createTime: string;
     deptName: string;
+    roles: Array<{
+      roleId: string;
+      roleName: string;
+      roleKey: string;
+      roleSort: number;
+      dataScope: string;
+      status: string;
+      remark: string | null;
+      createTime: string | null;
+      flag: boolean;
+      superAdmin: boolean;
+    }>;
+    roleIds: any;
+    postIds: any;
+    roleId: any;
+    inviteCode: string;
+    channelId: number;
+    channelName: string;
+    nebulaApiId: number;
   };
+  roleGroup: string;
+  postGroup: string;
 }
 
-export interface UpdateProfileParams {
-  nickName?: string;
-  phonenumber?: string;
-  email?: string;
-  sex?: string;
+export interface ChangePasswordParams {
+  oldPassword: string;
+  newPassword: string;
 }
 
 export const profileService = {
@@ -29,15 +53,7 @@ export const profileService = {
    * Endpoint: GET /system/user/profile
    */
   getUserProfile: () => {
-    return request.get<ApiResponse<UserProfile>>('/system/user/profile');
-  },
-
-  /**
-   * Update user profile
-   * Endpoint: PUT /system/user/profile
-   */
-  updateUserProfile: (data: UpdateProfileParams) => {
-    return request.put<ApiResponse<null>>('/system/user/profile', data);
+    return request.get<UserProfileData>('/system/user/profile');
   },
 
   /**
@@ -47,7 +63,17 @@ export const profileService = {
   updateAvatar: (file: File) => {
     const formData = new FormData();
     formData.append('avatarfile', file);
-    return request.post<ApiResponse<{ imgUrl: string }>>('/system/user/profile/avatar', formData);
+    return request.post<{ imgUrl: string }>('/system/user/profile/avatar', formData);
+  },
+
+  /**
+   * Change password
+   * Endpoint: PUT /system/user/profile/updatePwd
+   */
+  changePassword: (data: ChangePasswordParams) => {
+    return request.put('/system/user/profile/updatePwd', {}, {
+      params: data
+    });
   }
 };
 

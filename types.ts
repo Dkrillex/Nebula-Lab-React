@@ -327,3 +327,23 @@ export interface TeamUserForm {
   userAuthType?: number;
   roleId?: string | number;
 }
+
+// ==================== Model Card & Stats Types (Added for Home Demo) ====================
+
+export interface ModelStats {
+  tokensPerWeek: string;
+  latency: string;
+  weeklyGrowth: string;
+  isNegative?: boolean;
+}
+
+export interface ModelCardData {
+  id: string;
+  name: string;
+  provider: string;
+  providerLogo: string; // URL or initial
+  tags: string[];
+  stats: ModelStats;
+  isNew?: boolean;
+  color: string;
+}

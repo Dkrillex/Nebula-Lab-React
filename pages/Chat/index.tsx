@@ -5,6 +5,10 @@ import {
   MoreHorizontal, Cpu, MessageSquare, X, Copy, Loader2, Square,
   Image as ImageIcon, Video, MessageCircle
 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeHighlight from 'rehype-highlight';
 import { chatService, ChatMessage, ChatRequest } from '../../services/chatService';
 import { modelsService, ModelsVO } from '../../services/modelsService';
 import { imageGenerateService, ImageGenerateRequest } from '../../services/imageGenerateService';
@@ -13,6 +17,7 @@ import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
 import { useAppOutletContext } from '../../router';
+import CodeBlock from './components/CodeBlock';
 
 // 扩展消息类型，支持图片和视频
 interface ExtendedChatMessage extends ChatMessage {
@@ -163,6 +168,8 @@ const ChatPage: React.FC = () => {
           // 设置参考图
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
             setUploadedImages(data.images); 
+          } else {
+            setUploadedImages([]);
           }
           
           // 设置模型
@@ -370,6 +377,16 @@ const ChatPage: React.FC = () => {
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);
     // 可以添加提示消息
+  };
+
+  // 处理代码引用
+  const handleQuoteCode = (code: string) => {
+    setInputValue(code);
+    // 聚焦到输入框
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea');
+      textarea?.focus();
+    }, 100);
   };
 
   // 清空消息
@@ -1175,6 +1192,7 @@ const ChatPage: React.FC = () => {
               key={msg.id} 
               message={msg}
               onCopy={handleCopy}
+              onQuoteCode={handleQuoteCode}
             />
           ))}
           <div ref={messagesEndRef} />
@@ -1279,9 +1297,10 @@ const ChatPage: React.FC = () => {
 interface MessageBubbleProps {
   message: ExtendedChatMessage;
   onCopy: (content: string) => void;
+  onQuoteCode?: (code: string) => void;
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy }) => {
+const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteCode }) => {
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
   const [showReasoning, setShowReasoning] = useState(false);
@@ -1320,8 +1339,42 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy }) => {
             : 'bg-background border border-border rounded-tl-sm text-foreground'}
         `}>
           {isAssistant ? (
-            <div className="whitespace-pre-wrap">
-              {message.content || (message.isStreaming ? '思考中...' : '')}
+            <div className="markdown-content">
+              {message.content ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw]}
+                  components={{
+                    code({ className, children, ...props }: any) {
+                      const match = /language-(\w+)/.exec(className || '');
+                      const codeString = String(children).replace(/\n$/, '');
+                      const isInline = !props.node || props.node.position?.start.line === props.node.position?.end.line;
+                      
+                      if (!isInline && match) {
+                        // 代码块
+                        return (
+                          <CodeBlock
+                            code={codeString}
+                            language={match[1]}
+                            onQuote={onQuoteCode}
+                          />
+                        );
+                      }
+                      
+                      // 行内代码
+                      return (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                  }}
+                >
+                  {message.content}
+                </ReactMarkdown>
+              ) : message.isStreaming ? (
+                <span>思考中...</span>
+              ) : null}
               {message.isStreaming && (
                 <span className="inline-block w-2 h-4 bg-indigo-600 ml-1 animate-pulse"></span>
               )}
@@ -1440,3 +1493,117 @@ const ActionButton = ({ icon: Icon, label, onClick }: { icon: any, label: string
 );
 
 export default ChatPage;
+
+// 添加全局markdown样式
+const markdownStyles = `
+  .markdown-content {
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .markdown-content h1,
+  .markdown-content h2,
+  .markdown-content h3,
+  .markdown-content h4,
+  .markdown-content h5,
+  .markdown-content h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+
+  .markdown-content h1 { font-size: 1.5rem; }
+  .markdown-content h2 { font-size: 1.3rem; }
+  .markdown-content h3 { font-size: 1.1rem; }
+
+  .markdown-content p {
+    margin-bottom: 0.75rem;
+  }
+
+  .markdown-content ul,
+  .markdown-content ol {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+  }
+
+  .markdown-content li {
+    margin-bottom: 0.25rem;
+  }
+
+  .markdown-content code {
+    background: rgba(0, 0, 0, 0.05);
+    padding: 0.2rem 0.4rem;
+    border-radius: 3px;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.9em;
+  }
+
+  .markdown-content pre {
+    margin: 1rem 0;
+    padding: 0;
+    overflow: visible;
+  }
+
+  .markdown-content pre code {
+    background: transparent;
+    padding: 0;
+    border-radius: 0;
+    font-size: 14px;
+  }
+
+  .markdown-content blockquote {
+    border-left: 3px solid #667eea;
+    padding-left: 1rem;
+    margin: 1rem 0;
+    color: #4a5568;
+    font-style: italic;
+  }
+
+  .markdown-content table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1rem 0;
+  }
+
+  .markdown-content th,
+  .markdown-content td {
+    border: 1px solid #e2e8f0;
+    padding: 0.5rem;
+    text-align: left;
+  }
+
+  .markdown-content th {
+    background: #f7fafc;
+    font-weight: 600;
+  }
+
+  .markdown-content a {
+    color: #667eea;
+    text-decoration: none;
+  }
+
+  .markdown-content a:hover {
+    text-decoration: underline;
+  }
+
+  .markdown-content img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 8px;
+    margin: 1rem 0;
+  }
+
+  .markdown-content hr {
+    border: none;
+    border-top: 1px solid #e2e8f0;
+    margin: 1.5rem 0;
+  }
+`;
+
+// 注入样式到head
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = markdownStyles;
+  document.head.appendChild(styleElement);
+}

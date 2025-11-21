@@ -200,7 +200,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
                     <audio src={previewUrl} className="w-full mt-2 h-8" controls />
                 </div>
             ) : (
-                <img src={previewUrl} className="w-full h-full object-contain rounded-xl p-2" alt="preview" />
+                <img src={previewUrl} className="w-full h-full object-cover rounded-xl" alt="preview" />
             )}
             <button 
                 onClick={handleClear} 

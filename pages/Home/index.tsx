@@ -1,6 +1,7 @@
 import React from 'react';
 import Hero from './components/Hero';
 import ModelList from './components/ModelList';
+import StatsRow from './components/StatsRow';
 import { useAppOutletContext } from '../../router';
 
 const Home: React.FC = () => {
@@ -9,7 +10,8 @@ const Home: React.FC = () => {
   return (
     <>
       <Hero t={t.hero} />
-      <div className="relative z-10 -mt-8">
+      <StatsRow />
+      <div id="trending-models" className="relative z-10 -mt-8">
          <ModelList t={t.modelList} />
       </div>
     </>
