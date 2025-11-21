@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 import { 
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
@@ -98,7 +99,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
       return [];
     }
     
-    return [
+    const allItems = [
       { id: 'home', icon: Home, label: sideMenuMap.home, path: '/' },
       { 
         id: 'modelCenter', 
@@ -137,6 +138,20 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
         ]
       },
     ];
+
+    return allItems.filter(item => {
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+      if (item.id === 'personalCenter') return true;
+      
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
+        return item.id === 'modelCenter';
+      }
+      
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.CREATION_CENTER) {
+        return item.id === 'creationCenter' || item.id === 'home';
+      }
+      return false;
+    });
   }, [sideMenuMap]);
 
   if (!isOpen) return null;

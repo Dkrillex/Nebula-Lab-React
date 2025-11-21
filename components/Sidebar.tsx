@@ -8,6 +8,7 @@ import {
   RefreshCcw, MessageSquare, MonitorPlay
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 
 interface SidebarProps {
   t: any; // Translations for sideMenu
@@ -83,7 +84,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     }
   };
 
-  const menuStructure = [
+  const allMenuStructure = [
     { id: 'home', icon: Home, label: t.home, path: '/create' },
     { 
       id: 'modelCenter', 
@@ -128,11 +129,27 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     },
   ];
 
+  const menuStructure = allMenuStructure.filter(item => {
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+    if (item.id === 'personalCenter') return true;
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
+      return item.id === 'modelCenter';
+    }
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.CREATION_CENTER) {
+      return item.id === 'creationCenter' || item.id === 'home';
+    }
+    return false;
+  });
+
   const getActiveCategory = () => {
     const path = location.pathname;
     if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys')) return 'modelCenter';
     if (path.startsWith('/create')) return 'creationCenter';
     if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
+    
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) return 'modelCenter';
     return 'creationCenter';
   };
 
