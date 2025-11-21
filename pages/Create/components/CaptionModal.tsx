@@ -48,7 +48,7 @@ const CaptionModal: React.FC<CaptionModalProps> = ({
     <BaseModal
       isOpen={isOpen}
       onClose={onClose}
-      title={t?.title || "Select Caption Style"}
+      title={t?.title || "选择字幕样式"}
       width="max-w-4xl"
     >
       <div className="h-[500px] overflow-y-auto custom-scrollbar">

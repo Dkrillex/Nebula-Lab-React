@@ -5,6 +5,7 @@ import UploadComponent from '../../../components/UploadComponent';
 import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
+import { toast } from '@/components/Toast';
 interface DigitalHumanProductProps {
   t: any;
   handleFileUpload: (file: File, type: 'image') => Promise<any>; 
@@ -163,9 +164,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
 
   // Error handling wrapper
   const showError = (msg: string) => {
-    setErrorMessage(msg);
-    // Auto clear error after 3 seconds
-    setTimeout(() => setErrorMessage(null), 3000);
+    toast.error(msg);
   };
 
   const handleGenerate = async () => {
@@ -177,10 +176,31 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         showError(t?.rightPanel?.uploadAvatar || 'Please select an avatar');
         return;
     }
-
+//     const { result: resultData } = {
+//         "code": 200,
+//         "msg": "操作成功",
+//         "data": {
+//             "result": {
+//             "costCredit": 0,
+//             "productReplaceResult": [
+//                 {
+//                 "key": "9b82eecc856549c2880a7a7fd7e7c928",
+//                 "url": "https://dr1coeak04nbk.cloudfront.net/analyzed_video%2Fvideo%2F9b82eecc856549c2880a7a7fd7e7c928%2F9b82eecc856549c2880a7a7fd7e7c928.jpg?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZHIxY29lYWswNG5iay5jbG91ZGZyb250Lm5ldC9hbmFseXplZF92aWRlbyUyRnZpZGVvJTJGOWI4MmVlY2M4NTY1NDljMjg4MGE3YTdmZDdlN2M5MjglMkY5YjgyZWVjYzg1NjU0OWMyODgwYTdhN2ZkN2U3YzkyOC5qcGciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3NjM5Nzc4MjF9fX1dfQ__&Signature=wfnLXXnHhJG7ekU9ryr2ik0nxi-aIsCdxv4XdA6RTwFJLKsalHXhVj4HAqOynEtpOaFjMBtocQhrOJcT0LshGeOQB6inyxPPot3u2PU4g68ScD57R80rQrkwM5q47xaoLEu2rVgmJfor6tAPPPCFwWvI8fF4H7XKwKFYCzOjHQIgER1GiqePgNqDrorcChfx3KTnQptObArvwL7JHQydJJ8H6dHRbsC5o-GZe~OCTS18-Ls3CRRQtNnP0LTSqXUuiH4jmaKL4HNlr0SbZ75EcdBNiEn5kYvzqGu1Ore5QRDJxAuNG5Y-j6MNcAUcZ50xAc7g-fmLCSQy6lcBwRUF0g__&Key-Pair-Id=K21X5TGS0ALJI4",
+//                 "fileId": "c60417e7d986480d99558006e0c4e863"
+//                 }
+//             ],
+//             "taskId": "e94767e53d5f440ea5ef356c7ddb5459",
+//             "taskStatus": "success"
+//             },
+//             "code": "200",
+//             "message": "Success"
+//         }
+//         } 
+// setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
+//                   setGenerating(false);
+// return 
     try {
         setGenerating(true);
-        setErrorMessage(null);
         setResultImageUrl(null);
 
         const params = {
@@ -201,7 +221,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
         }
     } catch (error: any) {
-        showError(error.message || 'Generation failed');
+        toast.error(error.message || 'Generation failed');
         setGenerating(false);
     }
   };
@@ -213,27 +233,25 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
 
       const check = async () => {
           try {
-              const res = await avatarService.queryImageReplaceTask(taskId);
-              const resultData = (res as any).result || res;
-              const status = resultData?.status;
-              
+              const { result: resultData } = await avatarService.queryImageReplaceTask(taskId);
+              const status = resultData?.taskStatus;
               if (status === 'success') {
                   setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
                   setGenerating(false);
                   // Optional: Show success toast
               } else if (status === 'fail') {
-                  showError(resultData.errorMsg || 'Generation failed');
+                  toast.error(resultData.errorMsg || 'Generation failed');
                   setGenerating(false);
               } else {
                   attempts++;
                   if (attempts < maxAttempts) setTimeout(check, interval);
                   else {
-                      showError('Task timed out');
+                      toast.error('Task timed out');
                       setGenerating(false);
                   }
               }
           } catch (e) {
-              showError('Failed to query status');
+              toast.error('Failed to query status');
               setGenerating(false);
           }
       };
@@ -468,7 +486,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           </div>
 
           {/* Prompt */}
-          <div className="mb-6">
+          <div className="mb-1">
               <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                   {t?.rightPanel?.aiTips || 'AI Mixed Prompt'}
               </h3>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon } from 'lucide-react';
+import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { useAuthStore } from '../../../stores/authStore';
 import VoiceModal from './VoiceModal';
@@ -7,6 +7,8 @@ import CaptionModal from './CaptionModal';
 import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
 import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
+import { toast } from '@/components/Toast';
+import AddMaterialModal from '@/components/AddMaterialModal';
 interface DigitalHumanVideoProps {
   t: any;
   onShowAvatarModal: (isCustom: boolean) => void;
@@ -75,6 +77,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [taskStatus, setTaskStatus] = useState<'idle' | 'running' | 'success' | 'fail'>('idle');
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [isSampleLoading, setIsSampleLoading] = useState(false);
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
 
@@ -186,7 +189,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       
     } catch (error: any) {
       console.error('Failed to load sample:', error);
-      setErrorMessage(error.message || 'Failed to load sample files');
+      toast.error(error.message || 'Failed to load sample files');
     } finally {
       setIsSampleLoading(false);
     }
@@ -195,30 +198,29 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const handleGenerate = async () => {
     try {
       setGenerating(true);
-      setErrorMessage(null);
       setTaskStatus('running');
       setPreviewVideoUrl(null);
 
       if (!uploadedVideo && !selectedAvatar) {
-        setErrorMessage('请上传数字人视频或选择数字人');
+        toast.error('请上传数字人视频或选择数字人');
         setGenerating(false);
         return;
       }
 
       if (scriptMode === 'text') {
         if (!text.trim()) {
-          setErrorMessage('请输入文本内容');
+          toast.error('请输入文本内容');
           setGenerating(false);
           return;
         }
         if (!selectedVoice) {
-          setErrorMessage('请选择音色');
+          toast.error('请选择音色');
           setGenerating(false);
           return;
         }
       } else {
         if (!uploadedAudio) {
-          setErrorMessage('请上传音频文件');
+          toast.error('请上传音频文件');
           setGenerating(false);
           return;
         }
@@ -278,7 +280,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
     } catch (error: any) {
       console.error('Generate error:', error);
-      setErrorMessage(error.message || '生成失败');
+      toast.error(error.message || '生成失败');
       setTaskStatus('fail');
       setGenerating(false);
     }
@@ -334,6 +336,11 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       }
     };
     poll();
+  };
+
+  const handleAddToMaterials = () => {
+      if (!previewVideoUrl) return;
+      setShowMaterialModal(true);
   };
 
   return (
@@ -591,7 +598,30 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
               ) : taskStatus === 'success' && previewVideoUrl ? (
                   <div className="w-full">
                       <video src={previewVideoUrl} controls className="w-full max-h-[300px] rounded-lg mb-3" />
-                      <a href={previewVideoUrl} target="_blank" download className="block text-center text-indigo-600 hover:underline text-sm">下载视频</a>
+                      <div className="flex gap-2">
+                        <button 
+                            onClick={() => {
+                                if (!previewVideoUrl) return;
+                                const link = document.createElement('a');
+                                link.href = previewVideoUrl;
+                                link.download = `singing_avatar_${new Date().getTime()}.mp4`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }} 
+                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
+                        >
+                            <VideoIcon size={20} />
+                            下载视频
+                        </button>
+                        <button 
+                            onClick={handleAddToMaterials}
+                            className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
+                        >
+                            <Plus size={20} />
+                            加入素材库
+                        </button>
+                      </div>
                   </div>
               ) : (
                   <div className="text-gray-400 text-sm">{t.rightPanel.previewPlaceholder}</div>
@@ -652,6 +682,19 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
         onSelect={setSelectedCaption} 
         selectedCaptionId={selectedCaption?.captionId}
       />
+      {/* Add Material Modal */}
+      <AddMaterialModal
+          isOpen={showMaterialModal}
+          onClose={() => setShowMaterialModal(false)}
+          onSuccess={() => {
+              toast.success('已添加到素材库');
+          }}
+          initialData={{
+              assetName: `数字人视频_${new Date().toISOString().slice(0,10)}`,
+              assetUrl: previewVideoUrl || '',
+              assetType: 4 // Video
+          }}
+       />
     </div>
   );
 };

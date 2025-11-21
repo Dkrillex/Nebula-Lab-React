@@ -19,7 +19,7 @@ export const uploadService = {
     // Using request.upload helper which handles FormData correctly
     // Note: requestClient strips outer wrapper, returns UploadResult directly
     return request.upload<UploadResult>('/resource/oss/upload', file, {
-        timeout: 60000
+      timeout: 60000
     });
   },
 
@@ -32,7 +32,21 @@ export const uploadService = {
    */
   uploadByImageUrl: (imageUrl: string, extensionType: string) => {
     return request.post<UploadResult>('/resource/oss/uploadByImageUrl', {
-      imageUrl,
+      url: imageUrl,
+      extensionType,
+    });
+  },
+
+  /**
+   * 根据视频URL上传到OSS
+   * Endpoint: POST /resource/oss/uploadByVideoUrl
+   * @param videoUrl 视频URL
+   * @param extensionType 文件扩展名 (e.g., 'mp4')
+   * @returns requestClient已处理，直接返回data部分: { url, fileName, ossId }
+   */
+  uploadByVideoUrl: (videoUrl: string, extensionType: string) => {
+    return request.post<UploadResult>('/resource/oss/uploadByVideoUrl', {
+      url: videoUrl,
       extensionType,
     });
   },
