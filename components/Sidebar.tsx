@@ -37,7 +37,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       if (tool === 'styleTransfer') return 'styleTransfer';
       if (tool === 'voiceClone') return 'voiceClone';
       if (tool === 'workshop') return 'workshop';
-      if (['faceSwap', 'aiFaceSwap', 'ttsTool', 'tts', 'glbViewer', '3dModel', 'imageTranslation', 'videoTranslation', 'useTool', 'templateUi'].includes(tool || '')) return 'workshop';
+      if (['faceSwap', 'aiFaceSwap', 'aIFacSwapping', 'ttsTool', 'tts', 'glbViewer', '3dModel', 'imageTranslation', 'videoTranslation', 'useTool', 'templateUi'].includes(tool || '')) return 'workshop';
       // Default to home if no tool or tool is 'home'
       return 'home';
     }

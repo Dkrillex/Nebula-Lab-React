@@ -17,6 +17,7 @@ import WorkshopPage from './components/WorkshopPage';
 import GlbViewerPage from './components/GlbViewerPage';
 import ThreeDModelPage from './components/ThreeDModelPage';
 import AiFaceSwapPage from './components/AiFaceSwapPage';
+import AIFaceSwappingPage from './components/AIFaceSwappingPage';
 import TtsPage from './components/TtsPage';
 import UseToolPage from './components/UseToolPage';
 import ImageTranslationPage from './components/ImageTranslationPage';
@@ -509,7 +510,7 @@ const CreatePage: React.FC = () => {
     }
     // AI图片换脸模块
     if (activeMenu === 'aIFacSwapping' || activeMenu === 'imageTranslation') {
-      return <ImageTranslationPage />;
+      return <AIFaceSwappingPage />;
     }
     // 创意生图模板模块
     if (activeMenu === 'templateUi' || activeMenu === 'aiTemplate') {
