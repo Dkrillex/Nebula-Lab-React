@@ -485,7 +485,7 @@ const CreatePage: React.FC = () => {
     }
     // 数字人模块
     if (activeMenu === 'digitalHuman' && t.digitalHuman) {
-      return <DigitalHumanPage t={t.digitalHuman} />;
+      return <DigitalHumanPage t={t.digitalHuman} productAvatarT={t.productAvatar} />;
     }
     // 风格迁移模块
     if (activeMenu === 'styleTransfer' && t.styleTransfer) {

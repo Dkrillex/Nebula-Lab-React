@@ -206,9 +206,9 @@ interface Translation {
       quality: {
         label: string;
         options: {
-            lite: string;
-            pro: string;
-            best: string;
+          lite: string;
+          pro: string;
+          best: string;
         };
       };
       duration: {
@@ -245,7 +245,17 @@ interface Translation {
       rightPanel: {
         modeSelection: string;
         mode1: string;
+        mode1_intro: {
+          p1: string;
+          p2: string;
+          p3: string;
+        };
         mode2: string;
+        mode2_intro: {
+          p1: string;
+          p2: string;
+          p3: string;
+        };
         scriptContent: string;
         textToSpeech: string;
         importAudio: string;
@@ -258,8 +268,38 @@ interface Translation {
         aiSubtitle: string;
         selectSubtitleStyle: string;
         previewPlaceholder: string;
+        buttonTip?: {
+          text: string;
+          audio: string;
+          default: string;
+        };
+        diamondCoin?: string;
         tryExample: string;
         generate: string;
+      };
+      voiceModal: {
+        title: string;
+        tabs: {
+          public: string;
+          custom: string;
+        };
+        filters: {
+          language: string;
+          gender: string;
+          age: string;
+          style: string;
+        };
+        filterOptions: {
+          allLanguages: string;
+          allGenders: string;
+          male: string;
+          female: string;
+          young: string;
+          middleAge: string;
+          old: string;
+          ugc: string;
+          ads: string;
+        };
       };
     };
     styleTransfer: {
@@ -357,7 +397,7 @@ interface Translation {
     send: string;
     welcomeMessage: string;
     footerTip: string;
-    
+
   };
   keysPage: {
     title: string;
@@ -764,7 +804,17 @@ export const translations: Record<string, Translation> = {
         rightPanel: {
           modeSelection: 'Mode Selection',
           mode1: 'Digital Human 1',
+          mode1_intro: {
+            p1: 'Image-based digital humans only generate head movements.',
+            p2: 'Video-based digital humans only modify lip movements in existing videos.',
+            p3: 'Faster generation time.'
+          },
           mode2: 'Digital Human 2',
+          mode2_intro: {
+            p1: 'Lip movements, facial expressions, gestures, and body movements match the speech content, making the video look more natural and realistic.',
+            p2: 'Longer generation time.',
+            p3: 'Recommended text duration for AI dubbing is 15 seconds for best results; max 28 seconds.'
+          },
           scriptContent: 'Script Content',
           textToSpeech: 'Text to Speech',
           importAudio: 'Import Audio',
@@ -777,8 +827,70 @@ export const translations: Record<string, Translation> = {
           aiSubtitle: 'AI Generated Subtitles',
           selectSubtitleStyle: 'Select Subtitle Style',
           previewPlaceholder: 'Please enter text.',
+          buttonTip: {
+            text: 'Please enter text.',
+            audio: 'Please select an audio file.',
+            default: '1 Point = 30s or 400 chars'
+          },
+          diamondCoin: 'Points',
           tryExample: 'Try Example',
           generate: 'Generate after settings'
+        },
+        voiceModal: {
+          title: 'Select Voice',
+          tabs: {
+            public: 'Public Voices',
+            custom: 'My Voices'
+          },
+          filters: {
+            language: 'Language',
+            gender: 'Gender',
+            age: 'Age',
+            style: 'Style'
+          },
+          filterOptions: {
+            allLanguages: 'All Languages',
+            allGenders: 'All Genders',
+            male: 'Male',
+            female: 'Female',
+            young: 'Young',
+            middleAge: 'Middle Age',
+            old: 'Old',
+            ugc: 'UGC',
+            ads: 'Advertisement'
+          }
+        }
+      },
+      productAvatar: {
+        leftPanel: {
+          title: 'Select Avatar Template',
+          uploadDiy: 'Upload Custom',
+          picker: 'Pick'
+        },
+        rightPanel: {
+          templatePreview: 'Avatar Preview',
+          pickerTemplate: 'Please select an avatar template',
+          uploadMyFace: 'Upload Face',
+          productConfig: 'Product Config',
+          uploadProductImg: 'Upload Product Image',
+          productImg: 'Product Image',
+          productSize: 'Product Size',
+          aiTips: 'AI Mixed Prompt',
+          aiTipsPlaceholder: 'Tell AI how to blend the product with the avatar model...',
+          aiTextPlaceholder: 'Replace items in image 1 scene with items in image 2. Keep the composition and position of the person in image 1 unchanged, and adjust gestures to fit the size and appearance of the new item. The item must be exactly the same as in image 2.',
+          trySample: 'Try Sample',
+          startWorking: 'Start Generating',
+          replacementSuccess: 'Replacement Successful',
+          uploadAvatar: 'Please select or upload an avatar',
+          autoShow: 'Auto'
+        },
+        sliderMarks: {
+          tiny: 'Tiny',
+          small: 'Small',
+          medium: 'Medium',
+          large: 'Large',
+          xLarge: 'X-Large',
+          xxLarge: 'XX-Large'
         }
       },
       styleTransfer: {
@@ -975,16 +1087,16 @@ export const translations: Record<string, Translation> = {
       business: {
         title: 'Business',
         features: [
-           '¥ 1.59 / 1 Credit',
-           'Flexible AI integration, Priority Channels',
-           'Out-of-the-box Large Model API+',
-           'Multi-modal capabilities, covering multiple scenarios',
-           'Unlimited video previews',
-           '500+ digital humans and voices',
-           'Unlimited preservation of digital assets',
-           'Talking photo max video length 1800s',
-           'No Watermark',
-           'Highest priority rendering speed'
+          '¥ 1.59 / 1 Credit',
+          'Flexible AI integration, Priority Channels',
+          'Out-of-the-box Large Model API+',
+          'Multi-modal capabilities, covering multiple scenarios',
+          'Unlimited video previews',
+          '500+ digital humans and voices',
+          'Unlimited preservation of digital assets',
+          'Talking photo max video length 1800s',
+          'No Watermark',
+          'Highest priority rendering speed'
         ]
       },
       enterprise: {
@@ -1332,7 +1444,17 @@ export const translations: Record<string, Translation> = {
         rightPanel: {
           modeSelection: '模式选择',
           mode1: '数字人1',
+          mode1_intro: {
+            p1: '基于图片的数字人只生成头部动作。',
+            p2: '基于视频的数字人只修改现有视频中的唇部动作。',
+            p3: '生成时间更快。'
+          },
           mode2: '数字人2',
+          mode2_intro: {
+            p1: '数字人的唇部动作、面部表情、手势和身体动作都与语音内容相匹配，使视频看起来更自然和写实。',
+            p2: '生成时间较长。',
+            p3: '在此输入需要AI配音的文本建议15秒以获得最佳结果；最大28秒。'
+          },
           scriptContent: '脚本内容',
           textToSpeech: '文本转语音',
           importAudio: '导入音频',
@@ -1345,8 +1467,70 @@ export const translations: Record<string, Translation> = {
           aiSubtitle: 'AI生成字幕',
           selectSubtitleStyle: '选择字幕样式',
           previewPlaceholder: '请输入文本。',
+          buttonTip: {
+            text: '请输入文本。',
+            audio: '请选择上传一个音频文件。',
+            default: '1积分=30秒 或者 400个字符'
+          },
+          diamondCoin: '积分',
           tryExample: '试用示例',
           generate: '设置完成后可生成'
+        },
+        voiceModal: {
+          title: '选择音色',
+          tabs: {
+            public: '公共音色',
+            custom: '我的音色'
+          },
+          filters: {
+            language: '语言',
+            gender: '性别',
+            age: '年龄',
+            style: '风格'
+          },
+          filterOptions: {
+            allLanguages: '全部语言',
+            allGenders: '全部性别',
+            male: '男性',
+            female: '女性',
+            young: '年轻',
+            middleAge: '中年',
+            old: '老年',
+            ugc: 'UGC',
+            ads: '广告'
+          }
+        }
+      },
+      productAvatar: {
+        leftPanel: {
+          title: '选择数字人模板',
+          uploadDiy: '上传自定义',
+          picker: '选择'
+        },
+        rightPanel: {
+          templatePreview: '数字人预览',
+          pickerTemplate: '请选择数字人模板',
+          uploadMyFace: '上传人脸',
+          productConfig: '产品配置',
+          uploadProductImg: '上传产品图片',
+          productImg: '产品图片',
+          productSize: '产品尺寸',
+          aiTips: 'AI混合提示',
+          aiTipsPlaceholder: '告诉AI如何将产品与数字人模型进行完美融合...',
+          aiTextPlaceholder: '将图像1场景中的项目替换为图像2中的项目。保持图像1中人物的构图和位置不变，并调整手势以适应新项目的大小和外观。该项目必须与图2中的项目完全相同。',
+          trySample: '试用示例',
+          startWorking: '开始生成',
+          replacementSuccess: '替换成功',
+          uploadAvatar: '请选择一个头像或上传一个头像',
+          autoShow: '自动'
+        },
+        sliderMarks: {
+          tiny: '微小',
+          small: '小',
+          medium: '中',
+          large: '大',
+          xLarge: '加大',
+          xxLarge: '超大'
         }
       },
       styleTransfer: {
@@ -1543,16 +1727,16 @@ export const translations: Record<string, Translation> = {
       business: {
         title: 'Business会员',
         features: [
-           '¥ 1.59元/1积分',
-           '提供灵活的AI集成，更优先的渠道',
-           '开箱即用的大模型 API+',
-           '提供多模态模型能力，覆盖多场景',
-           '无限视频预览',
-           '500+数字人和配音',
-           '无限保存产品数字人',
-           '照片说话每个视频最长1800秒',
-           '无水印',
-           '最高优先会级渲染速度'
+          '¥ 1.59元/1积分',
+          '提供灵活的AI集成，更优先的渠道',
+          '开箱即用的大模型 API+',
+          '提供多模态模型能力，覆盖多场景',
+          '无限视频预览',
+          '500+数字人和配音',
+          '无限保存产品数字人',
+          '照片说话每个视频最长1800秒',
+          '无水印',
+          '最高优先会级渲染速度'
         ]
       },
       enterprise: {

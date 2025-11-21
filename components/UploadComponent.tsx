@@ -137,8 +137,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         if (!credRes || !credRes.result || credRes.code !== '200') {
           console.error('获取上传凭证失败:', credRes);
           throw new Error(credRes?.message || 'Failed to get upload credentials');
+        if (credRes.code !== '200' || !credRes.result) {
+           throw new Error(credRes.msg || 'Failed to get credentials');
         }
-        
         const { uploadUrl, fileName, fileId, format } = credRes.result;
         console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: fileToUpload.size });
 
@@ -174,7 +175,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             format: format
         };
       }
-
+      console.log(uploadedFile);
+      
       onUploadComplete(uploadedFile);
     } catch (error: any) {
       console.error('Upload error:', error);

@@ -1,11 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, Loader, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Loader, Image as ImageIcon, PlayCircle } from 'lucide-react';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
 import UploadComponent from '../../../components/UploadComponent';
-
+import demoProductPng from '@/assets/demo/productImage.png';
+import demoUserFacePng from '@/assets/demo/userFaceImage.png';
+import { uploadTVFile } from '@/utils/upload';
+import { toast } from '@/components/Toast';
 interface DigitalHumanProductProps {
   t: any;
-  handleFileUpload: (file: File, type: 'image') => Promise<any>; // Kept for compatibility if needed, but we use UploadComponent mainly now
+  handleFileUpload: (file: File, type: 'image') => Promise<any>; 
   uploading: boolean;
   setErrorMessage: (msg: string | null) => void;
 }
@@ -21,6 +24,12 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [avatars, setAvatars] = useState<ProductAvatar[]>([]);
   const [loadingAvatars, setLoadingAvatars] = useState(false);
   const [selectedAvatar, setSelectedAvatar] = useState<ProductAvatar | null>(null);
+  const [displayedAvatars, setDisplayedAvatars] = useState<ProductAvatar[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const BATCH_SIZE = 9; 
+  const cursorRef = useRef(0);
+  const allAvatarsRef = useRef<ProductAvatar[]>([]);
+  const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Uploads
   const [productImage, setProductImage] = useState<{ fileId: string, url: string } | null>(null);
@@ -28,42 +37,89 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [customAvatarImage, setCustomAvatarImage] = useState<{ fileId: string, url: string } | null>(null);
   
   // Inputs
-  const [prompt, setPrompt] = useState('将图像1场景中的项目替换为图像2中的项目。保持图像1中人物的构图和位置不变，并调整手势以适应新项目的大小和外观。该项目必须与图2中的项目完全相同。');
+  const [prompt, setPrompt] = useState('');
   const [productSize, setProductSize] = useState(2); // 1-6
   const [autoShow, setAutoShow] = useState(true);
   
   // Result
   const [generating, setGenerating] = useState(false);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
-
-  // Refs for manual trigger if needed, though UploadComponent handles it
-  const productUploadRef = useRef<any>(null);
-  const faceUploadRef = useRef<any>(null);
-  const avatarUploadRef = useRef<any>(null);
+  const [loadingSample, setLoadingSample] = useState(false);
 
   useEffect(() => {
     fetchCategories();
-    fetchAvatars();
-  }, []);
+    // Initialize prompt with translated default
+    setPrompt(t?.rightPanel?.aiTextPlaceholder || '');
+  }, [t]);
 
   useEffect(() => {
-    fetchAvatars();
+     fetchAvatars();
   }, [selectedCategory]);
+
+  // 滚动加载逻辑
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    // 距离底部 50px 时触发加载
+    if (scrollHeight - scrollTop - clientHeight < 50) {
+        if (!loadingAvatars && hasMore) {
+            loadMoreAvatars();
+        }
+    }
+  };
+
+  // 分批加载逻辑 (由滚动触发)
+  const loadMoreAvatars = () => {
+    if (loadingAvatars) return; 
+    
+    const nextCursor = cursorRef.current + BATCH_SIZE;
+    const nextBatch = allAvatarsRef.current.slice(cursorRef.current, nextCursor);
+    
+    if (nextBatch.length > 0) {
+      setDisplayedAvatars(prev => [...prev, ...nextBatch]);
+      cursorRef.current = nextCursor;
+      
+      if (cursorRef.current >= allAvatarsRef.current.length) {
+        setHasMore(false);
+      }
+    } else {
+      setHasMore(false);
+    }
+  };
+
+  // 初始加载
+  useEffect(() => {
+    if (avatars.length > 0) {
+        cursorRef.current = 0;
+        setDisplayedAvatars([]);
+        setHasMore(true);
+        allAvatarsRef.current = avatars;
+        
+        // 加载第一批
+        const firstBatch = avatars.slice(0, BATCH_SIZE);
+        setDisplayedAvatars(firstBatch);
+        cursorRef.current = BATCH_SIZE;
+        
+        if (avatars.length <= BATCH_SIZE) {
+            setHasMore(false);
+        }
+    } else {
+        setDisplayedAvatars([]);
+        setHasMore(false);
+    }
+  }, [avatars]);
 
   const fetchCategories = async () => {
     try {
       const res = await avatarService.getProductAvatarCategories();
-      if (res.code === 200) {
-        let categoriesData: ProductAvatarCategory[] = [];
-        if ((res as any).data?.result) {
-            categoriesData = (res as any).data.result;
-        } else if (res.result) {
-            categoriesData = res.result;
-        } else if (res.data && Array.isArray(res.data)) {
-            categoriesData = res.data;
-        }
-        setCategories([{ categoryId: -1, categoryName: '全部' }, ...(categoriesData || [])]);
+      let categoriesData: ProductAvatarCategory[] = [];
+
+      const data = (res as any).result || (res as any).data || res;
+
+      if (Array.isArray(data)) {
+          categoriesData = data;
       }
+
+      setCategories([{ categoryId: -1, categoryName: 'All' }, ...categoriesData]);
     } catch (error) {
       console.error('Failed to fetch categories:', error);
     }
@@ -72,27 +128,32 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const fetchAvatars = async () => {
     try {
       setLoadingAvatars(true);
+      if (loadTimeoutRef.current) clearTimeout(loadTimeoutRef.current);
+      setDisplayedAvatars([]);
+      cursorRef.current = 0;
+      allAvatarsRef.current = [];
+
       const res = await avatarService.getProductAvatarList({
         pageNo: 1,
         pageSize: 100,
         categoryIds: selectedCategory === -1 ? '' : String(selectedCategory)
       });
-      if (res.code === 200) {
-        let avatarData: ProductAvatar[] = [];
-        if ((res as any).data?.result?.data) {
-            // For structure: { code: 200, data: { result: { data: [...] } } }
-            avatarData = (res as any).data.result.data;
-        } else if ((res as any).result?.data) {
-            // For structure: { code: 200, result: { data: [...] } }
-            avatarData = (res as any).result.data;
-        } else if (res.data && Array.isArray(res.data)) {
-            avatarData = res.data;
-        }
+      
+      let avatarData: ProductAvatar[] = [];
+      const resultData = (res as any).result || res;
 
-        setAvatars(avatarData || []);
-        if (!selectedAvatar && avatarData?.length > 0) {
-            setSelectedAvatar(avatarData[0]);
-        }
+      if (resultData?.data && Array.isArray(resultData.data)) {
+          avatarData = resultData.data;
+      } else if (Array.isArray(resultData)) {
+          avatarData = resultData;
+      }
+
+      const finalData = avatarData || [];
+      setAvatars(finalData); 
+      allAvatarsRef.current = finalData; 
+
+      if (!selectedAvatar && finalData.length > 0) {
+          setSelectedAvatar(finalData[0]);
       }
     } catch (error) {
       console.error('Failed to fetch avatars:', error);
@@ -101,36 +162,45 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     }
   };
 
-  const onUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'product' | 'face' | 'avatar') => {
-    const file = e.target.files?.[0];
-    if (file) {
-      try {
-        const uploaded = await handleFileUpload(file, 'image');
-        if (type === 'product') setProductImage(uploaded);
-        else if (type === 'face') setUserFaceImage(uploaded);
-        else if (type === 'avatar') {
-            setCustomAvatarImage(uploaded);
-            setSelectedAvatar(null); // Deselect list avatar if custom uploaded
-        }
-      } catch (error) {
-        // Handled by parent
-      }
-    }
+  // Error handling wrapper
+  const showError = (msg: string) => {
+    toast.error(msg);
   };
 
   const handleGenerate = async () => {
     if (!productImage) {
-        setErrorMessage('请上传产品图片');
+        showError(t?.rightPanel?.uploadProductImg || 'Please upload product image');
         return;
     }
     if (!selectedAvatar && !customAvatarImage) {
-        setErrorMessage('请选择或上传数字人模板');
+        showError(t?.rightPanel?.uploadAvatar || 'Please select an avatar');
         return;
     }
-
+//     const { result: resultData } = {
+//         "code": 200,
+//         "msg": "操作成功",
+//         "data": {
+//             "result": {
+//             "costCredit": 0,
+//             "productReplaceResult": [
+//                 {
+//                 "key": "9b82eecc856549c2880a7a7fd7e7c928",
+//                 "url": "https://dr1coeak04nbk.cloudfront.net/analyzed_video%2Fvideo%2F9b82eecc856549c2880a7a7fd7e7c928%2F9b82eecc856549c2880a7a7fd7e7c928.jpg?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZHIxY29lYWswNG5iay5jbG91ZGZyb250Lm5ldC9hbmFseXplZF92aWRlbyUyRnZpZGVvJTJGOWI4MmVlY2M4NTY1NDljMjg4MGE3YTdmZDdlN2M5MjglMkY5YjgyZWVjYzg1NjU0OWMyODgwYTdhN2ZkN2U3YzkyOC5qcGciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3NjM5Nzc4MjF9fX1dfQ__&Signature=wfnLXXnHhJG7ekU9ryr2ik0nxi-aIsCdxv4XdA6RTwFJLKsalHXhVj4HAqOynEtpOaFjMBtocQhrOJcT0LshGeOQB6inyxPPot3u2PU4g68ScD57R80rQrkwM5q47xaoLEu2rVgmJfor6tAPPPCFwWvI8fF4H7XKwKFYCzOjHQIgER1GiqePgNqDrorcChfx3KTnQptObArvwL7JHQydJJ8H6dHRbsC5o-GZe~OCTS18-Ls3CRRQtNnP0LTSqXUuiH4jmaKL4HNlr0SbZ75EcdBNiEn5kYvzqGu1Ore5QRDJxAuNG5Y-j6MNcAUcZ50xAc7g-fmLCSQy6lcBwRUF0g__&Key-Pair-Id=K21X5TGS0ALJI4",
+//                 "fileId": "c60417e7d986480d99558006e0c4e863"
+//                 }
+//             ],
+//             "taskId": "e94767e53d5f440ea5ef356c7ddb5459",
+//             "taskStatus": "success"
+//             },
+//             "code": "200",
+//             "message": "Success"
+//         }
+//         } 
+// setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
+//                   setGenerating(false);
+// return 
     try {
         setGenerating(true);
-        setErrorMessage(null);
         setResultImageUrl(null);
 
         const params = {
@@ -143,70 +213,129 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         };
 
         const res = await avatarService.submitImageReplaceTask(params);
-        if (res.code === 200 && res.result?.taskId) {
-             pollTask(res.result.taskId);
+        const resultData = (res as any).result || res;
+        
+        if (resultData?.taskId) {
+             pollTask(resultData.taskId);
         } else {
-            throw new Error(res.msg || '任务提交失败');
+            throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
         }
     } catch (error: any) {
-        setErrorMessage(error.message || '生成失败');
+        toast.error(error.message || 'Generation failed');
         setGenerating(false);
     }
   };
 
   const pollTask = async (taskId: string) => {
-      const interval = 3000;
+      const interval = 15000;
       let attempts = 0;
-      const maxAttempts = 60; // 3 mins
+      const maxAttempts = 100;
 
       const check = async () => {
           try {
-              const res = await avatarService.queryImageReplaceTask(taskId);
-              const status = res.result?.status;
+              const { result: resultData } = await avatarService.queryImageReplaceTask(taskId);
+              const status = resultData?.taskStatus;
               if (status === 'success') {
-                  setResultImageUrl(res.result.resultImageUrl || '');
+                  setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
                   setGenerating(false);
+                  // Optional: Show success toast
               } else if (status === 'fail') {
-                  setErrorMessage(res.result.errorMsg || '生成失败');
+                  toast.error(resultData.errorMsg || 'Generation failed');
                   setGenerating(false);
               } else {
                   attempts++;
                   if (attempts < maxAttempts) setTimeout(check, interval);
                   else {
-                      setErrorMessage('任务超时');
+                      toast.error('Task timed out');
                       setGenerating(false);
                   }
               }
           } catch (e) {
-              setErrorMessage('查询状态失败');
+              toast.error('Failed to query status');
               setGenerating(false);
           }
       };
       check();
   };
 
+  const handleTrySample = async () => {
+    try {
+        setLoadingSample(true);
+        setProductImage(null);
+        setUserFaceImage(null);
+
+        const fetchImage = async (imgUrl: string, filename: string) => {
+            const response = await fetch(imgUrl);
+            const blob = await response.blob();
+            return new File([blob], filename, { type: 'image/png' });
+        };
+
+        const [productFile, userFaceFile] = await Promise.all([
+            fetchImage(demoProductPng, 'demo-productImage.png'),
+            fetchImage(demoUserFacePng, 'demo-userFaceImage.png')
+        ]);
+
+        // Upload concurrently
+        const [productUpload, userFaceUpload] = await Promise.all([
+            uploadTVFile(productFile),
+            uploadTVFile(userFaceFile)
+        ]);
+
+        setProductImage({ 
+            fileId: productUpload.fileId, 
+            url: URL.createObjectURL(productFile)
+        });
+        
+        setUserFaceImage({ 
+            fileId: userFaceUpload.fileId, 
+            url: URL.createObjectURL(userFaceFile)
+        });
+        
+    } catch (error) {
+        console.error('Failed to load sample:', error);
+        showError(t?.errors?.sampleLoadFailed || 'Failed to load sample images');
+    } finally {
+        setLoadingSample(false);
+    }
+  };
+
+  const sliderMarks = {
+    1: t?.sliderMarks?.tiny,
+    2: t?.sliderMarks?.small,
+    3: t?.sliderMarks?.medium,
+    4: t?.sliderMarks?.large,
+    5: t?.sliderMarks?.xLarge,
+    6: t?.sliderMarks?.xxLarge,
+  };
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Avatar Selection */}
-      <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col">
-        <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">选择数字人模板</h3>
+      <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col lg:h-[calc(100vh-9rem)]">
+        <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 shrink-0">
+            {t?.leftPanel?.title || 'Select Avatar Template'}
+        </h3>
         
         {/* Categories */}
-        <div className="flex flex-wrap gap-2 mb-4">
+        <div className="flex flex-wrap gap-2 mb-4 shrink-0 max-h-[10vh] overflow-y-auto custom-scrollbar">
             {categories.map(cat => (
                 <button 
                     key={cat.categoryId}
                     onClick={() => setSelectedCategory(cat.categoryId)}
                     className={`px-3 py-1 rounded-full text-xs font-medium transition ${selectedCategory === cat.categoryId ? 'bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'}`}
                 >
-                    {cat.categoryName}
+                    {cat.categoryName === 'All' ? 'All' : cat.categoryName}
                 </button>
             ))}
         </div>
 
         {/* Avatar Grid */}
-        <div className="grid grid-cols-3 gap-3 overflow-y-auto custom-scrollbar flex-1 min-h-[300px] content-start">
+        <div 
+            className="flex flex-wrap gap-3 overflow-y-auto custom-scrollbar flex-1 min-h-[300px] content-start"
+            onScroll={handleScroll}
+        >
             {/* Upload Custom Item */}
+            <div className="w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(50%-6px)] xl:w-[calc(33.33%-8px)] aspect-[9/16]">
             <UploadComponent
                 uploadType="tv"
                 immediate={true}
@@ -214,44 +343,59 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                     setCustomAvatarImage({ fileId: file.fileId, url: file.fileUrl || '' });
                     setSelectedAvatar(null);
                 }}
-                className={`aspect-[9/16] ${customAvatarImage ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'}`}
+                className={`w-full h-full ${customAvatarImage ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'}`}
             >
-                <Upload size={24} className="text-gray-400 mb-2" />
-                <span className="text-xs text-gray-500">上传自定义</span>
-            </UploadComponent>
-
-            {loadingAvatars ? (
-                <div className="col-span-3 flex justify-center py-10"><Loader className="animate-spin text-indigo-600" /></div>
-            ) : avatars.map(avatar => (
-                <div 
-                    key={avatar.avatarId}
-                    onClick={() => { setSelectedAvatar(avatar); setCustomAvatarImage(null); }}
-                    className={`relative aspect-[9/16] rounded-lg overflow-hidden cursor-pointer border-2 transition ${selectedAvatar?.avatarId === avatar.avatarId ? 'border-indigo-500 shadow-md' : 'border-transparent hover:shadow-sm'}`}
-                >
-                    <img src={avatar.avatarImagePath} className="w-full h-full object-cover" />
-                    {selectedAvatar?.avatarId === avatar.avatarId && (
-                        <div className="absolute inset-0 bg-indigo-500/20 flex items-center justify-center">
-                            <div className="bg-indigo-600 text-white text-xs px-2 py-1 rounded">已选</div>
-                        </div>
-                    )}
+                <div className="flex flex-col items-center justify-center h-full">
+                    <Upload size={24} className="text-gray-400 mb-2" />
+                    <span className="text-xs text-gray-500">{t?.leftPanel?.uploadDiy || 'Upload Custom'}</span>
                 </div>
-            ))}
+            </UploadComponent>
+            </div>
+
+            {loadingAvatars && displayedAvatars.length === 0 ? (
+                <div className="w-full flex justify-center py-10"><Loader className="animate-spin text-indigo-600" /></div>
+            ) : (
+              <>
+                {displayedAvatars.map(avatar => (
+                  <div 
+                      key={avatar.avatarId}
+                      onClick={() => { setSelectedAvatar(avatar); setCustomAvatarImage(null); }}
+                      className={`relative w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(50%-6px)] xl:w-[calc(33.33%-8px)] aspect-[9/16] rounded-lg overflow-hidden cursor-pointer border-2 transition ${selectedAvatar?.avatarId === avatar.avatarId ? 'border-indigo-500 shadow-md' : 'border-transparent hover:shadow-sm'}`}
+                  >
+                      <img src={avatar.avatarImagePath} className="w-full h-full object-cover" loading="lazy" alt={avatar.avatarName} />
+                      {selectedAvatar?.avatarId === avatar.avatarId && (
+                          <div className="absolute inset-0 bg-indigo-500/20 flex items-center justify-center">
+                              <div className="bg-indigo-600 text-white text-xs px-2 py-1 rounded">{t?.leftPanel?.picker || 'Pick'}</div>
+                          </div>
+                      )}
+                  </div>
+                ))}
+                {/* 加载更多占位符 */}
+                {hasMore && (
+                   <div className="w-full flex justify-center py-4">
+                      <Loader className="animate-spin text-gray-400" size={20} />
+                   </div>
+                )}
+              </>
+            )}
         </div>
       </div>
 
       {/* Middle: Configuration */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col overflow-y-auto">
+      <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col overflow-y-auto lg:h-[calc(100vh-9rem)]">
           <div className="flex flex-col lg:flex-row gap-6 mb-6">
               {/* Preview */}
               <div className="flex-1">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">数字人预览</h3>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">
+                      {t?.rightPanel?.templatePreview || 'Avatar Preview'}
+                  </h3>
                   <div className="relative aspect-[9/16] max-w-[240px] mx-auto bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
                       {(selectedAvatar || customAvatarImage) ? (
                           <img src={selectedAvatar?.avatarImagePath || customAvatarImage?.url} className="w-full h-full object-cover" />
                       ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center p-4">
                               <ImageIcon size={48} className="mb-2" />
-                              <span>请选择模板</span>
+                              <span>{t?.rightPanel?.pickerTemplate || 'Please select template'}</span>
                           </div>
                       )}
                       
@@ -273,7 +417,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                                           className="w-12 h-12 bg-black/60 hover:bg-black/80 text-white rounded-lg flex flex-col items-center justify-center backdrop-blur-sm border border-white/30 transition !border-solid"
                                       >
                                           <Upload size={16} />
-                                          <span className="text-[10px] mt-1">换脸</span>
+                                          <span className="text-[10px] mt-1">{t?.rightPanel?.uploadMyFace || 'Upload Face'}</span>
                                       </UploadComponent>
                                   )}
                               </div>
@@ -284,30 +428,44 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
 
               {/* Product Config */}
               <div className="flex-1 flex flex-col gap-4">
-                  <h3 className="font-bold text-gray-800 dark:text-gray-200">产品配置</h3>
+                  <h3 className="font-bold text-gray-800 dark:text-gray-200">
+                      {t?.rightPanel?.productConfig || 'Product Config'}
+                  </h3>
                   
                   {/* Product Upload */}
-                  <UploadComponent
-                      uploadType="tv"
-                      immediate={true}
-                      onUploadComplete={(file) => setProductImage({ fileId: file.fileId, url: file.fileUrl || '' })}
-                      className="h-40"
-                  >
-                        <div className="text-center text-gray-500">
-                            <Upload size={32} className="mx-auto mb-2" />
-                            <p className="text-sm">上传产品图片</p>
-                        </div>
-                  </UploadComponent>
+                  {productImage ? (
+                      <div className="relative h-40 bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden border-2 border-indigo-500/20">
+                          <img src={productImage.url} className="w-full h-full object-contain p-2" alt="Product" />
+                          <button 
+                              onClick={() => setProductImage(null)} 
+                              className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-600 transition shadow-sm"
+                          >
+                              ×
+                          </button>
+                      </div>
+                  ) : (
+                    <UploadComponent
+                        uploadType="tv"
+                        immediate={true}
+                        onUploadComplete={(file) => setProductImage({ fileId: file.fileId, url: file.fileUrl || '' })}
+                        className="h-40"
+                    >
+                            <div className="text-center text-gray-500">
+                                <Upload size={32} className="mx-auto mb-2" />
+                                <p className="text-sm">{t?.rightPanel?.uploadProductImg || 'Upload Product Image'}</p>
+                            </div>
+                    </UploadComponent>
+                  )}
 
                   {/* Product Size */}
                   {productImage && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
-                            <span className="text-sm font-medium">产品尺寸</span>
+                            <span className="text-sm font-medium">{t?.rightPanel?.productSize || 'Product Size'}</span>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" checked={autoShow} onChange={(e) => { setAutoShow(e.target.checked); if(e.target.checked) setProductSize(2); }} className="sr-only peer" />
                                 <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-gray-600 peer-checked:bg-indigo-600"></div>
-                                <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">自动</span>
+                                <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">{t?.rightPanel?.autoShow || 'Auto'}</span>
                             </label>
                         </div>
                         <input 
@@ -319,8 +477,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                             className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700 accent-indigo-600"
                         />
                         <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <span>微小</span>
-                            <span>超大</span>
+                            <span>{sliderMarks[1]}</span>
+                            <span>{sliderMarks[6]}</span>
                         </div>
                     </div>
                   )}
@@ -328,36 +486,50 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           </div>
 
           {/* Prompt */}
-          <div className="mb-6">
-              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">AI混合提示</h3>
+          <div className="mb-1">
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                  {t?.rightPanel?.aiTips || 'AI Mixed Prompt'}
+              </h3>
               <textarea 
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 className="w-full h-24 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                placeholder="描述如何融合产品..."
+                placeholder={t?.rightPanel?.aiTipsPlaceholder || 'Tell AI how to blend...'}
               />
           </div>
 
           {/* Actions */}
           <div className="flex gap-4 mt-auto">
-              <button onClick={handleGenerate} disabled={generating || !productImage} className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
-                  {generating ? <Loader className="animate-spin" size={18} /> : '开始生成'}
+              <button 
+                onClick={handleTrySample}
+                disabled={loadingSample}
+                className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingSample ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.trySample || 'Try Sample')}
+              </button>
+              <button 
+                onClick={handleGenerate} 
+                disabled={generating || !productImage} 
+                className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {generating ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.startWorking || 'Start Generating')}
               </button>
           </div>
       </div>
 
-      {/* Right: Result (conditionally shown or modal?) */}
-      {/* For now, let's put result in a modal or overlay if it exists, or just below */}
+      {/* Right: Result Overlay */}
       {resultImageUrl && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setResultImageUrl(null)}>
               <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl max-w-4xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
                   <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold">生成结果</h3>
+                      <h3 className="text-lg font-bold">{t?.rightPanel?.replacementSuccess || 'Result'}</h3>
                       <button onClick={() => setResultImageUrl(null)} className="p-1 hover:bg-gray-100 rounded-full"><X size={24} /></button>
                   </div>
                   <img src={resultImageUrl} className="max-w-full max-h-[70vh] rounded-lg mx-auto" />
                   <div className="mt-4 flex justify-center">
-                      <a href={resultImageUrl} download target="_blank" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">下载图片</a>
+                      <a href={resultImageUrl} download target="_blank" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                          Download
+                      </a>
                   </div>
               </div>
           </div>
@@ -367,4 +539,3 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
 };
 
 export default DigitalHumanProduct;
-

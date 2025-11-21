@@ -1,7 +1,24 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2, Plus, Video } from 'lucide-react';
-import { avatarService } from '../../../services/avatarService';
-import AddMaterialModal from '../../../components/AddMaterialModal';
+import { avatarService } from '@/services/avatarService';
+import { uploadService } from '@/services/uploadService';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import { toast } from '@/components/Toast';
+
+const SvgPointsIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 1024 1024" 
+    version="1.1" 
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+  >
+    <path d="M913.7 430.7c2.9-2.9 7.5-7.4-3.9-21.7L722.6 159.7H302.8l-187 248.9c-11.6 14.6-7 19.2-4.3 21.9l401.2 410.4 401-410.2zM595.5 667.2c-7.7 0-14-6.3-14-14s6.3-14 14-14 14 6.3 14 14c0 7.8-6.3 14-14 14zM746 502.8c6.6 6.6 6.6 17.2 0 23.7L645.2 627.3c-3.3 3.3-7.6 4.9-11.9 4.9-4.3 0-8.6-1.6-11.9-4.9-6.6-6.6-6.6-17.2 0-23.7l100.7-100.7c6.7-6.7 17.3-6.7 23.9-0.1zM346 358.1c-6.7-6.5-6.8-17.1-0.4-23.7 6.4-6.7 17.1-6.8 23.7-0.4l149.6 145 151.5-146.8c6.7-6.5 17.3-6.3 23.7 0.4 6.5 6.7 6.3 17.3-0.4 23.7L535.2 509.9c-0.8 1.8-1.8 3.5-3.3 5-3.3 3.4-7.7 5.1-12.1 5.1-4.2 0-8.4-1.6-11.7-4.7L346 358.1z" fill="#006be6" />
+    <path d="M936.4 388.4l-192-255.6c-3.2-4.2-8.1-6.7-13.4-6.7H294.4c-5.3 0-10.3 2.5-13.4 6.7L89.3 388.1c-27.1 34.1-10 57.7-1.6 66.1l413 422.5c3.2 3.2 7.5 5.1 12 5.1s8.8-1.8 12-5.1l412.8-422.4c8.7-8.5 25.7-32.1-1.1-65.9z m-820.5 20.2l187-248.9h419.8L909.9 409c11.3 14.3 6.8 18.8 3.9 21.7l-401 410.2-401.2-410.4c-2.8-2.7-7.3-7.3 4.3-21.9z" fill="#ffffff" className="selected" />
+    <path d="M532 514.9c1.4-1.5 2.5-3.2 3.3-5l158.6-153.7c6.7-6.5 6.8-17.1 0.4-23.7-6.5-6.7-17.1-6.8-23.7-0.4L519 478.9 369.4 334c-6.7-6.4-17.3-6.3-23.7 0.4-6.5 6.7-6.3 17.3 0.4 23.7l162.2 157.2c3.3 3.2 7.5 4.7 11.7 4.7 4.3 0 8.7-1.7 12-5.1zM621.5 627.3c3.3 3.3 7.6 4.9 11.9 4.9 4.3 0 8.6-1.6 11.9-4.9L746 526.5c6.6-6.6 6.6-17.2 0-23.7-6.6-6.6-17.2-6.6-23.7 0L621.5 603.5c-6.6 6.6-6.6 17.2 0 23.8z" fill="#ffffff" className="selected" />
+    <path d="M595.5 653.3m-14 0a14 14 0 1 0 28 0 14 14 0 1 0-28 0Z" fill="#ffffff" />
+  </svg>
+);
 
 interface DigitalHumanSingingProps {
   t: any;
@@ -46,8 +63,14 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     if (file) {
       try {
         const uploaded = await handleFileUpload(file, type);
-        if (type === 'image') setImageFile(uploaded);
-        else setAudioFile(uploaded);
+        // 适配接口返回的 fileUrl 用于回显和提交
+        const fileData = {
+            ...uploaded,
+            url: uploaded.fileUrl || uploaded.url
+        };
+
+        if (type === 'image') setImageFile(fileData);
+        else setAudioFile(fileData);
       } catch (error) {
         // Handled by parent
       }
@@ -80,11 +103,11 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     const file = e.dataTransfer.files?.[0];
     if (file) {
       if (type === 'image' && !file.type.startsWith('image/')) {
-        alert('请上传图片文件');
+        toast.error('请上传图片文件');
         return;
       }
       if (type === 'audio' && !file.type.startsWith('audio/')) {
-        alert('请上传音频文件');
+        toast.error('请上传音频文件');
         return;
       }
       onUpload(file, type);
@@ -109,7 +132,6 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
     try {
       setGenerating(true);
-      setErrorMessage(null);
       setProgress(0);
       setResultVideoUrl(null);
 
@@ -128,7 +150,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
       }
 
     } catch (error: any) {
-      setErrorMessage(error.message || '生成失败');
+      toast.error(error.message || '生成失败');
       setGenerating(false);
     }
   };
@@ -145,13 +167,23 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
               const status = data.status;
 
               if (status === 'done' && data.video_url) {
-                  setResultVideoUrl(data.video_url);
+                  try {
+                    // 生成成功后，将视频转存到 OSS
+                    const ossInfo = await uploadService.uploadByVideoUrl(data.video_url, 'mp4');
+                    // 使用转存后的 OSS URL
+                    setResultVideoUrl(ossInfo.url);
+                  } catch (uploadError) {
+                    console.error('OSS upload failed:', uploadError);
+                    // 如果转存失败，仍尝试使用原始 URL
+                    setResultVideoUrl(data.video_url);
+                  }
+                  
                   setProgress(100);
                   setGenerating(false);
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-                  alert('生成成功！');
+                  toast.success('生成成功！');
               } else if (status === 'failed') {
-                  setErrorMessage(data.error_msg || '生成失败');
+                  toast.error(data.error_msg || '生成失败');
                   setGenerating(false);
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
               } else {
@@ -159,7 +191,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                   setProgress(prev => Math.min(prev + Math.floor(Math.random() * 5), 95));
                   attempts++;
                   if (attempts >= maxAttempts) {
-                      setErrorMessage('任务超时');
+                      toast.error('任务超时');
                       setGenerating(false);
                       if (pollTimerRef.current) clearInterval(pollTimerRef.current);
                   }
@@ -169,7 +201,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
               attempts++;
               if (attempts >= maxAttempts) {
                   setGenerating(false);
-                  setErrorMessage('查询失败');
+                  toast.error('查询失败');
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
               }
           }
@@ -199,7 +231,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    onDragOver={(e) => handleDragOver(e, 'image')}
                    onDragLeave={(e) => handleDragLeave(e, 'image')}
                    onDrop={(e) => handleDrop(e, 'image')}
-                   className={`relative aspect-[9/16] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
+                   className={`max-h-[500px] w-[100%] relative aspect-[9/16] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
                      ${imageFile 
                         ? 'border-indigo-500 bg-gray-50 dark:bg-gray-900' 
                         : isImageDragOver 
@@ -294,8 +326,8 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                        </>
                    ) : (
                        <>
-                         <Play size={20} fill="currentColor" />
-                         <span>生成唱歌数字人</span>
+                         <SvgPointsIcon className="mr-2 size-6" />
+                         <span>7 生成唱歌数字人</span>
                        </>
                    )}
                </button>
@@ -356,16 +388,21 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    </div>
 
                    <div className="flex flex-wrap items-center justify-center gap-4">
-                       <a 
-                          href={resultVideoUrl} 
-                          download 
-                          target="_blank" 
-                          rel="noreferrer"
+                       <button 
+                          onClick={() => {
+                              if (!resultVideoUrl) return;
+                              const link = document.createElement('a');
+                              link.href = resultVideoUrl;
+                              link.download = `singing_avatar_${new Date().getTime()}.mp4`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                          }} 
                           className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
                        >
                            <Video size={20} />
                            下载视频
-                       </a>
+                       </button>
                        <button 
                           onClick={handleAddToMaterials}
                           className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
@@ -375,7 +412,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                        </button>
                        <button 
                           onClick={() => { setResultVideoUrl(null); setProgress(0); }} 
-                          className="px-6 py-3 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition"
+                          className="px-6 py-3 bg-white text-gray-500 hover:text-gray-700 border border-gray-200 dark:text-gray-400 rounded-xl dark:hover:text-gray-200 transition"
                        >
                            重新生成
                        </button>
@@ -397,7 +434,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
           isOpen={showMaterialModal}
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
-              alert('已添加到素材库');
+              toast.success('已添加到素材库');
           }}
           initialData={{
               assetName: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,

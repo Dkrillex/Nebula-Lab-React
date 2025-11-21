@@ -45,9 +45,10 @@ interface DigitalHumanPageProps {
       generate: string;
     };
   };
+  productAvatarT: any;
 }
 
-const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
+const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }) => {
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'video' | 'product' | 'singing'>('video');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -79,27 +80,57 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
     try {
       setAvatarLoading(true);
       setAvatarList([]);
-      const res = await avatarService.getAiAvatarList({ 
-        pageNo: avatarPagination.current, 
-        pageSize: avatarPagination.pageSize,
-        gender: avatarPagination.gender,
-        isCustom: isCustomAvatar,
-      });
+
+      let res;
       
-      if (res.code === 200) {
+      if (isCustomAvatar) {
+        // 个人模板参数：assetTypeList='3,9', isPrivateModel='1'
+        res = await avatarService.adsAssetsList({ 
+          pageNo: avatarPagination.current, 
+          pageSize: avatarPagination.pageSize,
+          assetTypeList: '3,9',
+          isPrivateModel: '1',
+        });
+      } else {
+        // 公共模板参数：gender, isCustom
+        res = await avatarService.getAiAvatarList({ 
+          pageNo: avatarPagination.current, 
+          pageSize: avatarPagination.pageSize,
+          gender: avatarPagination.gender,
+          isCustom: isCustomAvatar, // false
+        });
+      }
+      
+      if (res.code === '200' || res.code === 200) {
         let avatarData: AiAvatar[] = [];
         let total = 0;
         
-        if ((res as any).result?.data) {
-          avatarData = (res as any).result.data;
-          total = (res as any).result.total || 0;
-        } else if (res.data?.result?.data) {
-          avatarData = res.data.result.data;
-          total = res.data.result.total || 0;
-        } else if (res.data && typeof res.data === 'object' && 'data' in res.data) {
-          const dataObj = res.data as unknown as { data?: AiAvatar[]; total?: number };
-          avatarData = Array.isArray(dataObj.data) ? dataObj.data : [];
-          total = dataObj.total || 0;
+        if (isCustomAvatar) {
+           // 处理 adsAssetsList 返回结构
+           const rows = (res as any).rows || (res as any).result?.rows || (res.data as any)?.rows || [];
+           avatarData = rows.map((item: any) => ({
+             ...item,
+             aiavatarId: item.aiAvatarId,
+             aiavatarName: item.assetName,
+             coverUrl: item.assetUrl, // 使用 assetUrl 作为封面
+             thumbnailUrl: item.assetUrl,
+             previewVideoUrl: item.assetUrl, // 使用 assetUrl 作为预览视频
+             gender: 'unknown' // 个人素材可能没有性别字段
+           }));
+           total = (res as any).total || (res as any).result?.total || (res.data as any)?.total || 0;
+        } else {
+          // 处理 getAiAvatarList 返回结构
+          if ((res as any).result?.data) {
+            avatarData = (res as any).result.data;
+            total = (res as any).result.total || 0;
+          } else if (res.data?.result?.data) {
+            avatarData = res.data.result.data;
+            total = res.data.result.total || 0;
+          } else if (res.data && typeof res.data === 'object' && 'data' in res.data) {
+            const dataObj = res.data as unknown as { data?: AiAvatar[]; total?: number };
+            avatarData = Array.isArray(dataObj.data) ? dataObj.data : [];
+            total = dataObj.total || 0;
+          }
         }
         
         setAvatarList(avatarData || []);
@@ -117,30 +148,26 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
       setUploading(true);
       setErrorMessage(null);
       
-      const res = await uploadService.uploadFile(file);
-      if (res.code === 200 && res.data) {
-          const uploadedFile: UploadedFile = {
-              fileId: res.data.ossId,
-              fileName: res.data.fileName,
-              fileUrl: res.data.url,
-              format: file.name.split('.').pop() || '',
-          };
-          // Check audio duration if needed (requires loading audio)
-          if (type === 'audio') {
-               const audio = new Audio(res.data.url);
-               await new Promise(resolve => {
-                   audio.onloadedmetadata = () => {
-                       uploadedFile.duration = audio.duration;
-                       resolve(null);
-                   };
-                   audio.onerror = () => resolve(null); // Proceed even if metadata fails
-               });
-          }
-
-          return uploadedFile;
-      } else {
-          throw new Error(res.msg || 'Upload failed');
+      const data = await uploadService.uploadFile(file);
+      const uploadedFile: UploadedFile = {
+          fileId: data.ossId,
+          fileName: data.fileName,
+          fileUrl: data.url,
+          format: file.name.split('.').pop() || '',
+      };
+      // Check audio duration if needed (requires loading audio)
+      if (type === 'audio') {
+            const audio = new Audio(data.url);
+            await new Promise(resolve => {
+                audio.onloadedmetadata = () => {
+                    uploadedFile.duration = audio.duration;
+                    resolve(null);
+                };
+                audio.onerror = () => resolve(null); // Proceed even if metadata fails
+            });
       }
+
+      return uploadedFile;
     } catch (error: any) {
       console.error('File upload failed:', error);
       setErrorMessage(error.message || '文件上传失败');
@@ -151,7 +178,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
   };
 
   return (
-    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
+    <div className="w-full h-full bg-gray-50 dark:bg-gray-900 p-4 md:p-5 flex flex-col gap-4 overflow-hidden">
       
       {/* Header */}
       <div className="text-center text-gray-800 dark:text-gray-100 space-y-2 flex-shrink-0">
@@ -216,7 +243,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
           )}
           {activeTab === 'product' && (
             <DigitalHumanProduct 
-                t={t}
+                t={productAvatarT}
                 handleFileUpload={handleFileUpload}
                 uploading={uploading}
                 setErrorMessage={setErrorMessage}
@@ -240,6 +267,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t }) => {
           onSelect={(avatar) => {
             setSelectedAvatar(avatar);
             setShowAvatarModal(false);
+            setVideoPreviewStates({});
           }}
           onClose={() => {
             setShowAvatarModal(false);
@@ -301,6 +329,34 @@ const AvatarModal: React.FC<{
   onVideoPreview,
   previewStates,
 }) => {
+  // 使用 useRef 来存储当前的定时器 ID
+  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+
+  // 处理鼠标移入：添加延时，避免快速划过时触发大量视频加载
+  const handleMouseEnter = (avatarId: string) => {
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      onVideoPreview(avatarId, true);
+    }, 600); // 600ms 延迟
+  };
+
+  // 处理鼠标移出：立即清除定时器并停止播放
+  const handleMouseLeave = (avatarId: string) => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+      hoverTimeoutRef.current = null;
+    }
+    onVideoPreview(avatarId, false);
+  };
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col">
@@ -348,15 +404,14 @@ const AvatarModal: React.FC<{
                 {avatars.map(avatar => (
                   <div
                     key={avatar.aiavatarId}
-                    onMouseEnter={() => onVideoPreview(avatar.aiavatarId, true)}
-                    onMouseLeave={() => onVideoPreview(avatar.aiavatarId, false)}
+                    onMouseEnter={() => handleMouseEnter(avatar.aiavatarId)}
+                    onMouseLeave={() => handleMouseLeave(avatar.aiavatarId)}
                     onClick={() => onSelect(avatar)}
                     className={`relative aspect-[9/16] w-full rounded-lg overflow-hidden cursor-pointer transition hover:shadow-lg ${selected?.aiavatarId === avatar.aiavatarId ? 'ring-2 ring-offset-2 ring-indigo-500' : 'border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-300'}`}
                   >
-                    {previewStates[avatar.aiavatarId] && avatar.previewVideoUrl ? (
+                    <img src={avatar.thumbnailUrl || avatar.coverUrl} alt={avatar.aiavatarName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/assets/images/nullAvatar.png'; }} />
+                    {previewStates[avatar.aiavatarId] && avatar.previewVideoUrl && (
                       <video src={avatar.previewVideoUrl} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
-                    ) : (
-                      <img src={avatar.thumbnailUrl || avatar.coverUrl} alt={avatar.aiavatarName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/assets/images/nullAvatar.png'; }} />
                     )}
                     {selected?.aiavatarId === avatar.aiavatarId && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
