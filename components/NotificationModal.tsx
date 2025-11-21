@@ -201,7 +201,7 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
                       <div className="flex items-start gap-3 overflow-hidden">
                         <div className={`mt-1 p-1.5 rounded-full flex-shrink-0 ${
                           notice.status === 'unread' 
-                            ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' 
+                            ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' 
                             : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
                         }`}>
                           {notice.status === 'unread' ? <Mail size={14} /> : <MailOpen size={14} />}

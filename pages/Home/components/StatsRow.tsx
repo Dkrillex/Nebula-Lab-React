@@ -20,7 +20,7 @@ const StatsRow: React.FC = () => {
         </div>
 
         <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-[0_2px_10px_rgba(0,0,0,0.02)]">
-          <div className="text-3xl md:text-4xl font-bold text-blue-600 mb-2">500+</div>
+          <div className="text-3xl md:text-4xl font-bold text-indigo-600 mb-2">500+</div>
           <div className="text-sm text-gray-500 font-medium">Models</div>
         </div>
       </div>

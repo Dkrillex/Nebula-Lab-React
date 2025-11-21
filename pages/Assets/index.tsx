@@ -7,6 +7,7 @@ import {
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
 import { useAppOutletContext } from '../../router';
+import AddMaterialModal from '../../components/AddMaterialModal';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -50,9 +51,54 @@ const AssetsPage: React.FC = () => {
   const [resultSearch, setResultSearch] = useState('');
   const [showFilterPanel, setShowFilterPanel] = useState(true);
 
+  // Modal状态
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addModalConfig, setAddModalConfig] = useState<{
+    isFolder: boolean;
+    folderId?: string | number;
+    editData?: Partial<AdsAssetsVO>;
+  }>({ isFolder: false });
+  
+  const [showMoveModal, setShowMoveModal] = useState(false);
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+  const [previewAsset, setPreviewAsset] = useState<AdsAssetsVO | null>(null);
+
+  // 拖拽状态
+  const [draggedAsset, setDraggedAsset] = useState<AdsAssetsVO | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
   // 用户团队信息
   const userTeams = user?.team || [];
   const hasTeams = userTeams.length > 0;
+
+  // 权限检查
+  const isTeamLeaderOrChannelAdmin = (teamId?: number | string) => {
+    if (!teamId) return false;
+    const team = userTeams.find((t: any) => t.teamId === teamId);
+    if (!team) return false;
+    return team.userAuthType === 2 || team.channel?.channelUserId === user?.userId;
+  };
+
+  const isRootTeamFolder = (asset: AdsAssetsVO) => {
+    return (
+      activeTab === 'shared' &&
+      !currentFolderId &&
+      asset.dataType === 2 &&
+      !asset.assetPackageId
+    );
+  };
+
+  const canEditAsset = (asset: AdsAssetsVO) => {
+    if (activeTab === 'personal') return true;
+    if (activeTab === 'shared') {
+      if (isRootTeamFolder(asset)) return false;
+      if ((asset as any).createBy === String(user?.userId)) return true;
+      if ((asset as any).teamId && isTeamLeaderOrChannelAdmin((asset as any).teamId)) return true;
+      return false;
+    }
+    return false;
+  };
 
   // 获取素材列表
   const fetchAssets = async () => {
@@ -66,12 +112,10 @@ const AssetsPage: React.FC = () => {
         isShare: activeTab === 'shared' ? 1 : 0,
       };
 
-      // 个人文件使用当前用户ID
       if (activeTab === 'personal') {
         queryParams.designerId = user?.userId;
       }
 
-      // 共享文件处理团队ID
       if (activeTab === 'shared' && hasTeams) {
         if (currentFolderId && currentFolderInfo && (currentFolderInfo as any).teamId) {
           queryParams.teamId = String((currentFolderInfo as any).teamId);
@@ -81,7 +125,6 @@ const AssetsPage: React.FC = () => {
         }
       }
 
-      // 添加筛选条件
       if (filters.assetName) queryParams.assetName = filters.assetName;
       if (filters.assetType) queryParams.assetType = filters.assetType;
       if (filters.assetTag) queryParams.assetTag = filters.assetTag;
@@ -92,8 +135,6 @@ const AssetsPage: React.FC = () => {
       
       if (res.rows) {
         const allAssets = res.rows || [];
-        
-        // 区分文件夹和文件
         const folderList = allAssets.filter((item) => item.dataType === 2);
         const fileList = allAssets.filter(
           (item) => item.dataType === 1 || item.dataType === undefined || item.dataType === null
@@ -117,7 +158,6 @@ const AssetsPage: React.FC = () => {
     fetchAssets();
   };
 
-  // 重置筛选条件
   const handleReset = () => {
     setFilters({
       assetName: '',
@@ -172,10 +212,10 @@ const AssetsPage: React.FC = () => {
   // 分页处理
   const handlePageChange = (page: number, pageSize?: number) => {
     setPagination(prev => ({
+      ...prev,
       current: page,
       pageSize: pageSize || prev.pageSize,
     }));
-    fetchAssets();
   };
 
   // 选择处理
@@ -199,9 +239,51 @@ const AssetsPage: React.FC = () => {
     }
   };
 
+  // 新建文件夹
+  const handleCreateFolder = () => {
+    const folderData: any = {
+      dataType: 2,
+      assetPackageId: currentFolderId,
+      isShare: activeTab === 'shared' ? 1 : 0,
+    };
+
+    if (activeTab === 'shared' && (currentFolderInfo as any)?.teamId) {
+      folderData.teamId = (currentFolderInfo as any).teamId;
+    }
+
+    setAddModalConfig({ isFolder: true, folderId: currentFolderId || undefined });
+    setShowAddModal(true);
+  };
+
+  // 上传文件
+  const handleUpload = () => {
+    const fileData: any = {
+      dataType: 1,
+      assetPackageId: currentFolderId,
+      isShare: activeTab === 'shared' ? 1 : 0,
+    };
+
+    if (activeTab === 'shared' && (currentFolderInfo as any)?.teamId) {
+      fileData.teamId = (currentFolderInfo as any).teamId;
+    }
+
+    setAddModalConfig({ isFolder: false, folderId: currentFolderId || undefined });
+    setShowAddModal(true);
+  };
+
+  // 编辑
+  const handleEdit = (asset: AdsAssetsVO) => {
+    setAddModalConfig({
+      isFolder: asset.dataType === 2,
+      folderId: currentFolderId || undefined,
+      editData: asset,
+    });
+    setShowAddModal(true);
+  };
+
   // 删除处理
   const handleDelete = async (asset: AdsAssetsVO) => {
-    if (!confirm('确认删除该素材吗？')) return;
+    if (!confirm(`确认删除该${asset.dataType === 2 ? '文件夹' : '素材'}吗？`)) return;
     
     try {
       await assetsService.removeAssets(asset.id);
@@ -217,11 +299,7 @@ const AssetsPage: React.FC = () => {
     if (!confirm(`确认删除选中的 ${selectedAssets.size} 个素材吗？`)) return;
 
     try {
-      const ids: (number | string)[] = Array.from(selectedAssets).map((id: string) => {
-        // 尝试转换为数字，如果失败则保持字符串
-        const numId = Number(id);
-        return isNaN(numId) ? id : numId;
-      });
+      const ids: (number | string)[] = Array.from(selectedAssets);
       await assetsService.removeAssets(ids);
       setSelectedAssets(new Set());
       await fetchAssets();
@@ -229,6 +307,138 @@ const AssetsPage: React.FC = () => {
       console.error('Multi delete failed:', error);
       alert('删除失败');
     }
+  };
+
+  // 移动功能
+  const handleMove = () => {
+    if (selectedAssets.size === 0) return;
+    setShowMoveModal(true);
+  };
+
+  const handleMoveConfirm = async (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => {
+    try {
+      const ids = Array.from(selectedAssets);
+      const isShare = activeTab === 'personal' && targetTab === 'shared';
+      
+      if (isShare && teamId) {
+        // 分享到共享文件（复制）
+        for (const id of ids) {
+          const asset = assets.find(a => String(a.id) === id);
+          if (!asset) continue;
+          
+          await assetsService.addAssets({
+            ...asset,
+            id: undefined,
+            assetPackageId: targetFolderId || undefined,
+            teamId: teamId,
+            isShare: 1,
+            createTime: undefined,
+            updateTime: undefined,
+          });
+        }
+        alert('分享成功');
+      } else {
+        // 移动文件
+        await assetsService.moveAssets(ids, targetFolderId || undefined);
+        alert('移动成功');
+      }
+
+      setSelectedAssets(new Set());
+      setShowMoveModal(false);
+      await fetchAssets();
+    } catch (error) {
+      console.error('操作失败:', error);
+      alert('操作失败');
+    }
+  };
+
+  // 拖拽功能
+  const handleDragStart = (asset: AdsAssetsVO, e: React.DragEvent) => {
+    if (isRootTeamFolder(asset)) {
+      e.preventDefault();
+      return;
+    }
+    setDraggedAsset(asset);
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setDraggedAsset(null);
+    setDragOverFolder(null);
+    setIsDragging(false);
+  };
+
+  const handleDragEnter = (folderId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (draggedAsset && String(draggedAsset.id) !== folderId) {
+      setDragOverFolder(folderId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = async (folderId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedAsset || String(draggedAsset.id) === folderId) return;
+
+    try {
+      await assetsService.moveAssets([String(draggedAsset.id)], folderId);
+      await fetchAssets();
+      alert('移动成功');
+    } catch (error) {
+      console.error('拖拽移动失败:', error);
+      alert('移动失败');
+    } finally {
+      handleDragEnd();
+    }
+  };
+
+  const handleDropToRoot = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!draggedAsset) return;
+
+    if (activeTab === 'shared') {
+      alert('共享文件不支持拖拽到根目录');
+      handleDragEnd();
+      return;
+    }
+
+    try {
+      await assetsService.moveAssets([String(draggedAsset.id)], undefined);
+      await fetchAssets();
+      alert('移动成功');
+    } catch (error) {
+      console.error('拖拽移动失败:', error);
+      alert('移动失败');
+    } finally {
+      handleDragEnd();
+    }
+  };
+
+  // 预览功能
+  const handlePreview = (asset: AdsAssetsVO) => {
+    setPreviewAsset(asset);
+    setShowPreviewModal(true);
+  };
+
+  // 下载功能
+  const handleDownload = async (asset: AdsAssetsVO) => {
+    if (!asset.assetUrl || !asset.assetName) {
+      alert('素材URL或名称不存在');
+      return;
+    }
+    const a = document.createElement('a');
+    a.href = asset.assetUrl;
+    a.download = asset.assetName;
+    a.click();
   };
 
   // 初始化加载
@@ -370,7 +580,12 @@ const AssetsPage: React.FC = () => {
 
         {/* Breadcrumb */}
         {breadcrumbPath.length > 1 && (
-          <div className="border-b border-border bg-surface/50 px-8 py-3 flex items-center gap-2 flex-shrink-0">
+          <div 
+            className="border-b border-border bg-surface/50 px-8 py-3 flex items-center gap-2 flex-shrink-0"
+            onDrop={handleDropToRoot}
+            onDragOver={(e) => e.preventDefault()}
+            onDragEnter={() => setDragOverFolder(null)}
+          >
             {breadcrumbPath.map((item, index) => (
               <React.Fragment key={index}>
                 {index > 0 && <ChevronRight size={16} className="text-muted" />}
@@ -422,25 +637,32 @@ const AssetsPage: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0">
-            <ActionButton 
-              icon={FolderPlus} 
-              label={t.newFolder} 
-              color="bg-orange-500 text-white hover:bg-orange-600"
-              onClick={() => alert('创建文件夹功能待实现')}
-            />
-            <ActionButton 
-              icon={Upload} 
-              label={t.upload} 
-              color="bg-indigo-500 text-white hover:bg-indigo-600"
-              onClick={() => alert('上传功能待实现')}
-            />
-            <ActionButton 
-              icon={Move} 
-              label={t.move} 
-              color="bg-surface border border-border text-muted hover:text-foreground"
-              onClick={() => alert('移动功能待实现')}
-              disabled={selectedAssets.size === 0}
-            />
+            {/* 共享文件tab中，根目录不显示新建文件夹和上传按钮 */}
+            {!(activeTab === 'shared' && !currentFolderId) && (
+              <>
+                <ActionButton 
+                  icon={FolderPlus} 
+                  label={t.newFolder} 
+                  color="bg-orange-500 text-white hover:bg-orange-600"
+                  onClick={handleCreateFolder}
+                />
+                <ActionButton 
+                  icon={Upload} 
+                  label={t.upload} 
+                  color="bg-indigo-500 text-white hover:bg-indigo-600"
+                  onClick={handleUpload}
+                />
+              </>
+            )}
+            {!(activeTab === 'shared' && !currentFolderId) && (
+              <ActionButton 
+                icon={Move} 
+                label={t.move} 
+                color="bg-surface border border-border text-muted hover:text-foreground"
+                onClick={handleMove}
+                disabled={selectedAssets.size === 0}
+              />
+            )}
             <ActionButton 
               icon={Trash2} 
               label={t.delete} 
@@ -481,7 +703,19 @@ const AssetsPage: React.FC = () => {
                   isSelected={selectedAssets.has(String(asset.id))}
                   onSelect={() => handleSelectAsset(String(asset.id))}
                   onFolderClick={() => handleFolderClick(asset)}
+                  onEdit={() => handleEdit(asset)}
                   onDelete={() => handleDelete(asset)}
+                  onPreview={() => handlePreview(asset)}
+                  onDownload={() => handleDownload(asset)}
+                  canEdit={canEditAsset(asset)}
+                  isRootTeamFolder={isRootTeamFolder(asset)}
+                  onDragStart={(e) => handleDragStart(asset, e)}
+                  onDragEnd={handleDragEnd}
+                  onDragEnter={(e) => handleDragEnter(String(asset.id), e)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(String(asset.id), e)}
+                  isDragOver={dragOverFolder === String(asset.id)}
+                  isDragging={isDragging && draggedAsset?.id === asset.id}
                 />
                ))}
             </div>
@@ -511,6 +745,46 @@ const AssetsPage: React.FC = () => {
           )}
          </div>
       </main>
+
+      {/* Add/Edit Modal */}
+      {showAddModal && (
+        <AddMaterialModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSuccess={() => {
+            setShowAddModal(false);
+            fetchAssets();
+          }}
+          initialIsFolder={addModalConfig.isFolder}
+          initialFolderId={addModalConfig.folderId}
+          initialData={addModalConfig.editData}
+        />
+      )}
+
+      {/* Preview Modal */}
+      {showPreviewModal && previewAsset && (
+        <PreviewModal
+          asset={previewAsset}
+          onClose={() => setShowPreviewModal(false)}
+          onDownload={() => handleDownload(previewAsset)}
+        />
+      )}
+
+      {/* Move/Share Modal - Placeholder */}
+      {showMoveModal && (
+        <MoveModal
+          visible={showMoveModal}
+          onClose={() => setShowMoveModal(false)}
+          onConfirm={handleMoveConfirm}
+          sourceTab={activeTab}
+          hasTeams={hasTeams}
+          teamIds={userTeams.map((t: any) => t.teamId).join(',')}
+          excludeIds={Array.from(selectedAssets)
+            .map(id => assets.find(a => String(a.id) === id))
+            .filter(a => a && a.dataType === 2)
+            .map(a => Number(a!.id))}
+        />
+      )}
     </div>
   );
 };
@@ -531,14 +805,30 @@ interface AssetCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onFolderClick: () => void;
+  onEdit: () => void;
   onDelete: () => void;
+  onPreview: () => void;
+  onDownload: () => void;
+  canEdit: boolean;
+  isRootTeamFolder: boolean;
+  onDragStart: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+  onDragEnter: (e: React.DragEvent) => void;
+  onDragLeave: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent) => void;
+  isDragOver: boolean;
+  isDragging: boolean;
 }
 
-const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFolderClick, onDelete }) => {
+const AssetCard: React.FC<AssetCardProps> = ({ 
+  asset, isSelected, onSelect, onFolderClick, onEdit, onDelete, onPreview, onDownload,
+  canEdit, isRootTeamFolder, onDragStart, onDragEnd, onDragEnter, onDragLeave, onDrop,
+  isDragOver, isDragging
+}) => {
   const isFolder = asset.dataType === 2;
   const thumbnailUrl = asset.thumbnailUrl || asset.coverUrl || asset.assetUrl;
+  const [showMenu, setShowMenu] = useState(false);
 
-  // 根据 assetType 判断文件类型
   const getFileType = () => {
     if (isFolder) return 'folder';
     switch (asset.assetType) {
@@ -555,8 +845,15 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
     <div 
       className={`group relative bg-background rounded-xl border-2 p-4 hover:shadow-lg transition-all cursor-pointer flex flex-col ${
         isSelected ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-border hover:border-indigo-300 dark:hover:border-indigo-700'
-      }`}
+      } ${isDragOver ? 'border-green-500 bg-green-50 scale-105' : ''} ${isDragging ? 'opacity-30' : ''}`}
       onClick={isFolder ? onFolderClick : undefined}
+      draggable={!isRootTeamFolder}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+      onDragEnter={isFolder ? onDragEnter : undefined}
+      onDragLeave={onDragLeave}
+      onDrop={isFolder ? onDrop : undefined}
+      onDragOver={(e) => isFolder && e.preventDefault()}
     >
       {/* Checkbox */}
       <div className="absolute top-3 left-3 z-10">
@@ -573,19 +870,83 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
        </div>
        
        {/* More Menu */}
+       {(canEdit || !isRootTeamFolder) && (
        <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <div className="relative">
           <button 
             onClick={(e) => {
               e.stopPropagation();
-              // TODO: 显示菜单
+              setShowMenu(!showMenu);
             }}
             className="p-1 rounded-md hover:bg-surface text-muted hover:text-foreground"
           >
              <MoreVertical size={16} />
           </button>
+          {showMenu && (
+            <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-border py-1 z-20">
+              {!isFolder && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPreview();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
+                  >
+                    <Eye size={14} />
+                    预览
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownload();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
+                  >
+                    <Download size={14} />
+                    下载
+                  </button>
+                </>
+              )}
+              {canEdit && (
+                <>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
+                  >
+                    <Edit2 size={14} />
+                    {isFolder ? '重命名' : '编辑'}
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete();
+                      setShowMenu(false);
+                    }}
+                    className="w-full px-4 py-2 text-sm text-left hover:bg-red-50 text-red-600 flex items-center gap-2"
+                  >
+                    <Trash2 size={14} />
+                    删除
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
        </div>
+       )}
+
+       {isRootTeamFolder && (
+         <div className="absolute top-3 right-3 z-10">
+           <span className="px-2 py-1 text-xs bg-purple-500 text-white rounded">团队文件夹</span>
+         </div>
+       )}
 
        {/* Thumbnail / Icon */}
        <div className="flex-1 flex items-center justify-center mb-4 min-h-[120px] bg-surface/30 rounded-lg overflow-hidden">
@@ -601,19 +962,8 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
             alt={asset.assetName || 'Asset'} 
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
             onError={(e) => {
-              // 图片加载失败时显示默认图标
               const target = e.target as HTMLImageElement;
               target.style.display = 'none';
-              const parent = target.parentElement;
-              if (parent) {
-                parent.innerHTML = `
-                  <div class="text-slate-400">
-                    ${fileType === 'image' ? '<svg>...</svg>' : ''}
-                    ${fileType === 'video' ? '<svg>...</svg>' : ''}
-                    ${fileType === 'audio' ? '<svg>...</svg>' : ''}
-                  </div>
-                `;
-              }
             }}
           />
              ) : (
@@ -648,6 +998,148 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, isSelected, onSelect, onFo
           </span>
        </div>
       )}
+    </div>
+  );
+};
+
+// Preview Modal Component
+interface PreviewModalProps {
+  asset: AdsAssetsVO;
+  onClose: () => void;
+  onDownload: () => void;
+}
+
+const PreviewModal: React.FC<PreviewModalProps> = ({ asset, onClose, onDownload }) => {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    return () => {
+      if (videoRef.current) {
+        videoRef.current.pause();
+      }
+    };
+  }, []);
+
+  const isVideo = ![6, 7].includes(asset.assetType || 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
+          <h2 className="text-lg font-semibold">素材预览</h2>
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-6">
+          {isVideo ? (
+            <video ref={videoRef} src={asset.assetUrl} controls autoPlay className="w-full rounded-lg" />
+          ) : (
+            <img src={asset.assetUrl} alt={asset.assetName || ''} className="w-full rounded-lg" />
+          )}
+          <div className="mt-4">
+            <h3 className="font-semibold text-lg mb-2">{asset.assetName}</h3>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="text-muted">类型：</span>
+                <span>{asset.assetType}</span>
+              </div>
+              <div>
+                <span className="text-muted">创建时间：</span>
+                <span>{asset.createTime}</span>
+              </div>
+            </div>
+            <button
+              onClick={onDownload}
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
+            >
+              <Download size={16} />
+              下载
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Move Modal Component (Simplified version - you can enhance this)
+interface MoveModalProps {
+  visible: boolean;
+  onClose: () => void;
+  onConfirm: (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => void;
+  sourceTab: 'personal' | 'shared';
+  hasTeams: boolean;
+  teamIds: string;
+  excludeIds: number[];
+}
+
+const MoveModal: React.FC<MoveModalProps> = ({ visible, onClose, onConfirm, sourceTab, hasTeams, teamIds }) => {
+  const [targetTab, setTargetTab] = useState<'personal' | 'shared'>(sourceTab);
+  const [selectedTeamId, setSelectedTeamId] = useState('');
+  const { user } = useAuthStore();
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6">
+        <h2 className="text-lg font-semibold mb-4">移动/分享到</h2>
+        
+        {sourceTab === 'personal' && hasTeams && (
+          <div className="space-y-4 mb-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                value="personal"
+                checked={targetTab === 'personal'}
+                onChange={() => setTargetTab('personal')}
+              />
+              个人文件夹
+            </label>
+            <label className="flex items-center gap-2">
+              <input
+                type="radio"
+                value="shared"
+                checked={targetTab === 'shared'}
+                onChange={() => setTargetTab('shared')}
+              />
+              共享文件夹
+            </label>
+          </div>
+        )}
+
+        {targetTab === 'shared' && (
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-2">选择团队</label>
+            <select
+              value={selectedTeamId}
+              onChange={(e) => setSelectedTeamId(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg border border-border bg-background"
+            >
+              <option value="">请选择团队</option>
+              {user?.team?.map((t: any) => (
+                <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2 border border-border rounded-lg">
+            取消
+          </button>
+          <button
+            onClick={() => onConfirm(null, targetTab, selectedTeamId)}
+            disabled={targetTab === 'shared' && !selectedTeamId}
+            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+          >
+            确定
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

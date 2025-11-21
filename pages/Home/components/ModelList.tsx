@@ -151,7 +151,7 @@ const ModelRow: React.FC<ModelRowProps> = ({ model, formatContext, formatPrice, 
             </span>
           )}
           {model.isFree && (
-            <span className="hidden sm:inline-flex rounded bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/20">
+            <span className="hidden sm:inline-flex rounded bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
               {t.free}
             </span>
           )}

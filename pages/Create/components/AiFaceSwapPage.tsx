@@ -419,7 +419,7 @@ export default AiFaceSwapPage;
 //               {videoUrl && videoUploadedUrl && (
 //                 <button
 //                   onClick={() => setIsVideoEditorOpen(true)}
-//                   className="absolute -top-5 -right-5 w-9 h-9 rounded-full bg-blue-600 border-2 border-white text-white flex items-center justify-center shadow-lg hover:bg-blue-700 transition-all hover:scale-110 z-10"
+//                   className="absolute -top-5 -right-5 w-9 h-9 rounded-full bg-indigo-600 border-2 border-white text-white flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all hover:scale-110 z-10"
 //                   title="编辑视频"
 //                 >
 //                   <Edit3 size={18} />

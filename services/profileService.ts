@@ -71,9 +71,7 @@ export const profileService = {
    * Endpoint: PUT /system/user/profile/updatePwd
    */
   changePassword: (data: ChangePasswordParams) => {
-    return request.put('/system/user/profile/updatePwd', {}, {
-      params: data
-    });
+    return request.put('/system/user/profile/updatePwd', data);
   }
 };
 

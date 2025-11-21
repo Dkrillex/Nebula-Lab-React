@@ -9,6 +9,7 @@ import TemplateSelectModal from './TemplateSelectModal';
 import ProductCanvas from './ProductCanvas';
 import MaskCanvas, { MaskCanvasRef, ToolType, TextOptions } from './MaskCanvas';
 import UploadComponent from '../../../components/UploadComponent';
+import toast from 'react-hot-toast';
 
 interface StyleTransferPageProps {
   t: {
@@ -89,7 +90,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // 模板相关
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
@@ -152,8 +152,40 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     { id: 'clothing', icon: Shirt, title: t.modes.clothing.title, desc: TEXTS.clothing.desc },
   ];
 
+  // 文件类型验证
+  const validateFileType = (file: File, type: 'product' | 'template' | 'garment' | 'model' | 'reference'): boolean => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // 创意模式的产品图和参考图只支持 png, jpg, jpeg
+    if (selectedMode === 'creative' && (type === 'product' || type === 'reference')) {
+      if (!['png', 'jpg', 'jpeg'].includes(fileExtension)) {
+        toast.error(`不支持的文件格式：${file.name}，请上传 PNG, JPG, JPEG 格式的图片`);
+        return false;
+      }
+    } else {
+      // 其他情况支持 png, jpg, jpeg, webp
+      if (!['png', 'jpg', 'jpeg', 'webp'].includes(fileExtension)) {
+        toast.error(`不支持的文件格式：${file.name}，请上传 PNG, JPG, JPEG, WEBP 格式的图片`);
+        return false;
+      }
+    }
+    
+    // 文件大小验证 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`文件大小超过限制：${file.name}，文件大小不能超过 10MB`);
+      return false;
+    }
+    
+    return true;
+  };
+
   // 处理图片上传（延迟上传，先本地预览）
   const handleImageUpload = (file: File, type: 'product' | 'template' | 'garment' | 'model' | 'reference') => {
+    // 验证文件类型
+    if (!validateFileType(file, type)) {
+      return;
+    }
+    
     const blobUrl = URL.createObjectURL(file);
     const imgData: UploadedImage = {
       fileName: file.name,
@@ -311,24 +343,31 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   // 试用示例
   const handleTryExample = async () => {
     try {
-      // Load product image
-      const productRes = await fetch('/demo/product.webp');
-      const productBlob = await productRes.blob();
-      const productFile = new File([productBlob], 'demo-product.webp', { type: 'image/webp' });
-      handleImageUpload(productFile, 'product');
-
       if (selectedMode === 'standard') {
+        // 标准模式：使用 product.webp 和 template.png
+        const productRes = await fetch('/demo/product.webp');
+        const productBlob = await productRes.blob();
+        const productFile = new File([productBlob], 'demo-product.webp', { type: 'image/webp' });
+        handleImageUpload(productFile, 'product');
+
         // Load template image for standard mode
         const templateRes = await fetch('/demo/template.png');
         const templateBlob = await templateRes.blob();
         const templateFile = new File([templateBlob], 'demo-template.png', { type: 'image/png' });
         handleImageUpload(templateFile, 'template');
       } else if (selectedMode === 'creative') {
+        // 创意模式：使用 creative-product.png
+        const productRes = await fetch('/demo/creative-product.png');
+        const productBlob = await productRes.blob();
+        const productFile = new File([productBlob], 'demo-product.png', { type: 'image/png' });
+        handleImageUpload(productFile, 'product');
+        
+        // 设置提示词
         setPrompt('把框选的东西变成黄色');
       }
     } catch (error) {
       console.error('Failed to load demo assets:', error);
-      setErrorMessage('加载示例图片失败，请确保assets目录正确');
+      toast.error('加载示例图片失败，请确保assets目录正确');
     }
   };
 
@@ -442,7 +481,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           setProgress(0);
           const errorMsg = taskResult.errorMsg || taskResult.error || taskResult.message || 'Generation failed';
           console.error('任务失败:', errorMsg);
-          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
         }
       } catch (error) {
         console.error('轮询查询出错:', error);
@@ -457,7 +496,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     setIsGenerating(true);
     setProgress(0);
     setGeneratedImages([]);
-    setErrorMessage(null);
 
     // 模拟进度
     progressInterval.current = setInterval(() => {
@@ -471,26 +509,13 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       if (selectedMode === 'creative') {
         // 创意模式
         if (!productImage) {
-          setErrorMessage('请上传产品图片');
+          toast.error('请上传产品图片');
           setIsGenerating(false);
           return;
         }
-        
-        // 校验文件格式 (png, jpg, jpeg only for creative mode)
-        const validTypes = ['image/png', 'image/jpeg', 'image/jpg'];
-        if (productImage.file && !validTypes.includes(productImage.file.type)) {
-             setErrorMessage('创意模式仅支持 PNG, JPG, JPEG 格式');
-             setIsGenerating(false);
-             return;
-        }
-        if (referenceImage && referenceImage.file && !validTypes.includes(referenceImage.file.type)) {
-             setErrorMessage('参考图片仅支持 PNG, JPG, JPEG 格式');
-             setIsGenerating(false);
-             return;
-        }
 
         if (!prompt.trim()) {
-          setErrorMessage('请输入提示词');
+          toast.error('请输入提示词');
           setIsGenerating(false);
           return;
         }
@@ -570,12 +595,12 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       } else if (selectedMode === 'standard') {
         // 标准模式
         if (!productImage) {
-          setErrorMessage('请上传产品图片');
+          toast.error('请上传产品图片');
           setIsGenerating(false);
           return;
         }
         if (!templateImage && !selectedTemplate) {
-          setErrorMessage('请上传模板图片或选择模板');
+          toast.error('请上传模板图片或选择模板');
           setIsGenerating(false);
           return;
         }
@@ -726,12 +751,12 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       } else if (selectedMode === 'clothing') {
         // 服装模式 - 上传到OSS
         if (!garmentImage) {
-          setErrorMessage('请上传服装图片');
+          toast.error('请上传服装图片');
           setIsGenerating(false);
           return;
         }
         if (!modelImage) {
-          setErrorMessage('请上传模特图片');
+          toast.error('请上传模特图片');
           setIsGenerating(false);
           return;
         }
@@ -833,7 +858,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       }
     } catch (error: any) {
       console.error('Generation error:', error);
-      setErrorMessage(error.message || 'Generation failed');
+      toast.error(error.message || 'Generation failed');
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
     }
@@ -860,28 +885,37 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     label: string,
     inputRef?: React.RefObject<HTMLInputElement>, // Optional now
     customClass?: string
-  ) => (
-    <UploadComponent
-      onFileSelected={(file) => handleImageUpload(file, type)}
-      onUploadComplete={() => {}} // Not used directly as we handle upload in generate
-      uploadType="oss" // Or 'tv' if needed, but we manually upload in generate
-      immediate={false}
-      accept="image/png,image/jpeg,image/webp"
-      className={customClass || "h-full min-h-[200px] w-full"}
-    >
-        <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
-            <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
-                <Upload size={24} />
-            </div>
-            <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
-            {type !== 'template' && (
-              <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
-                  {t.standard.support}
-              </p>
-            )}
-        </div>
-    </UploadComponent>
-  );
+  ) => {
+    // 创意模式的产品图和参考图只支持 PNG, JPG, JPEG
+    // 其他情况支持 PNG, JPG, JPEG, WEBP
+    const acceptTypes = (selectedMode === 'creative' && (type === 'product' || type === 'reference'))
+      ? "image/png,image/jpeg,image/jpg"
+      : "image/png,image/jpeg,image/jpg,image/webp";
+    
+    return (
+      <UploadComponent
+        onFileSelected={(file) => handleImageUpload(file, type)}
+        onUploadComplete={() => {}} // Not used directly as we handle upload in generate
+        onError={(error) => toast.error(error.message)}
+        uploadType="oss" // Or 'tv' if needed, but we manually upload in generate
+        immediate={false}
+        accept={acceptTypes}
+        className={customClass || "h-full min-h-[200px] w-full"}
+      >
+          <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
+                  <Upload size={24} />
+              </div>
+              <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
+              {type !== 'template' && (
+                <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
+                    {t.standard.support}
+                </p>
+              )}
+          </div>
+      </UploadComponent>
+    );
+  };
 
   const renderRadio = (value: 'top' | 'bottom' | 'full', label: string) => (
     <label className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-lg border transition-all ${
@@ -939,17 +973,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           </button>
         ))}
       </div>
-
-      {/* Error Message */}
-      {errorMessage && (
-        <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-600 dark:text-red-400 text-sm">
-          <AlertCircle size={16} />
-          <span>{errorMessage}</span>
-          <button onClick={() => setErrorMessage(null)} className="ml-auto">
-            <X size={16} />
-          </button>
-        </div>
-      )}
 
       {/* Main Content Grid */}
       <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden`}>
@@ -1212,9 +1235,10 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 <UploadComponent
                                   onFileSelected={(file) => handleImageUpload(file, 'reference')}
                                   onUploadComplete={() => {}}
+                                  onError={(error) => toast.error(error.message)}
                                   uploadType="oss"
                                   immediate={false}
-                                  accept="image/png,image/jpeg,image/webp"
+                                  accept="image/png,image/jpeg,image/jpg"
                                   className="absolute inset-0 border-none bg-transparent"
                                   showPreview={false} 
                                 >

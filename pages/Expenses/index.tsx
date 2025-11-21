@@ -449,7 +449,7 @@ const ScoreCard: React.FC<{
   return (
     <div className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div className="flex items-start gap-3">
-         <div className="mt-0.5 w-8 h-8 rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400 flex items-center justify-center shrink-0">
+         <div className="mt-0.5 w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 flex items-center justify-center shrink-0">
             <Wallet size={16} />
          </div>
          <div>
