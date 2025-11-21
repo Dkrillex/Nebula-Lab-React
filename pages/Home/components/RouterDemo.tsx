@@ -3,6 +3,7 @@ import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import ModelCard from './ModelCard';
 import { ModelCardData } from '../../../types';
 import { generateGeminiResponse } from '../service/geminiService';
+import { useNavigate } from 'react-router-dom';
 
 const MODELS: ModelCardData[] = [
   {
@@ -40,6 +41,7 @@ interface RouterDemoProps {
 }
 
 const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
+  const navigate = useNavigate();
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [activeModelId, setActiveModelId] = useState<string | null>(null);
@@ -130,7 +132,7 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
 
           <div 
             className={`
-              w-full bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300
+              w-full bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 lg:mt-16
               ${isProcessing ? 'border-violet-400 ring-1 ring-violet-100' : 'border-gray-200 hover:border-gray-300'}
             `}
           >
@@ -165,7 +167,7 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
                             className={`
                                 w-9 h-9 flex items-center justify-center rounded-lg transition-all duration-200 ml-2
                                 ${input.trim() && !isProcessing 
-                                    ? 'bg-violet-500 text-white hover:bg-violet-600 shadow-sm' 
+                                    ? 'bg-indigo-500 text-white hover:bg-indigo-600 shadow-sm' 
                                     : 'bg-gray-50 text-gray-300'
                                 }
                             `}
@@ -180,6 +182,18 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
                 )}
             </div>
           </div>
+          
+          <div className="mt-6 flex flex-row items-center gap-4 pl-1 relative z-20">
+             <button 
+               onClick={() => navigate('/models')}
+               className="h-11 rounded-lg bg-indigo-500 px-6 text-sm font-medium text-white hover:bg-indigo-400 transition-all flex items-center gap-2 shadow-sm"
+             >
+               立即体验 <ArrowRight size={16} />
+             </button>
+             <button className="h-11 rounded-lg border border-gray-200 bg-white px-6 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all flex items-center gap-2 shadow-sm">
+               联系我们
+             </button>
+          </div>
         </div>
 
         {/* Spacer for visual separation - Increased to 25% */}
@@ -190,7 +204,14 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
              {/* Header */}
              <div className="flex justify-between items-baseline mb-1 px-1">
                 <span className="text-sm font-medium text-gray-500">Featured Models</span>
-                <a href="#" className="text-xs text-violet-600 hover:text-violet-700 hover:underline flex items-center gap-0.5 font-medium">
+                <a 
+                  href="#trending-models" 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('trending-models')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                  className="text-xs text-violet-600 hover:text-violet-700 hover:underline flex items-center gap-0.5 font-medium"
+                >
                     View Trending <ArrowUpRight size={12}/>
                 </a>
              </div>

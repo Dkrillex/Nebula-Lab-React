@@ -11,7 +11,7 @@ const Home: React.FC = () => {
     <>
       <Hero t={t.hero} />
       <StatsRow />
-      <div className="relative z-10 -mt-8">
+      <div id="trending-models" className="relative z-10 -mt-8">
          <ModelList t={t.modelList} />
       </div>
     </>

@@ -14,7 +14,7 @@ const ModelCard: React.FC<ModelCardProps> = ({ data, isActive, onClick }) => {
       className={`
         relative w-full bg-white rounded-xl p-5 border transition-all duration-300 cursor-pointer group select-none
         ${isActive 
-          ? `border-${data.color}-500 shadow-[0_0_0_1px_rgba(59,130,246,1)] shadow-blue-100` 
+          ? `border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,1)] shadow-indigo-100` 
           : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
         }
       `}
