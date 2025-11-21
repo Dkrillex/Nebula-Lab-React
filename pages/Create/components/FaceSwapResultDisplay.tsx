@@ -162,7 +162,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   onClick={() => setViewMode(mode)}
                   className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors duration-200 ${
                     viewMode === mode
-                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
+                      ? 'bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] text-white'
                       : 'text-[#111827] hover:bg-[rgba(107,114,128,0.2)]'
                   }`}
                 >
@@ -275,10 +275,18 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
               </div>
               {/* 滑块控制条 */}
               <div
-                className="absolute bottom-0 top-0 w-1 cursor-ew-resize bg-purple-600"
-                style={{ left: `calc(${sliderPosition}% - 2px)` }}
+                className="absolute bottom-0 top-0 w-1 cursor-ew-resize"
+                style={{ 
+                  left: `calc(${sliderPosition}% - 2px)`,
+                  background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, #15b7fa 100%)'
+                }}
               >
-                <div className="absolute -left-3.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white bg-purple-600 text-white">
+                <div 
+                  className="absolute -left-3.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-white"
+                  style={{
+                    background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, #15b7fa 100%)'
+                  }}
+                >
                   <ChevronsLeftRight className="h-4 w-4" />
                 </div>
               </div>
@@ -302,7 +310,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
           {/* {onUseAsInput && (
             <button
               onClick={() => onUseAsInput(imageUrl)}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-4 font-semibold rounded-[10px] bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-sm transition-all duration-200 hover:shadow-lg"
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-4 font-semibold rounded-[10px] bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] text-white shadow-lg shadow-[rgba(255,150,172,0.25)] transition-all duration-200 hover:shadow-lg hover:shadow-[#7d6fdd]/30"
             >
               <span>用作输入</span>
             </button>

@@ -154,7 +154,12 @@ const AIFaceSwappingPage: React.FC = () => {
   return (
     <div className="container mx-auto p-4 md:p-8">
       <div className="mb-6 text-center">
-        <h1 className="mb-2 text-3xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+        <h1 className="mb-2 text-3xl font-bold" style={{
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text'
+        }}>
           AI 图片换脸
         </h1>
         <p className="text-muted-foreground">
@@ -166,7 +171,12 @@ const AIFaceSwappingPage: React.FC = () => {
         {/* 输入区域 */}
         <div className="flex flex-col gap-6 rounded-xl border border-[rgba(0,0,0,0.1)] bg-[rgba(255,255,255,0.6)] p-6 shadow-2xl shadow-black/20 backdrop-blur-lg">
           <div>
-            <h2 className="mb-4 text-center text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <h2 className="mb-4 text-center text-2xl font-bold" style={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text'
+            }}>
               AI 图片换脸
             </h2>
 
@@ -205,7 +215,7 @@ const AIFaceSwappingPage: React.FC = () => {
             <button
               onClick={handleGenerate}
               disabled={isGenerateDisabled}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-purple-600 to-pink-600 px-4 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] px-4 py-3 font-semibold text-[#ffffff] shadow-lg shadow-[rgba(255,150,172,0.25)] transition-all duration-200 hover:shadow-lg hover:shadow-[#7d6fdd]/30 disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:from-[#e5e7eb] disabled:to-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
             >
               {isGenerating ? (
                 <>
@@ -224,14 +234,17 @@ const AIFaceSwappingPage: React.FC = () => {
 
         {/* 输出区域 */}
         <div className="flex flex-col rounded-xl border border-[rgba(0,0,0,0.1)] bg-[rgba(255,255,255,0.6)] p-6 shadow-2xl shadow-black/20 backdrop-blur-lg">
-          <h2 className="mb-4 text-center text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+          <h2 className="mb-4 text-center text-xl font-bold" style={{
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text'
+          }}>
             生成结果
           </h2>
           <div className="mb-4 h-px w-full bg-gray-200"></div>
 
-          {isGenerating ? (
-            <LoadingSpinner message={loadingMessage} />
-          ) : error ? (
+          {error ? (
             <ErrorMessage message={error} />
           ) : generatedImageUrl ? (
             <FaceSwapResultDisplay
@@ -242,10 +255,16 @@ const AIFaceSwappingPage: React.FC = () => {
             />
           ) : (
             <div className="flex flex-grow flex-col items-center justify-center text-center text-[#6b7280]">
-              <div className="mb-4 h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center">
-                <Sparkles className="h-12 w-12 text-gray-400" />
-              </div>
-              <p className="mt-2">生成的图片将显示在这里</p>
+              {isGenerating ? (
+                <LoadingSpinner message={loadingMessage} />
+              ) : (
+                <>
+                  <div className="mb-4 h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center">
+                    <Sparkles className="h-12 w-12 text-gray-400" />
+                  </div>
+                  <p className="mt-2">生成的图片将显示在这里</p>
+                </>
+              )}
             </div>
           )}
         </div>
