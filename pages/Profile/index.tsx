@@ -5,7 +5,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff } from 'lucide-react';
 import EnterprisePage from '../Enterprise';
 import { useAppOutletContext } from '../../router';
-import { toast } from '../../components/Toast';
+import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
   const { t: rawT } = useAppOutletContext();
