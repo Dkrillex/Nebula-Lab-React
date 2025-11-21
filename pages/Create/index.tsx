@@ -14,6 +14,12 @@ import DigitalHumanPage from './components/DigitalHumanPage';
 import StyleTransferPage from './components/StyleTransferPage';
 import VoiceClone from './components/VoiceClone';
 import WorkshopPage from './components/WorkshopPage';
+import GlbViewerPage from './components/GlbViewerPage';
+import AiFaceSwapPage from './components/AiFaceSwapPage';
+import TtsPage from './components/TtsPage';
+import UseToolPage from './components/UseToolPage';
+import ImageTranslationPage from './components/ImageTranslationPage';
+import TemplateUiPage from './components/TemplateUiPage';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
@@ -456,24 +462,55 @@ const CreatePage: React.FC = () => {
   };
 
   const renderContent = () => {
+    // 文生图模块
     if (activeMenu === 'textToImage' && t.textToImage) {
       return <TextToImagePage t={t.textToImage} />;
     }
+    // 爆款视频模块
     if (activeMenu === 'viralVideo' && t.viralVideo) {
       return <ViralVideoPage t={t.viralVideo} />;
     }
+    // 图生视频模块
     if (activeMenu === 'imgToVideo' && t.imgToVideo) {
       return <ImageToVideoPage t={t.imgToVideo} />;
     }
+    // 数字人模块
     if (activeMenu === 'digitalHuman' && t.digitalHuman) {
       return <DigitalHumanPage t={t.digitalHuman} />;
     }
+    // 风格迁移模块
     if (activeMenu === 'styleTransfer' && t.styleTransfer) {
       return <StyleTransferPage t={t.styleTransfer} />;
     }
+    // 语音克隆模块
     if (activeMenu === 'voiceClone') {
       return <VoiceClone />;
     }
+    // 3D模型查看器模块
+    if (activeMenu === '3dModel' || activeMenu === 'glbViewer') {
+      return <GlbViewerPage />;
+    }
+    // AI视频换脸模块
+    if (activeMenu === 'aiFaceSwap' || activeMenu === 'faceSwap') {
+      return <AiFaceSwapPage />;
+    }
+    // 文本转语音模块
+    if (activeMenu === 'tts' || activeMenu === 'ttsTool') {
+      return <TtsPage />;
+    }
+    // 自定义提示工具模块（通用工具页面）
+    if (activeMenu === 'useTool') {
+      return <UseToolPage />;
+    }
+    // AI图片换脸模块
+    if (activeMenu === 'aIFacSwapping' || activeMenu === 'imageTranslation') {
+      return <ImageTranslationPage />;
+    }
+    // 创意生图模板模块
+    if (activeMenu === 'templateUi' || activeMenu === 'aiTemplate') {
+      return <TemplateUiPage />;
+    }
+    // 创作工坊模块（工具集合页面）
     if (activeMenu === 'workshop' && t.workshop) {
       return <WorkshopPage t={t.workshop} />;
     }
