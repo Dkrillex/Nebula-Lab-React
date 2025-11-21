@@ -13,6 +13,7 @@ import { uploadService } from '../../../services/uploadService';
 import { assetsService, AdsAssetsForm } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import toast from 'react-hot-toast';
 
 // 音色选项
 const voiceOptions = [
@@ -76,12 +77,12 @@ const TtsPage: React.FC = () => {
   // 生成音频
   const generateAudio = async () => {
     if (!isAuthenticated) {
-      alert('请先登录');
+      toast.error('请先登录');
       return;
     }
 
     if (!text.trim()) {
-      alert('请输入文本内容');
+      toast.error('请输入文本内容');
       return;
     }
 
@@ -138,13 +139,13 @@ const TtsPage: React.FC = () => {
         // onError
         (error: Error) => {
           console.error('生成音频失败:', error);
-          alert(error.message || '生成失败');
+          toast.error(error.message || '生成失败');
           setIsGenerating(false);
         }
       );
     } catch (error: any) {
       console.error('生成音频失败:', error);
-      alert(error.message || '生成失败');
+      toast.error(error.message || '生成失败');
       setIsGenerating(false);
     }
   };
@@ -165,12 +166,12 @@ const TtsPage: React.FC = () => {
   // 导入素材库
   const importToMaterials = async () => {
     if (!generatedAudio || !generatedAudio.url) {
-      alert('没有可导入的音频');
+      toast.error('没有可导入的音频');
       return;
     }
 
     if (generatedAudio.addState) {
-      alert('已导入素材库');
+      toast.info('已导入素材库');
       return;
     }
 
@@ -217,7 +218,7 @@ const TtsPage: React.FC = () => {
       setIsAddModalOpen(true);
     } catch (error: any) {
       console.error('导入素材失败:', error);
-      alert(error.message || '导入失败');
+      toast.error(error.message || '导入失败');
     }
   };
 

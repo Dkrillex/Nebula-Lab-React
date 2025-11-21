@@ -2,6 +2,7 @@ import React, { useRef, useState, forwardRef, useImperativeHandle } from 'react'
 import { Upload, Loader, X, File as FileIcon } from 'lucide-react';
 import { avatarService, UploadedFile } from '../services/avatarService';
 import { uploadService } from '../services/uploadService';
+import toast from 'react-hot-toast';
 
 export interface UploadComponentRef {
   triggerUpload: () => Promise<void>;
@@ -77,7 +78,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     // Size Validation
     if (selectedFile.size > maxSize * 1024 * 1024) {
         const error = new Error(`文件大小不能超过 ${maxSize}MB`);
-        onError ? onError(error) : alert(error.message);
+        onError ? onError(error) : toast.error(error.message);
         return;
     }
 
@@ -179,7 +180,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     } catch (error: any) {
       console.error('Upload error:', error);
       const err = error instanceof Error ? error : new Error('文件上传失败');
-      onError ? onError(err) : alert(err.message);
+      onError ? onError(err) : toast.error(err.message);
     } finally {
       setUploading(false);
     }

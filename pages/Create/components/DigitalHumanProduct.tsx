@@ -5,7 +5,7 @@ import UploadComponent from '../../../components/UploadComponent';
 import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
-import { toast } from '@/components/Toast';
+import toast from 'react-hot-toast';
 interface DigitalHumanProductProps {
   t: any;
   handleFileUpload: (file: File, type: 'image') => Promise<any>; 

@@ -3,7 +3,7 @@ import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2
 import { avatarService } from '@/services/avatarService';
 import { uploadService } from '@/services/uploadService';
 import AddMaterialModal from '@/components/AddMaterialModal';
-import { toast } from '@/components/Toast';
+import toast from 'react-hot-toast';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 

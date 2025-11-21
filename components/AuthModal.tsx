@@ -3,6 +3,7 @@ import { X, Smartphone, Lock, Mail, KeyRound, Loader2, UserPlus, Globe } from 'l
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/authService';
 import { TENANT_ID } from '../constants';
+import toast from 'react-hot-toast';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -293,7 +294,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
 4. 更多详情请访问我们的官网或联系客服。
     `.trim();
     
-    alert(content);
+    toast(content, { duration: 6000 });
   };
 
   if (!isOpen) return null;

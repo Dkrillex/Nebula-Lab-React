@@ -6,6 +6,7 @@ import { pricingService, PriceListVO } from '../../services/pricingService';
 import { orderService, OrderInfo } from '../../services/orderService';
 import { useAuthStore } from '../../stores/authStore';
 import BaseModal from '../../components/BaseModal';
+import toast from 'react-hot-toast';
 
 interface PricingPageProps {}
 
@@ -110,7 +111,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   const handlePayment = async (item: PriceListVO) => {
     if (!user) {
       // Handle not logged in - maybe redirect to login or show auth modal
-      alert('Please login first');
+      toast.error('Please login first');
       return;
     }
 
@@ -118,7 +119,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     if (item.productQuantity === 6) {
       const amount = Number(item.totalAmount);
       if (!amount || amount <= 0) {
-        alert('Please enter a valid amount');
+        toast.error('Please enter a valid amount');
         return;
       }
       // Optional: Check minimum amount if needed
@@ -182,7 +183,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         console.error('Failed to create WeChat order', res);
         // 如果有错误信息，可以在这里显示
         if (res.msg) {
-          alert(res.msg);
+          toast.error(res.msg);
         }
       }
     } catch (error) {
@@ -256,7 +257,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       } else {
         console.error('Failed to create Antom payment session', res);
         if (res.msg) {
-          alert(res.msg);
+          toast.error(res.msg);
         }
       }
     } catch (error) {
@@ -274,7 +275,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
         if (data.paymentStatus === 'SUCCESS') {
           setPayStatus('success');
-          alert('Payment Successful!');
+          toast.success('Payment Successful!');
           // Refresh user info
           useAuthStore.getState().fetchUserInfo();
         } else if (data.paymentStatus === 'FAIL') {
@@ -307,8 +308,8 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
   const paymentOptions = [
     { value: 'wechat', label: t.wechatPay, color: 'bg-green-500' },
-    { value: 'Alipay', label: 'Alipay', color: 'bg-blue-500' },
-    { value: 'AlipayHK', label: 'AlipayHK', color: 'bg-blue-600' },
+    { value: 'Alipay', label: 'Alipay', color: 'bg-indigo-500' },
+    { value: 'AlipayHK', label: 'AlipayHK', color: 'bg-indigo-600' },
     // Add more options as needed from the reference if required
   ];
 
@@ -376,14 +377,14 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               let btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               
               if (isEnterprise) {
-                borderColor = 'border-purple-400 dark:border-purple-600';
-                btnColor = 'bg-purple-600 hover:bg-purple-700';
+                borderColor = 'border-indigo-400 dark:border-indigo-600';
+                btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               } else if (isFree) {
                 borderColor = 'border-green-200 dark:border-green-800';
                 btnColor = 'bg-green-600 hover:bg-green-700';
               } else if (item.productName === 'Business') {
-                borderColor = 'border-blue-200 dark:border-blue-800';
-                btnColor = 'bg-blue-600 hover:bg-blue-700';
+                borderColor = 'border-indigo-200 dark:border-indigo-800';
+                btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               }
 
               return (

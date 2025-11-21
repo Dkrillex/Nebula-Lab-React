@@ -7,7 +7,7 @@ import CaptionModal from './CaptionModal';
 import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
 import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
-import { toast } from '@/components/Toast';
+import toast from 'react-hot-toast';
 import AddMaterialModal from '@/components/AddMaterialModal';
 interface DigitalHumanVideoProps {
   t: any;

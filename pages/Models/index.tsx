@@ -620,7 +620,7 @@ const ModelCard: React.FC<{
     // 这里我们打算彻底改变卡片样式，所以这个函数可能不再需要作为背景色返回
     const p = model.provider.toLowerCase();
     if (p.includes('openai')) return 'text-emerald-600 bg-emerald-50';
-    if (p.includes('google')) return 'text-blue-600 bg-blue-50';
+    if (p.includes('google')) return 'text-indigo-600 bg-indigo-50';
     if (p.includes('claude')) return 'text-orange-600 bg-orange-50';
     if (p.includes('meta')) return 'text-sky-600 bg-sky-50';
     if (p.includes('万象') || p.includes('alibaba') || p.includes('qwen')) return 'text-violet-600 bg-violet-50';
@@ -635,7 +635,7 @@ const ModelCard: React.FC<{
   };
 
   const getFlagClass = (flag?: number): string => {
-    if (flag === 1) return 'bg-blue-100 text-blue-700 border-blue-200';
+    if (flag === 1) return 'bg-indigo-100 text-indigo-700 border-indigo-200';
     if (flag === 2) return 'bg-rose-100 text-rose-700 border-rose-200';
     if (flag === 3) return 'bg-emerald-100 text-emerald-700 border-emerald-200';
     return '';
@@ -676,7 +676,7 @@ const ModelCard: React.FC<{
         </div>
 
         <div className="mb-4">
-           <h3 className="font-medium text-lg text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-blue-600 transition-colors line-clamp-1">
+           <h3 className="font-medium text-lg text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
             {model.name}
            </h3>
            <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 h-10 leading-relaxed">

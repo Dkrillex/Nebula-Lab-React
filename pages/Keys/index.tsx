@@ -4,6 +4,7 @@ import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react'
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
+import toast from 'react-hot-toast';
 
 interface KeysPageProps {}
 
@@ -110,7 +111,7 @@ const KeysPage: React.FC<KeysPageProps> = () => {
         await fetchTokens();
       } catch (error) {
         console.error('删除令牌失败:', error);
-        alert('删除失败，请重试');
+        toast.error('删除失败，请重试');
       }
     }
   };

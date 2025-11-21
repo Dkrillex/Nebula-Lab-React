@@ -22,6 +22,7 @@ import { uploadService } from '../../../services/uploadService';
 import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import UploadComponent from '../../../components/UploadComponent';
+import toast from 'react-hot-toast';
 
 interface VoiceCloneProps {
   t?: any; // Optional translation object
@@ -343,7 +344,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     } catch (error) {
       console.error('Recording failed', error);
       setRecordStatus(t.recordingFail);
-      alert(t.micPermissionFail);
+      toast.error(t.micPermissionFail);
     }
   };
 
@@ -367,7 +368,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   const uploadRecording = async () => {
     if (!audioFile?.file) {
-        alert(t.audioFirst);
+        toast.error(t.audioFirst);
         return;
     }
     setRecordSubmitLoading(true);
@@ -376,11 +377,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         if (res.code === 200 && res.data) {
             setAudioData(prev => ({ ...prev, originVoiceFileId: res.data.ossId }));
             setAudioFile(prev => prev ? ({ ...prev, fileId: res.data.ossId }) : null);
-            alert(t.recordUploadSuccess);
+            toast.success(t.recordUploadSuccess);
         }
     } catch (error) {
         console.error(error);
-        alert(t.recordUploadFail);
+        toast.error(t.recordUploadFail);
     } finally {
         setRecordSubmitLoading(false);
     }
@@ -470,7 +471,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     audio.onended = () => setCurrentPlayingDemo('');
     audio.onerror = () => {
         setCurrentPlayingDemo('');
-        alert('播放失败');
+        toast.error('播放失败');
     };
     audio.play().catch(e => console.error(e));
   };
@@ -487,7 +488,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   const handleSubmit = async () => {
     if (!canSubmit()) {
-      alert(t.msgConfirm);
+      toast.warning(t.msgConfirm);
       return;
     }
 

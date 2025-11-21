@@ -4,6 +4,7 @@ import { keyService, TokenVO, TokenForm as TokenFormType } from '../../../servic
 import { modelService } from '../../../services/modelService';
 import { useAuthStore } from '../../../stores/authStore';
 import { AIModel } from '../../../types';
+import toast from 'react-hot-toast';
 
 interface TokenFormProps {
   visible: boolean;
@@ -181,7 +182,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
       onClose();
     } catch (error) {
       console.error('保存失败:', error);
-      alert('保存失败，请重试');
+      toast.error('保存失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -225,7 +226,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
     if (token?.key) {
       try {
         await navigator.clipboard.writeText(`sk-${token.key}`);
-        alert('密钥已复制');
+        toast.success('密钥已复制');
       } catch (error) {
         console.error('复制失败:', error);
       }

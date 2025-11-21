@@ -10,7 +10,7 @@ import { uploadService } from '../../../services/uploadService';
 import { assetsService, AdsAssetsVO } from '../../../services/assetsService';
 import { viralVideoService, ProductAnalysis } from '../../../services/viralVideoService';
 import { videoGenerateService } from '../../../services/videoGenerateService';
-import { toast } from '../../../components/Toast';
+import toast from 'react-hot-toast';
 import BaseModal from '../../../components/BaseModal';
 import { mergeVideos, downloadVideo, formatDuration } from '../../../utils/videoUtils';
 

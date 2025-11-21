@@ -4,6 +4,7 @@ import { Video, UploadCloud, X, Wand2, Loader2, Play, Pause, Download, Trash2, M
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
 import { uploadService } from '../../../services/uploadService';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
+import toast from 'react-hot-toast';
 
 interface ImageToVideoPageProps {
   t: {
@@ -204,7 +205,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
              if (progressInterval.current) clearInterval(progressInterval.current);
              setIsGenerating(false);
              const errorMsg = taskData.error || taskData.errorMsg || taskData.message || 'Unknown error';
-             alert(`Generation failed: ${errorMsg}`);
+             toast.error(`Generation failed: ${errorMsg}`);
           }
         }
       } catch (error) {
@@ -216,11 +217,11 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const handleGenerate = async () => {
     if (isGenerating) return;
     if (activeTab === 'traditional' && !startImage) {
-      alert('Please upload an image first');
+      toast.error('Please upload an image first');
       return;
     }
     if (activeTab === 'startEnd' && (!startImage || !endImage)) {
-      alert('Please upload both start and end images');
+      toast.error('Please upload both start and end images');
       return;
     }
 
@@ -298,7 +299,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      alert(error.message || 'Generation failed');
+      toast.error(error.message || 'Generation failed');
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       setProgress(0);

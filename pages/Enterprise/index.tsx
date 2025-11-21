@@ -11,7 +11,7 @@ import { userInviteService, UserInviteVO } from '../../services/userInviteServic
 import { quotaService } from '../../services/quotaService';
 import { useAuthStore } from '../../stores/authStore';
 import { Loader2 } from 'lucide-react';
-import { toast } from '../../components/Toast';
+import toast from 'react-hot-toast';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 interface EnterprisePageProps {
@@ -168,7 +168,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const getMemberLevelColor = (level: string | undefined) => {
     const colorMap: Record<string, string> = {
-      'Starter': 'bg-blue-100 text-blue-700',
+      'Starter': 'bg-indigo-100 text-indigo-700',
       'Business': 'bg-yellow-100 text-yellow-700',
     };
     return colorMap[level || ''] || 'bg-gray-100 text-gray-700';
@@ -185,7 +185,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const getAuthTypeColor = (type: number) => {
     const colorMap: Record<number, string> = {
-      1: 'bg-blue-100 text-blue-700',
+      1: 'bg-indigo-100 text-indigo-700',
       2: 'bg-green-100 text-green-700',
       3: 'bg-red-100 text-red-700',
     };
@@ -737,7 +737,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                           <>
                             <button
                               onClick={() => handleEditTeam(team)}
-                              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                              className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1"
                             >
                               <Edit2 size={14} />
                               编辑
@@ -751,7 +751,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                             </button>
                             <button
                               onClick={() => handleAddMember(team)}
-                              className="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1"
+                              className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1"
                             >
                               <UserPlus2 size={14} />
                               添加成员
@@ -949,7 +949,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                               <div className="flex flex-col gap-1">
                                 <button
                                   onClick={() => handleEditMemberRole(member)}
-                                  className="text-blue-600 hover:text-blue-700 text-xs"
+                                  className="text-indigo-600 hover:text-indigo-700 text-xs"
                                 >
                                   编辑角色
                                 </button>
@@ -962,7 +962,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                                 {!isCurrentUser(member) && (
                                   <button
                                     onClick={() => handleAllocateQuota(member)}
-                                    className="text-purple-600 hover:text-purple-700 text-xs"
+                                    className="text-indigo-600 hover:text-indigo-700 text-xs"
                                   >
                                     配额
                                   </button>

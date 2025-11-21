@@ -5,6 +5,7 @@ import { tansParams, errorCode, stringifyParams } from '../utils/ruoyi';
 import { generateAesKey, encryptWithAes, encryptBase64, decryptBase64, decryptWithAes } from '../utils/crypto';
 import { encrypt as rsaEncrypt, decrypt as rsaDecrypt } from '../utils/jsencrypt';
 import { useAuthStore } from '../stores/authStore';
+import toast from 'react-hot-toast';
 
 // 全局加密开关（可以通过环境变量配置，默认启用）
 // 如果环境变量明确设置为 'false' 则禁用，否则启用
@@ -325,10 +326,10 @@ function createRequestClient(
       // Show error based on mode
       if (!_skipErrorDisplay) {
         if (errorMessageMode === 'modal') {
-          alert(`错误: ${errorMsg}`); // Replace with Modal in React component context
+          toast.error(`错误: ${errorMsg}`);
         } else if (errorMessageMode === 'message') {
           console.error(`[API] ${errorMsg}`);
-          // You can trigger a global toast/message event here
+          toast.error(errorMsg);
         }
       }
 
