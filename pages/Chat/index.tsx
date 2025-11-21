@@ -163,6 +163,8 @@ const ChatPage: React.FC = () => {
           // 设置参考图
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
             setUploadedImages(data.images); 
+          } else {
+            setUploadedImages([]);
           }
           
           // 设置模型

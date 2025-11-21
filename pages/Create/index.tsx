@@ -403,8 +403,8 @@ const CreatePage: React.FC = () => {
       const isImageToVideo = item.templateType === 4;
 
       const targetUrl = isImageType
-        ? '/chat?mode=image'
-        : '/chat?mode=video';
+        ? '/create?tool=textToImage'
+        : (isImageToVideo ? '/create?tool=imgToVideo' : '/chat?mode=video');
 
       const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
@@ -418,6 +418,7 @@ const CreatePage: React.FC = () => {
           return item.videoTemplateUrl || item.templateUrl || '';
         }
         if (isImageToVideo) {
+          // 图生视频
           return item.videoTemplateUrl || item.templateUrl || '';
         }
         return '';
@@ -433,7 +434,13 @@ const CreatePage: React.FC = () => {
         source: isImageType ? 'imageGenerates' : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
       });
 
-      navigate(`${targetUrl}&transferId=${transferId}&model_name=${modelName}`);
+      if (isImageType) {
+        navigate(`${targetUrl}&transferId=${transferId}`);
+      } else if (isImageToVideo) {
+        navigate(`${targetUrl}&transferId=${transferId}`);
+      } else {
+        navigate(`${targetUrl}&transferId=${transferId}&model_name=${modelName}`);
+      }
     };
 
     if (!isAuthenticated) {

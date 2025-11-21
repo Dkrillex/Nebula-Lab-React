@@ -1,7 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Video, UploadCloud, X, Wand2, Loader2, Play, Pause, Download, Trash2, Maximize2, Image as ImageIcon } from 'lucide-react';
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
 import { uploadService } from '../../../services/uploadService';
+import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 
 interface ImageToVideoPageProps {
   t: {
@@ -56,6 +58,8 @@ interface UploadedImage {
 }
 
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
+  const [searchParams] = useSearchParams();
+  const { getData } = useVideoGenerationStore();
   const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
   
   // Inputs
@@ -83,6 +87,32 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const endFileInputRef = useRef<HTMLInputElement>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
+
+  // Handle "Make Same Style" data
+  useEffect(() => {
+    const transferId = searchParams.get('transferId');
+    if (transferId) {
+      try {
+        const data = getData(transferId);
+        if (data) {
+          if (data.sourcePrompt) {
+            setPrompt(data.sourcePrompt);
+          }
+          if (data.images && data.images.length > 0) {
+            // Create a dummy uploaded image object since we only have the URL
+            setStartImage({
+              fileId: `temp_${Date.now()}`,
+              fileName: 'reference_image.png',
+              fileUrl: data.images[0]
+            });
+            setActiveTab('traditional');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load transfer data:', error);
+      }
+    }
+  }, [searchParams, getData]);
 
   // Cleanup
   useEffect(() => {

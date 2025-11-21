@@ -144,11 +144,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
   return (
     <>
       <div 
-        className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm lg:hidden"
-        onClick={onClose}
-      ></div>
-      <div 
-        className="fixed top-16 left-0 right-0 bottom-0 z-[110] overflow-y-auto lg:hidden shadow-lg bg-surface text-foreground"
+        className="fixed top-16 left-0 right-0 bottom-0 z-[90] overflow-y-auto lg:hidden shadow-lg bg-surface text-foreground border-t border-border"
         style={{ 
           maxHeight: 'calc(100vh - 64px)',
           WebkitOverflowScrolling: 'touch',

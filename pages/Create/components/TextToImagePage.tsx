@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Wand2, Image as ImageIcon, Download, Share2, Maximize2, Loader2, Trash2, Upload, X, FolderPlus } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 
 interface TextToImagePageProps {
   t: {
@@ -53,6 +55,8 @@ const ratios = [
 ];
 
 const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
+  const [searchParams] = useSearchParams();
+  const { getData } = useVideoGenerationStore();
   const [mode, setMode] = useState<'text' | 'image'>('text');
   const [selectedRatio, setSelectedRatio] = useState('1:1');
   const [selectedSize, setSelectedSize] = useState('1024x1024');
@@ -71,6 +75,29 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    const transferId = searchParams.get('transferId');
+    if (transferId) {
+      try {
+        const data = getData(transferId);
+        if (data) {
+          if (data.sourcePrompt) {
+            setPrompt(data.sourcePrompt);
+          }
+          if (data.images && data.images.length > 0) {
+            setReferenceImage(data.images[0]);
+            setMode('image');
+          } else {
+            setReferenceImage(null);
+            setMode('text');
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load transfer data:', error);
+      }
+    }
+  }, [searchParams, getData]);
 
   useEffect(() => {
     // Update size when ratio changes

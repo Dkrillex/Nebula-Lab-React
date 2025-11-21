@@ -4,7 +4,6 @@ import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
-import NotificationModal from './NotificationModal';
 
 interface HeaderProps {
   isDark: boolean;
@@ -19,6 +18,9 @@ interface HeaderProps {
   visitedViews?: TabItem[];
   onTabClick?: (tab: TabItem) => void;
   onTabClose?: (e: React.MouseEvent, index: number) => void;
+  onOpenNotification: () => void;
+  onMobileMenuToggle?: () => void;
+  isMobileMenuOpen?: boolean;
   t: {
     searchPlaceholder: string;
     signIn: string;
@@ -30,12 +32,11 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ 
   isDark, toggleTheme, lang, setLang, onSignIn, onNavClick, 
-  currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, t 
+  currentView, activeTool, sideMenuMap, visitedViews, onTabClick, onTabClose, onOpenNotification, t,
+  onMobileMenuToggle, isMobileMenuOpen
 }) => {
   const { user, logout, isAuthenticated } = useAuthStore();
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
@@ -297,7 +298,7 @@ const Header: React.FC<HeaderProps> = ({
                         </button>
                         <button 
                           onClick={() => {
-                            setShowNotifications(true);
+                            onOpenNotification();
                             setShowUserMenu(false);
                           }}
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
@@ -332,28 +333,16 @@ const Header: React.FC<HeaderProps> = ({
              <button 
                onClick={(e) => {
                  e.stopPropagation();
-                 setShowMobileMenu(!showMobileMenu);
+                 if (onMobileMenuToggle) onMobileMenuToggle();
                }}
                className="lg:hidden text-muted hover:text-foreground transition-colors relative z-[80]"
                aria-label="Toggle mobile menu"
              >
-               {showMobileMenu ? <X size={24} /> : <Menu size={24} />}
+               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
              </button>
           </div>
         </div>
       </div>
-      
-      {/* Mobile Menu */}
-      <MobileSidebar 
-        isOpen={showMobileMenu}
-        onClose={() => setShowMobileMenu(false)}
-        sideMenuMap={sideMenuMap}
-        t={t}
-        isAuthenticated={isAuthenticated}
-        user={user}
-        onSignIn={onSignIn}
-        logout={logout}
-      />
       
       {/* Overlay to close menu */}
       {showUserMenu && (
@@ -362,11 +351,6 @@ const Header: React.FC<HeaderProps> = ({
           onClick={() => setShowUserMenu(false)}
         ></div>
       )}
-      {/* Notification Modal */}
-      <NotificationModal 
-        isOpen={showNotifications} 
-        onClose={() => setShowNotifications(false)} 
-      />
     </header>
   );
 };
