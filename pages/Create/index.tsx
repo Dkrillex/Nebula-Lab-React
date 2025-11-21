@@ -15,6 +15,7 @@ import StyleTransferPage from './components/StyleTransferPage';
 import VoiceClone from './components/VoiceClone';
 import WorkshopPage from './components/WorkshopPage';
 import GlbViewerPage from './components/GlbViewerPage';
+import ThreeDModelPage from './components/ThreeDModelPage';
 import AiFaceSwapPage from './components/AiFaceSwapPage';
 import TtsPage from './components/TtsPage';
 import UseToolPage from './components/UseToolPage';
@@ -486,8 +487,12 @@ const CreatePage: React.FC = () => {
     if (activeMenu === 'voiceClone') {
       return <VoiceClone />;
     }
-    // 3D模型查看器模块
-    if (activeMenu === '3dModel' || activeMenu === 'glbViewer') {
+    // 3D模型生成模块
+    if (activeMenu === '3dModel') {
+      return <ThreeDModelPage />;
+    }
+    // 3D模型查看器模块（保留兼容性）
+    if (activeMenu === 'glbViewer') {
       return <GlbViewerPage />;
     }
     // AI视频换脸模块

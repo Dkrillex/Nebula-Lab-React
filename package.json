@@ -10,9 +10,11 @@
   },
   "dependencies": {
     "@remix-run/router": "1.15.3",
+    "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^5.1.1",
     "crypto-js": "4.2.0",
     "jsencrypt": "^3.5.4",
+    "jszip": "^3.4.1",
     "lucide-react": "^0.554.0",
     "path": "^0.12.7",
     "qrcode.react": "^4.2.0",
@@ -20,6 +22,7 @@
     "react-dom": "^19.2.0",
     "react-router": "6.22.3",
     "react-router-dom": "6.22.3",
+    "three": "^0.181.2",
     "url": "^0.11.4",
     "vite": "^7.2.2",
     "zustand": "5.0.3"
