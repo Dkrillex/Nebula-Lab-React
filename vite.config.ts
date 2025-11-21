@@ -30,6 +30,7 @@ export default defineConfig({
     },
   },
   server: {
+    port: 5666,
     proxy: {
       '/dev-api': {
         // target: 'http://34.96.210.20:8080',

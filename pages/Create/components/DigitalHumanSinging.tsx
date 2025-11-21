@@ -46,8 +46,14 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     if (file) {
       try {
         const uploaded = await handleFileUpload(file, type);
-        if (type === 'image') setImageFile(uploaded);
-        else setAudioFile(uploaded);
+        // 适配接口返回的 fileUrl 用于回显和提交
+        const fileData = {
+            ...uploaded,
+            url: uploaded.fileUrl || uploaded.url
+        };
+
+        if (type === 'image') setImageFile(fileData);
+        else setAudioFile(fileData);
       } catch (error) {
         // Handled by parent
       }
@@ -356,16 +362,21 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    </div>
 
                    <div className="flex flex-wrap items-center justify-center gap-4">
-                       <a 
-                          href={resultVideoUrl} 
-                          download 
-                          target="_blank" 
-                          rel="noreferrer"
+                       <button 
+                          onClick={() => {
+                              if (!resultVideoUrl) return;
+                              const link = document.createElement('a');
+                              link.href = resultVideoUrl;
+                              link.download = `singing_avatar_${new Date().getTime()}.mp4`;
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                          }} 
                           className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
                        >
                            <Video size={20} />
                            下载视频
-                       </a>
+                       </button>
                        <button 
                           onClick={handleAddToMaterials}
                           className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"

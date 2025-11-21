@@ -121,10 +121,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         if (fileType === 'quicktime') fileType = 'mp4';
 
         const credRes = await avatarService.getUploadCredential(fileType);
-        if (credRes.code !== 200 || !credRes.result) {
+        if (credRes.code !== '200' || !credRes.result) {
            throw new Error(credRes.msg || 'Failed to get credentials');
         }
-        
         const { uploadUrl, fileName, fileId, format } = credRes.result;
 
         // 2. PUT file to uploadUrl
@@ -148,7 +147,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             format: format
         };
       }
-
+      console.log(uploadedFile);
+      
       onUploadComplete(uploadedFile);
     } catch (error: any) {
       console.error('Upload error:', error);

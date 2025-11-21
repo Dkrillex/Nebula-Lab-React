@@ -31,22 +31,11 @@ const CaptionModal: React.FC<CaptionModalProps> = ({
     try {
       const res = await avatarService.getCaptionList();
       let list: Caption[] = [];
-      if (res.code === 200) {
-        if (res.data) {
-             if (Array.isArray(res.data)) {
-                 list = res.data;
-             } else if ((res.data as any).data) {
-                 list = (res.data as any).data;
-             }
-        } else if ((res as any).result) {
-             // Vben uses res.result
-             if (Array.isArray((res as any).result)) {
-                 list = (res as any).result;
-             } else if ((res as any).result.data) {
-                 list = (res as any).result.data;
-             }
-        }
+      if (res.code === '200') {
+        list = res.result;
       }
+      console.log(list);
+      
       setCaptionList(list || []);
     } catch (error) {
       console.error('Failed to fetch captions:', error);

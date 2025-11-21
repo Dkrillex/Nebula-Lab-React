@@ -65,7 +65,6 @@ const SKIP_AUTH_APIS: string[] = [
   '/api/models/list',
   '/api/pricing/list',
   '/ads/labTemplate/list',
-  '/tp/v1/ProductAvatarQuery',
 ];
 
 /**
@@ -92,9 +91,9 @@ function createRequestClient(
     const responseType = options.responseType ?? 'json';
     const _skipAuth = options._skipAuth ?? false;
     const _skipErrorDisplay = options._skipErrorDisplay ?? false;
-    
+
     // Extract other RequestInit properties (excluding custom options already extracted)
-    const { 
+    const {
       params: _params,
       timeout: _timeout,
       isToken: _isToken,
@@ -107,7 +106,7 @@ function createRequestClient(
       responseType: _responseType,
       _skipAuth: __skipAuth,
       _skipErrorDisplay: __skipErrorDisplay,
-      ...customConfig 
+      ...customConfig
     } = options;
 
     const controller = new AbortController();
@@ -136,7 +135,7 @@ function createRequestClient(
     let requestBody = customConfig.body;
     let isEncrypted = false;
     let encryptKeyHeader: string | null = null;
-    
+
     // Check if body is FormData
     const isFormData = requestBody instanceof FormData;
 
@@ -145,16 +144,16 @@ function createRequestClient(
         console.log('[Encrypt] Starting encryption');
         // Parse the JSON body if it's a string
         const bodyData = typeof requestBody === 'string' ? JSON.parse(requestBody) : requestBody;
-        
+
         // Generate AES key
         const aesKey = generateAesKey();
-        
+
         // Encrypt the entire body data as JSON string
         const encryptedData = encryptWithAes(JSON.stringify(bodyData), aesKey);
-        
+
         // Encode AES key to base64
         const base64AesKey = encryptBase64(aesKey);
-        
+
         // Encrypt AES key with RSA public key
         const rsaEncryptedKey = rsaEncrypt(base64AesKey);
         if (rsaEncryptedKey) {
@@ -162,7 +161,7 @@ function createRequestClient(
         } else {
           throw new Error('RSA加密AES密钥失败');
         }
-        
+
         // Send encrypted data directly as base64 string (CryptoJS returns base64 by default)
         requestBody = encryptedData;
         isEncrypted = true;
@@ -185,7 +184,7 @@ function createRequestClient(
 
     // Only set default Content-Type if not present and NOT FormData
     if (!headers['Content-Type'] && !isFormData) {
-      headers['Content-Type'] = isEncrypted 
+      headers['Content-Type'] = isEncrypted
         ? 'text/plain;charset=utf-8'  // Encrypted payload is sent as plain text
         : 'application/json;charset=utf-8';
     }
@@ -214,10 +213,10 @@ function createRequestClient(
     try {
       // Pre-request validation
       if (needsAuth && !token) {
-         const noTokenError = new Error('用户未登录, 需要登录注册');
-         (noTokenError as any).code = 'NO_TOKEN';
-         (noTokenError as any)._skipErrorHint = true;
-         throw noTokenError;
+        const noTokenError = new Error('用户未登录, 需要登录注册');
+        (noTokenError as any).code = 'NO_TOKEN';
+        (noTokenError as any)._skipErrorHint = true;
+        throw noTokenError;
       }
 
       const response = await fetch(url, config);
@@ -232,7 +231,7 @@ function createRequestClient(
       // Handle Binary Data (Blob)
       const contentType = response.headers.get('content-type');
       if (responseType === 'blob' || (contentType && (contentType.includes('blob') || contentType.includes('arraybuffer')))) {
-         return await response.blob();
+        return await response.blob();
       }
 
       // Parse JSON Body
@@ -258,7 +257,7 @@ function createRequestClient(
           console.error('Decryption failed', e);
         }
       }
-      
+
       // Return native response if requested
       if (isReturnNativeResponse) {
         return {
@@ -280,7 +279,12 @@ function createRequestClient(
       const msg = errorCode[code] || resData.msg || errorCode['default'];
 
       // Business Logic Error Handling
-      if (code === 200) {
+      if (code === 200 || code === '200') {
+        // Success
+        // Handle TopView style result structure
+        if (resData.result !== undefined) {
+          return resData.result;
+        }
         // Success
         // Handle pagination format (rows, total) or data
         if (resData.data !== undefined) {
@@ -298,33 +302,33 @@ function createRequestClient(
       // Error handling
       if (code === 401) {
         if (!isLogoutProcessing) {
-          isLogoutProcessing = true;
-          const userStore = useAuthStore.getState();
-          // Use store logout if possible, or just clear storage and redirect
-          if (userStore.logout) {
-             await userStore.logout();
-          } else {
-             localStorage.removeItem('token');
-             window.location.href = '/';
-          }
-          
-          setTimeout(() => {
-            isLogoutProcessing = false;
-          }, 1000);
+          // isLogoutProcessing = true;
+          // const userStore = useAuthStore.getState();
+          // // Use store logout if possible, or just clear storage and redirect
+          // if (userStore.logout) {
+          //    await userStore.logout();
+          // } else {
+          //    localStorage.removeItem('token');
+          //    window.location.href = '/';
+          // }
+
+          // setTimeout(() => {
+          //   isLogoutProcessing = false;
+          // }, 1000);
         }
         throw new ApiError('无效的会话，或者会话已过期，请重新登录。', 401);
-      } 
-      
+      }
+
       // Handle other error codes
       const errorMsg = msg || '未知错误';
-      
+
       // Show error based on mode
       if (!_skipErrorDisplay) {
         if (errorMessageMode === 'modal') {
-           alert(`错误: ${errorMsg}`); // Replace with Modal in React component context
+          alert(`错误: ${errorMsg}`); // Replace with Modal in React component context
         } else if (errorMessageMode === 'message') {
-           console.error(`[API] ${errorMsg}`);
-           // You can trigger a global toast/message event here
+          console.error(`[API] ${errorMsg}`);
+          // You can trigger a global toast/message event here
         }
       }
 
@@ -332,7 +336,7 @@ function createRequestClient(
 
     } catch (error: any) {
       clearTimeout(id);
-      
+
       if (error._skipErrorHint || _skipErrorDisplay) {
         throw error;
       }
@@ -345,54 +349,54 @@ function createRequestClient(
       } else if (message.includes('Request failed with status code')) {
         message = '系统接口' + message.substr(message.length - 3) + '异常';
       } else if (error.name === 'AbortError') {
-         message = '请求超时';
+        message = '请求超时';
       }
-      
+
       console.error('Request Error:', message);
       throw new ApiError(message, error.code || 0);
     }
   }
 
   return {
-    get: <T = any>(url: string, options?: RequestOptions) => 
+    get: <T = any>(url: string, options?: RequestOptions) =>
       http<T>(url, { ...options, method: 'GET' }),
 
     post: <T = any>(url: string, body: any, options?: RequestOptions) => {
       const isFormData = body instanceof FormData;
-      return http<T>(url, { 
-        ...options, 
-        method: 'POST', 
-        body: isFormData ? body : JSON.stringify(body) 
+      return http<T>(url, {
+        ...options,
+        method: 'POST',
+        body: isFormData ? body : JSON.stringify(body)
       });
     },
 
     put: <T = any>(url: string, body: any, options?: RequestOptions) => {
       const isFormData = body instanceof FormData;
-      return http<T>(url, { 
-        ...options, 
-        method: 'PUT', 
-        body: isFormData ? body : JSON.stringify(body) 
+      return http<T>(url, {
+        ...options,
+        method: 'PUT',
+        body: isFormData ? body : JSON.stringify(body)
       });
     },
 
-    delete: <T = any>(url: string, options?: RequestOptions) => 
+    delete: <T = any>(url: string, options?: RequestOptions) =>
       http<T>(url, { ...options, method: 'DELETE' }),
-      
+
     upload: <T = any>(url: string, file: File, options?: RequestOptions) => {
       const formData = new FormData();
       formData.append('file', file);
       const { headers, ...rest } = options || {};
       const newHeaders = { ...headers } as any;
-      delete newHeaders['Content-Type']; 
-      
-      return http<T>(url, { 
-        ...rest, 
-        method: 'POST', 
+      delete newHeaders['Content-Type'];
+
+      return http<T>(url, {
+        ...rest,
+        method: 'POST',
         body: formData,
         headers: newHeaders
       });
     },
-    
+
     // Direct http access
     request: http
   };

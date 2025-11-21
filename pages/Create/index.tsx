@@ -466,7 +466,7 @@ const CreatePage: React.FC = () => {
       return <ImageToVideoPage t={t.imgToVideo} />;
     }
     if (activeMenu === 'digitalHuman' && t.digitalHuman) {
-      return <DigitalHumanPage t={t.digitalHuman} />;
+      return <DigitalHumanPage t={t.digitalHuman} productAvatarT={t.productAvatar} />;
     }
     if (activeMenu === 'styleTransfer' && t.styleTransfer) {
       return <StyleTransferPage t={t.styleTransfer} />;
