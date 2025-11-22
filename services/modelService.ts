@@ -36,16 +36,16 @@ export const modelService = {
         endpointType: params?.endpointType
       };
 
-      const res = await request.get<any>('/api/pricing/list', { 
+      const res = await request.get<any>('/api/pricing/list', {
         params: queryParams,
         isTransformResponse: false // 获取原始响应以访问 billingTypes, exchangeRate 等额外字段
       });
-      
+
       console.log('📋 模型广场 API 响应:', res);
 
       // 处理不同的响应格式
       let rows: any[] = [];
-      
+
       // 优先处理直接包含 rows 的结构（如: { rows: [], total: 0, success: true }）
       if (res && Array.isArray(res.rows)) {
         rows = res.rows;
@@ -54,7 +54,7 @@ export const modelService = {
         // 标准格式：{ code: 200, rows: [...], total: ... }
         if (res.rows && Array.isArray(res.rows)) {
           rows = res.rows;
-        } 
+        }
         // 兼容格式：{ code: 200, data: { rows: [...], total: ... } }
         else if ((res as any).data?.rows && Array.isArray((res as any).data.rows)) {
           rows = (res as any).data.rows;
@@ -86,20 +86,20 @@ export const modelService = {
           exchangeRate
         };
       }
-      
+
       // Map backend pricing list to AIModel structure
       const mappedModels = rows.map((item: any) => {
         // 处理价格字段：可能是字符串或数字
-        const inputPrice = typeof item.inputPrice === 'string' 
-          ? parseFloat(item.inputPrice) || 0 
+        const inputPrice = typeof item.inputPrice === 'string'
+          ? parseFloat(item.inputPrice) || 0
           : (item.inputPrice || 0);
-        const outputPrice = typeof item.outputPrice === 'string' 
-          ? parseFloat(item.outputPrice) || 0 
+        const outputPrice = typeof item.outputPrice === 'string'
+          ? parseFloat(item.outputPrice) || 0
           : (item.outputPrice || 0);
-        
+
         // 处理供应商名称：优先使用 vendorName，否则从 modelName 推断
         const provider = item.vendorName || classifyProvider(item.modelName);
-        
+
         // 处理标签：从 tags 字段解析，或从 modelName 推断
         let tags: string[] = [];
         if (item.tags) {
@@ -107,7 +107,7 @@ export const modelService = {
         } else {
           tags = classifyTags(item.modelName);
         }
-        
+
         // 处理能力标签：从 enableGroupsList 或 tags 解析
         let capabilities: string[] = [];
         if (item.enableGroupsList && Array.isArray(item.enableGroupsList)) {
@@ -117,7 +117,7 @@ export const modelService = {
         } else {
           capabilities = ['chat'];
         }
-        
+
         // 处理计费类型：根据 quotaType 判断
         let billingType: 'token' | 'time' = 'token';
         if (item.quotaType === 3) {
@@ -131,7 +131,7 @@ export const modelService = {
           name: item.modelName || item.displayName || '未知模型',
           description: item.remark || item.description || item.productDescription || '',
           provider,
-        contextLength: 0, // Not available in pricing list
+          contextLength: 0, // Not available in pricing list
           inputPrice,
           outputPrice,
           imagePrice: item.imagePrice || item.imageModelPricePerImage,
@@ -163,11 +163,15 @@ export const modelService = {
           originMultiModalPricing: item.originMultiModalPricing,
           videoPricing: item.videoPricing,
           originVideoPricing: item.originVideoPricing,
+          videoResolutionPricing: item.videoResolutionPricing,
+          originVideoResolutionPricing: item.originVideoResolutionPricing,
+          createCacheRatio: item.createCacheRatio ?? item.create_cache_ratio,
+          cacheRatio: item.cacheRatio ?? item.cache_ratio,
         } as any;
       }) as AIModel[];
 
       console.log('📋 映射后的模型列表:', mappedModels.length, '条');
-      
+
       return {
         models: mappedModels,
         vendors: backendVendors,
@@ -218,11 +222,11 @@ function classifyProvider(name: string): string {
 function classifyTags(name: string): string[] {
   const tags: string[] = [];
   const n = name.toLowerCase();
-  
+
   if (n.includes('gpt-4') || n.includes('opus') || n.includes('pro')) tags.push('Smart');
   if (n.includes('flash') || n.includes('haiku') || n.includes('mini')) tags.push('Fast');
   if (n.includes('vision') || n.includes('mj') || n.includes('dall')) tags.push('Image');
   if (n.includes('code')) tags.push('Coding');
-  
+
   return tags;
 }
