@@ -13,6 +13,7 @@ import {
   FileAudio,
   Download,
   Wand2,
+  FolderPlus,
   Trash2,
   Music,
   Filter
@@ -23,6 +24,21 @@ import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import UploadComponent from '../../../components/UploadComponent';
 import toast from 'react-hot-toast';
+
+const SvgPointsIcon = ({ className }: { className?: string }) => (
+  <svg 
+    className={className} 
+    viewBox="0 0 1024 1024" 
+    version="1.1" 
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+  >
+    <path d="M913.7 430.7c2.9-2.9 7.5-7.4-3.9-21.7L722.6 159.7H302.8l-187 248.9c-11.6 14.6-7 19.2-4.3 21.9l401.2 410.4 401-410.2zM595.5 667.2c-7.7 0-14-6.3-14-14s6.3-14 14-14 14 6.3 14 14c0 7.8-6.3 14-14 14zM746 502.8c6.6 6.6 6.6 17.2 0 23.7L645.2 627.3c-3.3 3.3-7.6 4.9-11.9 4.9-4.3 0-8.6-1.6-11.9-4.9-6.6-6.6-6.6-17.2 0-23.7l100.7-100.7c6.7-6.7 17.3-6.7 23.9-0.1zM346 358.1c-6.7-6.5-6.8-17.1-0.4-23.7 6.4-6.7 17.1-6.8 23.7-0.4l149.6 145 151.5-146.8c6.7-6.5 17.3-6.3 23.7 0.4 6.5 6.7 6.3 17.3-0.4 23.7L535.2 509.9c-0.8 1.8-1.8 3.5-3.3 5-3.3 3.4-7.7 5.1-12.1 5.1-4.2 0-8.4-1.6-11.7-4.7L346 358.1z" fill="#006be6" />
+    <path d="M936.4 388.4l-192-255.6c-3.2-4.2-8.1-6.7-13.4-6.7H294.4c-5.3 0-10.3 2.5-13.4 6.7L89.3 388.1c-27.1 34.1-10 57.7-1.6 66.1l413 422.5c3.2 3.2 7.5 5.1 12 5.1s8.8-1.8 12-5.1l412.8-422.4c8.7-8.5 25.7-32.1-1.1-65.9z m-820.5 20.2l187-248.9h419.8L909.9 409c11.3 14.3 6.8 18.8 3.9 21.7l-401 410.2-401.2-410.4c-2.8-2.7-7.3-7.3 4.3-21.9z" fill="#ffffff" className="selected" />
+    <path d="M532 514.9c1.4-1.5 2.5-3.2 3.3-5l158.6-153.7c6.7-6.5 6.8-17.1 0.4-23.7-6.5-6.7-17.1-6.8-23.7-0.4L519 478.9 369.4 334c-6.7-6.4-17.3-6.3-23.7 0.4-6.5 6.7-6.3 17.3 0.4 23.7l162.2 157.2c3.3 3.2 7.5 4.7 11.7 4.7 4.3 0 8.7-1.7 12-5.1zM621.5 627.3c3.3 3.3 7.6 4.9 11.9 4.9 4.3 0 8.6-1.6 11.9-4.9L746 526.5c6.6-6.6 6.6-17.2 0-23.7-6.6-6.6-17.2-6.6-23.7 0L621.5 603.5c-6.6 6.6-6.6 17.2 0 23.8z" fill="#ffffff" className="selected" />
+    <path d="M595.5 653.3m-14 0a14 14 0 1 0 28 0 14 14 0 1 0-28 0Z" fill="#ffffff" />
+  </svg>
+);
 
 interface VoiceCloneProps {
   t?: any; // Optional translation object
@@ -111,7 +127,16 @@ const defaultT = {
   queryFail: '查询任务状态失败',
   trialListening: '试听',
   emptyState: '配置参数并开始生成，结果将显示在这里',
-  resultTitle: '生成结果'
+  resultTitle: '生成结果',
+  addToLibrary: '添加到素材库',
+  addedToLibrary: '已添加到素材库',
+  addToLibraryFail: '添加到素材库失败',
+  createAudioFile: '生成的音频文件',
+  audioReadFail: '无法读取音频数据',
+  fileReadFail: '文件读取失败',
+  transWAV: '正在转换为 WAV 格式...',
+  transWAVSuccess: 'WAV 格式转换完成',
+  transWAVFail: '音频格式转换失败，将使用原始格式'
 };
 
 const selectLanguageList = [
@@ -210,7 +235,105 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [isPolling, setIsPolling] = useState(false);
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Material Library State
+  const [addToLibLoading, setAddToLibLoading] = useState(false);
+  const [isAddedToLib, setIsAddedToLib] = useState(false);
+  const mimeTypeRef = useRef<string>('');
+
   // --- Helper Functions ---
+
+  // Convert AudioBuffer to WAV
+  const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
+    const length = buffer.length;
+    const numberOfChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const bytesPerSample = 2;
+    const blockAlign = numberOfChannels * bytesPerSample;
+    const byteRate = sampleRate * blockAlign;
+    const dataSize = length * blockAlign;
+    const bufferSize = 44 + dataSize;
+
+    const arrayBuffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(arrayBuffer);
+
+    const writeString = (offset: number, string: string) => {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    };
+
+    writeString(0, 'RIFF');
+    view.setUint32(4, bufferSize - 8, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numberOfChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, 16, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+
+    let offset = 44;
+    for (let i = 0; i < length; i++) {
+      for (let channel = 0; channel < numberOfChannels; channel++) {
+        const channelData = buffer.getChannelData(channel);
+        const sample = Math.max(-1, Math.min(1, channelData[i] || 0));
+        view.setInt16(
+          offset,
+          sample < 0 ? sample * 0x8000 : sample * 0x7fff,
+          true
+        );
+        offset += 2;
+      }
+    }
+
+    return arrayBuffer;
+  };
+
+  // Convert WebM to WAV
+  const convertWebmToWav = async (webmBlob: Blob): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+      const audioContext = new AudioContextClass();
+      const fileReader = new FileReader();
+
+      fileReader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          if (!arrayBuffer) {
+            throw new Error(t.audioReadFail);
+          }
+
+          const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+          const wavBuffer = audioBufferToWav(audioBuffer);
+          const wavBlob = new Blob([wavBuffer], { type: 'audio/wav' });
+
+          if (audioContext.state !== 'closed') {
+            await audioContext.close();
+          }
+
+          resolve(wavBlob);
+        } catch (error) {
+          if (audioContext.state !== 'closed') {
+            await audioContext.close();
+          }
+          reject(error);
+        }
+      };
+
+      fileReader.onerror = async () => {
+        if (audioContext.state !== 'closed') {
+          await audioContext.close();
+        }
+        reject(new Error(t.fileReadFail));
+      };
+
+      fileReader.readAsArrayBuffer(webmBlob);
+    });
+  };
 
   useEffect(() => {
     if (pageMode === 'synthesis') {
@@ -276,6 +399,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setTaskError('');
     setIsPolling(false);
     setSearchKeyword('');
+    setIsAddedToLib(false);
     // Don't reset filters on clearAll to keep user preference
     // setGenderFilter('');
     // setStyleFilter('');
@@ -297,10 +421,36 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const startRecording = async () => {
     try {
       setRecordStatus(t.micPermission);
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          noiseSuppression: true,
+          echoCancellation: true,
+          sampleRate: 44100,
+        } 
+      });
       streamRef.current = stream;
       
-      const mediaRecorder = new MediaRecorder(stream);
+      // Determine supported MIME type
+      const mimeTypes = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/ogg;codecs=opus',
+        'audio/mp4',
+      ];
+      
+      let mimeType = 'audio/webm';
+      for (const type of mimeTypes) {
+        if (MediaRecorder.isTypeSupported(type)) {
+          mimeType = type;
+          break;
+        }
+      }
+      mimeTypeRef.current = mimeType;
+
+      const mediaRecorder = new MediaRecorder(stream, {
+        audioBitsPerSecond: 128000,
+        mimeType
+      });
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -310,19 +460,39 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         }
       };
 
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
-        const url = URL.createObjectURL(blob);
+      mediaRecorder.onstop = async () => {
+        const mimeType = mimeTypeRef.current;
+        const originalBlob = new Blob(audioChunksRef.current, { type: mimeType });
+        let finalBlob = originalBlob;
+        let finalExtension = mimeType.includes('webm') ? 'webm' : 'ogg';
+        let finalMimeType = mimeType;
+
+        // Convert WebM to WAV
+        if (mimeType.includes('webm')) {
+          try {
+            setRecordStatus(t.transWAV);
+            finalBlob = await convertWebmToWav(originalBlob);
+            finalExtension = 'wav';
+            finalMimeType = 'audio/wav';
+            setRecordStatus(t.transWAVSuccess);
+          } catch (error) {
+            console.error('Audio conversion failed:', error);
+            toast.error(t.transWAVFail);
+            setRecordStatus(t.transWAVFail);
+          }
+        }
+
+        const url = URL.createObjectURL(finalBlob);
         setRecordedAudioUrl(url);
         setRecordStatus(t.recordingCompleted);
         
         // Create a File object for upload
-        const file = new File([blob], `recording_${Date.now()}.wav`, { type: 'audio/wav' });
+        const file = new File([finalBlob], `recording_${Date.now()}.${finalExtension}`, { type: finalMimeType });
         setAudioFile({
             fileId: '', // Not uploaded yet
             fileName: file.name,
             fileUrl: url,
-            format: 'wav',
+            format: finalExtension,
             file: file,
             size: file.size
         });
@@ -374,13 +544,20 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setRecordSubmitLoading(true);
     try {
         const res = await uploadService.uploadFile(audioFile.file);
-        if (res.code === 200 && res.data) {
-            setAudioData(prev => ({ ...prev, originVoiceFileId: res.data.ossId }));
-            setAudioFile(prev => prev ? ({ ...prev, fileId: res.data.ossId }) : null);
+        
+        // Handle response: it might be wrapped in { code, data } or just the data object directly
+        const data = (res as any).data || res;
+
+        if (data && data.ossId) {
+            setAudioData(prev => ({ ...prev, originVoiceFileId: data.ossId }));
+            setAudioFile(prev => prev ? ({ ...prev, fileId: data.ossId }) : null);
             toast.success(t.recordUploadSuccess);
+        } else {
+            console.error('Upload response invalid:', res);
+            toast.error(t.recordUploadFail);
         }
     } catch (error) {
-        console.error(error);
+        console.error('Upload error:', error);
         toast.error(t.recordUploadFail);
     } finally {
         setRecordSubmitLoading(false);
@@ -478,6 +655,13 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   // --- Task Submission ---
 
+  const handleSwitchUploadMethod = (method: 'file' | 'record') => {
+    if (method === uploadMethod) return;
+    setUploadMethod(method);
+    // Clear any existing file or recording when switching methods
+    clearRecording();
+  };
+
   const canSubmit = () => {
     if (pageMode === 'clone') {
       return audioData.name.trim() && audioData.originVoiceFileId;
@@ -488,7 +672,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   const handleSubmit = async () => {
     if (!canSubmit()) {
-      toast.warning(t.msgConfirm);
+      toast.error(t.msgConfirm);
       return;
     }
 
@@ -577,6 +761,42 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     poll();
   };
 
+  // --- Add to Material Library ---
+
+  const addToMaterialLibrary = async () => {
+    if (!taskResult?.voice?.demoAudioUrl || !taskResult.voice.voiceId) return;
+
+    setAddToLibLoading(true);
+    try {
+      // 1. Upload URL to OSS to get persistent storage
+      // Vue version uses 'mp3', sticking to it
+      const ossInfo = await uploadService.uploadByVideoUrl(taskResult.voice.demoAudioUrl, 'mp3');
+      
+      // Handle potential wrapper differences, assuming uploadService returns pure data or check logs
+      // Based on uploadService.ts: return request.post<UploadResult>... which returns data directly via requestClient
+      const actualUrl = ossInfo.url;
+
+      // 2. Add to assets
+      await assetsService.addAssets({
+        assetName: audioData.name || `Generated_${Date.now()}`,
+        assetUrl: actualUrl,
+        assetId: taskResult.voice.voiceId, // Using voiceId as assetId similar to Vue logic
+        assetTag: pageMode === 'clone' ? t.title1 : t.title2,
+        assetDesc: `${pageMode === 'clone' ? t.title1 : t.title2} - ${t.createAudioFile}`,
+        assetType: 8, // Audio/Voice type
+        isPrivateModel: true // Assuming private model
+      });
+
+      setIsAddedToLib(true);
+      toast.success(t.addedToLibrary);
+    } catch (error) {
+      console.error('Add to library failed', error);
+      toast.error(t.addToLibraryFail);
+    } finally {
+      setAddToLibLoading(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-background">
       {/* Header */}
@@ -639,13 +859,13 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                 <h3 className="font-bold text-foreground mb-3">{t.getAudio}</h3>
                 <div className="flex gap-3 mb-3">
                            <button 
-                              onClick={() => setUploadMethod('file')}
+                              onClick={() => handleSwitchUploadMethod('file')}
                        className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'file' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                            >
                         <Upload size={16} /> {t.uploadFile}
                            </button>
                            <button 
-                              onClick={() => setUploadMethod('record')}
+                              onClick={() => handleSwitchUploadMethod('record')}
                        className={`flex-1 py-2 rounded-lg border font-medium text-sm transition flex items-center justify-center gap-2 ${uploadMethod === 'record' ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'border-border hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                            >
                         <Mic size={16} /> {t.onlineRecording}
@@ -870,11 +1090,19 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                    </div>
 
           {/* Submit Button */}
-          <div className="mt-6 pt-4 border-t border-border">
+          <div className="mt-6 pt-4 border-t border-border flex gap-3">
+            <button 
+              onClick={clearAll}
+              className="w-1/3 py-3.5 rounded-xl border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-300 font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={isPolling || submitLoading}
+            >
+              <Trash2 size={18} />
+              {t.clearReset}
+            </button>
             <button 
               onClick={handleSubmit}
               disabled={!canSubmit() || isPolling || submitLoading}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                {submitLoading || isPolling ? (
                  <>
@@ -883,8 +1111,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                  </>
                ) : (
                  <>
-                   <Wand2 size={18} />
-                   {pageMode === 'clone' ? t.startCloning : t.startSynthesis}
+                   <SvgPointsIcon className="size-6" />
+                   2 {pageMode === 'clone' ? t.startCloning : t.startSynthesis}
                  </>
                    )}
             </button>
@@ -925,13 +1153,28 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                    
                    <audio src={taskResult.voice.demoAudioUrl} controls className="w-full" />
                    
-                   <a 
-                      href={taskResult.voice.demoAudioUrl} 
-                      download 
-                      className="flex items-center justify-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition w-full"
-                   >
-                      <Download size={18} /> {t.downloadAudio}
-                           </a>
+                   <div className="flex gap-3 w-full">
+                     <button
+                        onClick={addToMaterialLibrary}
+                        disabled={addToLibLoading || isAddedToLib}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-full font-bold transition ${
+                          isAddedToLib 
+                            ? 'bg-green-100 text-green-700 cursor-default' 
+                            : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
+                        }`}
+                     >
+                        {addToLibLoading ? <Loader2 size={18} className="animate-spin" /> : (isAddedToLib ? <Check size={18} /> : <FolderPlus size={18} />)}
+                        {isAddedToLib ? t.addedToLibrary : t.addToLibrary}
+                     </button>
+                     
+                     <a 
+                        href={taskResult.voice.demoAudioUrl} 
+                        download 
+                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition"
+                     >
+                        <Download size={18} /> {t.downloadAudio}
+                     </a>
+                   </div>
                        </div>
               ) : taskError ? (
                  <div className="flex flex-col items-center text-red-500 gap-2">
