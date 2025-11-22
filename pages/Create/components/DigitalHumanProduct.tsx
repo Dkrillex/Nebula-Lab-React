@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, Loader, Image as ImageIcon, PlayCircle } from 'lucide-react';
+import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus } from 'lucide-react';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
 import UploadComponent from '../../../components/UploadComponent';
 import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
+import AddMaterialModal from '@/components/AddMaterialModal';
+
 interface DigitalHumanProductProps {
   t: any;
   handleFileUpload: (file: File, type: 'image') => Promise<any>; 
@@ -30,7 +32,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const cursorRef = useRef(0);
   const allAvatarsRef = useRef<ProductAvatar[]>([]);
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+  // Add Material Modal
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
   // Uploads
   const [productImage, setProductImage] = useState<{ fileId: string, url: string } | null>(null);
   const [userFaceImage, setUserFaceImage] = useState<{ fileId: string, url: string } | null>(null);
@@ -45,6 +48,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [generating, setGenerating] = useState(false);
   const [resultImageUrl, setResultImageUrl] = useState<string | null>(null);
   const [loadingSample, setLoadingSample] = useState(false);
+  
+  // Progress
+  const [progress, setProgress] = useState(0);
+  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -167,6 +174,22 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     toast.error(msg);
   };
 
+  const startProgress = () => {
+    setProgress(0);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => {
+        setProgress(prev => {
+            if (prev >= 95) return 95;
+            return prev + Math.floor(Math.random() * 2) + 1; 
+        });
+    }, 600);
+  };
+
+  const stopProgress = () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setProgress(100);
+  };
+
   const handleGenerate = async () => {
     if (!productImage) {
         showError(t?.rightPanel?.uploadProductImg || 'Please upload product image');
@@ -176,32 +199,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         showError(t?.rightPanel?.uploadAvatar || 'Please select an avatar');
         return;
     }
-//     const { result: resultData } = {
-//         "code": 200,
-//         "msg": "操作成功",
-//         "data": {
-//             "result": {
-//             "costCredit": 0,
-//             "productReplaceResult": [
-//                 {
-//                 "key": "9b82eecc856549c2880a7a7fd7e7c928",
-//                 "url": "https://dr1coeak04nbk.cloudfront.net/analyzed_video%2Fvideo%2F9b82eecc856549c2880a7a7fd7e7c928%2F9b82eecc856549c2880a7a7fd7e7c928.jpg?Policy=eyJTdGF0ZW1lbnQiOiBbeyJSZXNvdXJjZSI6Imh0dHBzOi8vZHIxY29lYWswNG5iay5jbG91ZGZyb250Lm5ldC9hbmFseXplZF92aWRlbyUyRnZpZGVvJTJGOWI4MmVlY2M4NTY1NDljMjg4MGE3YTdmZDdlN2M5MjglMkY5YjgyZWVjYzg1NjU0OWMyODgwYTdhN2ZkN2U3YzkyOC5qcGciLCJDb25kaXRpb24iOnsiRGF0ZUxlc3NUaGFuIjp7IkFXUzpFcG9jaFRpbWUiOjE3NjM5Nzc4MjF9fX1dfQ__&Signature=wfnLXXnHhJG7ekU9ryr2ik0nxi-aIsCdxv4XdA6RTwFJLKsalHXhVj4HAqOynEtpOaFjMBtocQhrOJcT0LshGeOQB6inyxPPot3u2PU4g68ScD57R80rQrkwM5q47xaoLEu2rVgmJfor6tAPPPCFwWvI8fF4H7XKwKFYCzOjHQIgER1GiqePgNqDrorcChfx3KTnQptObArvwL7JHQydJJ8H6dHRbsC5o-GZe~OCTS18-Ls3CRRQtNnP0LTSqXUuiH4jmaKL4HNlr0SbZ75EcdBNiEn5kYvzqGu1Ore5QRDJxAuNG5Y-j6MNcAUcZ50xAc7g-fmLCSQy6lcBwRUF0g__&Key-Pair-Id=K21X5TGS0ALJI4",
-//                 "fileId": "c60417e7d986480d99558006e0c4e863"
-//                 }
-//             ],
-//             "taskId": "e94767e53d5f440ea5ef356c7ddb5459",
-//             "taskStatus": "success"
-//             },
-//             "code": "200",
-//             "message": "Success"
-//         }
-//         } 
-// setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
-//                   setGenerating(false);
-// return 
     try {
         setGenerating(true);
         setResultImageUrl(null);
+        startProgress();
 
         const params = {
             avatarId: selectedAvatar?.avatarId || '',
@@ -222,12 +223,13 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         }
     } catch (error: any) {
         toast.error(error.message || 'Generation failed');
+        stopProgress();
         setGenerating(false);
     }
   };
 
   const pollTask = async (taskId: string) => {
-      const interval = 15000;
+      const interval = 5000;
       let attempts = 0;
       const maxAttempts = 100;
 
@@ -236,23 +238,35 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               const { result: resultData } = await avatarService.queryImageReplaceTask(taskId);
               const status = resultData?.taskStatus;
               if (status === 'success') {
-                  setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); // Adjust based on actual response
-                  setGenerating(false);
-                  // Optional: Show success toast
+                  stopProgress();
+                  setTimeout(() => {
+                      setResultImageUrl(resultData.resultImageUrl || resultData.bgRemovedImagePath || ''); 
+                      setGenerating(false);
+                  }, 500);
               } else if (status === 'fail') {
-                  toast.error(resultData.errorMsg || 'Generation failed');
-                  setGenerating(false);
+                  stopProgress();
+                  setTimeout(() => {
+                      toast.error(resultData.errorMsg || 'Generation failed');
+                      setGenerating(false);
+                  }, 500);
               } else {
                   attempts++;
                   if (attempts < maxAttempts) setTimeout(check, interval);
                   else {
                       toast.error('Task timed out');
+                      stopProgress();
                       setGenerating(false);
                   }
               }
           } catch (e) {
-              toast.error('Failed to query status');
-              setGenerating(false);
+              // On network error, retry but keep counting attempts
+              attempts++;
+              if (attempts < maxAttempts) setTimeout(check, interval);
+              else {
+                  toast.error('Failed to query status');
+                  stopProgress();
+                  setGenerating(false);
+              }
           }
       };
       check();
@@ -307,7 +321,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     5: t?.sliderMarks?.xLarge,
     6: t?.sliderMarks?.xxLarge,
   };
-
+  const handleAddToMaterials = () => {
+    if (!resultImageUrl) return;
+    setShowMaterialModal(true);
+  };
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Avatar Selection */}
@@ -389,7 +406,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">
                       {t?.rightPanel?.templatePreview || 'Avatar Preview'}
                   </h3>
-                  <div className="relative aspect-[9/16] max-w-[240px] mx-auto bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
+                  <div className="relative aspect-[9/16] max-w-[240px] max-h-[300px] mx-auto bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
                       {(selectedAvatar || customAvatarImage) ? (
                           <img src={selectedAvatar?.avatarImagePath || customAvatarImage?.url} className="w-full h-full object-cover" />
                       ) : (
@@ -486,7 +503,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           </div>
 
           {/* Prompt */}
-          <div className="mb-1">
+          <div className="mb-4">
               <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
                   {t?.rightPanel?.aiTips || 'AI Mixed Prompt'}
               </h3>
@@ -498,11 +515,58 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               />
           </div>
 
+          {/* Result Display Inline (Replaces Overlay) */}
+          {resultImageUrl && (
+            <div className="mb-6 p-4 border rounded-xl animate-fade-in">
+                <div className="flex justify-between items-center mb-3">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200">{t?.rightPanel?.replacementSuccess || 'Result'}</h3>
+                    <button onClick={() => setResultImageUrl(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-full transition"><X size={18} /></button>
+                </div>
+                <div className="relative w-full flex justify-center bg-gray-100 dark:bg-gray-900 rounded-lg overflow-hidden p-2">
+                     <img src={resultImageUrl} className="max-w-full max-h-[50vh] object-contain rounded" alt="Generated Result" />
+                </div>
+                <div className="mt-3 flex justify-end">
+                     <a href={resultImageUrl} download target="_blank" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition flex items-center gap-2 text-sm font-medium shadow-md hover:shadow-lg">
+                        <Upload className="rotate-180" size={16} />
+                        下载
+                     </a>
+                     <button 
+                          onClick={handleAddToMaterials}
+                          className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
+                       >
+                           <Plus size={20} />
+                           加入素材库
+                       </button>
+                </div>
+            </div>
+          )}
+          {/* Progress Card (Inline) */}
+          {generating && (
+            <div className="mb-6 p-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800 rounded-xl animate-fade-in">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 flex items-center gap-2">
+                    <Loader className="animate-spin text-indigo-600" size={20} />
+                    {t?.rightPanel?.generating || "AI Generating"}
+                </h3>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 mb-3 overflow-hidden">
+                    <div 
+                        className="bg-indigo-600 h-3 rounded-full transition-all duration-300 ease-out" 
+                        style={{ width: `${progress}%` }}
+                    ></div>
+                </div>
+                <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500 dark:text-gray-400 animate-pulse">
+                        {t?.rightPanel?.pleaseWait || "AI is analyzing..."}
+                    </span>
+                    <span className="font-bold text-indigo-600">{progress}%</span>
+                </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div className="flex gap-4 mt-auto">
               <button 
                 onClick={handleTrySample}
-                disabled={loadingSample}
+                disabled={loadingSample || generating}
                 className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loadingSample ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.trySample || 'Try Sample')}
@@ -516,24 +580,19 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               </button>
           </div>
       </div>
-
-      {/* Right: Result Overlay */}
-      {resultImageUrl && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4" onClick={() => setResultImageUrl(null)}>
-              <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl max-w-4xl max-h-[90vh] overflow-auto" onClick={e => e.stopPropagation()}>
-                  <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-bold">{t?.rightPanel?.replacementSuccess || 'Result'}</h3>
-                      <button onClick={() => setResultImageUrl(null)} className="p-1 hover:bg-gray-100 rounded-full"><X size={24} /></button>
-                  </div>
-                  <img src={resultImageUrl} className="max-w-full max-h-[70vh] rounded-lg mx-auto" />
-                  <div className="mt-4 flex justify-center">
-                      <a href={resultImageUrl} download target="_blank" className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
-                          Download
-                      </a>
-                  </div>
-              </div>
-          </div>
-      )}
+      {/* Add Material Modal */}
+      <AddMaterialModal
+          isOpen={showMaterialModal}
+          onClose={() => setShowMaterialModal(false)}
+          onSuccess={() => {
+              toast.success('已添加到素材库');
+          }}
+          initialData={{
+              assetName: `产品数字人_${new Date().toISOString().slice(0,10)}`,
+              assetUrl: resultImageUrl || '',
+              assetType: 13 // Product Digital Human
+          }}
+       />
     </div>
   );
 };
