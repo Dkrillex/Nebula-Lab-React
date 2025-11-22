@@ -3,7 +3,7 @@ import { useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 
 // 路由白名单（不需要登录的路由）
-const WHITE_LIST = ['/', '/auth/login', '/auth/register', '/privacy'];
+const WHITE_LIST = ['/', '/privacy'];
 
 interface AuthGuardProps {
   children: React.ReactNode;

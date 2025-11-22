@@ -387,7 +387,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleInviteNewUser = async () => {
     if (!currentTeam) return;
-    const inviteUrl = `https://ai-nebula.com/auth/register?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     
     try {
       await navigator.clipboard.writeText(inviteUrl);

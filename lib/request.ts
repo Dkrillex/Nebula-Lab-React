@@ -185,9 +185,7 @@ function createRequestClient(
 
     // Only set default Content-Type if not present and NOT FormData
     if (!headers['Content-Type'] && !isFormData) {
-      headers['Content-Type'] = isEncrypted
-        ? 'text/plain;charset=utf-8'  // Encrypted payload is sent as plain text
-        : 'application/json;charset=utf-8';
+      headers['Content-Type'] = 'application/json;charset=utf-8';
     }
 
     // Add encrypt-key header if encryption is enabled
