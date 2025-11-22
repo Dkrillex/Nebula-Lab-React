@@ -15,13 +15,15 @@ import {
   Wand2,
   Trash2,
   Music,
-  Filter
+  Filter,
+  Save
 } from 'lucide-react';
 import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
 import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import UploadComponent from '../../../components/UploadComponent';
+import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
 
 interface VoiceCloneProps {
@@ -206,9 +208,12 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [taskStatus, setTaskStatus] = useState<string>('');
   const [taskProgress, setTaskProgress] = useState(0);
   const [taskResult, setTaskResult] = useState<VoiceCloneResult | null>(null);
-  const [taskError, setTaskError] = useState<string>('');
   const [isPolling, setIsPolling] = useState(false);
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // AddMaterialModal State
+  const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [addMaterialData, setAddMaterialData] = useState<any>(null);
 
   // --- Helper Functions ---
 
@@ -273,7 +278,6 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setTaskId('');
     setTaskProgress(0);
     setTaskResult(null);
-    setTaskError('');
     setIsPolling(false);
     setSearchKeyword('');
     // Don't reset filters on clearAll to keep user preference
@@ -494,7 +498,6 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
     setSubmitLoading(true);
     setTaskStatus('');
-    setTaskError('');
     setTaskResult(null);
 
     try {
@@ -529,7 +532,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       }
     } catch (error: any) {
       console.error('Submit failed', error);
-      setTaskError(t.messionPushFail);
+      toast.error(t.messionPushFail);
+      setTaskStatus('fail');
     } finally {
       setSubmitLoading(false);
     }
@@ -559,7 +563,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                 setTaskResult(result);
                 setIsPolling(false);
             } else if (result.status === 'fail' || result.status === 'error') {
-                setTaskError(result.errorMsg || t.messionPushFail);
+                toast.error(result.errorMsg || t.messionPushFail);
+                setTaskStatus('fail');
                 setIsPolling(false);
             } else {
                 // Running
@@ -570,11 +575,28 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       } catch (error) {
         console.error('Poll error', error);
         setIsPolling(false);
-        setTaskError(t.queryFail);
+        toast.error(t.queryFail);
+        setTaskStatus('fail');
       }
     };
     
     poll();
+  };
+
+  const handleSaveToAssets = () => {
+    if (!taskResult || !taskResult.voice?.demoAudioUrl) return;
+    
+    const materialName = taskResult.voice.voiceName || '声音克隆';
+    
+    setAddMaterialData({
+      assetName: materialName,
+      assetUrl: taskResult.voice.demoAudioUrl,
+      assetType: 8, // 声音克隆
+      assetTag: materialName,
+      assetDesc: materialName,
+      assetId: taskId // Using task ID as asset ID reference
+    });
+    setShowAddMaterialModal(true);
   };
 
   return (
@@ -895,7 +917,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
            <div className="flex items-center justify-between mb-6">
              <h2 className="text-xl font-bold text-foreground">{t.resultTitle || '生成结果'}</h2>
-             {(taskResult || taskError) && (
+             {(taskResult || taskStatus === 'fail') && (
                <button 
                  onClick={clearAll}
                  className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
@@ -932,12 +954,19 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                    >
                       <Download size={18} /> {t.downloadAudio}
                            </a>
+                   
+                   <button
+                      onClick={handleSaveToAssets}
+                      className="flex items-center justify-center gap-2 px-6 py-2 border-2 border-indigo-600 text-indigo-600 rounded-full font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition w-full"
+                   >
+                      <Save size={18} /> 保存到素材库
+                   </button>
                        </div>
-              ) : taskError ? (
+              ) : taskStatus === 'fail' ? (
                  <div className="flex flex-col items-center text-red-500 gap-2">
                     <AlertCircle size={48} />
                     <p className="font-bold">{t.messionPushFail}</p>
-                    <p className="text-sm text-muted-foreground">{taskError}</p>
+                    <p className="text-sm text-muted-foreground">请查看右上角提示信息</p>
                    </div>
               ) : (
                 <div className="flex flex-col items-center text-slate-400">
@@ -950,6 +979,18 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
            </div>
         </div>
       </div>
+
+      {/* Add Material Modal */}
+      <AddMaterialModal
+        isOpen={showAddMaterialModal}
+        onClose={() => setShowAddMaterialModal(false)}
+        onSuccess={() => {
+          setShowAddMaterialModal(false);
+          // Optional: toast.success('Saved successfully'); // handled in modal
+        }}
+        initialData={addMaterialData}
+        disableAssetTypeSelection={true}
+      />
     </div>
   );
 };

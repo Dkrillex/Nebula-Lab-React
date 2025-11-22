@@ -28,6 +28,8 @@ export interface VideoGenerateRequest {
   seed?: number;
   audio_url?: string;
   // doubao 模型参数
+  watermark?: boolean;
+  camera_fixed?: boolean;
   content?: Array<{
     type: 'text' | 'image_url';
     text?: string;
@@ -57,7 +59,6 @@ export interface VideoGenerateQueryResponse {
     video_url?: string;
     error?: string;
     progress?: number;
-
   };
 }
 
@@ -94,4 +95,3 @@ export const videoGenerateService = {
     });
   },
 };
-

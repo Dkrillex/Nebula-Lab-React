@@ -586,12 +586,16 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
               toast.success('已添加到素材库');
+              setShowMaterialModal(false);
           }}
           initialData={{
               assetName: `产品数字人_${new Date().toISOString().slice(0,10)}`,
+              assetTag: `产品数字人_${new Date().toISOString().slice(0,10)}`,
+              assetDesc: `产品数字人_${new Date().toISOString().slice(0,10)}`,
               assetUrl: resultImageUrl || '',
               assetType: 13 // Product Digital Human
           }}
+          disableAssetTypeSelection={true}
        />
     </div>
   );

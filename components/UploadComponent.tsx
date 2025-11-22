@@ -56,6 +56,13 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Update preview URL when initialUrl changes
+  React.useEffect(() => {
+    if (initialUrl && initialUrl !== previewUrl) {
+      setPreviewUrl(initialUrl);
+    }
+  }, [initialUrl]);
+
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
     triggerUpload: async () => {
@@ -223,11 +230,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             ) : accept.startsWith('audio') ? (
                 <div className="flex flex-col items-center justify-center w-full h-full p-4">
                     <FileIcon size={32} className="text-indigo-500 mb-2" />
-                    <span className="text-xs text-gray-600 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
                     <audio src={previewUrl} className="w-full mt-2 h-8" controls />
                 </div>
             ) : (
-                <img src={previewUrl} className="w-full h-full object-cover rounded-xl" alt="preview" />
+                <img src={previewUrl} className="w-full h-full object-contain rounded-xl p-2" alt="preview" />
             )}
             <button 
                 onClick={handleClear} 

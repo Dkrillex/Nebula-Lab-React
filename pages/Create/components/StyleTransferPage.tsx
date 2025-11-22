@@ -9,6 +9,7 @@ import TemplateSelectModal from './TemplateSelectModal';
 import ProductCanvas from './ProductCanvas';
 import MaskCanvas, { MaskCanvasRef, ToolType, TextOptions } from './MaskCanvas';
 import UploadComponent from '../../../components/UploadComponent';
+import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
 
 interface StyleTransferPageProps {
@@ -129,6 +130,10 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
 
+  // AddMaterialModal State
+  const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
+  const [addMaterialData, setAddMaterialData] = useState<any>(null);
+
   // Updated Text Constants matching Vue version
   const TEXTS = {
     standard: {
@@ -139,7 +144,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       areaTitle: '画出您想要替换的区域'
     },
     creative: {
-      desc: '选中区域物品变化转换'
+      desc: '选中区域物品变化转换',
+      productDesc: '高清图片效果最佳\n格式:jpg/jpeg/png; 文件大小<10MB'
     },
     clothing: {
       desc: '服装快速替换'
@@ -879,6 +885,29 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     };
   }, []);
 
+  const handleSaveToAssets = (img: GeneratedImage) => {
+    let assetType = 6; // 万物迁移
+    
+    // Generate mode label
+    const modeLabels = {
+      'standard': '标准模式',
+      'creative': '创意模式',
+      'clothing': '服饰模式'
+    };
+    const modeLabel = modeLabels[selectedMode];
+    const materialName = `万物迁移-${modeLabel}`;
+    
+    setAddMaterialData({
+      assetName: materialName,
+      assetUrl: img.url,
+      assetType: 6,
+      assetTag: materialName,
+      assetDesc: materialName,
+      assetId: String(img.key).includes('_') ? undefined : String(img.key)
+    });
+    setShowAddMaterialModal(true);
+  };
+
   const renderUploadBox = (
     image: UploadedImage | null,
     type: 'product' | 'template' | 'garment' | 'model' | 'reference',
@@ -891,6 +920,14 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     const acceptTypes = (selectedMode === 'creative' && (type === 'product' || type === 'reference'))
       ? "image/png,image/jpeg,image/jpg"
       : "image/png,image/jpeg,image/jpg,image/webp";
+    
+    // 获取文件格式提示文本
+    const getFormatText = () => {
+      if (selectedMode === 'creative' && (type === 'product' || type === 'reference')) {
+        return 'jpg/jpeg/png | 文件<10MB';
+      }
+      return t.standard.support;
+    };
     
     return (
       <UploadComponent
@@ -909,7 +946,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
               <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
               {type !== 'template' && (
                 <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
-                    {t.standard.support}
+                    {getFormatText()}
                 </p>
               )}
           </div>
@@ -987,7 +1024,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                     <div className="flex justify-between items-center mb-2">
                         <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base flex items-center gap-2">
                             {t.creative.productTitle}
-                            <span className="text-[10px] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png/webp | 文件&lt;10MB</span>
+                            <span className="text-[10px] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</span>
                         </h3>
                     </div>
                     
@@ -1566,6 +1603,13 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                        >
                          <Download size={20} />
                        </a>
+                       <button
+                         onClick={() => handleSaveToAssets(img)}
+                         className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                         title="Save to Assets"
+                       >
+                         <Upload size={20} className="rotate-90" /> {/* Using Upload icon rotated as 'Save/Import' metaphor if Save icon not available or just reuse Upload */}
+                       </button>
                      </div>
                    </div>
                  ))}
@@ -1597,6 +1641,15 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         onClose={() => setShowTemplateModal(false)}
         onSelect={handleTemplateSelect}
         selectedTemplateId={selectedTemplate?.templateId}
+      />
+
+      {/* Add Material Modal */}
+      <AddMaterialModal
+        isOpen={showAddMaterialModal}
+        onClose={() => setShowAddMaterialModal(false)}
+        onSuccess={() => setShowAddMaterialModal(false)}
+        initialData={addMaterialData}
+        disableAssetTypeSelection={true}
       />
     </div>
   );

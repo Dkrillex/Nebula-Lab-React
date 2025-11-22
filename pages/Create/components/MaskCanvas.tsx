@@ -68,6 +68,18 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [cursor, setCursor] = useState({ x: 0, y: 0, visible: false });
   
+  // 文本输入对话框状态
+  const [textInputDialog, setTextInputDialog] = useState<{
+    isOpen: boolean;
+    position: { x: number; y: number } | null;
+    onConfirm: (text: string) => void;
+  }>({
+    isOpen: false,
+    position: null,
+    onConfirm: () => {},
+  });
+  const [textInputValue, setTextInputValue] = useState('');
+  
   // Refs for mutable state during interactions
   const isPanningRef = useRef(false);
   const isSpacePressedRef = useRef(false);
@@ -338,21 +350,29 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
     const normalizedPos = canvasToNormalizedCoords(x, y);
 
     if (tool === 'text') {
-        const text = window.prompt('请输入文本:');
-        if (text) {
-            const newStroke: Stroke = {
-                type: 'text',
-                path: [normalizedPos],
-                text,
-                textOptions: { ...textOptions }, // Copy current options
-                brushSize,
-                color: brushColor,
-                globalCompositeOperation: 'source-over'
-            };
-            drawnShapesRef.current.push(newStroke);
-            actionHistoryRef.current.push({ type: 'add', shape: newStroke });
-            redrawAllShapes();
-        }
+        setTextInputValue('');
+        setTextInputDialog({
+            isOpen: true,
+            position: normalizedPos,
+            onConfirm: (text: string) => {
+                if (text) {
+                    const newStroke: Stroke = {
+                        type: 'text',
+                        path: [normalizedPos],
+                        text,
+                        textOptions: { ...textOptions }, // Copy current options
+                        brushSize,
+                        color: brushColor,
+                        globalCompositeOperation: 'source-over'
+                    };
+                    drawnShapesRef.current.push(newStroke);
+                    actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+                    redrawAllShapes();
+                }
+                setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
+                setTextInputValue('');
+            },
+        });
         return;
     }
 
@@ -730,6 +750,50 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       {enableZoom && zoomScale !== 1 && (
         <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs pointer-events-none z-10">
           {Math.round(zoomScale * 100)}%
+        </div>
+      )}
+      
+      {/* 文本输入对话框 */}
+      {textInputDialog.isOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">请输入文本</h3>
+            <input
+              type="text"
+              value={textInputValue}
+              onChange={(e) => setTextInputValue(e.target.value)}
+              autoFocus
+              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none mb-4"
+              placeholder="输入文本..."
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  textInputDialog.onConfirm(textInputValue);
+                } else if (e.key === 'Escape') {
+                  setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
+                  setTextInputValue('');
+                }
+              }}
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
+                  setTextInputValue('');
+                }}
+                className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+              >
+                取消
+              </button>
+              <button
+                onClick={() => {
+                  textInputDialog.onConfirm(textInputValue);
+                }}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                确定
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

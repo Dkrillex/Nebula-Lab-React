@@ -321,11 +321,18 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
       <AddMaterialModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSuccess={handleMaterialSuccess}
+        onSuccess={() => {
+          if (handleMaterialSuccess) handleMaterialSuccess();
+          setIsAddModalOpen(false);
+        }}
         initialData={{
+          assetName: '换脸结果',
+          assetTag: '换脸结果',
+          assetDesc: '换脸结果',
           assetUrl: imageUrl,
           assetType: 6, // 图片类型
         }}
+        disableAssetTypeSelection={true}
       />
     </>
   );

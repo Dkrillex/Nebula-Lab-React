@@ -4,6 +4,7 @@ import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react'
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
+import ConfirmDialog from '../../components/ConfirmDialog';
 import toast from 'react-hot-toast';
 
 interface KeysPageProps {}
@@ -26,6 +27,19 @@ const KeysPage: React.FC<KeysPageProps> = () => {
   const [formVisible, setFormVisible] = useState(false);
   const [currentToken, setCurrentToken] = useState<TokenVO | null>(null);
   const [isViewMode, setIsViewMode] = useState(false);
+  
+  // 确认对话框状态
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // 获取令牌列表
   const fetchTokens = async (pageNum = pagination.current) => {
@@ -105,15 +119,22 @@ const KeysPage: React.FC<KeysPageProps> = () => {
 
   // 删除令牌
   const deleteKey = async (token: TokenVO) => {
-    if (confirm(`确认删除令牌 "${token.name || token.id}" 吗？`)) {
-      try {
-        await keyService.deleteToken(token.id);
-        await fetchTokens();
-      } catch (error) {
-        console.error('删除令牌失败:', error);
-        toast.error('删除失败，请重试');
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: '确认删除',
+      message: `确认删除令牌 "${token.name || token.id}" 吗？`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await keyService.deleteToken(token.id);
+          await fetchTokens();
+          toast.success('删除成功');
+        } catch (error) {
+          console.error('删除令牌失败:', error);
+          toast.error('删除失败，请重试');
+        }
+      },
+    });
   };
 
   // 打开新建表单
@@ -458,6 +479,16 @@ const KeysPage: React.FC<KeysPageProps> = () => {
         isViewMode={isViewMode}
         onClose={() => setFormVisible(false)}
         onSuccess={handleFormSuccess}
+      />
+      
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        type="danger"
       />
     </div>
   );

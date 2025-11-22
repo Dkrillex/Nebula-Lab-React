@@ -1,7 +1,8 @@
 import React, { useRef, useState, forwardRef, useImperativeHandle, useEffect } from 'react';
-import { Upload, Loader, X, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Upload, Loader, X, CheckCircle2 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { uploadService } from '../services/uploadService';
-import { backgroundService, RemoveBackgroundQueryResult } from '../services/backgroundService';
+import { backgroundService } from '../services/backgroundService';
 
 export interface ImageRemoveBackgroundComponentRef {
   triggerUpload: () => Promise<void>;
@@ -47,7 +48,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
   const [uploading, setUploading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [resultUrl, setResultUrl] = useState<string>('');
-  const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pollCountRef = useRef<number>(0);
@@ -72,7 +72,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
       setFile(null);
       setPreviewUrl('');
       setResultUrl('');
-      setError('');
       setProcessing(false);
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -92,7 +91,7 @@ const ImageRemoveBackgroundComponent = forwardRef<
     // 验证文件类型
     if (!selectedFile.type.startsWith('image/')) {
       const err = new Error('请选择图片文件');
-      setError(err.message);
+      toast.error(err.message);
       onError?.(err);
       return;
     }
@@ -100,7 +99,7 @@ const ImageRemoveBackgroundComponent = forwardRef<
     // 验证文件大小
     if (selectedFile.size > maxSize * 1024 * 1024) {
       const err = new Error(`文件大小不能超过 ${maxSize}MB`);
-      setError(err.message);
+      toast.error(err.message);
       onError?.(err);
       return;
     }
@@ -109,7 +108,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
     const objectUrl = URL.createObjectURL(selectedFile);
     setFile(selectedFile);
     setPreviewUrl(objectUrl);
-    setError('');
     setResultUrl('');
 
     // 如果设置了立即上传，自动开始上传和处理
@@ -122,7 +120,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
   const handleUploadAndProcess = async (fileToUpload: File) => {
     setUploading(true);
     setProcessing(false);
-    setError('');
 
     try {
       // 1. 上传图片
@@ -155,7 +152,7 @@ const ImageRemoveBackgroundComponent = forwardRef<
     } catch (err: any) {
       console.error('Upload and process error:', err);
       const error = err instanceof Error ? err : new Error('处理失败');
-      setError(error.message);
+      toast.error(error.message);
       setUploading(false);
       setProcessing(false);
       onError?.(error);
@@ -211,7 +208,7 @@ const ImageRemoveBackgroundComponent = forwardRef<
           // 任务失败
           setProcessing(false);
           const errorMsg = queryRes.errorMsg || '抠图处理失败';
-          setError(errorMsg);
+          toast.error(errorMsg);
           onError?.(new Error(errorMsg));
           // 清理定时器
           if (pollTimerRef.current) {
@@ -227,7 +224,7 @@ const ImageRemoveBackgroundComponent = forwardRef<
       } catch (err: any) {
         setProcessing(false);
         const error = err instanceof Error ? err : new Error('查询任务状态失败');
-        setError(error.message);
+        toast.error(error.message);
         onError?.(error);
         // 清理定时器
         if (pollTimerRef.current) {
@@ -246,7 +243,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
     setFile(null);
     setPreviewUrl('');
     setResultUrl('');
-    setError('');
     setProcessing(false);
     setUploading(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -258,15 +254,12 @@ const ImageRemoveBackgroundComponent = forwardRef<
   };
 
   const hasResult = !!resultUrl;
-  const showError = !!error;
 
   return (
     <div
       className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition ${
         hasResult
           ? 'border-green-500 bg-green-50 dark:bg-green-900/20'
-          : showError
-          ? 'border-red-500 bg-red-50 dark:bg-red-900/20'
           : previewUrl
           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
           : 'border-gray-300 dark:border-gray-600'
@@ -334,14 +327,6 @@ const ImageRemoveBackgroundComponent = forwardRef<
             </div>
           )}
 
-          {/* 错误提示 */}
-          {showError && (
-            <div className="absolute bottom-2 left-2 right-2 bg-red-500 text-white px-3 py-2 rounded-lg text-xs flex items-center gap-2 z-20">
-              <AlertCircle size={14} />
-              <span>{error}</span>
-            </div>
-          )}
-
           {/* 清除按钮 */}
           <button
             onClick={handleClear}
@@ -379,4 +364,3 @@ const ImageRemoveBackgroundComponent = forwardRef<
 ImageRemoveBackgroundComponent.displayName = 'ImageRemoveBackgroundComponent';
 
 export default ImageRemoveBackgroundComponent;
-
