@@ -13,11 +13,13 @@ export interface ImageGenerateRequest {
   quality?: string; // 图片质量: standard/hd
   responseFormat?: string; // 响应格式: url/b64_json
   user_id?: string;
+  seed?: number; // 随机种子
   // 图生图相关
   image?: string; // 参考图片URL或base64
   input_fidelity?: number; // 输入保真度（0-1）
   // 豆包模型特定参数
   watermark?: boolean;
+  guidance_scale?: number; // 引导比例系数
   sequential_image_generation?: string; // 'auto' | 'disabled'
   sequential_image_generation_options?: any;
   optimize_prompt_options?: {
@@ -36,6 +38,8 @@ export interface ImageGenerateRequest {
       negative_prompt?: string;
       prompt_extend?: boolean;
       watermark?: boolean;
+      seed?: number;
+      n?: number;
     };
   };
   // Gemini模型特定参数
@@ -78,4 +82,3 @@ export const imageGenerateService = {
     });
   },
 };
-
