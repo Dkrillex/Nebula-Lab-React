@@ -138,7 +138,8 @@ const defaultT = {
   fileReadFail: '文件读取失败',
   transWAV: '正在转换为 WAV 格式...',
   transWAVSuccess: 'WAV 格式转换完成',
-  transWAVFail: '音频格式转换失败，将使用原始格式'
+  transWAVFail: '音频格式转换失败，将使用原始格式',
+  downloadAll: '批量下载'
 };
 
 const selectLanguageList = [
@@ -232,9 +233,15 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [taskId, setTaskId] = useState<string>('');
   const [taskStatus, setTaskStatus] = useState<string>('');
   const [taskProgress, setTaskProgress] = useState(0);
-  const [taskResult, setTaskResult] = useState<VoiceCloneResult | null>(null);
+  
+  // History State
+  const [generatedHistory, setGeneratedHistory] = useState<VoiceCloneResult[]>([]);
+  const [currentResult, setCurrentResult] = useState<VoiceCloneResult | null>(null);
+  const [isAddedToLib, setIsAddedToLib] = useState(false);
+  
   const [isPolling, setIsPolling] = useState(false);
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const mimeTypeRef = useRef<string>('');
 
   // AddMaterialModal State
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
@@ -395,7 +402,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setTaskStatus('');
     setTaskId('');
     setTaskProgress(0);
-    setTaskResult(null);
+    // Do not clear history when resetting input
     setIsPolling(false);
     setSearchKeyword('');
     setIsAddedToLib(false);
@@ -677,8 +684,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
     setSubmitLoading(true);
     setTaskStatus('');
-    setTaskResult(null);
-
+    // Don't clear currentResult here so user can still see previous while generating new
+    
     try {
       let res: any;
       if (pageMode === 'clone') {
@@ -739,7 +746,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
             setTaskStatus(result.status);
             if (result.status === 'success') {
                 setTaskProgress(100);
-                setTaskResult(result);
+                
+                // Add to history and set as current
+                setGeneratedHistory(prev => [result, ...prev]);
+                setCurrentResult(result);
+                
                 setIsPolling(false);
             } else if (result.status === 'fail' || result.status === 'error') {
                 toast.error(result.errorMsg || t.messionPushFail);
@@ -762,24 +773,48 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     poll();
   };
 
-  const handleSaveToAssets = () => {
-    if (!taskResult || !taskResult.voice?.demoAudioUrl) return;
+  const handleSaveToAssets = (result: VoiceCloneResult) => {
+    if (!result || !result.voice?.demoAudioUrl) return;
     
-    const materialName = taskResult.voice.voiceName || '声音克隆';
+    const materialName = result.voice.voiceName || '声音克隆';
     
     setAddMaterialData({
       assetName: materialName,
-      assetUrl: taskResult.voice.demoAudioUrl,
+      assetUrl: result.voice.demoAudioUrl,
       assetType: 8, // 声音克隆
       assetTag: materialName,
       assetDesc: materialName,
-      assetId: taskId // Using task ID as asset ID reference
+      assetId: result.taskId // Using task ID as asset ID reference
     });
     setShowAddMaterialModal(true);
   };
 
+  const handleDownloadAudio = (url: string, name: string) => {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${name || 'generated-audio'}-${Date.now()}.mp3`; // Assuming MP3/WAV
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+  };
+
+  const handleDownloadAll = async () => {
+    for (const result of generatedHistory) {
+        if (result.voice?.demoAudioUrl) {
+            handleDownloadAudio(result.voice.demoAudioUrl, result.voice.voiceName || 'audio');
+            // Delay to prevent browser blocking multiple downloads
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+    }
+  };
+
+  const handleClearHistory = () => {
+      setGeneratedHistory([]);
+      setCurrentResult(null);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
       {/* Header */}
       <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm z-10">
         <div className="px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -1104,51 +1139,61 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
            <div className="flex items-center justify-between mb-6">
              <h2 className="text-xl font-bold text-foreground">{t.resultTitle || '生成结果'}</h2>
-             {(taskResult || taskStatus === 'fail') && (
-               <button 
-                 onClick={clearAll}
-                 className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
-               >
-                 <RotateCcw size={14} /> {t.clearReset}
-               </button>
-             )}
+             <div className="flex gap-2">
+                 {/* Clear History Button */}
+                 <button
+                    onClick={handleClearHistory}
+                    disabled={generatedHistory.length === 0}
+                    className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors text-muted-foreground disabled:opacity-50"
+                 >
+                    {t.clear || '清空'}
+                 </button>
+                 
+                 {/* Batch Download Button */}
+                 <button
+                    onClick={handleDownloadAll}
+                    disabled={generatedHistory.length === 0}
+                    className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1"
+                 >
+                    <Download size={12} /> {t.downloadAudio || '批量下载'}
+                 </button>
+             </div>
            </div>
 
            {/* Main Preview Area */}
-           <div className="flex-1 w-full flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
+           <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
               {(submitLoading || isPolling) ? (
                 <div className="flex flex-col items-center gap-4 z-10">
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
                    <p className="text-indigo-600 font-medium">{t.inProcessing} {taskProgress > 0 && `${taskProgress}%`}</p>
                    <p className="text-xs text-muted-foreground">任务ID: {taskId}</p>
-                           </div>
-              ) : taskResult && taskResult.status === 'success' && taskResult.voice?.demoAudioUrl ? (
+                </div>
+              ) : currentResult && currentResult.voice?.demoAudioUrl ? (
                 <div className="w-full max-w-md p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300">
                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
                       <Music size={32} />
                    </div>
                    <div className="text-center">
-                      <h3 className="text-lg font-bold text-foreground">{taskResult.voice.voiceName || 'Generated Voice'}</h3>
-                      <p className="text-sm text-muted-foreground">生成成功</p>
+                      <h3 className="text-lg font-bold text-foreground">{currentResult.voice.voiceName || 'Generated Voice'}</h3>
+                      <p className="text-sm text-muted-foreground">{t.taskSuccess || '生成成功'}</p>
                    </div>
                    
-                   <audio src={taskResult.voice.demoAudioUrl} controls className="w-full" />
+                   <audio src={currentResult.voice.demoAudioUrl} controls className="w-full" />
                    
-                   <a 
-                      href={taskResult.voice.demoAudioUrl} 
-                      download 
+                   <button 
+                      onClick={() => handleDownloadAudio(currentResult.voice!.demoAudioUrl!, currentResult.voice!.voiceName!)}
                       className="flex items-center justify-center gap-2 px-6 py-2 bg-indigo-600 text-white rounded-full font-bold hover:bg-indigo-700 transition w-full"
                    >
                       <Download size={18} /> {t.downloadAudio}
-                           </a>
+                   </button>
                    
                    <button
-                      onClick={handleSaveToAssets}
+                      onClick={() => handleSaveToAssets(currentResult)}
                       className="flex items-center justify-center gap-2 px-6 py-2 border-2 border-indigo-600 text-indigo-600 rounded-full font-bold hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition w-full"
                    >
-                      <Save size={18} /> 保存到素材库
+                      <Save size={18} /> {t.addToLibrary || '保存到素材库'}
                    </button>
-                       </div>
+                </div>
               ) : taskStatus === 'fail' ? (
                  <div className="flex flex-col items-center text-red-500 gap-2">
                     <AlertCircle size={48} />
@@ -1159,11 +1204,34 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                 <div className="flex flex-col items-center text-slate-400">
                    <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
                       <Music size={40} className="text-slate-400 dark:text-slate-500" />
-               </div>
+                   </div>
                    <p className="text-sm max-w-xs text-center">{t.emptyState}</p>
               </div>
               )}
            </div>
+           
+           {/* History Thumbs / List */}
+           {generatedHistory.length > 0 && (
+             <div className="h-32 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+               {generatedHistory.map((item, index) => (
+                 <div 
+                   key={item.taskId || index}
+                   onClick={() => setCurrentResult(item)}
+                   className={`relative w-32 h-28 flex-shrink-0 rounded-xl overflow-hidden cursor-pointer border-2 transition-all flex flex-col bg-white dark:bg-slate-800 shadow-sm ${
+                     currentResult === item ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
+                   }`}
+                 >
+                   <div className="flex-1 flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800">
+                        <Music size={24} className="text-slate-400" />
+                   </div>
+                   <div className="p-2 bg-card text-center">
+                        <p className="text-xs font-medium truncate">{item.voice?.voiceName || `Voice ${index + 1}`}</p>
+                        <p className="text-[10px] text-muted-foreground truncate">{new Date().toLocaleDateString()}</p>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
         </div>
       </div>
 
