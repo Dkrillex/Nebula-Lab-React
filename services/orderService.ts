@@ -28,7 +28,8 @@ export interface CreateOrderParams {
 export interface OrderInfo {
   codeUrl: string;
   outTradeNo: string;
-  totalAmount?: number | string;
+  totalAmount?: number | string; // 实际支付金额（含税）
+  originalAmount?: number | string; // 原始金额（不含税，用于显示）
   [key: string]: any;
 }
 
