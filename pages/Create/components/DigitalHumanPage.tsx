@@ -228,7 +228,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
           )}
 
       <div className="flex-1 overflow-hidden min-h-0">
-          {activeTab === 'video' && (
+          <div className={`h-full w-full ${activeTab === 'video' ? 'block' : 'hidden'}`}>
             <DigitalHumanVideo 
                 t={t}
                 onShowAvatarModal={(isCustom) => { setIsCustomAvatar(isCustom); setShowAvatarModal(true); }}
@@ -240,23 +240,23 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
                 uploading={uploading}
                 setErrorMessage={setErrorMessage}
             />
-          )}
-          {activeTab === 'product' && (
+          </div>
+          <div className={`h-full w-full ${activeTab === 'product' ? 'block' : 'hidden'}`}>
             <DigitalHumanProduct 
                 t={productAvatarT}
                 handleFileUpload={handleFileUpload}
                 uploading={uploading}
                 setErrorMessage={setErrorMessage}
             />
-          )}
-          {activeTab === 'singing' && (
+          </div>
+          <div className={`h-full w-full ${activeTab === 'singing' ? 'block' : 'hidden'}`}>
             <DigitalHumanSinging 
                 t={t}
                 handleFileUpload={handleFileUpload}
                 uploading={uploading}
                 setErrorMessage={setErrorMessage}
             />
-          )}
+          </div>
       </div>
       
       {/* Avatar Modal (Shared for Video Tab) */}

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2, Plus, Video } from 'lucide-react';
+import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2, Plus, Video, Download, Check } from 'lucide-react';
 import { avatarService } from '@/services/avatarService';
 import { uploadService } from '@/services/uploadService';
 import AddMaterialModal from '@/components/AddMaterialModal';
@@ -27,6 +27,13 @@ interface DigitalHumanSingingProps {
   setErrorMessage: (msg: string | null) => void;
 }
 
+interface GeneratedVideo {
+  id: string;
+  url: string;
+  timestamp: number;
+  addState?: boolean;
+}
+
 const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   t,
   handleFileUpload,
@@ -41,12 +48,19 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   const [resultVideoUrl, setResultVideoUrl] = useState<string | null>(null);
   const [taskId, setTaskId] = useState<string | null>(null);
   
+  // History
+  const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
+
   // Drag and Drop states
   const [isImageDragOver, setIsImageDragOver] = useState(false);
   const [isAudioDragOver, setIsAudioDragOver] = useState(false);
 
   // Add Material Modal
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+
+  // Upload Loading States
+  const [isImageUploading, setIsImageUploading] = useState(false);
+  const [isAudioUploading, setIsAudioUploading] = useState(false);
 
   const imageInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -62,6 +76,9 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   const onUpload = async (file: File, type: 'image' | 'audio') => {
     if (file) {
       try {
+        if (type === 'image') setIsImageUploading(true);
+        else setIsAudioUploading(true);
+
         const uploaded = await handleFileUpload(file, type);
         // 适配接口返回的 fileUrl 用于回显和提交
         const fileData = {
@@ -73,6 +90,9 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
         else setAudioFile(fileData);
       } catch (error) {
         // Handled by parent
+      } finally {
+        if (type === 'image') setIsImageUploading(false);
+        else setIsAudioUploading(false);
       }
     }
   };
@@ -167,19 +187,30 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
               const status = data.status;
 
               if (status === 'done' && data.video_url) {
+                  let finalUrl = data.video_url;
                   try {
                     // 生成成功后，将视频转存到 OSS
                     const ossInfo = await uploadService.uploadByVideoUrl(data.video_url, 'mp4');
                     // 使用转存后的 OSS URL
-                    setResultVideoUrl(ossInfo.url);
+                    finalUrl = ossInfo.url;
                   } catch (uploadError) {
                     console.error('OSS upload failed:', uploadError);
-                    // 如果转存失败，仍尝试使用原始 URL
-                    setResultVideoUrl(data.video_url);
                   }
                   
+                  setResultVideoUrl(finalUrl);
                   setProgress(100);
                   setGenerating(false);
+                  
+                  // Add to history
+                  setGeneratedVideos(prev => {
+                      if (prev.some(v => v.id === currentTaskId)) return prev;
+                      return [{
+                          id: currentTaskId,
+                          url: finalUrl,
+                          timestamp: Date.now()
+                      }, ...prev];
+                  });
+
                   if (pollTimerRef.current) clearInterval(pollTimerRef.current);
                   toast.success('生成成功！');
               } else if (status === 'failed') {
@@ -218,6 +249,37 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     if (!resultVideoUrl) return;
     setShowMaterialModal(true);
   };
+  
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `singing_avatar_${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('开始下载...');
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    for (const video of generatedVideos) {
+      await handleDownload(video.url);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
+
+  const handleClearHistory = () => {
+    setGeneratedVideos([]);
+    setResultVideoUrl(null);
+  };
 
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
@@ -241,7 +303,12 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    `}
                >
                    <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
-                   {imageFile ? (
+                   {isImageUploading ? (
+                       <div className="flex flex-col items-center justify-center text-gray-500">
+                           <Loader className="animate-spin mb-2 text-indigo-600" size={24} />
+                           <p className="text-sm font-medium">上传中...</p>
+                       </div>
+                   ) : imageFile ? (
                        <div className="relative w-full h-full p-2 group">
                            <img src={imageFile.url} className="w-full h-full object-contain rounded-lg" alt="Uploaded" />
                            <button 
@@ -282,7 +349,12 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    `}
                >
                    <input ref={audioInputRef} type="file" accept="audio/*" onChange={(e) => handleFileChange(e, 'audio')} className="hidden" />
-                   {audioFile ? (
+                   {isAudioUploading ? (
+                       <div className="flex flex-col items-center justify-center text-gray-500">
+                           <Loader className="animate-spin mb-2 text-indigo-600" size={24} />
+                           <p className="text-sm font-medium">上传中...</p>
+                       </div>
+                   ) : audioFile ? (
                        <div className="w-full px-4 flex flex-col items-center">
                            <div className="flex items-center justify-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
                                <Music size={24} className="animate-pulse" />
@@ -344,88 +416,134 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
        </div>
 
        {/* Right: Result */}
-       <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg flex items-center justify-center relative overflow-hidden">
-           {/* Background Pattern */}
-           <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
-               <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
-           </div>
+       <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col h-[calc(100vh-240px)] lg:h-[calc(100vh-240px)]">
+           <div className="flex-1 overflow-y-auto custom-scrollbar p-8 mb-[80px] flex items-center justify-center">
+               {/* Background Pattern */}
+               <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
+                   <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
+               </div>
 
-           {generating ? (
-               <div className="text-center z-10 max-w-sm w-full">
-                   <div className="relative w-32 h-32 mx-auto mb-8">
-                       {/* Animated Circles */}
-                       <div className="absolute inset-0 border-4 border-gray-100 dark:border-gray-700 rounded-full"></div>
-                       <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
-                       <div className="absolute inset-0 flex items-center justify-center font-bold text-2xl text-indigo-600">{progress}%</div>
+               {generating ? (
+                   <div className="text-center z-10 max-w-sm w-full">
+                       <div className="relative w-32 h-32 mx-auto mb-8">
+                           {/* Animated Circles */}
+                           <div className="absolute inset-0 border-4 border-gray-100 dark:border-gray-700 rounded-full"></div>
+                           <div className="absolute inset-0 border-4 border-indigo-600 rounded-full border-t-transparent animate-spin"></div>
+                           <div className="absolute inset-0 flex items-center justify-center font-bold text-2xl text-indigo-600">{progress}%</div>
+                           
+                           {/* Floating Icons */}
+                           <div className="absolute -top-4 -right-4 text-2xl animate-bounce" style={{ animationDelay: '0s' }}>✨</div>
+                           <div className="absolute -bottom-2 -left-4 text-2xl animate-bounce" style={{ animationDelay: '0.5s' }}>🎤</div>
+                       </div>
                        
-                       {/* Floating Icons */}
-                       <div className="absolute -top-4 -right-4 text-2xl animate-bounce" style={{ animationDelay: '0s' }}>✨</div>
-                       <div className="absolute -bottom-2 -left-4 text-2xl animate-bounce" style={{ animationDelay: '0.5s' }}>🎤</div>
-                   </div>
-                   
-                   <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">AI正在合成中...</h3>
-                   <p className="text-gray-500 dark:text-gray-400 mb-6">正在为您的照片赋予歌声，这可能需要几分钟时间。</p>
-                   
-                   {/* Progress Bar */}
-                   <div className="w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                       <div 
-                          className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out relative overflow-hidden"
-                          style={{ width: `${progress}%` }}
-                       >
-                          <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                       <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">AI正在合成中...</h3>
+                       <p className="text-gray-500 dark:text-gray-400 mb-6">正在为您的照片赋予歌声，这可能需要几分钟时间。</p>
+                       
+                       {/* Progress Bar */}
+                       <div className="w-full h-3 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                           <div 
+                              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-500 ease-out relative overflow-hidden"
+                              style={{ width: `${progress}%` }}
+                           >
+                              <div className="absolute inset-0 bg-white/20 animate-[shimmer_2s_infinite]"></div>
+                           </div>
                        </div>
                    </div>
-               </div>
-           ) : resultVideoUrl ? (
-               <div className="w-full max-w-2xl text-center z-10">
-                   <div className="mb-6 flex items-center justify-center gap-2 text-green-500 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-full mx-auto w-fit">
-                       <CheckCircle size={20} />
-                       <span className="font-medium">生成成功</span>
-                   </div>
+               ) : resultVideoUrl ? (
+                   <div className="w-full max-w-2xl text-center z-10">
+                       <div className="mb-6 flex items-center justify-center gap-2 text-green-500 bg-green-50 dark:bg-green-900/20 py-2 px-4 rounded-full mx-auto w-fit">
+                           <CheckCircle size={20} />
+                           <span className="font-medium">生成成功</span>
+                       </div>
 
-                   <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video mb-8 group">
-                       <video src={resultVideoUrl} controls className="w-full h-full object-contain" />
+                       <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video mb-8 group">
+                           <video src={resultVideoUrl} controls className="w-full h-full object-contain" />
+                           <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button 
+                                onClick={() => handleDownload(resultVideoUrl!)}
+                                className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
+                                title="下载"
+                              >
+                                <Download size={18} />
+                              </button>
+                              <button 
+                                onClick={handleAddToMaterials}
+                                className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
+                                title="加入素材库"
+                              >
+                                <Plus size={18} />
+                              </button>
+                           </div>
+                       </div>
                    </div>
+               ) : (
+                   <div className="text-center text-gray-400 z-10">
+                       <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-gray-200 dark:border-gray-600">
+                           <Play size={40} className="ml-2 opacity-20" />
+                       </div>
+                       <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">准备生成</h3>
+                       <p className="max-w-xs mx-auto text-gray-500 dark:text-gray-400">请在左侧上传一张正脸照片和一段音频，AI将自动为您生成唱歌视频。</p>
+                   </div>
+               )}
+           </div>
 
-                   <div className="flex flex-wrap items-center justify-center gap-4">
-                       <button 
-                          onClick={() => {
-                              if (!resultVideoUrl) return;
-                              const link = document.createElement('a');
-                              link.href = resultVideoUrl;
-                              link.download = `singing_avatar_${new Date().getTime()}.mp4`;
-                              document.body.appendChild(link);
-                              link.click();
-                              document.body.removeChild(link);
-                          }} 
-                          className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
-                       >
-                           <Video size={20} />
-                           下载视频
-                       </button>
-                       <button 
-                          onClick={handleAddToMaterials}
-                          className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
-                       >
-                           <Plus size={20} />
-                           加入素材库
-                       </button>
-                       <button 
-                          onClick={() => { setResultVideoUrl(null); setProgress(0); }} 
-                          className="px-6 py-3 bg-white text-gray-500 hover:text-gray-700 border border-gray-200 dark:text-gray-400 rounded-xl dark:hover:text-gray-200 transition"
-                       >
-                           重新生成
-                       </button>
-                   </div>
-               </div>
-           ) : (
-               <div className="text-center text-gray-400 z-10">
-                   <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700/50 rounded-full flex items-center justify-center mx-auto mb-6 border-2 border-dashed border-gray-200 dark:border-gray-600">
-                       <Play size={40} className="ml-2 opacity-20" />
-                   </div>
-                   <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">准备生成</h3>
-                   <p className="max-w-xs mx-auto text-gray-500 dark:text-gray-400">请在左侧上传一张正脸照片和一段音频，AI将自动为您生成唱歌视频。</p>
-               </div>
+           {/* Results Area (New) */}
+           {(generatedVideos.length > 0 || resultVideoUrl) && (
+             <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-sm text-gray-800 dark:text-gray-200">生成记录</h3>
+                    <div className="flex gap-2">
+                        <button
+                             onClick={handleClearHistory}
+                             disabled={generatedVideos.length === 0}
+                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
+                               generatedVideos.length === 0
+                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+                                 : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
+                             }`}
+                        >
+                           <Trash2 size={12} />
+                           清空
+                        </button>
+                        <button
+                             onClick={handleDownloadAll}
+                             disabled={generatedVideos.length === 0}
+                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
+                               generatedVideos.length === 0
+                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+                                 : 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+                             }`}
+                        >
+                           <Download size={12} /> 下载全部
+                        </button>
+                    </div>
+                </div>
+
+                {/* History Thumbs */}
+                {generatedVideos.length > 0 && (
+                     <div className="h-16 flex gap-2 overflow-x-auto custom-scrollbar">
+                       {generatedVideos.map((video) => (
+                         <div 
+                           key={video.id}
+                           onClick={() => setResultVideoUrl(video.url)}
+                           className={`relative w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black/5 ${
+                             resultVideoUrl === video.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
+                           }`}
+                         >
+                           <video src={video.url} className="w-full h-full object-cover pointer-events-none" />
+                           {video.addState && (
+                             <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
+                                <Check size={8} className="text-white" />
+                             </div>
+                           )}
+                           <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                <Play size={16} className="text-white opacity-80" />
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                )}
+             </div>
            )}
        </div>
 

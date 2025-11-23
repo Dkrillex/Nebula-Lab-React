@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus } from 'lucide-react';
+import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { useAuthStore } from '../../../stores/authStore';
 import VoiceModal from './VoiceModal';
@@ -19,6 +19,13 @@ interface DigitalHumanVideoProps {
   handleFileUpload: (file: File, type: 'video' | 'audio') => Promise<UploadedFile>;
   uploading: boolean;
   setErrorMessage: (msg: string | null) => void;
+}
+
+interface GeneratedVideo {
+  id: string;
+  url: string;
+  timestamp: number;
+  addState?: boolean;
 }
 
 const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
@@ -78,6 +85,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string | null>(null);
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
 
@@ -305,6 +313,17 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           if (status === 'success') {
             setTaskStatus('success');
             setPreviewVideoUrl(taskData.outputVideoUrl);
+            
+            // Add to history
+            setGeneratedVideos(prev => {
+                if (prev.some(v => v.id === id)) return prev;
+                return [{
+                    id: id,
+                    url: taskData.outputVideoUrl,
+                    timestamp: Date.now()
+                }, ...prev];
+            });
+
             setGenerating(false);
             return;
           } else if (status === 'fail') {
@@ -340,6 +359,37 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const handleAddToMaterials = () => {
       if (!previewVideoUrl) return;
       setShowMaterialModal(true);
+  };
+
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `digital_human_${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success(t.tips?.downloadStarted || '开始下载...');
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    for (const video of generatedVideos) {
+      await handleDownload(video.url);
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
+
+  const handleClearAll = () => {
+    setGeneratedVideos([]);
+    setPreviewVideoUrl(null);
   };
 
   return (
@@ -403,7 +453,8 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       </div>
 
       {/* Right Panel */}
-      <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl p-6 flex flex-col gap-6 shadow-lg">
+      <div className="h-[calc(100vh-230px)] flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
+         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 mb-[80px]">
          <div>
              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t.rightPanel.modeSelection}</h3>
              <div className="flex gap-6">
@@ -465,7 +516,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
              </div>
           </div>
 
-          <div className="flex-1 flex flex-col gap-4">
+          <div className="flex-1 flex flex-col gap-4 mt-6">
              <h3 className="font-bold text-gray-800 dark:text-gray-200">{t.rightPanel.scriptContent}</h3>
              <div className="bg-gray-100 dark:bg-gray-700 rounded-xl p-1 flex">
                 <button onClick={() => setScriptMode('text')} className={`flex-1 py-2 text-sm font-medium rounded-lg transition flex items-center justify-center gap-2 ${scriptMode === 'text' ? 'bg-white dark:bg-gray-600 text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>
@@ -499,19 +550,6 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                                 {t.rightPanel.aiVoice}
                             </div>
                             <div className="voice-container flex gap-4 items-center">
-                                {/* Voice Type Selector - mimicking Select */}
-                                {/* <div className="relative">
-                                    <select 
-                                        value={voiceType} 
-                                        onChange={(e) => setVoiceType(Number(e.target.value))}
-                                        className="p-2 pr-8 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
-                                    >
-                                        <option value={1}>{t.rightPanel.myVoice || 'My Voice'}</option>
-                                        <option value={2}>{t.rightPanel.publicVoice || 'Common Voice'}</option>
-                                    </select>
-                                    <ChevronDown size={14} className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none" />
-                                </div> */}
-
                                 {selectedVoice && (
                                     <div className="selected-voice flex gap-2 items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
                                         <span className="voice-name text-sm font-medium text-indigo-700 dark:text-indigo-300">{selectedVoice.voiceName}</span>
@@ -586,56 +624,116 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
              </div>
           </div>
 
-          {/* Preview Area */}
-          {taskStatus !== 'idle' && (
-          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 min-h-[200px] flex items-center justify-center">
-              {taskStatus === 'running' ? (
-                  <div className="flex flex-col items-center gap-3">
-                      <Loader className="animate-spin text-indigo-600" size={32} />
-                      <span className="text-sm text-gray-500">视频生成中...</span>
-                  </div>
-              ) : taskStatus === 'success' && previewVideoUrl ? (
-                  <div className="w-full">
-                      <video src={previewVideoUrl} controls className="w-full max-h-[300px] rounded-lg mb-3" />
-                      <div className="flex gap-2">
-                        <button 
-                            onClick={() => {
-                                if (!previewVideoUrl) return;
-                                const link = document.createElement('a');
-                                link.href = previewVideoUrl;
-                                link.download = `singing_avatar_${new Date().getTime()}.mp4`;
-                                document.body.appendChild(link);
-                                link.click();
-                                document.body.removeChild(link);
-                            }} 
-                            className="px-6 py-3 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition font-bold shadow-lg shadow-indigo-500/20 flex items-center gap-2 transform hover:-translate-y-0.5"
+             {/* Results Area (New) */}
+             {(generatedVideos.length > 0 || generating || taskStatus !== 'idle') && (
+             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+                <div className="flex items-center justify-between mb-6">
+                    <h3 className="font-bold text-gray-800 dark:text-gray-200">{t.rightPanel.resultTitle || '生成结果'}</h3>
+                    <div className="flex gap-2">
+                        <button
+                             onClick={handleClearAll}
+                             disabled={generatedVideos.length === 0}
+                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
+                               generatedVideos.length === 0
+                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+                                 : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
+                             }`}
                         >
-                            <VideoIcon size={20} />
-                            下载视频
+                           <Trash2 size={12} />
+                           {t.actions?.clearAll || '清空'}
                         </button>
-                        <button 
-                            onClick={handleAddToMaterials}
-                            className="px-6 py-3 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-white rounded-xl hover:bg-gray-50 dark:hover:bg-gray-600 transition font-medium shadow-sm flex items-center gap-2"
+                        <button
+                             onClick={handleDownloadAll}
+                             disabled={generatedVideos.length === 0}
+                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
+                               generatedVideos.length === 0
+                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
+                                 : 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
+                             }`}
                         >
-                            <Plus size={20} />
-                            加入素材库
+                           <Download size={12} /> {t.actions?.downloadAll || '下载全部'}
                         </button>
-                      </div>
-                  </div>
-              ) : (
-                  <div className="text-gray-400 text-sm">{t.rightPanel.previewPlaceholder}</div>
-              )}
-          </div>
-          )}
+                    </div>
+                </div>
 
-          <div className="control-section mt-6">
-              <div className="generation-controls flex flex-col gap-6">
-                <div className="cost-info p-4 text-center bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl">
-                  <div className="cost-tip text-sm text-gray-500 dark:text-gray-400 mb-2">{buttonTip}</div>
+                {/* Main Preview */}
+                <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/50 mb-6 relative overflow-hidden group">
+                    {generating || taskStatus === 'running' ? (
+                         <div className="flex flex-col items-center gap-4 z-10">
+                            <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                            <p className="text-indigo-600 font-medium">Generating your video...</p>
+                         </div>
+                    ) : previewVideoUrl ? (
+                        <div className="relative w-full h-full flex items-center justify-center bg-black/5 dark:bg-black/20">
+                             <video 
+                                src={previewVideoUrl} 
+                                controls 
+                                className="max-w-full max-h-full rounded-lg shadow-lg"
+                             />
+                             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button 
+                                  onClick={() => handleDownload(previewVideoUrl!)}
+                                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
+                                  title={t.actions?.download || '下载'}
+                                >
+                                  <Download size={18} />
+                                </button>
+                                <button 
+                                  onClick={handleAddToMaterials}
+                                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
+                                  title={t.actions?.addToMaterials || '加入素材库'}
+                                >
+                                  <Plus size={18} />
+                                </button>
+                             </div>
+                        </div>
+                    ) : (
+                         <div className="flex flex-col items-center text-slate-400">
+                             <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                                <VideoIcon size={40} className="text-slate-300 dark:text-slate-600" />
+                             </div>
+                             <p className="text-sm max-w-xs text-center">{t.rightPanel.previewPlaceholder || '生成结果将在这里显示'}</p>
+                         </div>
+                    )}
+                </div>
+
+                {/* History Thumbs */}
+                {generatedVideos.length > 0 && (
+                     <div className="h-24 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+                       {generatedVideos.map((video) => (
+                         <div 
+                           key={video.id}
+                           onClick={() => setPreviewVideoUrl(video.url)}
+                           className={`relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black/5 ${
+                             previewVideoUrl === video.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
+                           }`}
+                         >
+                           <video src={video.url} className="w-full h-full object-cover pointer-events-none" />
+                           {video.addState && (
+                             <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
+                                <Check size={8} className="text-white" />
+                             </div>
+                           )}
+                           <div className="absolute inset-0 flex items-center justify-center bg-black/10">
+                                <Play size={20} className="text-white opacity-80" />
+                           </div>
+                         </div>
+                       ))}
+                     </div>
+                )}
+             </div>
+             )}
+          </div>
+
+         {/* Fixed Controls */}
+         <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-6 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+              <div className="generation-controls flex flex-col gap-4">
+                <div className="cost-info p-3 text-center bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl">
+                  <div className="cost-tip text-sm text-gray-500 dark:text-gray-400 mb-1">{buttonTip}</div>
                   {pointsTip > 0 && (
                     <div className="cost-display flex items-center justify-center gap-2">
-                        <VideoIcon className="cost-icon w-5 h-5 text-indigo-600" />
-                        <span className="cost-amount text-lg font-bold text-indigo-600">
+                        <VideoIcon className="cost-icon w-4 h-4 text-indigo-600" />
+                        <span className="cost-amount text-base font-bold text-indigo-600">
                             {pointsTip} {t.rightPanel.diamondCoin || '积分'}
                         </span>
                     </div>
@@ -644,7 +742,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
                 <div className="action-controls flex gap-4 justify-center">
                   <button 
-                    className="action-btn secondary px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed" 
+                    className="action-btn secondary px-6 py-3 rounded-xl border border-gray-200 text-gray-700 font-medium hover:bg-gray-50 transition disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap" 
                     onClick={trySample}
                     disabled={isSampleLoading || uploading}
                   >
@@ -664,9 +762,9 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                   </button>
                 </div>
               </div>
-            </div>
-          </div>
-      
+         </div>
+      </div>
+
       <VoiceModal 
         isOpen={showVoiceModal} 
         onClose={() => setShowVoiceModal(false)} 

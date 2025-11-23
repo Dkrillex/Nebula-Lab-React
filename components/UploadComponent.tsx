@@ -147,7 +147,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
           throw new Error(credRes?.message || 'Failed to get upload credentials');
         }
         const { uploadUrl, fileName, fileId, format } = credRes.result;
-        console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: fileToUpload.size });
+        console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: fileToUpload.size, uploadUrl });
 
         // 2. PUT file to uploadUrl
         // 使用代理上传(开发环境)
@@ -165,7 +165,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             }
         });
 
-        console.log('上传响应状态:', uploadRes.status, uploadRes.statusText);
+        console.log('上传响应状态:', uploadRes.status, uploadRes.statusText, uploadRes);
         if (!uploadRes.ok) {
             console.error('上传失败:', uploadRes.status, uploadRes.statusText);
             throw new Error(`Upload failed: ${uploadRes.statusText}`);
@@ -177,7 +177,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         uploadedFile = {
             fileId: fileId,
             fileName: fileName,
-            fileUrl: previewUrl, // Use local preview URL initially or constructed public URL if known
+            fileUrl: previewUrl || uploadUrl, // Use local preview URL initially or constructed public URL if known
             format: format
         };
       }
