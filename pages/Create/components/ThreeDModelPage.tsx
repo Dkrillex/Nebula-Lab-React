@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wand2, Loader2, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Gem, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import UploadComponent from '../../../components/UploadComponent';
 import ThreeDModelViewer from './ThreeDModelViewer';
@@ -299,10 +299,23 @@ const ThreeDModelPage: React.FC = () => {
             <button
               onClick={handleGenerateImage}
               disabled={isGenerateDisabled}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] px-4 py-3 font-semibold text-[#ffffff] shadow-lg shadow-[rgba(255,150,172,0.25)] transition-all duration-200 hover:shadow-lg hover:shadow-[#7d6fdd]/30 disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:from-[#e5e7eb] disabled:to-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] px-4 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:from-[#e5e7eb] disabled:to-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
             >
-              <Wand2 className="size-6" />
-              <span>生成 3D 模型</span>
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>生成中...</span>
+                </>
+              ) : (
+                <>
+                  <div className="relative">
+                    <Gem className="h-5 w-5" />
+                    <Check className="absolute -top-1 -right-1 h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-semibold">0.3</span>
+                  <span>生成 3D 模型</span>
+                </>
+              )}
             </button>
 
             {testResult && (
