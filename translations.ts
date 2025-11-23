@@ -157,6 +157,30 @@ interface Translation {
         uploadDesc: string;
         uploadHint: string;
       };
+      actions: {
+        clearAll: string;
+        downloadAll: string;
+        imageToVideo: string;
+        addToMaterials: string;
+        viewFullSize: string;
+        download: string;
+      };
+      tips: {
+        polishSuccess: string;
+        polishFailed: string;
+        imageSizeLimit: string;
+        imageRatioLimit: string;
+        uploadSuccess: string;
+        uploadFailed: string;
+        generateSuccess: string;
+        generateEmpty: string;
+        generateFailed: string;
+        downloadStarted: string;
+        downloadFailed: string;
+        selectImageTip: string;
+        addToMaterialsSuccess: string;
+        generating: string;
+      };
     };
     viralVideo: {
       title: string;
@@ -715,6 +739,30 @@ export const translations: Record<string, Translation> = {
           uploadTitle: 'Upload Reference Image',
           uploadDesc: 'Click or drag to upload image',
           uploadHint: 'Supports JPG, PNG formats, max 10MB'
+        },
+        actions: {
+          clearAll: 'Clear All',
+          downloadAll: 'Download All',
+          imageToVideo: 'Image to Video',
+          addToMaterials: 'Add to Materials',
+          viewFullSize: 'View Full Size',
+          download: 'Download'
+        },
+        tips: {
+          polishSuccess: 'Text polished successfully',
+          polishFailed: 'Text polishing failed',
+          imageSizeLimit: 'Image size cannot exceed 10MB',
+          imageRatioLimit: 'Image aspect ratio must be between 1:3 and 3:1',
+          uploadSuccess: 'Image uploaded successfully',
+          uploadFailed: 'Upload failed',
+          generateSuccess: 'Successfully generated images',
+          generateEmpty: 'API returned success but no image data found',
+          generateFailed: 'Generation failed',
+          downloadStarted: 'Download started',
+          downloadFailed: 'Download failed',
+          selectImageTip: 'Please select an image first',
+          addToMaterialsSuccess: 'Added to materials',
+          generating: 'Generating...'
         }
       },
       viralVideo: {
@@ -750,6 +798,7 @@ export const translations: Record<string, Translation> = {
           button: 'Upload Image',
           desc: 'Supports JPG, PNG formats'
         },
+        trySample: 'Try Sample',
         generationSettings: 'Generation Settings',
         prompt: {
           label: 'Prompt',
@@ -1355,6 +1404,30 @@ export const translations: Record<string, Translation> = {
           uploadTitle: '上传参考图片',
           uploadDesc: '点击或拖拽上传图片',
           uploadHint: '支持 JPG、PNG 格式，最大10MB'
+        },
+        actions: {
+          clearAll: '清空结果',
+          downloadAll: '批量下载',
+          imageToVideo: '图生视频',
+          addToMaterials: '导入素材',
+          viewFullSize: '查看大图',
+          download: '下载'
+        },
+        tips: {
+          polishSuccess: '文本润色成功',
+          polishFailed: '文本润色失败',
+          imageSizeLimit: '图片大小不能超过10MB',
+          imageRatioLimit: '图片宽高比应在1/3到3之间',
+          uploadSuccess: '图片上传成功',
+          uploadFailed: '上传失败',
+          generateSuccess: '成功生成图片',
+          generateEmpty: 'API返回成功但没有生成图片数据',
+          generateFailed: '生成失败',
+          downloadStarted: '开始下载',
+          downloadFailed: '下载失败',
+          selectImageTip: '请先选择一张图片',
+          addToMaterialsSuccess: '已添加到素材库',
+          generating: '生成中...'
         }
       },
       viralVideo: {
@@ -1390,6 +1463,7 @@ export const translations: Record<string, Translation> = {
           button: '上传图片',
           desc: '支持 JPG、PNG 格式'
         },
+        trySample: '试用示例',
         generationSettings: '生成设置',
         prompt: {
           label: '提示词',

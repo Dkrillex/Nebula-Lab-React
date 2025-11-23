@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { Wand2, Image as ImageIcon, Download, Share2, Maximize2, Loader2, Trash2, Upload, X, FolderPlus } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Trash2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
+import toast from 'react-hot-toast';
 
 interface TextToImagePageProps {
   t: {
@@ -26,6 +27,7 @@ interface TextToImagePageProps {
       widescreen: string;
       mobile: string;
       photo: string;
+      [key: string]: string;
     };
     tabs: {
       textToImage: string;
@@ -36,6 +38,30 @@ interface TextToImagePageProps {
       uploadDesc: string;
       uploadHint: string;
     };
+    actions: {
+      clearAll: string;
+      downloadAll: string;
+      imageToVideo: string;
+      addToMaterials: string;
+      viewFullSize: string;
+      download: string;
+    };
+    tips: {
+      polishSuccess: string;
+      polishFailed: string;
+      imageSizeLimit: string;
+      imageRatioLimit: string;
+      uploadSuccess: string;
+      uploadFailed: string;
+      generateSuccess: string;
+      generateEmpty: string;
+      generateFailed: string;
+      downloadStarted: string;
+      downloadFailed: string;
+      selectImageTip: string;
+      addToMaterialsSuccess: string;
+      generating: string;
+    };
   };
 }
 
@@ -45,21 +71,27 @@ interface GeneratedImage {
   addState?: boolean;
 }
 
+// Updated ratios to match Vue implementation
 const ratios = [
-  { labelKey: 'square', value: '1:1', dim: '1024x1024' },
-  { labelKey: 'landscape43', value: '4:3', dim: '1024x768' },
-  { labelKey: 'portrait34', value: '3:4', dim: '768x1024' },
-  { labelKey: 'widescreen', value: '16:9', dim: '1024x576' },
-  { labelKey: 'mobile', value: '9:16', dim: '576x1024' },
-  { labelKey: 'photo', value: '3:2', dim: '1024x683' },
+  { id: '2K', label: '2K', dim: '2K' },
+  { id: '4K', label: '4K', dim: '4K' },
+  { id: '2048x2048', label: '1:1', dim: '2048x2048' },
+  { id: '2304x1728', label: '4:3', dim: '2304x1728' },
+  { id: '1728x2304', label: '3:4', dim: '1728x2304' },
+  { id: '2560x1440', label: '16:9', dim: '2560x1440' },
+  { id: '1440x2560', label: '9:16', dim: '1440x2560' },
+  { id: '2496x1664', label: '3:2', dim: '2496x1664' },
+  { id: '1664x2496', label: '2:3', dim: '1664x2496' },
+  { id: '3024x1296', label: '21:9', dim: '3024x1296' },
 ];
 
 const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
-  const { getData } = useVideoGenerationStore();
+  const navigate = useNavigate();
+  const { getData, setData } = useVideoGenerationStore();
   const [mode, setMode] = useState<'text' | 'image'>('text');
-  const [selectedRatio, setSelectedRatio] = useState('1:1');
-  const [selectedSize, setSelectedSize] = useState('1024x1024');
+  const [selectedRatio, setSelectedRatio] = useState('2048x2048');
+  const [selectedSize, setSelectedSize] = useState('2048x2048');
   const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [isPolishing, setIsPolishing] = useState(false);
@@ -101,7 +133,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
 
   useEffect(() => {
     // Update size when ratio changes
-    const ratio = ratios.find(r => r.value === selectedRatio);
+    const ratio = ratios.find(r => r.id === selectedRatio);
     if (ratio) {
       setSelectedSize(ratio.dim);
     }
@@ -114,14 +146,16 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     try {
       const res = await textToImageService.polishText({
         text: prompt,
-        type: 'text_to_image'
+        type: mode === 'image' ? 'image_to_image' : 'text_to_image'
       });
       
       if (res.data) {
         setPrompt(res.data);
+        toast.success(t.tips.polishSuccess);
       }
     } catch (error) {
       console.error('Text polishing failed:', error);
+      toast.error(t.tips.polishFailed);
     } finally {
       setIsPolishing(false);
     }
@@ -131,16 +165,51 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     const file = e.target.files?.[0];
     if (!file) return;
     
+    // Validate file size (10MB)
+    const maxSize = 10 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error(t.tips.imageSizeLimit);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Validate aspect ratio [1/3, 3]
+    try {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.src = objectUrl;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+      
+      const ratio = img.width / img.height;
+      if (ratio < 1/3 || ratio > 3) {
+        toast.error(`${t.tips.imageRatioLimit} (Current: ${ratio.toFixed(2)})`);
+        URL.revokeObjectURL(objectUrl);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+        return;
+      }
+      URL.revokeObjectURL(objectUrl);
+    } catch (error) {
+      console.error('Image validation failed:', error);
+    }
+    
     try {
       setUploading(true);
       const res = await uploadService.uploadFile(file);
-      if (res.code === 200 && res.data) {
-        setReferenceImage(res.data.url);
+      // Handle different response structures
+      const data = (res as any).data || res;
+      if (data && (data.url || data.fileUrl)) {
+        setReferenceImage(data.url || data.fileUrl);
+        toast.success(t.tips.uploadSuccess);
       } else {
         console.error('Upload failed:', res);
+        toast.error(t.tips.uploadFailed);
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error(t.tips.uploadFailed);
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -170,25 +239,27 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     try {
       let res;
       if (mode === 'text') {
-        // res is ApiResponse<TextToImageResponseData>
+        // Handle 2K/4K special cases where split might return undefined height
+        const isSpecialSize = selectedSize === '2K' || selectedSize === '4K';
+        
         res = await textToImageService.submitTextToImage({
           req: {
             prompt: prompt,
             size: selectedSize,
-            width: selectedSize.split('x')[0],
-            height: selectedSize.split('x')[1]
+            width: isSpecialSize ? undefined : selectedSize.split('x')[0],
+            height: isSpecialSize ? undefined : selectedSize.split('x')[1]
           },
-          score: '0.3'
+          score: '1'
         });
       } else {
         // Image to Image
         res = await textToImageService.submitImageToImage({
-          score: '0.3',
+          score: '1',
           volcImageBo: {
             image_urls: [referenceImage!],
             prompt: prompt,
             size: selectedSize,
-            style: 'general' // Optional, could be added to UI
+            style: 'general'
           }
         });
       }
@@ -198,46 +269,35 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
 
       console.log('API Response:', res);
       
-      // Extract image data based on backend structure:
-      // res.data is TextToImageResponseData { data: TextToImageItem[], created: number }
-      // The images are in res.data.data
-      
       let imageData: TextToImageItem[] = [];
 
       if (res.data) {
-        // Check if res.data has 'data' property and it's an array (Standard structure)
         if (res.data.data && Array.isArray(res.data.data)) {
           imageData = res.data.data;
         } else if (Array.isArray(res.data)) {
-          // Fallback if res.data is directly the array
           imageData = res.data as unknown as TextToImageItem[];
         } else if ((res as any).images && Array.isArray((res as any).images)) {
-          // Fallback for other possible structures
           imageData = (res as any).images;
         }
       }
       
       if (imageData.length > 0) {
-        const firstItem = imageData[0];
-        // Prioritize 'url', fallback to 'image_urls[0]'
-        const imageUrl = firstItem.url || (firstItem.image_urls && firstItem.image_urls.length > 0 ? firstItem.image_urls[0] : '');
+        const newImages = imageData.map(item => ({
+            id: (res.data as any)?.created ? (res.data as any).created * 1000 + Math.random() : Date.now() + Math.random(),
+            url: item.url || (item.image_urls && item.image_urls.length > 0 ? item.image_urls[0] : '') || '',
+        })).filter(img => img.url);
         
-        if (imageUrl) {
-          const newImage = {
-            id: (res.data as any)?.created ? (res.data as any).created * 1000 : Date.now(),
-            url: imageUrl,
-          };
-          
-          setGeneratedImages(prev => [newImage, ...prev]);
-          setPreviewImage(newImage.url);
-        } else {
-           console.warn('Generated image data found but no URL:', firstItem);
+        if (newImages.length > 0) {
+          setGeneratedImages(prev => [...newImages, ...prev]);
+          setPreviewImage(newImages[0].url);
+          toast.success(t.tips.generateSuccess);
         }
       } else {
-        console.warn('No image data in response:', res);
+        toast.error(t.tips.generateEmpty);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Image generation failed:', error);
+      toast.error(`${t.tips.generateFailed}: ${error.message || 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
@@ -257,14 +317,41 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
+      toast.success(t.tips.downloadStarted);
     } catch (error) {
       console.error('Download failed:', error);
       window.open(url, '_blank');
     }
   };
 
+  const handleDownloadAll = async () => {
+    for (const [index, image] of generatedImages.entries()) {
+      await handleDownload(image.url);
+      // Delay to prevent browser blocking multiple downloads
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+  };
+
+  const handleImageToVideo = () => {
+    if (!previewImage) {
+      toast.error(t.tips.selectImageTip);
+      return;
+    }
+
+    const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    setData(transferId, {
+      images: [previewImage],
+      sourcePrompt: prompt, // Optional: pass prompt as well
+      timestamp: Date.now(),
+      source: 'imageGenerates'
+    });
+
+    // Navigate to Digital Human tool (Talking Photo)
+    navigate(`/create?tool=digitalHuman&transferId=${transferId}`);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-background">
       {/* Header */}
       <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm z-10">
         <div className="px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -313,12 +400,12 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                 ref={fileInputRef}
                 onChange={handleUpload} 
                 className="hidden" 
-                accept="image/png, image/jpeg"
+                accept="image/png, image/jpeg, image/jpg"
               />
               
               {referenceImage ? (
                 <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group">
-                  <img src={referenceImage} alt="Reference" className="w-full h-40 object-cover" />
+                  <img src={referenceImage} alt="Reference" className="w-full h-40 object-contain bg-black/5" />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                     <button 
                       onClick={() => setReferenceImage(null)}
@@ -379,16 +466,16 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
               <div className="grid grid-cols-2 gap-3">
                 {ratios.map((ratio) => (
                   <button
-                    key={ratio.value}
-                    onClick={() => setSelectedRatio(ratio.value)}
+                    key={ratio.id}
+                    onClick={() => setSelectedRatio(ratio.id)}
                     disabled={isGenerating}
                     className={`p-3 rounded-xl border text-center transition-all ${
-                      selectedRatio === ratio.value
+                      selectedRatio === ratio.id
                         ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 ring-1 ring-indigo-500'
                         : 'border-border bg-background hover:border-indigo-300 text-muted hover:text-foreground'
                     }`}
                   >
-                    <div className="text-sm font-semibold mb-1">{(t.ratios as any)[ratio.labelKey] || ratio.labelKey} {ratio.value}</div>
+                    <div className="text-sm font-semibold mb-1">{ratio.label}</div>
                     <div className="text-xs opacity-70">({ratio.dim})</div>
                   </button>
                 ))}
@@ -396,35 +483,58 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
             </div>
           </div>
 
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating || !prompt || (mode === 'image' && !referenceImage)}
-            className="mt-auto w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-             {isGenerating ? (
-               <>
-                 <Loader2 size={18} className="animate-spin" />
-                 Generating... {progress}%
-               </>
-             ) : (
-               <>
-             <Wand2 size={18} />
-             {t.generate}
-               </>
-             )}
-          </button>
+          <div className="mt-auto space-y-3">
+            <button 
+              onClick={handleGenerate}
+              disabled={isGenerating || !prompt || (mode === 'image' && !referenceImage)}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  {t.tips.generating} {progress}%
+                </>
+              ) : (
+                <>
+                  <Wand2 size={18} />
+                  {t.generate}
+                </>
+              )}
+            </button>
+
+            <div className="flex gap-2">
+               <button
+                 onClick={() => {
+                   setGeneratedImages([]);
+                   setPreviewImage(null);
+                 }}
+                 disabled={generatedImages.length === 0}
+                 className="flex-1 py-2 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {t.actions.clearAll}
+               </button>
+               <button
+                 onClick={handleDownloadAll}
+                 disabled={generatedImages.length === 0}
+                 className="flex-1 py-2 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-muted-foreground flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 <Download size={14} /> {t.actions.downloadAll}
+               </button>
+            </div>
+          </div>
         </div>
 
         {/* Right Panel - Preview */}
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
            <div className="flex items-center justify-between mb-6">
              <h2 className="text-xl font-bold text-foreground">{t.resultTitle}</h2>
-             {generatedImages.length > 0 && (
+             {previewImage && (
                <button 
-                 onClick={() => setGeneratedImages([])}
-                 className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
+                 onClick={handleImageToVideo}
+                 className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
                >
-                 <Trash2 size={14} /> Clear All
+                 <Video size={16} />
+                 {t.actions.imageToVideo}
                </button>
              )}
            </div>
@@ -441,29 +551,36 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                   <img 
                     src={previewImage} 
                     alt="Generated Preview" 
-                    className="w-full h-full object-cover rounded-lg shadow-lg"
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
                   />
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 rounded-lg">
                     <button 
                       onClick={() => setIsPreviewOpen(true)}
                       className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
-                      title="View Full Size"
+                      title={t.actions.viewFullSize}
                     >
                       <Maximize2 size={20} />
                     </button>
                     <button 
-                      onClick={() => handleDownload(previewImage)}
+                      onClick={() => handleDownload(previewImage!)}
                       className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
-                      title="Download"
+                      title={t.actions.download}
                     >
                       <Download size={20} />
                     </button>
                     <button 
                       onClick={() => setIsAddModalOpen(true)}
                       className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
-                      title="Add to Materials"
+                      title={t.actions.addToMaterials}
                     >
                       <FolderPlus size={20} />
+                    </button>
+                    <button 
+                      onClick={handleImageToVideo}
+                      className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                      title={t.actions.imageToVideo}
+                    >
+                      <Video size={20} />
                     </button>
                   </div>
                 </div>
@@ -489,6 +606,11 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                    }`}
                  >
                    <img src={img.url} alt="History" className="w-full h-full object-cover" />
+                   {img.addState && (
+                     <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
+                        <Check size={8} className="text-white" />
+                     </div>
+                   )}
                  </div>
                ))}
              </div>
@@ -502,14 +624,18 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
           setIsAddModalOpen(false);
-          console.log('Added to materials');
+          // Mark as added
+          setGeneratedImages(prev => prev.map(img => 
+             img.url === previewImage ? { ...img, addState: true } : img
+          ));
+          toast.success(t.tips.addToMaterialsSuccess);
         }}
         initialData={{
           assetUrl: previewImage || '',
-          assetName: 'AI生图',
+          assetName: prompt ? `AI生图-${prompt.slice(0, 10)}` : 'AI生图',
           assetType: 7, // AI生图
           assetTag: 'AI生图',
-          assetDesc: 'AI生图',
+          assetDesc: prompt || 'AI生图',
         }}
         disableAssetTypeSelection={true}
       />

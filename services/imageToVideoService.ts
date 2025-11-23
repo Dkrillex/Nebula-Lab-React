@@ -29,6 +29,8 @@ export interface TraditionalI2VResult {
   status?: string;
   msg?: string;
   message?: string;
+  result?: any;
+  data?: any; // Im model returns data
 }
 
 // ==================== Start/End Frame Mode Types ====================
@@ -38,6 +40,24 @@ export interface StartEndI2VParams {
   prompt?: string;
   duration?: number;
   score?: number;
+}
+
+// ==================== Multi-Model Mode Types ====================
+
+export interface MultiModelI2VParams {
+  prompt: string;
+  imageFileId?: string[];
+  imageFileUrl?: string[];
+  negativePrompt?: string;
+  duration?: string;
+  modelId: string;
+  score?: number;
+  // file?: File; // Typically not sent directly in JSON
+}
+
+export interface MultiModelQueryRequest {
+  taskId: string;
+  modelId: string;
 }
 
 // ==================== Common Query Result Types ====================
@@ -73,6 +93,8 @@ export interface I2VTaskResult {
   coverUrl?: string;
   progress?: number;
   content?: VolcanoVideoContent; // 火山引擎的视频内容
+  videos?: any[]; // Some models return array of videos
+  filePath?: string; // Some models return filePath
 }
 
 // 质量模式到分辨率的映射
@@ -148,5 +170,22 @@ export const imageToVideoService = {
    */
   queryStartEnd: (taskId: string) => {
      return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
+  },
+
+  /**
+   * Multi-Model Submit
+   */
+  submitMultiModel: (data: MultiModelI2VParams) => {
+    // Typically sends JSON
+    return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/multiImg2VideoSubmit', data);
+  },
+
+  /**
+   * Multi-Model Query
+   */
+  queryMultiModel: (taskId: string, modelId: string) => {
+    return request.get<ApiResponse<I2VTaskResult>>('/tp/v1/multiImg2VideoQuery', {
+      params: { taskId, modelId }
+    });
   }
 };

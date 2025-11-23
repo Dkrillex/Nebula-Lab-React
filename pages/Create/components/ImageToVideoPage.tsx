@@ -1,10 +1,77 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, UploadCloud, X, Wand2, Loader2, Play, Pause, Download, Trash2, Maximize2, Image as ImageIcon } from 'lucide-react';
-import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
+import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Trash2, Plus, Settings2, Info } from 'lucide-react';
+import { imageToVideoService, I2VTaskResult, MultiModelI2VParams } from '../../../services/imageToVideoService';
+import { textToImageService } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import toast from 'react-hot-toast';
+import AddMaterialModal from '../../../components/AddMaterialModal';
+import { AdsAssetsVO } from '../../../services/assetsService';
+
+import demoProduct from '../../../assets/demo/1111.png';
+
+// Model Interfaces
+interface ModelItem {
+  id: string;
+  name: string;
+  icon: string;
+  score: number;
+  duration: string;
+  description?: string;
+}
+
+const MODELS: ModelItem[] = [
+  {
+    id: 'seedance-1-0-lite',
+    name: 'Seedance 1.0 Lite',
+    icon: '/assets/images/icons/jpg/seedance1.png', // Placeholder path, adjust if needed
+    score: 5,
+    duration: '1 min max',
+  },
+  {
+    id: 'seedance-1-0-pro',
+    name: 'Seedance 1.0 Pro',
+    icon: '/assets/images/icons/jpg/seedance1.png',
+    score: 10,
+    duration: '1 min max',
+  },
+  {
+    id: 'seaweed',
+    name: 'Seaweed alpha',
+    icon: '/assets/images/icons/jpg/seedance1.png',
+    score: 10,
+    duration: '1 min max',
+  },
+  {
+    id: 'wan2.1-14b',
+    name: 'Wan2.1-14b',
+    icon: '/assets/images/icons/jpg/wan.png',
+    score: 10,
+    duration: '1 min max',
+  },
+  {
+    id: 'im',
+    name: 'Jimeng Video 3.0 Pro',
+    icon: '/assets/images/icons/jpg/dreamian.png',
+    score: 8,
+    duration: '1 min max',
+  },
+  {
+    id: 'veo3',
+    name: 'Google Veo3',
+    icon: '/assets/images/icons/jpg/google.png',
+    score: 20,
+    duration: '1 min max',
+  },
+  {
+    id: 'veo2',
+    name: 'Google Veo2',
+    icon: '/assets/images/icons/jpg/google.png',
+    score: 15,
+    duration: '1 min max',
+  },
+];
 
 interface ImageToVideoPageProps {
   t: {
@@ -20,6 +87,7 @@ interface ImageToVideoPageProps {
       button: string;
       desc: string;
     };
+    trySample: string;
     generationSettings: string;
     prompt: {
       label: string;
@@ -61,35 +129,46 @@ interface UploadedImage {
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const { getData } = useVideoGenerationStore();
-  const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
+  const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd' | 'multiModel'>('traditional');
   
-  // Inputs
+  // --- Common Inputs ---
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
-  
-  // Images
+  const [isPolishing, setIsPolishing] = useState(false);
+
+  // --- Traditional / StartEnd Inputs ---
   const [startImage, setStartImage] = useState<UploadedImage | null>(null);
   const [endImage, setEndImage] = useState<UploadedImage | null>(null);
   const [uploadingStart, setUploadingStart] = useState(false);
   const [uploadingEnd, setUploadingEnd] = useState(false);
-
-  // Settings
-  const [quality, setQuality] = useState<'lite' | 'pro' | 'best'>('pro');
+  const [quality, setQuality] = useState<'lite' | 'plus' | 'pro' | 'best'>('lite');
   const [duration, setDuration] = useState<number>(5);
+  const [generatingCount, setGeneratingCount] = useState<number>(1);
 
-  // Generation State
+  // --- Advanced (MultiModel) Inputs ---
+  const [advancedImages, setAdvancedImages] = useState<UploadedImage[]>([]);
+  const [advancedModelId, setAdvancedModelId] = useState<string>('seedance-1-0-lite');
+  const [advancedDuration, setAdvancedDuration] = useState<string>('5');
+  const [uploadingAdvanced, setUploadingAdvanced] = useState(false);
+  
+  // --- Generation State ---
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedVideos, setGeneratedVideos] = useState<I2VTaskResult[]>([]);
   const [selectedVideo, setSelectedVideo] = useState<I2VTaskResult | null>(null);
 
-  // Refs
+  // --- Material Import ---
+  const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const [materialData, setMaterialData] = useState<Partial<AdsAssetsVO>>({});
+
+  // --- Refs ---
   const startFileInputRef = useRef<HTMLInputElement>(null);
   const endFileInputRef = useRef<HTMLInputElement>(null);
+  const advancedFileInputRef = useRef<HTMLInputElement>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Handle "Make Same Style" data
+  // Handle "Make Same Style" data transfer
   useEffect(() => {
     const transferId = searchParams.get('transferId');
     if (transferId) {
@@ -100,13 +179,18 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             setPrompt(data.sourcePrompt);
           }
           if (data.images && data.images.length > 0) {
-            // Create a dummy uploaded image object since we only have the URL
+            // Traditional mode import
             setStartImage({
               fileId: `temp_${Date.now()}`,
               fileName: 'reference_image.png',
               fileUrl: data.images[0]
             });
-            setActiveTab('traditional');
+            // Advanced mode import
+            setAdvancedImages([{
+              fileId: `temp_${Date.now()}`,
+              fileName: 'reference_image.png',
+              fileUrl: data.images[0]
+            }]);
           }
         }
       } catch (error) {
@@ -123,178 +207,329 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     };
   }, []);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // --- Score Calculation ---
+  const calculatedScore = useMemo(() => {
+    if (activeTab === 'multiModel') {
+      const model = MODELS.find(m => m.id === advancedModelId);
+      if (!model) return 0;
+      const dur = parseInt(advancedDuration);
+      const multiplier = dur === 5 ? 1 : 2; 
+      return model.score * multiplier;
+    } else if (activeTab === 'startEnd') {
+       return duration === 5 ? 4 : 5;
+    } else {
+      let base = 0;
+      if (quality === 'best') {
+        base = duration === 5 ? 10 : (duration === 10 ? 20 : 5);
+      } else if (quality === 'lite') {
+        if(duration === 3) base = 2;
+        if(duration === 5) base = 3;
+        if(duration === 8) base = 3.5;
+        if(duration === 10) base = 4;
+        if(duration === 12) base = 5;
+      } else if (quality === 'plus') {
+        if(duration === 3) base = 3;
+        if(duration === 5) base = 5;
+        if(duration === 8) base = 8;
+        if(duration === 10) base = 10;
+        if(duration === 12) base = 12;
+      } else if (quality === 'pro') {
+         base = 5;
+      }
+      return base * generatingCount;
+    }
+  }, [activeTab, quality, duration, generatingCount, advancedModelId, advancedDuration]);
 
-    const setUploading = type === 'start' ? setUploadingStart : setUploadingEnd;
-    const setImage = type === 'start' ? setStartImage : setEndImage;
+  // --- Helpers ---
+  // Try Sample Task
+  const handleTrySample = async () => {
+    // Use a demo image from public assets or a placeholder URL
+    // Assuming we have a demo product image similar to Vue version
+    const demoImageUrl = demoProduct;
+    
+    try {
+      // Create a file object from the URL (simulated)
+      const response = await fetch(demoImageUrl);
+      const blob = await response.blob();
+      const file = new File([blob], 'demo-product.webp', { type: 'image/webp' });
+      
+      const demoImage: UploadedImage = {
+        fileId: 'demo_id_' + Date.now(),
+        fileName: 'demo-product.webp',
+        fileUrl: demoImageUrl, // In real app, this might need to be uploaded first to get a valid ID/URL for backend
+        file: file
+      };
+
+      // For Start/End mode sample, usually we might set just start or both?
+      // Vue code: sets upload ref fileRes and prompt.
+      setStartImage(demoImage);
+      // Also set as end image for Start/End mode sample
+      setEndImage(demoImage); 
+      
+      setPrompt('The kitten is running on the grass');
+      setNegativePrompt('Distortion, abstraction, deformation, blurring');
+      
+      // If sample needs end image, we should set it too, or maybe sample is for Traditional mode in Vue?
+      // Vue code `tryTask` sets `UseMyPhotoUploadRef` which is for Traditional/StartEnd logic.
+      // Let's assume it sets the start image.
+      
+      toast.success('Sample data loaded');
+    } catch (error) {
+      console.error('Failed to load sample:', error);
+      toast.error('Failed to load sample data');
+    }
+  };
+
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end' | 'advanced') => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    if (type === 'advanced') {
+      setUploadingAdvanced(true);
+    } else if (type === 'start') {
+      setUploadingStart(true);
+    } else {
+      setUploadingEnd(true);
+    }
 
     try {
-      setUploading(true);
-      const res = await uploadService.uploadFile(file);
-      if (res.code === 200 && res.data) {
-        setImage({
-          fileId: res.data.id,
-          fileName: res.data.originalName || file.name,
-          fileUrl: res.data.url,
-          file: file
-        });
-      } else {
-        console.error('Upload failed:', res);
+      const fileList = type === 'advanced' ? Array.from(files) : [files[0]];
+      
+      for (const file of fileList) {
+        const res: any = await uploadService.uploadFile(file);
+        // request client usually unwraps the response to return 'data' directly
+        // But we handle both cases just to be safe
+        const data = (res && res.code === 200 && res.data) ? res.data : res;
+
+        if (data && (data.url || data.ossId || data.id)) {
+          const newImage: UploadedImage = {
+            fileId: data.ossId || data.id,
+            fileName: data.fileName || data.originalName || file.name,
+            fileUrl: data.url || URL.createObjectURL(file),
+            file: file
+          };
+
+          if (type === 'start') setStartImage(newImage);
+          else if (type === 'end') setEndImage(newImage);
+          else if (type === 'advanced') setAdvancedImages(prev => [...prev, newImage]);
+        }
       }
     } catch (error) {
       console.error('Upload failed:', error);
+      toast.error('Upload failed');
     } finally {
-      setUploading(false);
+      if (type === 'advanced') setUploadingAdvanced(false);
+      else if (type === 'start') setUploadingStart(false);
+      else setUploadingEnd(false);
       if (e.target) e.target.value = '';
     }
   };
 
-  const startPolling = (taskId: string, isVolcano: boolean, isStartEnd: boolean) => {
+  const removeAdvancedImage = (index: number) => {
+    setAdvancedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleTextPolish = async () => {
+    const textToPolish = prompt;
+    if (!textToPolish.trim()) return;
+    
+    setIsPolishing(true);
+    try {
+      const res = await textToImageService.polishText({
+        text: textToPolish,
+        type: 'image_to_video'
+      });
+      if (res.data) {
+        setPrompt(res.data);
+        toast.success('Text polished successfully');
+      }
+    } catch (error) {
+      console.error('Polishing failed:', error);
+      toast.error('Failed to polish text');
+    } finally {
+      setIsPolishing(false);
+    }
+  };
+
+  // --- Polling ---
+  const startPolling = (taskId: string, mode: 'traditional' | 'startEnd' | 'multiModel', extraArgs?: any) => {
     if (pollingInterval.current) clearInterval(pollingInterval.current);
     
+    let pollCount = 0;
     pollingInterval.current = setInterval(async () => {
       try {
+        pollCount++;
+        if (pollCount > 120) {
+           if (pollingInterval.current) clearInterval(pollingInterval.current);
+           setIsGenerating(false);
+           toast.error('Generation timed out');
+           return;
+        }
+
         let res;
-        if (isStartEnd) {
+        if (mode === 'traditional') {
+           res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
+        } else if (mode === 'startEnd') {
            res = await imageToVideoService.queryStartEnd(taskId);
         } else {
-           res = await imageToVideoService.queryTraditional(taskId, isVolcano);
+           res = await imageToVideoService.queryMultiModel(taskId, extraArgs?.modelId);
         }
         
-        if (res.code === 200 && res.data) {
-          const status = res.data.status;
-          const taskData = res.data;
-          
-          // Map status to unified check
-          const isSuccess = ['succeeded', 'success', 'completed', 'done'].includes(status.toLowerCase());
-          const isFailed = ['failed', 'fail', 'error'].includes(status.toLowerCase());
-          
-          if (isSuccess) {
-             if (pollingInterval.current) clearInterval(pollingInterval.current);
-             if (progressInterval.current) clearInterval(progressInterval.current);
-             setProgress(100);
-             
-             // Extract URLs based on response structure
-             let videoUrl = taskData.videoUrl;
-             let coverUrl = taskData.coverUrl;
+        const taskData = res.data || (res as any).result;
+        if (!taskData) return;
 
-             // Volcano structure
-             if (taskData.content) {
-               videoUrl = taskData.content.video_url || videoUrl;
-               coverUrl = taskData.content.last_frame_url || coverUrl;
-             }
+        const status = taskData.status || taskData.task_status;
+        const isSuccess = ['succeeded', 'success', 'completed', 'done'].includes(status?.toLowerCase());
+        const isFailed = ['failed', 'fail', 'error', 'expired'].includes(status?.toLowerCase());
+        
+        if (isSuccess) {
+           if (pollingInterval.current) clearInterval(pollingInterval.current);
+           if (progressInterval.current) clearInterval(progressInterval.current);
+           setProgress(100);
+           
+           let videoUrl = taskData.videoUrl || taskData.video_url || taskData.file_url;
+           let coverUrl = taskData.coverUrl || taskData.cover_url;
 
-             if (videoUrl) {
-                const newVideo: I2VTaskResult = {
-                  ...taskData,
-                  videoUrl: videoUrl,
-                  coverUrl: coverUrl,
-                  status: 'success',
-                  id: taskData.id || taskId, 
-                  taskId: taskId
-                };
+           if (taskData.content) {
+             videoUrl = taskData.content.video_url || videoUrl;
+             coverUrl = taskData.content.last_frame_url || coverUrl;
+           }
+           
+           if (Array.isArray(taskData.videos) && taskData.videos.length > 0) {
+              const v = taskData.videos[0];
+              if (v.originVideo) videoUrl = v.originVideo.filePath;
+              else if (v.url) videoUrl = v.url;
+           }
 
-                setGeneratedVideos(prev => [newVideo, ...prev]);
-                setSelectedVideo(newVideo);
-             }
-             setIsGenerating(false);
-          } else if (isFailed) {
-             if (pollingInterval.current) clearInterval(pollingInterval.current);
-             if (progressInterval.current) clearInterval(progressInterval.current);
-             setIsGenerating(false);
-             const errorMsg = taskData.error || taskData.errorMsg || taskData.message || 'Unknown error';
-             toast.error(`Generation failed: ${errorMsg}`);
-          }
+           if (videoUrl) {
+              const newVideo: I2VTaskResult = {
+                ...taskData,
+                videoUrl: videoUrl,
+                coverUrl: coverUrl,
+                status: 'success',
+                id: taskId,
+                taskId: taskId
+              };
+              setGeneratedVideos(prev => [newVideo, ...prev]);
+              setSelectedVideo(newVideo);
+           } else {
+              toast.error('Task succeeded but no video URL found');
+           }
+           setIsGenerating(false);
+        } else if (isFailed) {
+           if (pollingInterval.current) clearInterval(pollingInterval.current);
+           if (progressInterval.current) clearInterval(progressInterval.current);
+           setIsGenerating(false);
+           const errorMsg = taskData.error || taskData.errorMsg || taskData.message || 'Generation failed';
+           toast.error(errorMsg);
         }
       } catch (error) {
         console.error('Polling error:', error);
       }
-    }, 5000); // Poll every 5s
+    }, 5000);
   };
 
+  // --- Submit ---
   const handleGenerate = async () => {
     if (isGenerating) return;
+    if (!prompt.trim()) {
+      toast.error('Please enter a prompt');
+      return;
+    }
+
     if (activeTab === 'traditional' && !startImage) {
-      toast.error('Please upload an image first');
+      toast.error('Please upload an image');
       return;
     }
     if (activeTab === 'startEnd' && (!startImage || !endImage)) {
       toast.error('Please upload both start and end images');
       return;
     }
+    if (activeTab === 'multiModel') {
+       if (advancedImages.length === 0) {
+         toast.error('Please upload at least one image');
+         return;
+       }
+    }
 
     setIsGenerating(true);
     setProgress(0);
-
-    // Simulated progress
+    
     progressInterval.current = setInterval(() => {
       setProgress(prev => {
         if (prev >= 90) return 90;
-        return prev + Math.floor(Math.random() * 2) + 1;
+        return prev + Math.floor(Math.random() * 3) + 1;
       });
-    }, 500);
+    }, 800);
 
     try {
       let taskId = '';
-      let isVolcano = false;
-      let isStartEnd = false;
-
+      
       if (activeTab === 'traditional') {
-        // Traditional Mode
-        isVolcano = quality === 'lite'; // 'plus' is also volcano but let's simplify for now or check options
-        // Wait, quality options are 'lite', 'pro', 'best'. 
-        // Service logic: 'lite'/'plus' => Volcano. 'pro'/'best' => Topview.
-        // Let's assume 'lite' is volcano.
-        
-        // Correction: Service checks data.mode === 'lite' || data.mode === 'plus'
-        
-        const res = await imageToVideoService.submitTraditional({
-          imageFileId: startImage!.fileId,
-          imageUrl: startImage!.fileUrl,
-          prompt,
-          negativePrompt,
-          mode: quality, // 'lite' | 'pro' | 'best'
-          duration: duration,
-          score: 0.3 // Default cost
-        });
+         const res = await imageToVideoService.submitTraditional({
+           imageFileId: startImage!.fileId,
+           imageUrl: startImage!.fileUrl,
+           prompt,
+           negativePrompt,
+           mode: quality,
+           duration: duration,
+           generatingCount: generatingCount,
+           score: calculatedScore
+         });
+         
+         if (res.code === 200 && res.data) {
+            taskId = res.data.taskId || res.data.id || '';
+            const isVolcano = ['lite', 'plus', 'pro'].includes(quality); 
+            startPolling(taskId, 'traditional', { isVolcano });
+         } else {
+            throw new Error(res.msg || 'Submission failed');
+         }
 
-        if (res.code === 200 && res.data) {
-          taskId = res.data.taskId || res.data.id || '';
-          if (taskId) {
-             startPolling(taskId, quality === 'lite', false);
-          } else {
-            throw new Error('No task ID returned');
-          }
-        } else {
-          throw new Error(res.msg || 'Submission failed');
-        }
+      } else if (activeTab === 'startEnd') {
+         if (!startImage?.fileUrl) {
+            toast.error('Please upload start image');
+            setIsGenerating(false);
+            return;
+         }
+         if (!endImage?.fileUrl) {
+            toast.error('Please upload end image');
+            setIsGenerating(false);
+            return;
+         }
+         
+         const res = await imageToVideoService.submitStartEnd({
+           imageUrls: [startImage.fileUrl, endImage.fileUrl],
+           prompt,
+           duration: duration,
+           score: calculatedScore
+         });
+         
+         if (res.code === 200 && res.data) {
+            taskId = res.data.taskId || res.data.id || '';
+            startPolling(taskId, 'startEnd');
+         } else {
+            throw new Error(res.msg || 'Submission failed');
+         }
 
       } else {
-        // Start/End Mode
-        if (!endImage?.fileUrl) { // Check fileUrl instead of file since we need the URL
-           throw new Error('End image file is missing');
-        }
-        isStartEnd = true;
-        
-        const res = await imageToVideoService.submitStartEnd({
-          imageUrls: [startImage!.fileUrl, endImage!.fileUrl],
-          prompt,
-          duration: duration,
-          score: 0.3
-        });
-
-        if (res.code === 200 && res.data) {
-          taskId = res.data.taskId || res.data.id || '';
-          if (taskId) {
-             startPolling(taskId, false, true);
-          } else {
-            throw new Error('No task ID returned');
-          }
-        } else {
-          throw new Error(res.msg || 'Submission failed');
-        }
+         const params: MultiModelI2VParams = {
+           prompt,
+           modelId: advancedModelId,
+           duration: advancedDuration,
+           score: calculatedScore,
+           imageFileId: advancedImages.map(img => img.fileId).filter(Boolean),
+           imageFileUrl: advancedImages.map(img => img.fileUrl).filter(Boolean),
+           negativePrompt
+         };
+         
+         const res = await imageToVideoService.submitMultiModel(params);
+         
+         if (res.code === 200 && res.data) {
+            taskId = res.data.taskId || res.data.id || (res.data as any).task_id || '';
+            startPolling(taskId, 'multiModel', { modelId: advancedModelId });
+         } else {
+            throw new Error(res.msg || 'Submission failed');
+         }
       }
 
     } catch (error: any) {
@@ -306,21 +541,32 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   };
 
+  // --- Import to Material ---
+  const handleImportClick = () => {
+    if (!selectedVideo || !selectedVideo.videoUrl) return;
+    setMaterialData({
+      assetUrl: selectedVideo.videoUrl,
+      assetName: `AI Video - ${new Date().toLocaleString()}`,
+      assetType: 4, // Video
+    });
+    setShowMaterialModal(true);
+  };
+
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm z-10">
+      <div className="w-full border-b border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50 backdrop-blur-sm z-10">
         <div className="px-6 py-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-lg font-bold text-foreground">{t.title}</h1>
-            <p className="text-xs text-muted-foreground mt-1 opacity-90">{t.subtitle}</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t.title}</h1>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 opacity-90">{t.subtitle}</p>
           </div>
         </div>
       </div>
 
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Panel - Settings */}
-        <div className="w-full md:w-[400px] lg:w-[450px] bg-surface border-r border-border flex flex-col p-6 overflow-y-auto custom-scrollbar">
+        <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col p-6 overflow-y-auto custom-scrollbar">
           
           {/* Tabs */}
           <div className="mb-6 flex bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm p-1 rounded-lg gap-1">
@@ -344,166 +590,306 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             >
               {t.tabs.startEnd}
             </button>
+            <button
+              onClick={() => setActiveTab('multiModel')}
+              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
+                activeTab === 'multiModel' 
+                  ? 'bg-indigo-600 text-white shadow-sm' 
+                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t.tabs.advanced}
+            </button>
           </div>
 
-          {/* Upload Section */}
-          <div className="mb-6">
-            <h3 className="font-bold text-foreground mb-3">{t.upload.label}</h3>
-            
-            <div className="flex gap-4">
-               {/* Start Image */}
-               <div className="flex-1">
-                  <input 
-                    type="file" 
-                    ref={startFileInputRef}
-                    onChange={(e) => handleUpload(e, 'start')}
-                    className="hidden" 
-                    accept="image/png, image/jpeg"
-                  />
-                  {startImage ? (
-                    <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
-                      <img src={startImage.fileUrl} alt="Start" className="w-full h-full object-cover" />
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                        <button 
-                          onClick={() => setStartImage(null)}
-                          className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                      <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] p-1 text-center truncate">
-                        {activeTab === 'startEnd' ? 'Start Frame' : 'Reference'}
-                      </div>
-                    </div>
-                  ) : (
-                    <div 
-                      onClick={() => !uploadingStart && startFileInputRef.current?.click()}
-                      className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                        uploadingStart ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                      }`}
-                    >
-                      {uploadingStart ? (
-                        <Loader2 size={20} className="animate-spin text-indigo-600 mb-1" />
-                      ) : (
-                        <UploadCloud size={24} className="text-slate-400 mb-1" />
-                      )}
-                      <span className="text-xs text-muted text-center px-2">
-                        {activeTab === 'startEnd' ? 'Start Frame' : t.upload.desc}
-                      </span>
-                    </div>
-                  )}
+          {/* --- Traditional & StartEnd Content --- */}
+          {(activeTab === 'traditional' || activeTab === 'startEnd') && (
+             <>
+               <div className="mb-6">
+                  <h3 className="text-sm font-bold mb-3 text-foreground">{t.upload.label}</h3>
+                  <div className="flex gap-4">
+                     <div className="flex-1">
+                        <input type="file" ref={startFileInputRef} onChange={(e) => handleUpload(e, 'start')} className="hidden" accept="image/*" />
+                        {startImage ? (
+                           <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
+                              <img src={startImage.fileUrl} alt="Start" className="w-full h-full object-contain bg-black/5" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                 <button onClick={() => setStartImage(null)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
+                                    <Trash2 size={16} />
+                                 </button>
+                              </div>
+                              <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center">
+                                 {activeTab === 'startEnd' ? 'Start Frame' : 'Reference'}
+                              </div>
+                           </div>
+                        ) : (
+                           <div 
+                              onClick={() => !uploadingStart && startFileInputRef.current?.click()}
+                              className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                                 uploadingStart ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                              }`}
+                           >
+                              {uploadingStart ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
+                              <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
+                           </div>
+                        )}
+                     </div>
+                     
+                     {activeTab === 'startEnd' && (
+                        <div className="flex-1">
+                           <input type="file" ref={endFileInputRef} onChange={(e) => handleUpload(e, 'end')} className="hidden" accept="image/*" />
+                           {endImage ? (
+                              <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
+                                 <img src={endImage.fileUrl} alt="End" className="w-full h-full object-contain bg-black/5" />
+                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                    <button onClick={() => setEndImage(null)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
+                                       <Trash2 size={16} />
+                                    </button>
+                                 </div>
+                                 <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center">End Frame</div>
+                              </div>
+                           ) : (
+                              <div 
+                                 onClick={() => !uploadingEnd && endFileInputRef.current?.click()}
+                                 className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
+                                    uploadingEnd ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                                 }`}
+                              >
+                                 {uploadingEnd ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
+                                 <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
+                              </div>
+                           )}
+                        </div>
+                     )}
+                  </div>
+               </div>
+             </>
+          )}
+
+          {/* --- Advanced Content --- */}
+          {activeTab === 'multiModel' && (
+             <>
+               {/* Model Selector */}
+               <div className="mb-6">
+                  <h3 className="text-sm font-bold mb-3 text-gray-900 dark:text-white">Model</h3>
+                  <select 
+                     value={advancedModelId}
+                     onChange={(e) => setAdvancedModelId(e.target.value)}
+                     className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
+                  >
+                     {MODELS.map(m => (
+                        <option key={m.id} value={m.id}>{m.name} - {m.score} pts</option>
+                     ))}
+                  </select>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                     {MODELS.find(m => m.id === advancedModelId)?.duration}
+                  </p>
                </div>
 
-               {/* End Image (Only for StartEnd) */}
-               {activeTab === 'startEnd' && (
-                 <div className="flex-1">
-                    <input 
-                      type="file" 
-                      ref={endFileInputRef}
-                      onChange={(e) => handleUpload(e, 'end')}
-                      className="hidden" 
-                      accept="image/png, image/jpeg"
-                    />
-                    {endImage ? (
-                      <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
-                        <img src={endImage.fileUrl} alt="End" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <button 
-                            onClick={() => setEndImage(null)}
-                            className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                        <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] p-1 text-center truncate">
-                          End Frame
-                        </div>
-                      </div>
-                    ) : (
-                      <div 
-                        onClick={() => !uploadingEnd && endFileInputRef.current?.click()}
+               {/* Multi Upload */}
+               <div className="mb-6">
+                  <h3 className="text-sm font-bold mb-3 text-foreground">{t.upload.label}</h3>
+                  <input type="file" ref={advancedFileInputRef} onChange={(e) => handleUpload(e, 'advanced')} className="hidden" accept="image/*" multiple />
+                  
+                  {advancedImages.length === 0 ? (
+                     <div 
+                        onClick={() => !uploadingAdvanced && advancedFileInputRef.current?.click()}
                         className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                          uploadingEnd ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                           uploadingAdvanced ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                         }`}
-                      >
-                        {uploadingEnd ? (
-                          <Loader2 size={20} className="animate-spin text-indigo-600 mb-1" />
-                        ) : (
-                          <UploadCloud size={24} className="text-slate-400 mb-1" />
-                        )}
-                        <span className="text-xs text-muted text-center px-2">End Frame</span>
-                      </div>
-                    )}
-                 </div>
-               )}
-            </div>
-          </div>
-
-          {/* Prompt */}
-          <div className="mb-6">
-            <h3 className="font-bold text-foreground mb-3">{t.prompt.label}</h3>
-            <textarea
-              value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
-              placeholder={t.prompt.placeholder}
-              className="w-full h-28 p-4 rounded-xl border border-border bg-background resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm mb-3"
-              disabled={isGenerating}
-            />
-            <input 
-               type="text"
-               value={negativePrompt}
-               onChange={(e) => setNegativePrompt(e.target.value)}
-               placeholder={t.negativePrompt.placeholder}
-               className="w-full p-3 rounded-xl border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-xs"
-               disabled={isGenerating}
-            />
-          </div>
-
-          {/* Settings */}
-          <div className="mb-8 space-y-6">
-             {/* Quality */}
-             <div>
-                <label className="text-sm font-medium text-muted mb-3 block">{t.quality.label}</label>
-                <div className="grid grid-cols-3 gap-2">
-                   {(['lite', 'pro', 'best'] as const).map(q => (
-                     <button
-                       key={q}
-                       onClick={() => setQuality(q)}
-                       className={`py-2 rounded-lg text-sm border transition-all ${
-                         quality === q 
-                           ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' 
-                           : 'border-border hover:border-indigo-300'
-                       }`}
                      >
-                       {q === 'lite' ? t.quality.options.lite : q === 'pro' ? t.quality.options.pro : t.quality.options.best}
-                     </button>
-                   ))}
-                </div>
-             </div>
+                        {uploadingAdvanced ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
+                        <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
+                     </div>
+                  ) : (
+                     <div className="grid grid-cols-3 gap-2">
+                        {advancedImages.map((img, idx) => (
+                           <div key={img.fileId || idx} className="relative aspect-square rounded-lg overflow-hidden border border-indigo-500 group bg-black/5">
+                              <img src={img.fileUrl} className="w-full h-full object-contain" />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                 <button onClick={() => removeAdvancedImage(idx)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
+                                    <Trash2 size={14} />
+                                 </button>
+                              </div>
+                           </div>
+                        ))}
+                        <div 
+                           onClick={() => !uploadingAdvanced && advancedFileInputRef.current?.click()}
+                           className={`aspect-square rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors`}
+                        >
+                           {uploadingAdvanced ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Plus className="w-6 h-6 text-slate-400" />}
+                        </div>
+                     </div>
+                  )}
+               </div>
+             </>
+          )}
 
-             {/* Duration */}
-             <div>
-                <label className="text-sm font-medium text-muted mb-3 block">{t.duration.label}</label>
-                <div className="flex items-center gap-4">
-                   <input 
-                     type="range" 
-                     min="5" 
-                     max="12" 
-                     step="1"
-                     value={duration}
-                     onChange={(e) => setDuration(parseInt(e.target.value))}
-                     className="flex-1"
-                   />
-                   <span className="text-sm font-bold w-12 text-right">{duration}{t.duration.units}</span>
-                </div>
+          {/* --- Common Settings --- */}
+          <div className="mb-6">
+             <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
+                <button 
+                   onClick={handleTextPolish} 
+                   disabled={isPolishing || !prompt}
+                   className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 font-medium"
+                >
+                   {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                   {t.prompt.polish}
+                </button>
              </div>
+             <textarea
+               value={prompt}
+               onChange={(e) => setPrompt(e.target.value)}
+               placeholder={t.prompt.placeholder}
+               maxLength={t.prompt.maxLength}
+               className="w-full h-28 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+             />
           </div>
 
+          {/* Specific Settings */}
+          {activeTab === 'traditional' && (
+             <div className="space-y-6 mb-8">
+                {/* Quality */}
+                <div>
+                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.quality.label}</label>
+                   <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                      {['lite', 'plus', 'pro', 'best'].map((q) => (
+                         <button
+                            key={q}
+                            onClick={() => setQuality(q as any)}
+                            className={`flex-1 py-1.5 text-xs font-medium rounded-md capitalize transition-all ${
+                               quality === q 
+                                 ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
+                                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                            }`}
+                         >
+                            {q}
+                         </button>
+                      ))}
+                   </div>
+                </div>
+                
+                {/* Generating Count (Only for Pro/Best) */}
+                {(quality === 'pro' || quality === 'best') && (
+                   <div>
+                      <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">
+                         Generating Count: {generatingCount}
+                      </label>
+                      <input 
+                         type="range" 
+                         min="1" 
+                         max="4" 
+                         step="1"
+                         value={generatingCount}
+                         onChange={(e) => setGeneratingCount(parseInt(e.target.value))}
+                         className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                      />
+                      <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
+                         <span>1</span><span>2</span><span>3</span><span>4</span>
+                      </div>
+                   </div>
+                )}
+
+                {/* Duration */}
+                <div>
+                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.duration.label}</label>
+                   <div className="flex flex-wrap gap-2">
+                      {[3, 5, 8, 10, 12].map((d) => (
+                         <button
+                            key={d}
+                            onClick={() => setDuration(d)}
+                            disabled={quality === 'best' && ![5, 10].includes(d)}
+                            className={`px-3 py-1.5 rounded-md text-xs border transition-all ${
+                               duration === d 
+                                  ? 'border-indigo-500 bg-indigo-50 text-indigo-600 font-bold dark:bg-indigo-900/30 dark:text-indigo-400' 
+                                  : 'border-border hover:border-indigo-300 text-gray-600'
+                            } ${quality === 'best' && ![5, 10].includes(d) ? 'opacity-30 cursor-not-allowed' : ''}`}
+                         >
+                            {d}s
+                         </button>
+                      ))}
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'startEnd' && (
+             <div className="space-y-6 mb-8">
+                <div>
+                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.duration.label}</label>
+                   <div className="flex gap-2">
+                      {[5, 10].map((d) => (
+                         <button
+                            key={d}
+                            onClick={() => setDuration(d)}
+                            className={`px-4 py-2 rounded-md text-xs border transition-all ${
+                               duration === d 
+                                 ? 'border-indigo-500 bg-indigo-50 text-indigo-600 font-bold dark:bg-indigo-900/30 dark:text-indigo-400' 
+                                 : 'border-border hover:border-indigo-300 text-gray-600'
+                            }`}
+                         >
+                            {d}s
+                         </button>
+                      ))}
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'multiModel' && (
+             <div className="space-y-6 mb-8">
+                <div>
+                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.duration.label}</label>
+                   <div className="flex gap-2">
+                      {/* Logic from Vue: if Veo2 -> 5, 8. Else -> 5, 10. */}
+                      {(advancedModelId === 'veo2' ? ['5', '8'] : ['5', '10']).map((d) => (
+                         <button
+                            key={d}
+                            onClick={() => setAdvancedDuration(d)}
+                            className={`px-4 py-2 rounded-md text-xs border transition-all ${
+                               advancedDuration === d 
+                                 ? 'border-indigo-500 bg-indigo-50 text-indigo-600 font-bold dark:bg-indigo-900/30 dark:text-indigo-400' 
+                                 : 'border-border hover:border-indigo-300 text-gray-600'
+                            }`}
+                         >
+                            {d}s
+                         </button>
+                      ))}
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {/* Negative Prompt */}
+          <div className="mb-8">
+             <div className="flex justify-between items-center mb-2">
+               <h3 className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase">{t.negativePrompt.label}</h3>
+               <span className="text-[10px] text-gray-400">{negativePrompt.length}/1500</span>
+             </div>
+             <textarea
+                value={negativePrompt}
+                onChange={(e) => setNegativePrompt(e.target.value)}
+                placeholder={t.negativePrompt.placeholder}
+                maxLength={1500}
+                className="w-full h-32 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
+             />
+          </div>
+         {/* Try Sample Button (Only for StartEnd) */}
+         {activeTab === 'startEnd' && (
+             <button
+                onClick={handleTrySample}
+                disabled={isGenerating}
+                className="mt-auto w-full py-2 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+             >
+                {t.trySample}
+             </button>
+          )}
           {/* Generate Button */}
           <button 
             onClick={handleGenerate}
-            disabled={isGenerating || !startImage || (activeTab === 'startEnd' && !endImage)}
-            className="mt-auto w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isGenerating}
+            className={`w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${activeTab !== 'startEnd' ? 'mt-auto' : ''}`}
           >
              {isGenerating ? (
                <>
@@ -512,103 +898,116 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                </>
              ) : (
                <>
-             <Wand2 size={18} />
-             {t.generate}
+                 <Wand2 size={18} />
+                 {t.generate} ({calculatedScore} pts)
                </>
              )}
           </button>
         </div>
 
-        {/* Right Panel - Result & History */}
+        {/* Right Panel - Preview */}
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
-           {/* Header */}
            <div className="flex items-center justify-between mb-6">
-             <h2 className="text-xl font-bold text-foreground">{t.result.label}</h2>
-             {generatedVideos.length > 0 && (
-               <button 
-                 onClick={() => { setGeneratedVideos([]); setSelectedVideo(null); }}
-                 className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1"
-               >
-                 <Trash2 size={14} /> Clear History
-               </button>
-             )}
+             <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+               <Video className="w-5 h-5" /> {t.result.label}
+             </h2>
+             <div className="flex gap-2">
+               {generatedVideos.length > 0 && (
+                  <button onClick={() => {setGeneratedVideos([]); setSelectedVideo(null);}} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
+                     <Trash2 size={14} /> Clear History
+                  </button>
+               )}
+             </div>
            </div>
 
-           {/* Main Preview Area */}
-           <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
-              {isGenerating && progress > 0 ? (
-                <div className="flex flex-col items-center gap-4 z-10">
-                   <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                   <p className="text-indigo-600 font-medium">AI is rendering your video... {progress}%</p>
+           <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden group">
+              {isGenerating ? (
+                <div className="text-center space-y-4">
+                   <div className="relative w-20 h-20 mx-auto">
+                      <div className="absolute inset-0 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                   </div>
+                   <p className="font-medium text-indigo-600 animate-pulse">Creating your masterpiece...</p>
                 </div>
-              ) : selectedVideo && selectedVideo.videoUrl ? (
-                <div className="relative w-full h-full flex items-center justify-center p-4 group">
-                  <video 
-                    src={selectedVideo.videoUrl} 
-                    poster={selectedVideo.coverUrl}
-                    controls 
-                    className="max-w-full max-h-full rounded-lg shadow-lg object-contain"
-                    autoPlay
-                    loop
-                  />
-                  <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                     <a 
-                        href={selectedVideo.videoUrl} 
-                        download 
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm"
-                        title="Download"
-                     >
-                        <Download size={20} />
-                     </a>
-                  </div>
+              ) : selectedVideo ? (
+                <div className="w-full h-full flex flex-col items-center justify-center">
+                   {/* Video Player */}
+                   <div className="relative max-w-full max-h-[80%] aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
+                      <video 
+                         src={selectedVideo.videoUrl}
+                         poster={selectedVideo.coverUrl}
+                         controls
+                         autoPlay
+                         loop
+                         className="w-full h-full object-contain"
+                         onError={(e) => {
+                            console.error('Video error', e);
+                         }}
+                      />
+                   </div>
+                   
+                   {/* Actions */}
+                   <div className="mt-6 flex gap-4">
+                      <a 
+                         href={selectedVideo.videoUrl} 
+                         download 
+                         target="_blank"
+                         rel="noopener noreferrer"
+                         className="px-6 py-2 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
+                      >
+                         <Download size={16} /> Download
+                      </a>
+                      <button 
+                         onClick={handleImportClick}
+                         className="px-6 py-2 bg-white text-gray-800 border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
+                      >
+                         <Plus size={16} /> Import to Material
+                      </button>
+                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center text-slate-400">
-                   <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-                      <Video size={40} className="text-slate-400 dark:text-slate-500" />
+                <div className="text-center text-slate-400">
+                   <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                      <Video size={40} className="opacity-50 text-slate-400 dark:text-slate-500" />
                    </div>
-                   <p className="text-sm max-w-xs text-center">{t.result.emptyState}</p>
+                   <p>{t.result.emptyState}</p>
                 </div>
               )}
            </div>
 
-           {/* History Thumbs */}
+           {/* History Strip */}
            {generatedVideos.length > 0 && (
-             <div className="h-28 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-               {generatedVideos.map((vid, idx) => (
+             <div className="h-24 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
+               {generatedVideos.map((vid) => (
                  <div 
-                   key={vid.taskId || idx}
+                   key={vid.id}
                    onClick={() => setSelectedVideo(vid)}
-                   className={`relative w-40 h-24 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black ${
-                     selectedVideo?.taskId === vid.taskId ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
+                   className={`relative aspect-video h-full rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black ${
+                     selectedVideo?.id === vid.id ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent opacity-70 hover:opacity-100'
                    }`}
                  >
-                   {vid.coverUrl ? (
-                     <img src={vid.coverUrl} alt="Cover" className="w-full h-full object-cover" />
-                   ) : (
-                     <video 
-                       src={vid.videoUrl} 
-                       className="w-full h-full object-cover opacity-80" 
-                       muted 
-                     />
-                   )}
-                   {/* Status Indicator */}
-                   {vid.status !== 'success' && vid.status !== 'succeeded' && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-                        <span className="text-xs text-white">{vid.status}</span>
-                      </div>
-                   )}
-                   <div className="absolute bottom-1 right-1 bg-black/60 text-white text-[10px] px-1.5 rounded-full backdrop-blur-sm">
-                     Video
-                   </div>
+                    {vid.coverUrl ? (
+                       <img src={vid.coverUrl} className="w-full h-full object-cover" />
+                    ) : (
+                       <video src={vid.videoUrl} className="w-full h-full object-cover" muted />
+                    )}
+                    <div className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">
+                       {vid.status}
+                    </div>
                  </div>
                ))}
              </div>
            )}
         </div>
       </div>
+
+      <AddMaterialModal
+        isOpen={showMaterialModal}
+        onClose={() => setShowMaterialModal(false)}
+        onSuccess={() => {
+           toast.success('Saved to materials');
+        }}
+        initialData={materialData}
+      />
     </div>
   );
 };
