@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Trash2, Plus, Settings2, Info } from 'lucide-react';
+import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Trash2, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
 import { imageToVideoService, I2VTaskResult, MultiModelI2VParams } from '../../../services/imageToVideoService';
 import { textToImageService } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
@@ -112,6 +112,10 @@ interface ImageToVideoPageProps {
       placeholder: string;
     };
     generate: string;
+    actions: {
+      clearAll: string;
+      downloadAll: string;
+    };
     result: {
       label: string;
       emptyState: string;
@@ -374,11 +378,14 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         } else {
            res = await imageToVideoService.queryMultiModel(taskId, extraArgs?.modelId);
         }
-        
-        const taskData = res.data || (res as any).result;
-        if (!taskData) return;
+        // Handle different response structures
+        const responseData = res.data || (res as any).result || res;
+        if (!responseData) return;
 
-        const status = taskData.status || taskData.task_status;
+        // Normalize status
+        let status = responseData.status || responseData.task_status;
+        if (!status && (res as any).status) status = (res as any).status; // Handle top-level status if any
+
         const isSuccess = ['succeeded', 'success', 'completed', 'done'].includes(status?.toLowerCase());
         const isFailed = ['failed', 'fail', 'error', 'expired'].includes(status?.toLowerCase());
         
@@ -387,23 +394,23 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
            if (progressInterval.current) clearInterval(progressInterval.current);
            setProgress(100);
            
-           let videoUrl = taskData.videoUrl || taskData.video_url || taskData.file_url;
-           let coverUrl = taskData.coverUrl || taskData.cover_url;
+           let videoUrl = responseData.videoUrl || responseData.video_url || responseData.file_url;
+           let coverUrl = responseData.coverUrl || responseData.cover_url;
 
-           if (taskData.content) {
-             videoUrl = taskData.content.video_url || videoUrl;
-             coverUrl = taskData.content.last_frame_url || coverUrl;
+           if (responseData.content) {
+             videoUrl = responseData.content.video_url || videoUrl;
+             coverUrl = responseData.content.last_frame_url || coverUrl;
            }
            
-           if (Array.isArray(taskData.videos) && taskData.videos.length > 0) {
-              const v = taskData.videos[0];
+           if (Array.isArray(responseData.videos) && responseData.videos.length > 0) {
+              const v = responseData.videos[0];
               if (v.originVideo) videoUrl = v.originVideo.filePath;
               else if (v.url) videoUrl = v.url;
            }
 
            if (videoUrl) {
               const newVideo: I2VTaskResult = {
-                ...taskData,
+                ...responseData,
                 videoUrl: videoUrl,
                 coverUrl: coverUrl,
                 status: 'success',
@@ -420,7 +427,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
            if (pollingInterval.current) clearInterval(pollingInterval.current);
            if (progressInterval.current) clearInterval(progressInterval.current);
            setIsGenerating(false);
-           const errorMsg = taskData.error || taskData.errorMsg || taskData.message || 'Generation failed';
+           const errorMsg = responseData.error || responseData.errorMsg || responseData.message || 'Generation failed';
            toast.error(errorMsg);
         }
       } catch (error) {
@@ -476,13 +483,22 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
            generatingCount: generatingCount,
            score: calculatedScore
          });
+         // Determine if we should use Volcano polling (lite/plus/pro)
+         // Based on submitTraditional logic in service file
+         const isVolcano = ['lite', 'plus', 'pro'].includes(quality); 
          
-         if (res.code === 200 && res.data) {
-            taskId = res.data.taskId || res.data.id || '';
-            const isVolcano = ['lite', 'plus', 'pro'].includes(quality); 
+         // Normalize response data (handle potential unwrapped response)
+         const responseData = (res as any).data || res;
+         
+         if ((res as any).code === 200 || responseData.id || responseData.taskId) {
+            // Support both id (Volcano) and taskId (Topview)
+            taskId = responseData.taskId || responseData.id || '';
+            if (!taskId) {
+               throw new Error((res as any).msg || 'No taskId returned');
+            }
             startPolling(taskId, 'traditional', { isVolcano });
          } else {
-            throw new Error(res.msg || 'Submission failed');
+            throw new Error((res as any).msg || 'Submission failed');
          }
 
       } else if (activeTab === 'startEnd') {
@@ -504,11 +520,12 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
            score: calculatedScore
          });
          
-         if (res.code === 200 && res.data) {
-            taskId = res.data.taskId || res.data.id || '';
+         const responseData = (res as any).data || res;
+         if ((res as any).code === 200 || responseData.id || responseData.taskId) {
+            taskId = responseData.taskId || responseData.id || '';
             startPolling(taskId, 'startEnd');
          } else {
-            throw new Error(res.msg || 'Submission failed');
+            throw new Error((res as any).msg || 'Submission failed');
          }
 
       } else {
@@ -524,11 +541,12 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          
          const res = await imageToVideoService.submitMultiModel(params);
          
-         if (res.code === 200 && res.data) {
-            taskId = res.data.taskId || res.data.id || (res.data as any).task_id || '';
+         const responseData = (res as any).data || res;
+         if ((res as any).code === 200 || responseData.id || responseData.taskId || responseData.task_id) {
+            taskId = responseData.taskId || responseData.id || responseData.task_id || '';
             startPolling(taskId, 'multiModel', { modelId: advancedModelId });
          } else {
-            throw new Error(res.msg || 'Submission failed');
+            throw new Error((res as any).msg || 'Submission failed');
          }
       }
 
@@ -538,6 +556,41 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       setProgress(0);
+    }
+  };
+
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // --- Handle Download ---
+  const handleDownload = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `generated-video-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('Download started');
+    } catch (error) {
+      console.error('Download failed:', error);
+      window.open(url, '_blank');
+    }
+  };
+
+  const handleDownloadAll = async () => {
+    if (generatedVideos.length === 0) return;
+    
+    toast.success('Starting batch download...');
+    for (const video of generatedVideos) {
+      if (video.videoUrl) {
+        await handleDownload(video.videoUrl);
+        // Delay to prevent browser blocking multiple downloads
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
     }
   };
 
@@ -875,34 +928,56 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                 className="w-full h-32 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-xs focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none resize-none"
              />
           </div>
-         {/* Try Sample Button (Only for StartEnd) */}
-         {activeTab === 'startEnd' && (
-             <button
-                onClick={handleTrySample}
-                disabled={isGenerating}
-                className="mt-auto w-full py-2 mb-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-             >
-                {t.trySample}
-             </button>
-          )}
-          {/* Generate Button */}
-          <button 
-            onClick={handleGenerate}
-            disabled={isGenerating}
-            className={`w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${activeTab !== 'startEnd' ? 'mt-auto' : ''}`}
-          >
-             {isGenerating ? (
-               <>
-                 <Loader2 size={18} className="animate-spin" />
-                 Generating... {progress}%
-               </>
-             ) : (
-               <>
-                 <Wand2 size={18} />
-                 {t.generate} ({calculatedScore} pts)
-               </>
-             )}
-          </button>
+          <div className="mt-auto space-y-3">
+            {/* Try Sample Button (Only for StartEnd) */}
+            {activeTab === 'startEnd' && (
+               <button
+                  onClick={handleTrySample}
+                  disabled={isGenerating}
+                  className="w-full py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+               >
+                  {t.trySample}
+               </button>
+            )}
+            {/* Generate Button */}
+            <button 
+              onClick={handleGenerate}
+              disabled={isGenerating}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+               {isGenerating ? (
+                 <>
+                   <Loader2 size={18} className="animate-spin" />
+                   Generating... {progress}%
+                 </>
+               ) : (
+                 <>
+                   <Wand2 size={18} />
+                   {t.generate} ({calculatedScore} pts)
+                 </>
+               )}
+            </button>
+
+            <div className="flex gap-2">
+               <button
+                 onClick={() => {
+                   setGeneratedVideos([]);
+                   setSelectedVideo(null);
+                 }}
+                 disabled={generatedVideos.length === 0}
+                 className="flex-1 py-2 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-muted-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+                 {t.actions.clearAll}
+               </button>
+               <button
+                 onClick={handleDownloadAll}
+                 disabled={generatedVideos.length === 0}
+                 className="flex-1 py-2 border border-border hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg text-sm text-muted-foreground flex items-center justify-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+                 <Download size={14} /> {t.actions.downloadAll}
+               </button>
+            </div>
+          </div>
         </div>
 
         {/* Right Panel - Preview */}
@@ -911,66 +986,59 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
              <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
                <Video className="w-5 h-5" /> {t.result.label}
              </h2>
-             <div className="flex gap-2">
-               {generatedVideos.length > 0 && (
-                  <button onClick={() => {setGeneratedVideos([]); setSelectedVideo(null);}} className="text-xs text-red-500 hover:text-red-600 flex items-center gap-1">
-                     <Trash2 size={14} /> Clear History
-                  </button>
-               )}
-             </div>
            </div>
 
-           <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden group">
+           {/* Main Preview Area */}
+           <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
               {isGenerating ? (
-                <div className="text-center space-y-4">
-                   <div className="relative w-20 h-20 mx-auto">
-                      <div className="absolute inset-0 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-                   </div>
-                   <p className="font-medium text-indigo-600 animate-pulse">Creating your masterpiece...</p>
+                <div className="flex flex-col items-center gap-4 z-10">
+                   <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                   <p className="text-indigo-600 font-medium">Generating your masterpiece... {progress}%</p>
                 </div>
               ) : selectedVideo ? (
-                <div className="w-full h-full flex flex-col items-center justify-center">
-                   {/* Video Player */}
-                   <div className="relative max-w-full max-h-[80%] aspect-video bg-black rounded-lg overflow-hidden shadow-2xl">
-                      <video 
-                         src={selectedVideo.videoUrl}
-                         poster={selectedVideo.coverUrl}
-                         controls
-                         autoPlay
-                         loop
-                         className="w-full h-full object-contain"
-                         onError={(e) => {
-                            console.error('Video error', e);
-                         }}
-                      />
-                   </div>
-                   
-                   {/* Actions */}
-                   <div className="mt-6 flex gap-4">
-                      <a 
-                         href={selectedVideo.videoUrl} 
-                         download 
-                         target="_blank"
-                         rel="noopener noreferrer"
-                         className="px-6 py-2 bg-indigo-600 text-white rounded-full font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
-                      >
-                         <Download size={16} /> Download
-                      </a>
-                      <button 
-                         onClick={handleImportClick}
-                         className="px-6 py-2 bg-white text-gray-800 border border-gray-200 rounded-full font-medium hover:bg-gray-50 transition-colors flex items-center gap-2 shadow-sm"
-                      >
-                         <Plus size={16} /> Import to Material
-                      </button>
-                   </div>
+                <div className="relative w-full h-full flex items-center justify-center p-4 group">
+                  <video 
+                    src={selectedVideo.videoUrl} 
+                    poster={selectedVideo.coverUrl}
+                    controls
+                    autoPlay
+                    loop
+                    className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
+                    onError={(e) => console.error('Video error', e)}
+                  />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 rounded-lg pointer-events-none">
+                    <div className="pointer-events-auto flex gap-4">
+                        <button 
+                          onClick={() => setIsPreviewOpen(true)}
+                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                          title="View Full Screen"
+                        >
+                          <Maximize2 size={20} />
+                        </button>
+                        <button 
+                          onClick={() => handleDownload(selectedVideo.videoUrl)}
+                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                          title="Download"
+                        >
+                          <Download size={20} />
+                        </button>
+                        <button 
+                          onClick={handleImportClick}
+                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                          title="Add to Materials"
+                        >
+                          <FolderPlus size={20} />
+                        </button>
+                    </div>
+                  </div>
                 </div>
               ) : (
-                <div className="text-center text-slate-400">
-                   <div className="w-24 h-24 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-4 flex items-center justify-center">
+                <div className="flex flex-col items-center text-slate-400">
+                   <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
                       <Video size={40} className="opacity-50 text-slate-400 dark:text-slate-500" />
                    </div>
-                   <p>{t.result.emptyState}</p>
-                </div>
+                   <p className="text-sm max-w-xs text-center">{t.result.emptyState}</p>
+              </div>
               )}
            </div>
 
@@ -1008,6 +1076,28 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         }}
         initialData={materialData}
       />
+
+      {/* Full Screen Preview Modal */}
+      {isPreviewOpen && selectedVideo && (
+        <div 
+          className="fixed inset-0 z-[100] bg-black/90 flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsPreviewOpen(false)}
+        >
+          <button 
+            onClick={() => setIsPreviewOpen(false)}
+            className="absolute top-6 right-6 p-2 text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-colors"
+          >
+            <X size={32} />
+          </button>
+          <video 
+            src={selectedVideo.videoUrl} 
+            controls
+            autoPlay
+            className="max-w-full max-h-full object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()} 
+          />
+        </div>
+      )}
     </div>
   );
 };

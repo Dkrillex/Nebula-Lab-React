@@ -215,6 +215,7 @@ interface Translation {
         button: string;
         desc: string;
       };
+      trySample: string;
       generationSettings: string;
       prompt: {
         label: string;
@@ -239,6 +240,10 @@ interface Translation {
         placeholder: string;
       };
       generate: string;
+      actions: {
+        clearAll: string;
+        downloadAll: string;
+      };
       result: {
         label: string;
         emptyState: string;
@@ -319,6 +324,38 @@ interface Translation {
           ugc: string;
           ads: string;
         };
+      };
+    };
+    productAvatar: {
+      leftPanel: {
+        title: string;
+        uploadDiy: string;
+        picker: string;
+      };
+      rightPanel: {
+        templatePreview: string;
+        pickerTemplate: string;
+        uploadMyFace: string;
+        productConfig: string;
+        uploadProductImg: string;
+        productImg: string;
+        productSize: string;
+        aiTips: string;
+        aiTipsPlaceholder: string;
+        aiTextPlaceholder: string;
+        trySample: string;
+        startWorking: string;
+        replacementSuccess: string;
+        uploadAvatar: string;
+        autoShow: string;
+      };
+      sliderMarks: {
+        tiny: string;
+        small: string;
+        medium: string;
+        large: string;
+        xLarge: string;
+        xxLarge: string;
       };
     };
     styleTransfer: {
@@ -823,6 +860,10 @@ export const translations: Record<string, Translation> = {
           placeholder: 'List content you do not want to see in the video. Example: animation, blur, distortion...'
         },
         generate: '4 Credits',
+        actions: {
+          clearAll: 'Clear All',
+          downloadAll: 'Download All'
+        },
         result: {
           label: 'Generation Result',
           emptyState: 'Upload image and enter description text to start your AI video creation journey'
@@ -1488,6 +1529,10 @@ export const translations: Record<string, Translation> = {
           placeholder: '列出您不想在视频中看到的内容类型。示例：动画、模糊、扭曲、变形、低质量、拼贴、颗粒、微标、抽象、插图、计算机生成、扭曲......'
         },
         generate: '4 积分',
+        actions: {
+          clearAll: '清空结果',
+          downloadAll: '批量下载'
+        },
         result: {
           label: '生成结果',
           emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'

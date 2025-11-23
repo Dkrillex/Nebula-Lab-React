@@ -111,26 +111,26 @@ export const imageToVideoService = {
    * Uses /tp/v1/CommonI2VSubmit for Pro/Best or /tp/v1/textOrImage2videoSubmit for Lite/Plus
    */
   submitTraditional: (data: TraditionalI2VParams) => {
-    if (data.mode === 'lite' || data.mode === 'plus'|| data.mode === 'pro') {
-       // Volcano Engine - textOrImage2videoSubmit
-       const params: TextOrImage2VideoSubmitParams = {
-         image_urls: data.imageUrl ? [data.imageUrl] : [],
-         prompt: data.prompt,
-         duration: typeof data.duration === 'string' ? parseInt(data.duration) : data.duration,
-         score: typeof data.score === 'string' ? parseFloat(data.score) : (data.score as number),
-         resolution: data.mode ? qualityToResolution[data.mode] : undefined,
-       };
-       return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/textOrImage2videoSubmit', params);
+    if (data.mode === 'lite' || data.mode === 'plus' || data.mode === 'pro') {
+      // Volcano Engine - textOrImage2videoSubmit
+      const params: TextOrImage2VideoSubmitParams = {
+        image_urls: data.imageUrl ? [data.imageUrl] : [],
+        prompt: data.prompt,
+        duration: typeof data.duration === 'string' ? parseInt(data.duration) : data.duration,
+        score: typeof data.score === 'string' ? parseFloat(data.score) : (data.score as number),
+        resolution: data.mode ? qualityToResolution[data.mode] : undefined,
+      };
+      return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/textOrImage2videoSubmit', params);
     } else {
-       // Topview (Pro/Best) - CommonI2VSubmit
-       return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/CommonI2VSubmit', {
-         imageFileId: data.imageFileId,
-         prompt: data.prompt,
-         negativePrompt: data.negativePrompt,
-         mode: data.mode,
-         duration: data.duration?.toString(),
-         generatingCount: data.generatingCount
-       });
+      // Topview (Pro/Best) - CommonI2VSubmit
+      return request.post<ApiResponse<TraditionalI2VResult>>('/tp/v1/CommonI2VSubmit', {
+        imageFileId: data.imageFileId,
+        prompt: data.prompt,
+        negativePrompt: data.negativePrompt,
+        mode: data.mode,
+        duration: data.duration?.toString(),
+        generatingCount: data.generatingCount
+      });
     }
   },
 
@@ -139,13 +139,13 @@ export const imageToVideoService = {
    */
   queryTraditional: (taskId: string, isVolcano: boolean = false) => {
     if (isVolcano) {
-       // 火山引擎返回 VolcanoI2VTaskResult 格式
-       return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
+      // 火山引擎返回 VolcanoI2VTaskResult 格式
+      return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
     } else {
-       // Topview 返回标准格式
-       return request.get<ApiResponse<I2VTaskResult>>('/tp/v1/CommonI2VQuery', {
-         params: { taskId, needCloudFrontUrl: true }
-       });
+      // Topview 返回标准格式
+      return request.get<ApiResponse<I2VTaskResult>>('/tp/v1/CommonI2VQuery', {
+        params: { taskId, needCloudFrontUrl: true }
+      });
     }
   },
 
@@ -169,7 +169,7 @@ export const imageToVideoService = {
    * Uses /tp/v1/textOrImage2videoQuery/{taskId}
    */
   queryStartEnd: (taskId: string) => {
-     return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
+    return request.get<ApiResponse<VolcanoI2VTaskResult>>(`/tp/v1/textOrImage2videoQuery/${taskId}`);
   },
 
   /**
