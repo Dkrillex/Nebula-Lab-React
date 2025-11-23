@@ -15,7 +15,7 @@ export default defineConfig({
     },
   },
   build: {
-    outDir: 'dist', // 输出目录（默认 dist，可修改如 'build'）
+    outDir: 'lab', // 输出目录（默认 dist，可修改如 'build'）
     assetsDir: 'assets', // 静态资源目录（默认 assets）
     sourcemap: false, // 是否生成 SourceMap（生产环境建议关闭，减小体积）
     // minify: 'terser', // 压缩工具（默认 terser，比 esbuild 压缩率更高）
