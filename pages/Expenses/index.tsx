@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { RefreshCw, Wallet, Receipt, Clock, ArrowRightLeft } from 'lucide-react';
-import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount } from '../../services/expenseService';
+import { RefreshCw, Wallet, Receipt, Clock, ArrowRightLeft, Download, Search, X, Maximize2, Settings, Upload } from 'lucide-react';
+import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount, TeamLog, TeamLogsQuery } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
+import { teamService } from '../../services/teamService';
+import { teamUserService } from '../../services/teamUserService';
+import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 
 interface ExpensesPageProps {
   t: {
@@ -33,8 +36,8 @@ const ExpensesPage: React.FC = () => {
   const t = rootT?.expensesPage as ExpensesPageProps['t'];
   
   const { user } = useAuthStore();
-  // 模式切换：'balance' 余额模式，'points' 积分模式
-  const [currentMode, setCurrentMode] = useState<'balance' | 'points'>('balance');
+  // 模式切换：'balance' 余额模式，'points' 积分模式，'logos' 日志/账单模式
+  const [currentMode, setCurrentMode] = useState<'balance' | 'points' | 'logos'>('balance');
   
   // 余额相关状态
   const [quotaInfo, setQuotaInfo] = useState<UserQuotaInfo | null>(null);
@@ -44,6 +47,18 @@ const ExpensesPage: React.FC = () => {
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [scoreList, setScoreList] = useState<ScoreRecord[]>([]);
   
+  // 日志/账单相关状态
+  const [teamLogs, setTeamLogs] = useState<TeamLog[]>([]);
+  const [teamOptions, setTeamOptions] = useState<Array<{ label: string; value: string | number }>>([]);
+  const [memberOptions, setMemberOptions] = useState<Array<{ label: string; value: string | number }>>([]);
+  const [selectedTeamId, setSelectedTeamId] = useState<string | number | null>(null);
+  const [selectedUserIds, setSelectedUserIds] = useState<(string | number)[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>(['2']); // 默认选择消费
+  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([
+    new Date(Date.now() - 24 * 60 * 60 * 1000), // 昨天
+    new Date(), // 今天
+  ]);
+  
   const [loading, setLoading] = useState(false);
   const [quotaLoading, setQuotaLoading] = useState(false);
   const [pagination, setPagination] = useState({
@@ -51,6 +66,12 @@ const ExpensesPage: React.FC = () => {
     pageSize: 10,
     total: 0,
   });
+  
+  // 导入模态框状态
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  
+  // 判断是否显示日志/账单按钮
+  const isShowTeamLogos = (user?.team?.length > 0 || user?.channelId);
 
   // 获取用户余额信息
   const fetchQuotaInfo = async () => {
@@ -148,6 +169,175 @@ const ExpensesPage: React.FC = () => {
     }
   };
 
+  // 获取团队列表 - 借鉴 Nebula1 的实现方式
+  const fetchTeamList = async () => {
+    try {
+      // 调用团队列表接口，不传参数获取所有团队（类似 Nebula1 的 labTeamList()）
+      const res = await teamService.getTeamList();
+      
+      // 处理返回数据，兼容多种数据结构
+      let teamsData: any[] = [];
+      if (res.rows && Array.isArray(res.rows)) {
+        teamsData = res.rows;
+      } else if (res.data && Array.isArray(res.data)) {
+        teamsData = res.data;
+      } else if (Array.isArray(res)) {
+        teamsData = res;
+      }
+      
+      // 映射为下拉选项格式
+      const teams = teamsData.map((team: any) => ({
+        label: team.teamName || team.name || `团队${team.teamId}`,
+        value: team.teamId,
+      }));
+      
+      setTeamOptions(teams);
+      
+      // 如果有团队，默认选择第一个（类似 Nebula1 的逻辑）
+      if (teams.length > 0 && !selectedTeamId) {
+        const firstTeamId = teams[0].value;
+        setSelectedTeamId(firstTeamId);
+        await fetchTeamMembers(firstTeamId);
+      }
+    } catch (error) {
+      console.error('获取团队列表失败:', error);
+      // 如果接口失败，可以设置一些测试数据（用于开发测试）
+      // 注意：生产环境应该移除测试数据
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('使用测试团队数据');
+        const testTeams = [
+          { label: '测试1', value: 'test1' },
+          { label: '测试团队2', value: 'test2' },
+        ];
+        setTeamOptions(testTeams);
+        if (!selectedTeamId) {
+          setSelectedTeamId(testTeams[0].value);
+        }
+      }
+    }
+  };
+
+  // 获取团队成员列表 - 借鉴 Nebula1 的实现方式
+  const fetchTeamMembers = async (teamId: string | number) => {
+    try {
+      const res = await teamService.getTeamMemberDetailList(teamId);
+      
+      // 处理返回数据，兼容多种数据结构
+      let membersData: any[] = [];
+      if (res.rows && Array.isArray(res.rows)) {
+        membersData = res.rows;
+      } else if (res.data && Array.isArray(res.data)) {
+        membersData = res.data;
+      } else if (Array.isArray(res)) {
+        membersData = res;
+      }
+      
+      // 映射为下拉选项格式
+      const members = membersData.map((member: any) => ({
+        label: `${member.userName || member.nickName || '未知用户'}${member.nickName && member.userName !== member.nickName ? `(${member.nickName})` : ''}`,
+        value: member.userId,
+      }));
+      
+      setMemberOptions(members);
+      
+      // 如果有成员，默认选择第一个（类似 Nebula1 的逻辑）
+      if (members.length > 0 && selectedUserIds.length === 0) {
+        setSelectedUserIds([members[0].value]);
+      }
+    } catch (error) {
+      console.error('获取团队成员失败:', error);
+      setMemberOptions([]);
+      // 如果接口失败，可以设置一些测试数据（用于开发测试）
+      // 注意：生产环境应该移除测试数据
+      if (process.env.NODE_ENV === 'development' && teamId === 'test1') {
+        console.warn('使用测试成员数据');
+        const testMembers = [
+          { label: '测试用户1', value: 'test_user1' },
+          { label: '测试用户2', value: 'test_user2' },
+        ];
+        setMemberOptions(testMembers);
+      }
+    }
+  };
+
+  // 获取团队日志列表（日志/账单模式）
+  const fetchTeamLogs = async (page: number = pagination.current, pageSize?: number) => {
+    if (!selectedTeamId) return;
+
+    try {
+      setLoading(true);
+      
+      // 转换时间范围为 Unix 时间戳（秒）
+      const startTime = dateRange[0] ? Math.floor(dateRange[0].getTime() / 1000) : undefined;
+      const endTime = dateRange[1] ? Math.floor(dateRange[1].getTime() / 1000) : undefined;
+      
+      const currentPageSize = pageSize || pagination.pageSize;
+      
+      const params: TeamLogsQuery = {
+        pageNum: page,
+        pageSize: currentPageSize,
+        teamIds: String(selectedTeamId),
+        userIds: selectedUserIds.length > 0 ? selectedUserIds.join(',') : undefined,
+        types: selectedTypes.length > 0 ? selectedTypes.join(',') : undefined,
+        startTime,
+        endTime,
+      };
+
+      const res = await expenseService.getTeamLogs(params);
+      
+      if (res.rows) {
+        const logs = res.rows || res.data || [];
+        setTeamLogs(logs);
+        setPagination(prev => ({
+          ...prev,
+          current: page,
+          pageSize: currentPageSize,
+          total: res.total || logs.length,
+        }));
+      }
+    } catch (error) {
+      console.error('获取团队日志失败:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 导出团队日志
+  const handleExportLogs = async () => {
+    if (!selectedTeamId) {
+      alert('请先选择团队');
+      return;
+    }
+
+    try {
+      const startTime = dateRange[0] ? Math.floor(dateRange[0].getTime() / 1000) : undefined;
+      const endTime = dateRange[1] ? Math.floor(dateRange[1].getTime() / 1000) : undefined;
+      
+      const params: TeamLogsQuery = {
+        teamIds: String(selectedTeamId),
+        userIds: selectedUserIds.length > 0 ? selectedUserIds.join(',') : undefined,
+        types: selectedTypes.length > 0 ? selectedTypes.join(',') : undefined,
+        startTime,
+        endTime,
+      };
+
+      const blob = await expenseService.exportTeamLogs(params);
+      
+      // 创建下载链接
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `日志账单_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请稍后重试');
+    }
+  };
+
   // 根据模式初始化数据
   const initData = async () => {
     if (currentMode === 'balance') {
@@ -158,6 +348,14 @@ const ExpensesPage: React.FC = () => {
       if (user?.userId) {
         await Promise.all([fetchUserAccounts(), fetchScoreList(1)]);
       }
+    } else if (currentMode === 'logos') {
+      if (isShowTeamLogos) {
+        // 先加载团队列表（类似 Nebula1 的初始化逻辑）
+        await fetchTeamList();
+        // 如果已经有选中的团队ID，则加载日志数据
+        // 注意：fetchTeamList 内部会自动选择第一个团队并加载成员
+        // 所以这里不需要立即调用 fetchTeamLogs，等用户点击搜索按钮
+      }
     }
   };
 
@@ -165,13 +363,48 @@ const ExpensesPage: React.FC = () => {
     await initData();
   };
 
-  const handleModeChange = (mode: 'balance' | 'points') => {
+  const handleModeChange = (mode: 'balance' | 'points' | 'logos') => {
     setCurrentMode(mode);
     setPagination(prev => ({
       ...prev,
       current: 1,
       pageSize: 10,
     }));
+  };
+
+  // 处理团队选择变化
+  const handleTeamChange = async (teamId: string | number | null) => {
+    setSelectedTeamId(teamId);
+    setSelectedUserIds([]);
+    if (teamId) {
+      await fetchTeamMembers(teamId);
+    } else {
+      setMemberOptions([]);
+    }
+  };
+
+  // 重置筛选条件
+  const handleResetFilters = () => {
+    setSelectedTeamId(null);
+    setSelectedUserIds([]);
+    setSelectedTypes(['2']); // 默认选择消费
+    setDateRange([
+      new Date(Date.now() - 24 * 60 * 60 * 1000), // 昨天
+      new Date(), // 今天
+    ]);
+    setMemberOptions([]);
+  };
+
+  // 手动触发搜索
+  const handleSearch = () => {
+    if (selectedTeamId) {
+      fetchTeamLogs(1);
+    }
+  };
+
+  // 移除费用类型标签
+  const handleRemoveType = (type: string) => {
+    setSelectedTypes(selectedTypes.filter(t => t !== type));
   };
 
   useEffect(() => {
@@ -183,6 +416,14 @@ const ExpensesPage: React.FC = () => {
       initData();
     }
   }, [user?.nebulaApiId, user?.userId]);
+
+  // 监听日志模式下的筛选条件变化 - 移除自动查询，改为手动搜索
+  // useEffect(() => {
+  //   if (currentMode === 'logos' && selectedTeamId) {
+  //     fetchTeamLogs(1);
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, [currentMode, selectedTeamId, selectedUserIds.join(','), selectedTypes.join(','), dateRange[0]?.getTime(), dateRange[1]?.getTime()]);
 
   const formatPoints = (points: null | number | string | undefined): string => {
     if (points === undefined || points === null) return '0';
@@ -241,7 +482,11 @@ const ExpensesPage: React.FC = () => {
       <div className="w-full text-center py-6">
         <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">{t.title}</h1>
         <p className="text-lg text-white/90 max-w-2xl mx-auto">
-          {currentMode === 'balance' ? '余额管理与使用记录' : '积分账户与流水记录'}
+          {currentMode === 'balance' 
+            ? '余额管理与使用记录' 
+            : currentMode === 'points' 
+            ? '积分账户与流水记录' 
+            : '团队日志与账单查询'}
         </p>
       </div>
 
@@ -270,10 +515,14 @@ const ExpensesPage: React.FC = () => {
               {/* 右侧：按钮组 - 水平排列，按照图片布局 */}
               <div className="flex flex-wrap items-center gap-2 justify-end">
                 {/* 日志/账单按钮（如果有团队权限或渠道ID） */}
-                {(user?.team?.length > 0 || user?.channelId) && (
+                {isShowTeamLogos && (
                   <button
-                    onClick={() => {/* TODO: 切换到日志模式 */}}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-xl text-sm font-medium transition-all"
+                    onClick={() => handleModeChange('logos')}
+                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                      currentMode === 'logos'
+                        ? 'bg-white/30 text-white shadow-md border border-white/40'
+                        : 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
+                    }`}
                   >
                     <span className="text-base">📑</span>
                     <span>日志/账单</span>
@@ -335,12 +584,215 @@ const ExpensesPage: React.FC = () => {
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold text-gray-800 pl-2 border-l-4 border-indigo-600">
-                {t.recordsTitle}
+                {currentMode === 'logos' ? '日志/账单' : t.recordsTitle}
               </h2>
+              <div className="flex items-center gap-3">
+                {currentMode === 'logos' && (
+                  <>
+                    {/* <button
+                      onClick={() => setIsImportModalOpen(true)}
+                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors"
+                      title="导入"
+                    >
+                      <Upload size={16} />
+                      导入
+                    </button> */}
+                    <button
+                      onClick={handleExportLogs}
+                      disabled={loading || !selectedTeamId}
+                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="导出"
+                    >
+                      <Download size={16} />
+                      导出
+                    </button>
+                    <button
+                      onClick={() => selectedTeamId && fetchTeamLogs(pagination.current)}
+                      disabled={loading || !selectedTeamId}
+                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="刷新"
+                    >
+                      <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+                    </button>
+                    <button
+                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="全屏"
+                    >
+                      <Maximize2 size={16} />
+                    </button>
+                    <button
+                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      title="设置"
+                    >
+                      <Settings size={16} />
+                    </button>
+                  </>
+                )}
+                {currentMode !== 'logos' && (
               <span className="text-sm text-gray-500">
                 共 {pagination.total} 条记录
               </span>
+                )}
+              </div>
             </div>
+
+            {/* 日志/账单模式：筛选条件 - 按照 Nebula1 设计 */}
+            {currentMode === 'logos' && (
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  {/* 团队选择 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">团队</label>
+                    <div className="relative">
+                      <select
+                        value={selectedTeamId || ''}
+                        onChange={(e) => handleTeamChange(e.target.value || null)}
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white"
+                      >
+                        <option value="">请选择</option>
+                        {teamOptions.map((team) => (
+                          <option key={team.value} value={team.value}>
+                            {team.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 成员选择 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">成员</label>
+                    <div className="relative">
+                      <select
+                        value={selectedUserIds.length > 0 ? selectedUserIds[0] : ''}
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setSelectedUserIds([e.target.value]);
+                          } else {
+                            setSelectedUserIds([]);
+                          }
+                        }}
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white"
+                      >
+                        <option value="">请选择</option>
+                        {memberOptions.map((member) => (
+                          <option key={member.value} value={String(member.value)}>
+                            {member.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 费用类型 - 标签形式 */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">费用类型</label>
+                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 border border-gray-300 rounded-lg bg-white">
+                      {selectedTypes.length === 0 ? (
+                        <span className="text-sm text-gray-400">请选择</span>
+                      ) : (
+                        selectedTypes.map((type) => (
+                          <span
+                            key={type}
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium"
+                          >
+                            {type === '1' ? '充值' : '消费'}
+                            <button
+                              onClick={() => handleRemoveType(type)}
+                              className="hover:bg-indigo-200 rounded-full p-0.5"
+                            >
+                              <X size={12} />
+                            </button>
+                          </span>
+                        ))
+                      )}
+                    </div>
+                    {selectedTypes.length < 2 && (
+                      <div className="mt-2 flex gap-2">
+                        {!selectedTypes.includes('1') && (
+                          <button
+                            onClick={() => setSelectedTypes([...selectedTypes, '1'])}
+                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                          >
+                            + 充值
+                          </button>
+                        )}
+                        {!selectedTypes.includes('2') && (
+                          <button
+                            onClick={() => setSelectedTypes([...selectedTypes, '2'])}
+                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                          >
+                            + 消费
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* 时间范围 - 单个范围选择器 */}
+                  <div className="w-full">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">时间</label>
+                    <div className="flex items-center gap-1 w-full">
+                      <div className="relative flex-1 min-w-0">
+                        <input
+                          type="date"
+                          value={dateRange[0] ? dateRange[0].toISOString().split('T')[0] : ''}
+                          onChange={(e) => setDateRange([e.target.value ? new Date(e.target.value) : null, dateRange[1]])}
+                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                      <span className="text-gray-400 flex-shrink-0 px-1">→</span>
+                      <div className="relative flex-1 min-w-0">
+                        <input
+                          type="date"
+                          value={dateRange[1] ? dateRange[1].toISOString().split('T')[0] : ''}
+                          onChange={(e) => setDateRange([dateRange[0], e.target.value ? new Date(e.target.value) : null])}
+                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                        />
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 操作按钮 */}
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={handleResetFilters}
+                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    重置
+                  </button>
+                  <button
+                    onClick={handleSearch}
+                    disabled={!selectedTeamId || loading}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  >
+                    <Search size={16} />
+                    搜索
+                  </button>
+                </div>
+              </div>
+            )}
 
             {loading ? (
               <div className="flex items-center justify-center py-16 text-gray-500">
@@ -349,7 +801,130 @@ const ExpensesPage: React.FC = () => {
               </div>
             ) : (
               <>
-                {/* 卡片网格布局 - 借鉴 Nebula1 */}
+                {currentMode === 'logos' ? (
+                  /* 日志/账单模式：表格展示 - 按照 Nebula1 设计 */
+                  <div className="overflow-x-auto">
+                    {teamLogs.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-gray-100 rounded-lg">
+                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                          </svg>
+                        </div>
+                        <div className="text-gray-500 text-sm font-medium">暂无数据</div>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="border border-gray-200 rounded-lg overflow-hidden">
+                          <table className="w-full border-collapse bg-white">
+                            <thead>
+                              <tr className="bg-gray-50 border-b border-gray-200">
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">团队名称</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">用户名</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">创作/令牌</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">功能/模型</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">费用(¥)</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">费用类型</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">时间</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">输入(Tokens)</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">完成(Tokens)</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {teamLogs.map((log) => {
+                                const isConsumption = String(log.type) === '2';
+                                return (
+                                  <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                    <td className="px-4 py-3 text-sm text-gray-800">{log.teamName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800">{log.userName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800">{log.tokenName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800">{log.modelName || '-'}</td>
+                                    <td className={`px-4 py-3 text-sm font-medium ${isConsumption ? 'text-red-600' : 'text-green-600'}`}>
+                                      {isConsumption ? '-' : '+'}¥{Number(log.quotaRmb || 0).toFixed(6)}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm">
+                                      <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                        isConsumption 
+                                          ? 'bg-red-50 text-red-700 border border-red-200' 
+                                          : 'bg-green-50 text-green-700 border border-green-200'
+                                      }`}>
+                                        {isConsumption ? '消费' : '充值'}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{log.createdAt || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{log.promptTokens || 0}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600">{log.completionTokens || 0}</td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Pagination Footer - 按照 Nebula1 设计 */}
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
+                          <div className="text-sm text-gray-600">
+                            共 {pagination.total} 条记录
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={pagination.pageSize}
+                              onChange={(e) => {
+                                const newPageSize = Number(e.target.value);
+                                fetchTeamLogs(1, newPageSize);
+                              }}
+                              className="px-2 py-1 border border-gray-300 rounded text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            >
+                              <option value={10}>10条/页</option>
+                              <option value={20}>20条/页</option>
+                              <option value={50}>50条/页</option>
+                              <option value={100}>100条/页</option>
+                            </select>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => fetchTeamLogs(1)}
+                                disabled={pagination.current <= 1}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="第一页"
+                              >
+                                ««
+                              </button>
+                              <button
+                                onClick={() => fetchTeamLogs(pagination.current - 1)}
+                                disabled={pagination.current <= 1}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="上一页"
+                              >
+                                «
+                              </button>
+                              <span className="px-3 py-2 text-sm text-indigo-600 font-medium bg-indigo-50 rounded">
+                                {pagination.current}
+                              </span>
+                              <button
+                                onClick={() => fetchTeamLogs(pagination.current + 1)}
+                                disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="下一页"
+                              >
+                                »
+                              </button>
+                              <button
+                                onClick={() => fetchTeamLogs(Math.ceil(pagination.total / pagination.pageSize))}
+                                disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                title="最后一页"
+                              >
+                                »»
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  /* 余额/积分模式：卡片展示 */
+                  <>
                 <div className={`grid gap-4 mb-6 ${
                   currentMode === 'balance' 
                     ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
@@ -399,6 +974,8 @@ const ExpensesPage: React.FC = () => {
                       下一页
                     </button>
                   </div>
+                    )}
+                  </>
                 )}
               </>
             )}
@@ -409,7 +986,9 @@ const ExpensesPage: React.FC = () => {
             <div className="flex items-center gap-3 text-gray-600">
               <span className="text-xl">💡</span>
               <span className="text-sm font-medium">
-                {currentMode === 'points' 
+                {currentMode === 'logos' 
+                  ? '日志/账单可用于查看团队和成员的详细消费记录' 
+                  : currentMode === 'points' 
                   ? '积分可用于平台各项服务消费' 
                   : '余额可用于大模型API调用服务'}
               </span>
@@ -417,6 +996,18 @@ const ExpensesPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* 导入模态框 */}
+      <TeamLogsImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onSuccess={() => {
+          // 导入成功后刷新数据
+          if (currentMode === 'logos' && selectedTeamId) {
+            fetchTeamLogs(1);
+          }
+        }}
+      />
     </div>
   );
 };

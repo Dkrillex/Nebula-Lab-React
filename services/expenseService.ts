@@ -97,6 +97,34 @@ export interface UserAccount {
   [key: string]: any;
 }
 
+// 团队日志查询参数
+export interface TeamLogsQuery {
+  pageNum?: number;
+  pageSize?: number;
+  teamIds?: string; // 团队ID，逗号分隔
+  userIds?: string; // 用户ID，逗号分隔
+  types?: string; // 费用类型，逗号分隔：'1'=充值，'2'=消费
+  startTime?: number; // 开始时间（Unix时间戳，秒）
+  endTime?: number; // 结束时间（Unix时间戳，秒）
+  [key: string]: any;
+}
+
+// 团队日志记录
+export interface TeamLog {
+  id: string | number;
+  teamName?: string; // 团队名称
+  userName?: string; // 用户名
+  tokenName?: string; // 创作/令牌
+  modelName?: string; // 功能/模型
+  quotaRmb?: number | string; // 费用(￥)
+  quotaDollar?: number | string; // 费用($)
+  type?: number | string; // 费用类型：1=充值，2=消费
+  createdAt?: string; // 时间
+  promptTokens?: number; // 输入(Tokens)
+  completionTokens?: number; // 完成(Tokens)
+  [key: string]: any;
+}
+
 export const expenseService = {
   /**
    * 获取用户余额信息
@@ -137,6 +165,73 @@ export const expenseService = {
   getUserAccounts: (params?: UserAccountQuery) => {
     return request.get<ApiResponse<UserAccount[]>>('/system/userAccount/list', {
       params,
+    });
+  },
+
+  /**
+   * 获取团队日志列表（账单/日志）
+   * @param params 查询参数
+   * @returns 团队日志列表
+   */
+  getTeamLogs: (params?: TeamLogsQuery) => {
+    return request.get<ApiResponse<TeamLog[]>>('/ads/teamLogs/list', {
+      params,
+    });
+  },
+
+  /**
+   * 导出团队日志（Excel）
+   * @param params 查询参数
+   * @returns Excel文件下载
+   */
+  exportTeamLogs: (params?: TeamLogsQuery) => {
+    // 使用 POST 请求，参数通过 URL-encoded 格式传递（与 Nebula1 保持一致）
+    const formData = new URLSearchParams();
+    if (params) {
+      Object.keys(params).forEach((key) => {
+        const value = params[key as keyof TeamLogsQuery];
+        if (value !== undefined && value !== null && value !== '') {
+          formData.append(key, String(value));
+        }
+      });
+    }
+    
+    // 使用 request 方法直接传递 URL-encoded 字符串，避免被 JSON.stringify
+    return request.request('/ads/teamLogs/export', {
+      method: 'POST',
+      body: formData.toString(),
+      responseType: 'blob',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+      },
+      isTransformResponse: false,
+      encrypt: false, // 导出接口不需要加密
+    });
+  },
+
+  /**
+   * 导入团队日志（Excel）
+   * @param file 文件对象
+   * @param updateSupport 是否更新已存在的数据
+   * @returns 导入结果
+   */
+  importTeamLogs: (file: File, updateSupport: boolean = false) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('updateSupport', String(updateSupport));
+    return request.post<{ code: number; msg: string }>('/ads/teamLogs/import', formData, {
+      isTransformResponse: false,
+    });
+  },
+
+  /**
+   * 下载团队日志导入模板
+   * @returns Excel模板文件下载
+   */
+  downloadTeamLogsImportTemplate: () => {
+    return request.post('/ads/teamLogs/importTemplate', {}, {
+      responseType: 'blob',
+      isTransformResponse: false,
     });
   },
 };
