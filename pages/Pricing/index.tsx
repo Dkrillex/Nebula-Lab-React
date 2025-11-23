@@ -38,7 +38,8 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   // Payment State
   const [paymentType, setPaymentType] = useState('wechat');
   const [wxPayModalOpen, setWxPayModalOpen] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false); // 企业定制服务
+  const [consultModalOpen, setConsultModalOpen] = useState(false); // 在线咨询
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payStatus, setPayStatus] = useState<'pending' | 'success' | 'failed'>('pending');
@@ -453,7 +454,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                href="javascript:void(0)"
                onClick={(e) => {
                  e.preventDefault();
-                 setContactModalOpen(true);
+                 setConsultModalOpen(true);
                }}
                className="text-sm text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
              >
@@ -676,10 +677,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         </div>
       </BaseModal>
 
-      {/* Contact Modal */}
+      {/* 在线咨询 Modal */}
       <BaseModal
-        isOpen={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
+        isOpen={consultModalOpen}
+        onClose={() => setConsultModalOpen(false)}
         title="在线咨询"
         width="max-w-sm"
       >
@@ -687,7 +688,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">联系我们</h3>
             <p className="text-sm text-gray-500 mb-6">扫描下方二维码，立即咨询</p>
             
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6">
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                <img 
                  src="/lab/zhenshangWxCode.png" 
                  alt="微信联系方式" 
@@ -695,9 +696,77 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                />
             </div>
 
-            <div className="text-sm text-gray-500 space-y-1">
+            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
               <p>工作时间：周一至周五 9:00-18:00</p>
               <p>我们将为您提供专业的服务支持</p>
+            </div>
+         </div>
+      </BaseModal>
+
+      {/* 企业定制服务 Modal */}
+      <BaseModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        title="企业定制服务"
+        width="max-w-2xl"
+      >
+         <div className="py-2">
+            {/* 副标题 */}
+            <div className="text-center mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                为您提供专业的AI解决方案
+              </p>
+            </div>
+
+            {/* 联系内容 */}
+            <div className="flex flex-col md:flex-row gap-8 mb-8">
+              {/* 联系信息 */}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl flex-shrink-0">📱</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">联系电话</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">18890659150</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl flex-shrink-0">⏰</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">服务时间</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">工作日 9:00-18:00</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 微信联系 */}
+              <div className="flex-shrink-0 text-center">
+                <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                  微信联系
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
+                  <img 
+                    src="/lab/zhenshangWxCode.png" 
+                    alt="微信联系方式" 
+                    className="w-[200px] h-[200px] object-contain mx-auto"
+                  />
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  扫码添加企业微信
+                </div>
+              </div>
+            </div>
+
+            {/* 功能标签 */}
+            <div className="flex justify-center gap-3 flex-wrap">
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                🎯 定制化方案
+              </div>
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                🔧 技术支持
+              </div>
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                📊 数据分析
+              </div>
             </div>
          </div>
       </BaseModal>
@@ -803,7 +872,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       
       <div className="text-center mb-2 relative z-10">
         <h3 className="text-xl font-bold text-foreground">{isEnterprise ? 'Enterprise' : item.productName}</h3>
-        {isEnterprise && <div className="text-sm text-muted mt-1">{item.productDescription}</div>}
+        {/* {isEnterprise && <div className="text-sm text-muted mt-1">{item.productDescription}</div>} */}
       </div>
 
       <div className="text-center mb-2 relative z-10">
@@ -887,16 +956,39 @@ const PricingCard: React.FC<PricingCardProps> = ({
       </div>
       )}
 
-      <div className="flex-1 space-y-3 mb-8 text-center relative z-10">
+      <div className="flex-1 space-y-3 mb-8 relative z-10">
          {!isEnterprise && item.productDescription && (
-            <div className="text-xs text-muted/80 whitespace-pre-line">
+            <div className="text-xs text-muted/80 whitespace-pre-line text-center">
                {item.productDescription}
             </div>
          )}
          {isEnterprise && (
-             <div className="text-xs text-muted/80">
-                Contact us for custom solutions
-           </div>
+            <ul className="space-y-2.5 text-left">
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义团队席位
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义积分额度
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义数字人
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义AI音色
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义功能
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                定制化功能开发
+              </li>
+            </ul>
          )}
       </div>
 
