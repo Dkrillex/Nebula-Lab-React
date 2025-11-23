@@ -594,10 +594,7 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                               <span style={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap',
-                                maxWidth: '120px'
+                                wordBreak: 'break-all'
                               }}>{displayKey}</span>
                               <div style={{
                                 display: 'flex',

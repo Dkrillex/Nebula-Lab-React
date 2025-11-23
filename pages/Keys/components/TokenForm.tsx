@@ -42,6 +42,16 @@ const TokenForm: React.FC<TokenFormProps> = ({
   // 永不过期的日期：2099-12-31 23:59:59
   const NEVER_EXPIRE_DATE = '2099-12-31T23:59:59';
 
+  // 将 Date 对象转换为本地时间字符串（格式：YYYY-MM-DDTHH:mm）
+  const toLocalDateTimeString = (date: Date): string => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
   // 加载模型列表
   const loadModels = async (search?: string) => {
     try {
@@ -96,7 +106,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             timestamp = token.expiredTime > 1000000000000 ? token.expiredTime : token.expiredTime * 1000;
           }
           const date = new Date(timestamp);
-          setExpiredTimeDate(date.toISOString().slice(0, 16));
+          setExpiredTimeDate(toLocalDateTimeString(date));
         } else {
           // 永不过期时，设置为2099-12-31 23:59:59
           setExpiredTimeDate(NEVER_EXPIRE_DATE.slice(0, 16));
@@ -230,8 +240,9 @@ const TokenForm: React.FC<TokenFormProps> = ({
     }
   };
 
-  // 设置快捷过期时间
+  // 设置快捷过期时间（以当前时间为基准）
   const setQuickExpire = (type: 'never' | 'hour' | 'day' | 'month') => {
+    // 始终以当前时间为基准进行计算，特别是在编辑模式下
     const now = new Date();
     let targetTime: Date;
 
@@ -240,19 +251,23 @@ const TokenForm: React.FC<TokenFormProps> = ({
         setExpiredTimeDate(NEVER_EXPIRE_DATE.slice(0, 16));
         return;
       case 'hour':
+        // 从当前时间开始，添加1小时
         targetTime = new Date(now.getTime() + 60 * 60 * 1000);
         break;
       case 'day':
+        // 从当前时间开始，添加1天
         targetTime = new Date(now.getTime() + 24 * 60 * 60 * 1000);
         break;
       case 'month':
+        // 从当前时间开始，添加30天
         targetTime = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
         break;
       default:
         return;
     }
 
-    setExpiredTimeDate(targetTime.toISOString().slice(0, 16));
+    // 使用本地时间格式，而不是 UTC 时间
+    setExpiredTimeDate(toLocalDateTimeString(targetTime));
   };
 
   // 掩码密钥
@@ -370,6 +385,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                     value={keyVisible ? `sk-${token.key}` : `sk-${maskKey(token.key)}`}
                     readOnly
                     className="flex-1 px-3 py-2 border border-border rounded-lg bg-background text-foreground font-mono"
+                    style={{ wordBreak: 'break-all', minWidth: 0 }}
                   />
                   <button
                     onClick={() => setKeyVisible(!keyVisible)}
