@@ -34,6 +34,8 @@ export const uploadService = {
     return request.post<UploadResult>('/resource/oss/uploadByImageUrl', {
       url: imageUrl,
       extensionType,
+    }, {
+      timeout: 60000 // 60秒超时，图片URL上传可能需要下载和处理时间
     });
   },
 
@@ -48,6 +50,8 @@ export const uploadService = {
     return request.post<UploadResult>('/resource/oss/uploadByVideoUrl', {
       url: videoUrl,
       extensionType,
+    }, {
+      timeout: 120000 // 120秒超时，视频文件较大，上传可能需要更长时间
     });
   },
 
@@ -64,6 +68,8 @@ export const uploadService = {
       base64Content,
       fileName,
       extensionType,
+    }, {
+      timeout: 60000 // 60秒超时，Base64上传可能需要更长时间
     });
   },
 };
