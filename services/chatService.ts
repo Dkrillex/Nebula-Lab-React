@@ -206,5 +206,31 @@ export const chatService = {
   deleteChatRecord: async (id: string | number): Promise<ApiResponse<void>> => {
     return request.delete<void>(`/api/apiTalk/${id}`);
   },
+
+  /**
+   * 新增对话记录
+   * Endpoint: POST /api/apiTalk
+   */
+  addChatRecord: async (data: {
+    apiType: string;
+    apiJson: string;
+    taskJson: string;
+    id?: string | number;
+  }): Promise<ApiResponse<any>> => {
+    return request.post<any>('/api/apiTalk', data);
+  },
+
+  /**
+   * 更新对话记录
+   * Endpoint: PUT /api/apiTalk
+   */
+  updateChatRecord: async (data: {
+    id: string | number;
+    apiType: string;
+    apiJson: string;
+    taskJson: string;
+  }): Promise<ApiResponse<void>> => {
+    return request.put<void>('/api/apiTalk', data);
+  },
 };
 
