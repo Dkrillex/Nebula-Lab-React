@@ -476,12 +476,12 @@ const ExpensesPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen pb-12 font-sans" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+    <div className="min-h-screen pb-12 font-sans bg-white">
       
       {/* Page Header */}
       <div className="w-full text-center py-6">
-        <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">{t.title}</h1>
-        <p className="text-lg text-white/90 max-w-2xl mx-auto">
+        <h1 className="text-3xl font-bold text-black mb-2">{t.title}</h1>
+        <p className="text-lg text-gray-800 max-w-2xl mx-auto">
           {currentMode === 'balance' 
             ? '余额管理与使用记录' 
             : currentMode === 'points' 
@@ -1125,7 +1125,7 @@ const ScoreCard: React.FC<{
   
   // 状态映射 - 根据图片，"已扣款"对应已完成状态（status === '1'）
   const statusInfo = {
-    '1': { text: '已扣款', class: 'bg-blue-100 text-white' }, // 已完成 -> 已扣款，浅蓝色背景，白色文字
+    '1': { text: '已扣款', class: 'bg-blue-600 text-white' }, // 已完成 -> 已扣款，深蓝色背景，白色文字
     '0': { text: '进行中', class: 'bg-yellow-50 text-yellow-700' },
     '-1': { text: '失败', class: 'bg-red-50 text-red-700' },
   }[String(score.status) || '0'] || { text: '未知', class: 'bg-gray-50 text-gray-700' };
