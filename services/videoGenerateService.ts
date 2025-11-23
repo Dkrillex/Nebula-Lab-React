@@ -41,24 +41,55 @@ export interface VideoGenerateRequest {
 }
 
 // 视频生成任务提交响应
+// 注意：request.ts 在成功时会返回 resData.data，所以这里定义的是 data 对象的结构
 export interface VideoGenerateSubmitResponse {
-  code: number;
-  msg?: string;
-  data?: {
-    task_id: string;
+  task_id?: string; // 直接任务ID
+  output?: {
+    task_id?: string; // 嵌套的任务ID
   };
+  code?: string;
+  status_code?: number;
+  status?: string;
+  message?: string;
+  request_id?: string;
 }
 
 // 视频生成任务查询响应
+// 注意：request.ts 在成功时会返回 resData.data，所以这里定义的是 data 对象的结构
 export interface VideoGenerateQueryResponse {
-  code: number;
-  msg?: string;
-  data?: {
-    task_id: string;
-    status: string; // 'succeeded' | 'failed' | 'processing' | 'pending'
+  task_id?: string;
+  status: string; // 'succeeded' | 'failed' | 'processing' | 'pending' | 'queued' | 'in_progress'
     video_url?: string;
-    error?: string;
+  url?: string; // 有些模型使用 url 而不是 video_url
+  format?: string; // 视频格式（如 mp4）
+  error?: string | {
+    code?: number;
+    message?: string;
+    type?: string;
+  };
     progress?: number;
+  metadata?: {
+    id?: string;
+    model?: string;
+    status?: string;
+    seconds?: number | string;
+    n_seconds?: number;
+    width?: number;
+    height?: number;
+    prompt?: string;
+    resolution?: string;
+    duration?: number;
+    ratio?: string;
+    framespersecond?: number;
+    error?: {
+      code?: number;
+      message?: string;
+      type?: string;
+    };
+    reason?: string;
+    generations?: Array<{
+      id?: string;
+    }>;
   };
 }
 
@@ -77,21 +108,25 @@ export const videoGenerateService = {
 
     return request.post<VideoGenerateSubmitResponse>('/ads/playground/video/completions', requestData, {
       timeout: 60000, // 60秒超时
+      _skipErrorDisplay: true, // 跳过默认错误提示，由组件自行处理错误（如余额不足等）
     });
   },
 
   /**
    * 查询视频生成任务状态
-   * Endpoint: GET /ads/playground/video/completions/{task_id}?user_id={user_id}
+   * Endpoint: GET /ads/playground/video/generations?userId={userId}&taskId={taskId}
    */
-  queryVideoTask: async (taskId: string): Promise<VideoGenerateQueryResponse> => {
+  queryVideoTask: async (taskId: string, signal?: AbortSignal): Promise<VideoGenerateQueryResponse> => {
     const { user } = useAuthStore.getState();
     
-    return request.get<VideoGenerateQueryResponse>(`/ads/playground/video/completions/${taskId}`, {
+    return request.get<VideoGenerateQueryResponse>('/ads/playground/video/generations', {
       params: {
-        user_id: user?.nebulaApiId || '',
+        userId: user?.nebulaApiId || '',
+        taskId: taskId,
       },
       timeout: 30000,
+      signal, // 支持 AbortSignal
+      _skipErrorDisplay: true, // 跳过默认错误提示，由组件自行处理错误（如余额不足等）
     });
   },
 };

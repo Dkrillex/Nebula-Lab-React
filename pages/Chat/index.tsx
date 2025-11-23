@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Settings, Trash2, Save, Plus, RefreshCw, Send, Bot, User, 
   MoreHorizontal, Cpu, MessageSquare, X, Copy, Loader2, Square,
-  Image as ImageIcon, Video, MessageCircle
+  Image as ImageIcon, Video, MessageCircle, Eye, Maximize2, Reply
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -14,6 +14,7 @@ import { chatService, ChatMessage, ChatRequest } from '../../services/chatServic
 import { modelsService, ModelsVO } from '../../services/modelsService';
 import { imageGenerateService, ImageGenerateRequest } from '../../services/imageGenerateService';
 import { videoGenerateService, VideoGenerateRequest } from '../../services/videoGenerateService';
+import { uploadService } from '../../services/uploadService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
@@ -25,7 +26,8 @@ import {
   getVideoRatios,
   getVideoResolutions,
   ModelCapabilities,
-  IMAGE_TO_VIDEO_MODES
+  IMAGE_TO_VIDEO_MODES,
+  VIDEO_RATIOS
 } from './modelConstants';
 
 // 扩展消息类型，支持图片和视频
@@ -44,6 +46,8 @@ interface ExtendedChatMessage extends ChatMessage {
     timestamp: number;
     status?: string; // 'processing' | 'succeeded' | 'failed'
   }>;
+  isHtml?: boolean; // 是否包含HTML内容
+  action?: 'goFixPrice'; // 可选的后续动作（如余额不足时跳转定价列表）
 }
 
 type Mode = 'chat' | 'image' | 'video';
@@ -53,6 +57,7 @@ const ChatPage: React.FC = () => {
   const t = rawT.chatPage;
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const { getData } = useVideoGenerationStore();
   // 模式切换：对话/图片生成/视频生成
@@ -84,21 +89,38 @@ const ChatPage: React.FC = () => {
   const [watermark, setWatermark] = useState(false);
   const [guidanceScale, setGuidanceScale] = useState(2.5);
   const [sequentialImageGeneration, setSequentialImageGeneration] = useState(false);
+  const [sequentialImageGenerationOptions, setSequentialImageGenerationOptions] = useState({
+    max_images: 4,
+    layout: 'grid' as 'grid' | 'sequence',
+  });
+  const [optimizePromptOptionsMode, setOptimizePromptOptionsMode] = useState<'standard' | 'fast'>('standard');
   
   // qwen模型专用参数
   const [qwenNegativePrompt, setQwenNegativePrompt] = useState('');
   const [qwenPromptExtend, setQwenPromptExtend] = useState(true);
-
+  const [qwenImageSize, setQwenImageSize] = useState('1328*1328');
+  const [qwenImageEditN, setQwenImageEditN] = useState(1);
+  
+  // GPT模型专用参数
+  const [gptImageQuality, setGptImageQuality] = useState<'low' | 'medium' | 'high'>('medium');
+  const [gptImageInputFidelity, setGptImageInputFidelity] = useState<'low' | 'high'>('low');
+  const [gptImageN, setGptImageN] = useState(1);
+  
   // 视频生成参数
   const [videoDuration, setVideoDuration] = useState(5);
-  const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16'>('16:9');
-  const [videoResolution, setVideoResolution] = useState<'720p' | '1080p'>('720p');
+  const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16' | '4:3' | '1:1' | '3:4' | '21:9' | 'adaptive'>('16:9');
+  const [videoResolution, setVideoResolution] = useState<'480p' | '720p' | '1080p'>('720p');
   const [imageGenerationMode, setImageGenerationMode] = useState('first_frame'); // first_frame, first_last_frame, reference
   const [cameraFixed, setCameraFixed] = useState(false);
   
   // Wan2.5模型专用参数
   const [wan25SmartRewrite, setWan25SmartRewrite] = useState(true);
   const [wan25GenerateAudio, setWan25GenerateAudio] = useState(true);
+  const [wan25Resolution, setWan25Resolution] = useState<'480p' | '720p' | '1080p'>('720p');
+  const [wan25AspectRatio, setWan25AspectRatio] = useState<'16:9' | '9:16' | '1:1' | '4:3' | '3:4'>('16:9');
+  const [wan25Seed, setWan25Seed] = useState<number | undefined>(undefined);
+  const [wan25AudioFile, setWan25AudioFile] = useState<File | null>(null);
+  const [wan25AudioUrl, setWan25AudioUrl] = useState<string>('');
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -124,14 +146,39 @@ const ChatPage: React.FC = () => {
     onConfirm: () => {},
   });
 
+  // 预览模态框状态
+  const [previewModal, setPreviewModal] = useState<{
+    isOpen: boolean;
+    type: 'image' | 'video';
+    url: string;
+  }>({
+    isOpen: false,
+    type: 'image',
+    url: '',
+  });
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const videoPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // 存储所有模式的模型列表
   const [chatModels, setChatModels] = useState<ModelsVO[]>([]);
   const [imageModels, setImageModels] = useState<ModelsVO[]>([]);
   const [videoModels, setVideoModels] = useState<ModelsVO[]>([]);
+
+  // 消息缓存：为每个模式维护独立的消息列表
+  const messagesCacheRef = useRef<{
+    chat: ExtendedChatMessage[];
+    image: ExtendedChatMessage[];
+    video: ExtendedChatMessage[];
+  }>({
+    chat: [],
+    image: [],
+    video: [],
+  });
+  
+  // 跟踪上一个模式，用于在切换时保存消息
+  const previousModeRef = useRef<Mode>('chat');
 
   // 初始化时同时获取所有模式的模型
   useEffect(() => {
@@ -146,9 +193,9 @@ const ChatPage: React.FC = () => {
       // 并行获取三种模式的模型
       const [chatRes, imageRes, videoRes] = await Promise.all([
         modelsService.getModelsList({
-          pageNum: 1,
-          pageSize: 100,
-          status: 1,
+        pageNum: 1,
+        pageSize: 100,
+        status: 1,
           tags: '对话,思考,推理,上下文,图片理解',
         }),
         modelsService.getModelsList({
@@ -214,13 +261,30 @@ const ChatPage: React.FC = () => {
       videoModelList = videoModelList.filter(m => m.modelName && !blockedVideoModels.has(m.modelName));
       setVideoModels(videoModelList);
       
-      // 根据当前模式设置models
-      updateModelsForCurrentMode();
+      // 根据当前模式设置models - 使用局部变量而不是state（因为setState是异步的）
+      let currentModels: ModelsVO[] = [];
+      if (currentMode === 'chat') {
+        currentModels = chatModelList;
+      } else if (currentMode === 'image') {
+        currentModels = imageModelList;
+      } else if (currentMode === 'video') {
+        currentModels = videoModelList;
+      }
+      
+      setModels(currentModels);
+      
+      // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
+      const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
+      if (currentModels.length > 0 && !isSelectedValid) {
+        setSelectedModel(currentModels[0].modelName || '');
+      }
       
       console.log('✅ 已同时加载所有模式的模型:', {
         chat: chatModelList.length,
         image: imageModelList.length,
-        video: videoModelList.length
+        video: videoModelList.length,
+        currentMode,
+        currentModelsCount: currentModels.length
       });
     } catch (error) {
       console.error('获取模型列表失败:', error);
@@ -229,7 +293,7 @@ const ChatPage: React.FC = () => {
       setModelsLoading(false);
     }
   };
-  
+
   // 根据当前模式更新显示的模型列表
   const updateModelsForCurrentMode = () => {
     let currentModels: ModelsVO[] = [];
@@ -252,15 +316,61 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  // 监听模式切换，更新模型列表和历史记录
+  // 当模型列表更新后，自动更新当前模式的模型列表
   useEffect(() => {
+    // 只有在模型列表已经加载完成时才更新（避免初始化时使用空数组）
+    const hasAnyModels = chatModels.length > 0 || imageModels.length > 0 || videoModels.length > 0;
+    if (hasAnyModels) {
+      console.log('🔄 模型列表已更新，更新当前模式的模型列表:', {
+        currentMode,
+        chatCount: chatModels.length,
+        imageCount: imageModels.length,
+        videoCount: videoModels.length
+      });
+      updateModelsForCurrentMode();
+    } else {
+      console.log('⏳ 模型列表尚未加载完成，等待加载...');
+    }
+  }, [chatModels, imageModels, videoModels, currentMode]);
+
+  // 监听模式切换，更新模型列表和历史记录，并切换消息缓存
+  useEffect(() => {
+    // 如果模式真的改变了，保存上一个模式的消息到缓存
+    if (previousModeRef.current !== currentMode) {
+      // 保存上一个模式的消息（这里需要从messages状态获取，但messages可能还没更新）
+      // 所以我们会在messages变化时自动保存，这里主要是切换逻辑
+      previousModeRef.current = currentMode;
+    }
+    
     setSelectedModel(''); // 切换模式时清空选中的模型
     setChatRecords([]); // 切换模式时清空历史记录
-    updateModelsForCurrentMode(); // 使用已加载的模型列表
+    setSelectedRecordId(null); // 清空选中的记录ID
+    // updateModelsForCurrentMode 已由上面的 useEffect 监听 currentMode 变化自动调用
+    
+    // 从缓存中恢复新模式的消息
+    const cachedMessages = messagesCacheRef.current[currentMode];
+    if (cachedMessages && cachedMessages.length > 0) {
+      setMessages(cachedMessages);
+      console.log(`📦 从缓存恢复${currentMode}模式的消息，共${cachedMessages.length}条`);
+    } else {
+      // 如果没有缓存，只在对话模式显示欢迎消息
+      if (currentMode === 'chat') {
+      setMessages([{
+        id: 'welcome',
+        role: 'assistant',
+        content: t.welcomeMessage,
+        timestamp: Date.now()
+      }]);
+      } else {
+        // 图片和视频模式不显示欢迎消息
+        setMessages([]);
+      }
+    }
     
     // 根据模式加载对应的历史记录
+    // 当模式切换或用户信息加载完成时，都加载对应的历史记录
     if (user?.nebulaApiId) {
-      console.log('🔄 切换模式，加载历史记录:', currentMode);
+      console.log('🔄 加载历史记录:', currentMode, 'user:', user?.nebulaApiId ? '已加载' : '未加载');
       if (currentMode === 'chat') {
         fetchChatRecords();
       } else if (currentMode === 'image') {
@@ -270,6 +380,15 @@ const ChatPage: React.FC = () => {
       }
     }
   }, [currentMode, user?.nebulaApiId]);
+
+  // 监听messages变化，自动保存到缓存
+  useEffect(() => {
+    // 过滤掉欢迎消息后再保存
+    const messagesToCache = messages.filter(msg => msg.id !== 'welcome');
+    if (messagesToCache.length > 0 || messagesCacheRef.current[currentMode].length > 0) {
+      messagesCacheRef.current[currentMode] = messages;
+    }
+  }, [messages, currentMode]);
 
   // 监听模型列表变化，自动选择第一个模型
   useEffect(() => {
@@ -291,7 +410,7 @@ const ChatPage: React.FC = () => {
     });
   }, [chatRecords, recordsLoading]);
   
-  // 监听模型切换,检查是否需要清除图片
+  // 监听模型切换,检查是否需要清除图片和重置配置
   useEffect(() => {
     if (!selectedModel) return;
     
@@ -303,7 +422,70 @@ const ChatPage: React.FC = () => {
       console.log(`模型 ${selectedModel} 不支持图片上传，清除已上传的图片`);
       setUploadedImages([]);
     }
+
+    // 图片模式：根据模型重置配置
+    if (currentMode === 'image') {
+      // 重置图片尺寸为模型默认值
+      const sizes = getImageSizes(selectedModel);
+      if (sizes.length > 0 && !sizes.some(s => s.id === imageSize)) {
+        setImageSize(sizes[0].id);
+      }
+
+      // Qwen-image-plus 使用专用尺寸
+      if (selectedModel === 'qwen-image-plus') {
+        setQwenImageSize('1328*1328');
+      }
+
+      // 重置不支持的功能相关配置
+      if (!ModelCapabilities.supportsGuidanceScale(selectedModel)) {
+        setGuidanceScale(2.5); // 重置为默认值
+      }
+      if (!ModelCapabilities.supportsSequentialImageGeneration(selectedModel)) {
+        setSequentialImageGeneration(false);
+      }
+      if (!ModelCapabilities.supportsNegativePrompt(selectedModel)) {
+        setQwenNegativePrompt('');
+      }
+    }
+
+    // 视频模式：根据模型重置配置
+    if (currentMode === 'video') {
+      // 重置视频时长选项
+      const durationOptions = ModelCapabilities.getVideoDurationOptions(selectedModel);
+      if (!durationOptions.includes(videoDuration)) {
+        setVideoDuration(durationOptions[0] || 5);
+      }
+
+      // Wan2.5 模型重置专用配置
+      if (selectedModel.includes('wan2.5')) {
+        if (selectedModel === 'wan2.5-t2v-preview') {
+          setWan25AspectRatio('16:9');
+        }
+        setWan25Resolution('720p');
+        setWan25Seed(undefined);
+      }
+
+      // Veo 模型只支持特定时长
+      if (selectedModel.toLowerCase().includes('veo')) {
+        const veoDurations = [4, 6, 8];
+        if (!veoDurations.includes(videoDuration)) {
+          setVideoDuration(6); // Veo默认6秒
+        }
+      }
+    }
   }, [selectedModel, currentMode]);
+
+  // 监听 wan2.5-t2v 模型的分辨率变化，自动调整宽高比
+  useEffect(() => {
+    if (selectedModel === 'wan2.5-t2v-preview' && currentMode === 'video') {
+      const availableRatios = ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution);
+      // 如果当前宽高比不在可用选项中，调整为第一个可用选项
+      if (!availableRatios.includes(wan25AspectRatio)) {
+        console.log(`分辨率 ${wan25Resolution} 不支持宽高比 ${wan25AspectRatio}，自动调整为 ${availableRatios[0]}`);
+        setWan25AspectRatio(availableRatios[0] as '16:9' | '9:16' | '1:1' | '4:3' | '3:4');
+      }
+    }
+  }, [wan25Resolution, selectedModel, currentMode, wan25AspectRatio]);
 
   // 监听 URL 参数，处理"做同款"跳转
   useEffect(() => {
@@ -387,7 +569,7 @@ const ChatPage: React.FC = () => {
       
       console.log('📋 对话记录rows (解析后):', rows);
       console.log('📋 对话记录rows 数量:', rows.length);
-      
+
       let records: ChatRecord[] = [];
       
       if (Array.isArray(rows)) {
@@ -704,11 +886,17 @@ const ChatPage: React.FC = () => {
           if (recordData.apiJson) {
             const parsedData = JSON.parse(recordData.apiJson);
             if (parsedData.messages && Array.isArray(parsedData.messages)) {
-              messages = parsedData.messages.map((msg: any) => ({
+              messages = parsedData.messages.map((msg: any) => {
+                // 确保 role 字段正确保留，不能丢失或错误转换
+                const role = msg.role || (msg.type === 'user' ? 'user' : 'assistant');
+                return {
                 ...msg,
+                  role: role, // 明确设置 role，确保不会丢失
                 id: msg.id || `msg-${Date.now()}-${Math.random()}`,
                 timestamp: msg.timestamp || Date.now(),
-              }));
+                };
+              });
+              console.log('📂 加载的消息列表:', messages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
               settings = parsedData.settings; // 同时恢复设置
             }
           }
@@ -767,12 +955,17 @@ const ChatPage: React.FC = () => {
 
           // 恢复聊天消息（图片模式使用 chatMessages）
           if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
-            messages = parsedData.chatMessages.map((msg: any) => ({
-              ...msg,
-              id: msg.id || `msg-${Date.now()}-${Math.random()}`,
-              timestamp: msg.timestamp || Date.now(),
-              role: msg.type === 'user' ? 'user' : 'assistant',
-            }));
+            messages = parsedData.chatMessages.map((msg: any) => {
+              // 优先使用 role 字段，如果没有则使用 type 字段作为后备
+              const role = msg.role || (msg.type === 'user' ? 'user' : 'assistant');
+              return {
+                ...msg,
+                id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+                timestamp: msg.timestamp || Date.now(),
+                role: role, // 明确设置 role，确保不会丢失
+              };
+            });
+            console.log('📂 加载的图片生成消息列表:', messages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
           }
 
           // 恢复设置
@@ -803,6 +996,19 @@ const ChatPage: React.FC = () => {
         if (settings.temperature !== undefined) setTemperature(settings.temperature);
         if (settings.watermark !== undefined) setWatermark(settings.watermark);
         if (settings.guidanceScale !== undefined) setGuidanceScale(settings.guidanceScale);
+        if (settings.imageQuality) setImageQuality(settings.imageQuality);
+        if (settings.imageN !== undefined) setImageN(settings.imageN);
+        if (settings.seed !== undefined) setSeed(settings.seed);
+        if (settings.sequentialImageGeneration !== undefined) setSequentialImageGeneration(settings.sequentialImageGeneration);
+        if (settings.sequentialImageGenerationOptions) setSequentialImageGenerationOptions(settings.sequentialImageGenerationOptions);
+        if (settings.optimizePromptOptionsMode) setOptimizePromptOptionsMode(settings.optimizePromptOptionsMode);
+        if (settings.qwenNegativePrompt !== undefined) setQwenNegativePrompt(settings.qwenNegativePrompt);
+        if (settings.qwenPromptExtend !== undefined) setQwenPromptExtend(settings.qwenPromptExtend);
+        if (settings.qwenImageSize) setQwenImageSize(settings.qwenImageSize);
+        if (settings.qwenImageEditN !== undefined) setQwenImageEditN(settings.qwenImageEditN);
+        if (settings.gptImageQuality) setGptImageQuality(settings.gptImageQuality);
+        if (settings.gptImageInputFidelity) setGptImageInputFidelity(settings.gptImageInputFidelity);
+        if (settings.gptImageN !== undefined) setGptImageN(settings.gptImageN);
         console.log('⚙️ 已恢复图片生成设置');
       }
 
@@ -838,12 +1044,17 @@ const ChatPage: React.FC = () => {
 
           // 恢复聊天消息（视频模式使用 chatMessages）
           if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
-            messages = parsedData.chatMessages.map((msg: any) => ({
-              ...msg,
-              id: msg.id || `msg-${Date.now()}-${Math.random()}`,
-              timestamp: msg.timestamp || Date.now(),
-              role: msg.type === 'user' ? 'user' : 'assistant',
-            }));
+            messages = parsedData.chatMessages.map((msg: any) => {
+              // 优先使用 role 字段，如果没有则使用 type 字段作为后备
+              const role = msg.role || (msg.type === 'user' ? 'user' : 'assistant');
+              return {
+                ...msg,
+                id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+                timestamp: msg.timestamp || Date.now(),
+                role: role, // 明确设置 role，确保不会丢失
+              };
+            });
+            console.log('📂 加载的视频生成消息列表:', messages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
           }
 
           // 恢复设置
@@ -874,6 +1085,13 @@ const ChatPage: React.FC = () => {
         if (settings.videoResolution) setVideoResolution(settings.videoResolution);
         if (settings.imageGenerationMode) setImageGenerationMode(settings.imageGenerationMode);
         if (settings.cameraFixed !== undefined) setCameraFixed(settings.cameraFixed);
+        if (settings.wan25SmartRewrite !== undefined) setWan25SmartRewrite(settings.wan25SmartRewrite);
+        if (settings.wan25GenerateAudio !== undefined) setWan25GenerateAudio(settings.wan25GenerateAudio);
+        if (settings.wan25Resolution) setWan25Resolution(settings.wan25Resolution);
+        if (settings.wan25AspectRatio) setWan25AspectRatio(settings.wan25AspectRatio);
+        if (settings.wan25Seed !== undefined) setWan25Seed(settings.wan25Seed);
+        if (settings.seed !== undefined) setSeed(settings.seed);
+        if (settings.watermark !== undefined) setWatermark(settings.watermark);
         console.log('⚙️ 已恢复视频生成设置');
       }
 
@@ -910,27 +1128,27 @@ const ChatPage: React.FC = () => {
       message: '确定要删除这条对话记录吗？',
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-        try {
-          const res = await chatService.deleteChatRecord(recordId);
+    try {
+      const res = await chatService.deleteChatRecord(recordId);
           // request.delete 已经转换了响应，成功时不会抛出异常
           // 如果删除成功，刷新记录列表
-          // 如果删除的是当前选中的记录，清空消息
-          if (selectedRecordId === recordId) {
-            setMessages([{
-              id: 'welcome',
-              role: 'assistant',
-              content: t.welcomeMessage,
-              timestamp: Date.now()
-            }]);
-            setSelectedRecordId(null);
-          }
-          // 重新获取记录列表
+        // 如果删除的是当前选中的记录，清空消息
+        if (selectedRecordId === recordId) {
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }]);
+          setSelectedRecordId(null);
+        }
+        // 重新获取记录列表
           await refreshRecords();
           toast.success('对话记录已删除');
-        } catch (error) {
+    } catch (error) {
           toast.error('删除对话记录失败');
-          console.error('❌ 删除对话记录失败:', error);
-        }
+      console.error('❌ 删除对话记录失败:', error);
+    }
       },
     });
   };
@@ -957,6 +1175,113 @@ const ChatPage: React.FC = () => {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   };
 
+  // 错误处理函数：识别错误类型并返回友好的错误消息（适用于图片、视频、对话生成）
+  const handleApiError = (error: any, code?: number, mode: 'image' | 'video' | 'chat' = 'video'): { message: string; isHtml: boolean; action?: 'goFixPrice' } => {
+    const rawMsg = String(error?.message || error?.msg || error || '');
+    const errorCode = code || error?.code;
+
+    // 余额不足错误（403或相关消息）
+    const isBalanceError = 
+      errorCode === 403 ||
+      /余额不足|余额已用尽|insufficient balance|insufficient funds|not enough balance|用户余额不足|请充值后再试|用户身份验证失败|余额不足，请充值后再试|HTTP error! status: 403/i.test(rawMsg);
+
+    // 文本敏感词错误
+    const isTextSensitiveError =
+      /输入文本包含敏感信息|输入内容包含敏感信息|敏感信息|敏感内容|敏感词|InputTextSensitiveContentDetected|input text may contain sensitive information/i.test(rawMsg);
+
+    // 图片敏感内容错误
+    const isImageSensitiveError =
+      /图片包含敏感内容|上传的图片包含敏感|InputImageSensitiveContentDetected|input image may contain sensitive information/i.test(rawMsg);
+
+    // 视频下载错误
+    const isDownloadError =
+      /视频下载失败|下载服务异常|下载超时|网络连接失败|Error while extracting response/i.test(rawMsg);
+
+    console.log('错误类型判断:', { 
+      isBalanceError, 
+      isTextSensitiveError, 
+      isImageSensitiveError, 
+      isDownloadError, 
+      errorCode,
+      rawMsg 
+    });
+
+    if (isBalanceError) {
+      return {
+        message: '账户余额不足，请前往 <a href="#" class="link-fix-price">定价列表</a> 充值后再试～',
+        isHtml: true,
+        action: 'goFixPrice'
+      };
+    } else if (isTextSensitiveError) {
+      const modeText = mode === 'image' ? '图片' : mode === 'video' ? '视频' : '对话';
+      return {
+        message: `${modeText}生成失败：输入文本包含敏感信息，请修改后重试～`,
+        isHtml: false
+      };
+    } else if (isImageSensitiveError) {
+      const modeText = mode === 'image' ? '图片' : '视频';
+      return {
+        message: `${modeText}生成失败：上传的图片包含敏感内容，请更换图片后重试～`,
+        isHtml: false
+      };
+    } else if (isDownloadError) {
+      if (rawMsg.includes('下载服务异常')) {
+        return {
+          message: '视频已生成成功，但下载服务暂时异常，请稍后刷新页面重试或联系管理员',
+          isHtml: false
+        };
+      } else if (rawMsg.includes('下载超时') || rawMsg.includes('网络连接失败')) {
+        return {
+          message: '视频已生成成功，但下载时网络连接失败，请检查网络后重试',
+          isHtml: false
+        };
+      } else {
+        return {
+          message: '视频下载遇到问题，请稍后重试',
+          isHtml: false
+        };
+      }
+    } else {
+      // 未识别的错误，显示统一的友好提示
+      const modeText = mode === 'image' ? '图片' : mode === 'video' ? '视频' : '对话';
+      
+      // 检测技术性错误消息（包含URL、HTTP错误、网络请求失败等）
+      const isTechnicalError = 
+        errorCode === 500 ||
+        /POST请求失败|GET请求失败|请求失败|HTTP.*error|Network Error|timeout|网络错误|连接失败|服务器错误|Server Error|Failed to fetch|网络连接异常/i.test(rawMsg) ||
+        /https?:\/\//.test(rawMsg) || // 包含URL
+        rawMsg.length > 100; // 错误消息太长
+      
+      // 对于技术性错误，显示友好的提示，不显示原始错误信息
+      if (isTechnicalError || !rawMsg || rawMsg === '未知错误') {
+        return {
+          message: `当前${modeText}模型请求异常，请稍后重试或切换其它模型～`,
+          isHtml: false
+        };
+      }
+      
+      // 对于其他错误，如果消息简短且不包含技术细节，可以显示
+      // 但需要过滤掉可能包含技术细节的部分
+      let finalMessage = rawMsg;
+      // 移除可能包含的URL
+      finalMessage = finalMessage.replace(/https?:\/\/[^\s]+/g, '');
+      // 移除HTTP状态码
+      finalMessage = finalMessage.replace(/HTTP\s+\d+/gi, '');
+      // 如果处理后消息为空或太短，使用通用提示
+      if (!finalMessage.trim() || finalMessage.trim().length < 5) {
+        finalMessage = `当前${modeText}模型请求异常，请稍后重试或切换其它模型～`;
+      }
+      
+      return {
+        message: finalMessage,
+        isHtml: false
+      };
+    }
+    };
+
+  // 保持向后兼容的别名
+  const handleVideoError = handleApiError;
+
   // 复制消息
   const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content);
@@ -973,8 +1298,59 @@ const ChatPage: React.FC = () => {
     }, 100);
   };
 
+  // 引用消息到输入框
+  const handleQuoteMessage = (message: ExtendedChatMessage) => {
+    let content = message.content || '';
+    let images: string[] = [];
+
+    if (currentMode === 'image') {
+      // 图片模式：引用用户消息的图片或AI生成的图片
+      if (message.role === 'user' && message.images) {
+        images = [...message.images];
+      } else if (message.role === 'assistant' && message.generatedImages) {
+        images = message.generatedImages
+          .filter(img => img.url && img.url.trim())
+          .map(img => img.url);
+      }
+    } else if (currentMode === 'video') {
+      // 视频模式：通常不引用视频作为输入
+      images = [];
+    }
+
+    // 设置输入框内容
+    setInputValue(content);
+    if (images.length > 0) {
+      setUploadedImages(images);
+    }
+
+    // 聚焦到输入框
+    setTimeout(() => {
+      const textarea = document.querySelector('textarea');
+      textarea?.focus();
+    }, 100);
+
+    toast.success('已引用消息内容到输入框');
+  };
+
+  // 重新发送消息
+  const handleResendMessage = async (message: ExtendedChatMessage) => {
+    if (isLoading || !selectedModel) return;
+
+    const content = message.content || '';
+    const images = message.images || [];
+
+    // 设置输入框内容（但不显示）
+    setInputValue(content);
+    setUploadedImages(images);
+
+    // 直接发送
+    await handleSend();
+  };
+
   // 清空消息
   const handleClear = () => {
+    // 只在对话模式显示欢迎消息
+    if (currentMode === 'chat') {
     setMessages([
       {
         id: 'welcome',
@@ -983,6 +1359,10 @@ const ChatPage: React.FC = () => {
       timestamp: Date.now()
       }
     ]);
+    } else {
+      // 图片和视频模式不显示欢迎消息
+      setMessages([]);
+    }
     setSelectedRecordId(null);
   };
 
@@ -994,6 +1374,9 @@ const ChatPage: React.FC = () => {
       toast.error('没有可保存的消息');
       return;
     }
+
+    // 调试：检查保存前的消息 role
+    console.log('💾 保存前的消息列表:', validMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
 
     const saveToast = toast.loading('正在保存...');
     
@@ -1028,6 +1411,16 @@ const ChatPage: React.FC = () => {
             imageQuality,
             imageN,
             seed,
+            sequentialImageGeneration,
+            sequentialImageGenerationOptions,
+            optimizePromptOptionsMode,
+            qwenNegativePrompt,
+            qwenPromptExtend,
+            qwenImageSize,
+            qwenImageEditN,
+            gptImageQuality,
+            gptImageInputFidelity,
+            gptImageN,
           },
           timestamp: Date.now(),
         };
@@ -1047,6 +1440,11 @@ const ChatPage: React.FC = () => {
             cameraFixed,
             wan25SmartRewrite,
             wan25GenerateAudio,
+            wan25Resolution,
+            wan25AspectRatio,
+            wan25Seed,
+            seed,
+            watermark,
           },
           timestamp: Date.now(),
         };
@@ -1075,6 +1473,7 @@ const ChatPage: React.FC = () => {
       } else {
         // 新增记录
         const response = await chatService.addChatRecord(apiTalkData);
+        // API响应可能直接返回ID或包含data字段，也可能data为null但保存成功
         const newId = (response as any)?.data?.id || (response as any)?.id || (response as any);
         if (newId) {
           setSelectedRecordId(newId);
@@ -1084,8 +1483,13 @@ const ChatPage: React.FC = () => {
           // 刷新记录列表
           refreshRecords();
         } else {
+          // 即使没有返回ID，如果接口调用成功（没有抛出异常），也认为保存成功
+          // 参考Vue3实现：即使没有ID也不报错，只是不设置selectedRecordId
           toast.dismiss(saveToast);
-          toast.error('保存失败，未获取到记录ID');
+          toast.success('对话记录已保存');
+          console.log('💾 对话记录已保存（未返回ID）');
+          // 刷新记录列表，可能能从列表中获取到ID
+          refreshRecords();
         }
       }
     } catch (error) {
@@ -1097,19 +1501,38 @@ const ChatPage: React.FC = () => {
 
   // 停止生成
   const handleStop = () => {
+    // 中止请求
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
       abortControllerRef.current = null;
     }
+    
+    // 停止视频轮询
+    if (videoPollingIntervalRef.current) {
+      clearTimeout(videoPollingIntervalRef.current);
+      videoPollingIntervalRef.current = null;
+    }
+    
     setIsLoading(false);
     setIsStreaming(false);
+    setProgress(0);
     
     // 更新最后一条AI消息，移除流式状态
     setMessages(prev => {
       const newMessages = [...prev];
       const lastMsg = newMessages[newMessages.length - 1];
-      if (lastMsg && lastMsg.role === 'assistant' && lastMsg.isStreaming) {
+      if (lastMsg && lastMsg.role === 'assistant') {
+        if (lastMsg.isStreaming) {
         lastMsg.isStreaming = false;
+        }
+        // 如果是视频生成，更新状态
+        if (lastMsg.generatedVideos && lastMsg.generatedVideos.length > 0) {
+          const processingVideo = lastMsg.generatedVideos.find(v => v.status === 'processing');
+          if (processingVideo) {
+            processingVideo.status = 'failed';
+            lastMsg.content = '视频生成已取消';
+          }
+        }
       }
       return newMessages;
     });
@@ -1137,6 +1560,49 @@ const ChatPage: React.FC = () => {
   // 移除上传的图片
   const removeUploadedImage = (index: number) => {
     setUploadedImages(prev => prev.filter((_, i) => i !== index));
+  };
+
+  // Wan2.5 音频上传处理
+  const handleAudioUpload = async (file: File) => {
+    // 验证文件格式
+    const allowedFormats = ['audio/wav', 'audio/mp3', 'audio/mpeg'];
+    if (!allowedFormats.includes(file.type)) {
+      toast.error('仅支持 WAV 和 MP3 格式的音频文件');
+      return;
+    }
+
+    // 验证文件大小（15MB限制）
+    const maxSize = 15 * 1024 * 1024;
+    if (file.size > maxSize) {
+      toast.error('音频文件大小不能超过15MB');
+      return;
+    }
+
+    try {
+      toast.loading('音频上传中...');
+      const result = await uploadService.uploadFile(file);
+      toast.dismiss();
+      
+      if (result && result.url) {
+        setWan25AudioFile(file);
+        setWan25AudioUrl(result.url);
+        console.log('音频上传到OSS成功，URL:', result.url);
+        toast.success('音频文件上传成功');
+      } else {
+        throw new Error('OSS上传返回格式错误');
+      }
+    } catch (error: any) {
+      toast.dismiss();
+      console.error('音频上传到OSS失败:', error);
+      toast.error(`音频文件上传失败: ${error.message || '请重试'}`);
+    }
+  };
+
+  // 移除音频文件
+  const removeAudio = () => {
+    setWan25AudioFile(null);
+    setWan25AudioUrl('');
+    toast.success('已移除音频文件');
   };
 
   // 发送消息（根据模式调用不同的API）
@@ -1191,6 +1657,24 @@ const ChatPage: React.FC = () => {
     } catch (error: any) {
       if (error.name === 'AbortError') {
         console.log('请求已中止');
+        // 中止时，如果消息为空，移除占位符
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.id === aiMessageId) {
+            const hasContent = lastMsg.content && lastMsg.content.trim();
+            const hasImages = lastMsg.generatedImages && lastMsg.generatedImages.length > 0;
+            const hasVideos = lastMsg.generatedVideos && lastMsg.generatedVideos.length > 0;
+            
+            if (!hasContent && !hasImages && !hasVideos) {
+              // 移除空的占位符消息
+              return newMessages.filter(msg => msg.id !== aiMessageId);
+            } else {
+              lastMsg.isStreaming = false;
+            }
+          }
+          return newMessages;
+        });
         return;
       }
       
@@ -1198,13 +1682,47 @@ const ChatPage: React.FC = () => {
       setIsLoading(false);
       setIsStreaming(false);
       
+      // 尝试从错误中提取状态码
+      let errorCode: number | undefined;
+      const errorMsg = String(error?.message || error || '');
+      const statusMatch = errorMsg.match(/HTTP error! status: (\d+)/);
+      if (statusMatch) {
+        errorCode = parseInt(statusMatch[1]);
+      } else if (error?.code) {
+        errorCode = error.code;
+      }
+      
+      // 使用统一的错误处理函数
+      const errorInfo = handleApiError(error, errorCode, currentMode);
+      
       // 更新错误消息
       setMessages(prev => {
         const newMessages = [...prev];
         const lastMsg = newMessages[newMessages.length - 1];
         if (lastMsg && lastMsg.id === aiMessageId) {
-          lastMsg.content = lastMsg.content || `错误: ${error.message || '发送失败，请重试'}`;
+          // 如果已经有部分内容（如流式响应中的部分文本），保留；否则使用错误消息
+          const hasPartialContent = lastMsg.content && lastMsg.content.trim() && 
+                                    !lastMsg.content.includes('错误:') && 
+                                    !lastMsg.content.includes('失败');
+          
+          if (!hasPartialContent) {
+            lastMsg.content = errorInfo.message;
+            lastMsg.isHtml = errorInfo.isHtml;
+            lastMsg.action = errorInfo.action;
+          }
           lastMsg.isStreaming = false;
+          
+          // 如果有图片或视频占位符，更新状态为失败
+          if (lastMsg.generatedImages && lastMsg.generatedImages.length > 0) {
+            // 图片生成失败，保持占位符但标记为失败
+          }
+          if (lastMsg.generatedVideos && lastMsg.generatedVideos.length > 0) {
+            lastMsg.generatedVideos.forEach(video => {
+              if (video.status === 'processing') {
+                video.status = 'failed';
+              }
+            });
+          }
         }
         return newMessages;
       });
@@ -1276,17 +1794,31 @@ const ChatPage: React.FC = () => {
           
           scrollToBottom();
         },
-        (error) => {
+        (error: any) => {
           console.error('流式响应错误:', error);
           setIsLoading(false);
           setIsStreaming(false);
           
-          // 更新错误消息
+          // 尝试从错误消息中提取状态码
+          let errorCode: number | undefined;
+          const errorMsg = String(error?.message || error || '');
+          const statusMatch = errorMsg.match(/HTTP error! status: (\d+)/);
+          if (statusMatch) {
+            errorCode = parseInt(statusMatch[1]);
+          } else if (error?.code) {
+            errorCode = error.code;
+          }
+          
+          // 处理错误并更新消息
+          const errorInfo = handleApiError(error, errorCode, 'chat');
           setMessages(prev => {
             const newMessages = [...prev];
             const lastMsg = newMessages[newMessages.length - 1];
             if (lastMsg && lastMsg.id === aiMessageId) {
-              lastMsg.content = lastMsg.content || '抱歉，生成回复时出现错误，请重试。';
+              // 如果已经有部分内容，保留；否则使用错误消息
+              lastMsg.content = lastMsg.content || errorInfo.message;
+              lastMsg.isHtml = errorInfo.isHtml;
+              lastMsg.action = errorInfo.action;
               lastMsg.isStreaming = false;
             }
             return newMessages;
@@ -1323,7 +1855,7 @@ const ChatPage: React.FC = () => {
       const requestData: ImageGenerateRequest = {
         model: selectedModel,
         prompt: prompt || '生成一张图片',
-        size: imageSize,
+        size: selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize,
         style: imageStyle || undefined,
         temperature: temperature,
         quality: imageQuality,
@@ -1335,11 +1867,24 @@ const ChatPage: React.FC = () => {
 
       // Doubao specific
       if (selectedModel.includes('doubao')) {
-        requestData.guidance_scale = guidanceScale;
+        (requestData as any).watermark = watermark;
+        (requestData as any).size = imageSize;
+        
+        // doubao-seedream-4-0-250828 专用属性
+        if (selectedModel === 'doubao-seedream-4-0-250828') {
+          (requestData as any).sequential_image_generation = sequentialImageGeneration ? 'auto' : 'disabled';
+          (requestData as any).sequential_image_generation_options = sequentialImageGenerationOptions;
+          (requestData as any).optimize_prompt_options = {
+            mode: optimizePromptOptionsMode,
+          };
+        }
+        
+        // doubao-seedream-3.0-t2i 和 doubao-seededit-3.0-i2i 专用属性（如果需要）
+        // 注意：Vue3代码中这部分被注释了，暂时不添加
       }
 
-      // Qwen specific
-      if (selectedModel.includes('qwen')) {
+      // Qwen-image-plus specific
+      if (selectedModel === 'qwen-image-plus') {
         requestData.extra = {
           input: {
              messages: [
@@ -1354,13 +1899,40 @@ const ChatPage: React.FC = () => {
              ]
           },
           parameters: {
+            size: qwenImageSize,
             negative_prompt: qwenNegativePrompt,
             prompt_extend: qwenPromptExtend,
             watermark: watermark,
-            seed: seed,
-            n: imageN
           }
         };
+      }
+
+      // Qwen-image-edit specific
+      if (selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') {
+        // qwen-image-edit 使用不同的格式
+        (requestData as any).parameters = {
+          n: qwenImageEditN,
+          negative_prompt: qwenNegativePrompt || '',
+          watermark: watermark,
+        };
+        if (seed !== undefined) {
+          (requestData as any).parameters.seed = seed;
+        }
+      }
+
+      // GPT-image specific
+      if (selectedModel.startsWith('gpt-image')) {
+        // GPT模型使用quality字段，但需要映射
+        const qualityMap: Record<string, string> = {
+          'low': 'standard',
+          'medium': 'hd',
+          'high': 'hd', // 或者根据实际API调整
+        };
+        requestData.quality = qualityMap[gptImageQuality] || 'hd';
+        requestData.n = gptImageN;
+        if (images && images.length > 0) {
+          (requestData as any).input_fidelity = gptImageInputFidelity;
+        }
       }
 
       // 如果有上传的图片，添加图生图参数
@@ -1375,8 +1947,9 @@ const ChatPage: React.FC = () => {
       setProgress(100);
 
       // 处理返回的图片
-      if (result.code === 200 && result.data?.data && result.data.data.length > 0) {
-        const imageData = result.data.data;
+      // request.ts 在成功时会返回 resData.data，所以 result 的结构是 { data: [...], created: ... }
+      const imageData = (result as any)?.data || (result as any);
+      if (Array.isArray(imageData) && imageData.length > 0) {
         
         setMessages(prev => {
           const newMessages = [...prev];
@@ -1396,11 +1969,36 @@ const ChatPage: React.FC = () => {
           return newMessages;
         });
       } else {
-        throw new Error(result.msg || '图片生成失败');
+        // 处理提交失败的错误 - 如果没有图片数据
+        const errorMsg = '图片生成失败：未返回有效的图片数据';
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.id === aiMessageId) {
+            lastMsg.content = errorMsg;
+            lastMsg.isHtml = false;
+          }
+          return newMessages;
+        });
+        throw new Error(errorMsg);
       }
     } catch (error: any) {
       clearInterval(progressInterval);
       setProgress(0);
+      
+      // 处理错误并更新消息
+      const errorInfo = handleApiError(error, error?.code, 'image');
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMsg = newMessages[newMessages.length - 1];
+        if (lastMsg && lastMsg.id === aiMessageId) {
+          lastMsg.content = errorInfo.message;
+          lastMsg.isHtml = errorInfo.isHtml;
+          lastMsg.action = errorInfo.action;
+        }
+        return newMessages;
+      });
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -1419,42 +2017,101 @@ const ChatPage: React.FC = () => {
     }, 500);
 
     try {
-      // 计算视频尺寸
+      let requestData: any = {
+        model: selectedModel,
+        prompt: prompt || '生成一个视频',
+        user_id: user?.nebulaApiId,
+      };
+
+      // Sora-2 模型
+      if (selectedModel === 'sora-2') {
       const [width, height] = videoAspectRatio === '16:9' 
         ? videoResolution === '720p' ? [1280, 720] : [1920, 1080]
         : videoResolution === '720p' ? [720, 1280] : [1080, 1920];
 
-      const requestData: VideoGenerateRequest = {
-        model: selectedModel,
-        prompt: prompt || '生成一个视频',
-        width,
-        height,
-        seconds: videoDuration,
-        resolution: videoResolution, // For Veo/Wan
-        aspectRatio: videoAspectRatio, // For Veo/Wan
-        duration: videoDuration, // For Wan
-        durationSeconds: videoDuration, // For Veo
-        seed: seed,
-        watermark: watermark,
-        camera_fixed: cameraFixed,
-      };
-
-      // Wan2.5 specific
-      if (selectedModel.includes('wan2.5')) {
+        requestData.width = width;
+        requestData.height = height;
+        requestData.seconds = videoDuration;
+        
+        if (images && images.length > 0) {
+          requestData.input_reference = images[0];
+        }
+      }
+      // Veo 模型
+      else if (selectedModel.toLowerCase().includes('veo')) {
+        requestData.durationSeconds = videoDuration; // 4/6/8
+        requestData.aspectRatio = videoAspectRatio; // 16:9 或 9:16
+        requestData.resolution = videoResolution; // 720p 或 1080p
+        requestData.fps = 24;
+        
+        if (images && images.length > 0) {
+          if (imageGenerationMode === 'first_last_frame' && images.length >= 2) {
+            requestData.image = images[0];
+            requestData.lastFrame = images[1];
+          } else {
+            requestData.image = images[0];
+          }
+        }
+      }
+      // Wan2.5 模型
+      else if (selectedModel.includes('wan2.5')) {
+        const isT2V = selectedModel === 'wan2.5-t2v-preview';
+        
+        requestData.duration = videoDuration; // 5 or 10
         requestData.smart_rewrite = wan25SmartRewrite;
         requestData.generate_audio = wan25GenerateAudio;
-        requestData.size = videoResolution === '480p' ? '832*480' : 
-                           videoResolution === '720p' ? '1280*720' : '1920*1080'; // Simplified logic
-      }
-
-      // 如果有上传的图片，添加图生视频参数
-      if (images && images.length > 0) {
-        requestData.input_reference = images[0]; // sora-2
-        requestData.image = images[0]; // veo
         
-        // 根据模式设置
+        if (isT2V) {
+          // t2v 模型：使用 size 参数（根据分辨率和宽高比计算）
+          requestData.size = ModelCapabilities.getWan25T2VSize(wan25Resolution, wan25AspectRatio);
+          console.log(`📐 wan2.5-t2v 使用 size 参数: ${requestData.size} (分辨率: ${wan25Resolution}, 宽高比: ${wan25AspectRatio})`);
+        } else {
+          // i2v 模型：使用 resolution 参数
+          requestData.resolution = wan25Resolution;
+          console.log(`📐 wan2.5-i2v 使用 resolution 参数: ${requestData.resolution}`);
+        }
+        
+        // i2v 模型需要图片，t2v 模型不需要
+        if (!isT2V && images && images.length > 0) {
+          requestData.image = images[0];
+        }
+        
+        // 添加随机种子（如果设置）
+        if (wan25Seed !== undefined && wan25Seed > 0) {
+          requestData.seed = wan25Seed;
+        }
+
+        // 添加音频文件（如果上传了OSS URL）
+        if (wan25AudioUrl) {
+          requestData.audio_url = wan25AudioUrl;
+          console.log('🎵 添加音频URL:', wan25AudioUrl);
+        }
+      }
+      // Doubao 模型（使用content格式）
+      else {
+        // 计算视频尺寸
+        const [width, height] = videoAspectRatio === '16:9' 
+          ? videoResolution === '720p' ? [1280, 720] : [1920, 1080]
+          : videoResolution === '720p' ? [720, 1280] : [1080, 1920];
+
+        requestData.width = width;
+        requestData.height = height;
+        requestData.seconds = videoDuration;
+        requestData.resolution = videoResolution;
+        requestData.aspectRatio = videoAspectRatio;
+        requestData.duration = videoDuration;
+        requestData.durationSeconds = videoDuration;
+        requestData.seed = seed !== undefined ? seed : -1;
+        requestData.watermark = watermark;
+        requestData.camera_fixed = cameraFixed;
+        
+      if (images && images.length > 0) {
+          requestData.input_reference = images[0];
+          requestData.image = images[0];
+        
         if (imageGenerationMode === 'first_last_frame' && images.length > 1) {
           requestData.lastFrame = images[1];
+          }
         }
       }
 
@@ -1463,27 +2120,35 @@ const ChatPage: React.FC = () => {
       // 清除进度条动画
       clearInterval(progressInterval);
 
-      if (result.code === 200 && result.data?.task_id) {
-        const taskId = result.data.task_id;
+      // request.ts 在成功时会返回 resData.data，所以 result 已经是 data 对象
+      // 根据实际响应结构，task_id 可能在 result.task_id 或 result.output.task_id
+      const taskId = (result as any)?.task_id || (result as any)?.output?.task_id;
         
-        // 更新消息，添加视频占位符
+      if (taskId) {
+        
+        // 更新消息，添加视频占位符（只添加一个，避免重复）
         setMessages(prev => {
           const newMessages = [...prev];
           const lastMsg = newMessages[newMessages.length - 1];
           
           if (lastMsg && lastMsg.id === aiMessageId) {
-            if (!lastMsg.generatedVideos) {
-              lastMsg.generatedVideos = [];
-            }
-            lastMsg.generatedVideos.push({
+            // 如果已经有视频占位符，不重复添加
+            if (!lastMsg.generatedVideos || lastMsg.generatedVideos.length === 0) {
+              lastMsg.generatedVideos = [{
               id: generateId(),
               url: '',
               taskId,
               prompt,
               timestamp: Date.now(),
               status: 'processing',
-            });
-            lastMsg.content = '视频生成中，请稍候...';
+              }];
+            } else {
+              // 如果已有视频占位符，更新第一个的taskId
+              lastMsg.generatedVideos[0].taskId = taskId;
+              lastMsg.generatedVideos[0].status = 'processing';
+            }
+            // 不设置content，让视频进度条来显示状态
+            lastMsg.content = '';
           }
           
           return newMessages;
@@ -1492,11 +2157,45 @@ const ChatPage: React.FC = () => {
         // 开始轮询视频任务状态
         pollVideoTask(aiMessageId, taskId);
       } else {
-        throw new Error(result.msg || '视频任务提交失败');
+        // 处理提交失败的错误（result 是 data 对象，不包含 code 和 msg）
+        const errorInfo = handleVideoError({ message: '视频任务提交失败：未返回 task_id' });
+        setMessages(prev => {
+          const newMessages = [...prev];
+          const lastMsg = newMessages[newMessages.length - 1];
+          if (lastMsg && lastMsg.id === aiMessageId) {
+            lastMsg.content = errorInfo.message;
+            lastMsg.isHtml = errorInfo.isHtml;
+            lastMsg.action = errorInfo.action;
+          }
+          return newMessages;
+        });
+        throw new Error('视频任务提交失败：未返回 task_id');
       }
     } catch (error: any) {
       clearInterval(progressInterval);
       setProgress(0);
+      
+      // 处理错误并更新消息
+      const errorInfo = handleVideoError(error, error?.code);
+      setMessages(prev => {
+        const newMessages = [...prev];
+        const lastMsg = newMessages[newMessages.length - 1];
+        if (lastMsg && lastMsg.id === aiMessageId) {
+          lastMsg.content = errorInfo.message;
+          lastMsg.isHtml = errorInfo.isHtml;
+          lastMsg.action = errorInfo.action;
+          
+          // 如果有视频占位符，更新状态为失败
+          if (lastMsg.generatedVideos && lastMsg.generatedVideos.length > 0) {
+            const video = lastMsg.generatedVideos[lastMsg.generatedVideos.length - 1];
+            if (video.status === 'processing') {
+              video.status = 'failed';
+            }
+          }
+        }
+        return newMessages;
+      });
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -1506,12 +2205,15 @@ const ChatPage: React.FC = () => {
 
   // 轮询视频任务状态
   const pollVideoTask = async (aiMessageId: string, taskId: string) => {
-    const maxRetries = 60; // 最多轮询60次（约10分钟）
-    const pollingInterval = 10000; // 10秒轮询间隔
-    let retries = 0;
+    const maxPollAttempts = 120; // 最多轮询120次（20分钟，每10秒一次）
+    const pollInterval = 10000; // 10秒轮询间隔
+    let pollAttempts = 0;
+    let isPolling = true;
 
-    const poll = async () => {
-      if (retries >= maxRetries) {
+    const poll = async (): Promise<void> => {
+      // 检查是否应该停止轮询
+      if (!isPolling || pollAttempts >= maxPollAttempts) {
+        if (pollAttempts >= maxPollAttempts) {
         // 超时
         setMessages(prev => {
           const newMessages = [...prev];
@@ -1521,29 +2223,78 @@ const ChatPage: React.FC = () => {
             if (video) {
               video.status = 'failed';
             }
-            lastMsg.content = '视频生成超时，请重试';
+              lastMsg.content = '视频生成超时（20分钟），请重试';
           }
           return newMessages;
         });
+          setProgress(0);
+        }
         return;
       }
 
       try {
-        const result = await videoGenerateService.queryVideoTask(taskId);
+        pollAttempts++;
+        console.log(`🔍 轮询查询任务状态 (${pollAttempts}/${maxPollAttempts}):`, taskId);
+
+        // 检查是否被中止
+        if (abortControllerRef.current?.signal.aborted) {
+          console.log('⏹️ 轮询已中止');
+          isPolling = false;
+          return;
+        }
+
+        const result = await videoGenerateService.queryVideoTask(taskId, abortControllerRef.current?.signal);
         
-        if (result.code === 200 && result.data) {
-          const { status, video_url, error } = result.data;
+        // request.ts 在成功时会返回 resData.data，所以 result 已经是 data 对象
+        // 如果请求失败，request.ts 会抛出 ApiError，不会到达这里
+        const { status, video_url, url, error } = result;
+        
+        // 使用 video_url 或 url（不同模型可能使用不同的字段名）
+        const finalVideoUrl = video_url || url;
           
-          if (status === 'succeeded' && video_url) {
-            // 成功
+        console.log('📊 当前任务状态:', status, '完整结果:', result);
+
+          // 根据状态更新进度条
+          if (status === 'queued') {
+            setProgress(prev => Math.min(30, prev + 3));
+          } else if (status === 'in_progress') {
+            setProgress(prev => Math.min(95, prev + 5));
+          }
+
+          switch (status) {
+            case 'queued': {
+              console.log('📋 任务排队中...');
+              // 等待后继续下一次轮询
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+              if (isPolling) {
+                videoPollingIntervalRef.current = setTimeout(poll, 0);
+              }
+              break;
+            }
+
+            case 'in_progress': {
+              console.log('⚙️ 任务执行中...');
+              // 等待后继续下一次轮询
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+              if (isPolling) {
+                videoPollingIntervalRef.current = setTimeout(poll, 0);
+              }
+              break;
+            }
+
+            case 'succeeded': {
+              console.log('✅ 视频生成成功:', result);
             setProgress(100);
+              isPolling = false;
+
+              // 更新消息
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMsg = newMessages[newMessages.length - 1];
               if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
                 const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
                 if (video) {
-                  video.url = video_url;
+                    video.url = finalVideoUrl || '';
                   video.status = 'succeeded';
                 }
                 lastMsg.content = '视频生成完成';
@@ -1551,8 +2302,19 @@ const ChatPage: React.FC = () => {
               return newMessages;
             });
             return;
-          } else if (status === 'failed') {
-            // 失败
+            }
+
+            case 'failed': {
+              console.error('❌ 视频生成失败:', result);
+              setProgress(0);
+              isPolling = false;
+              
+              // 提取错误消息
+              const errorMsg = typeof error === 'string' 
+                ? error 
+                : error?.message || result.metadata?.reason || '视频生成失败';
+              
+              const errorInfo = handleVideoError({ message: errorMsg });
             setMessages(prev => {
               const newMessages = [...prev];
               const lastMsg = newMessages[newMessages.length - 1];
@@ -1561,26 +2323,53 @@ const ChatPage: React.FC = () => {
                 if (video) {
                   video.status = 'failed';
                 }
-                lastMsg.content = `视频生成失败: ${error || '未知错误'}`;
+                  lastMsg.content = errorInfo.message;
+                  lastMsg.isHtml = errorInfo.isHtml;
+                  lastMsg.action = errorInfo.action;
               }
               return newMessages;
             });
             return;
-          } else {
-            // 处理中，继续轮询
-            retries++;
-            videoPollingIntervalRef.current = setTimeout(poll, pollingInterval);
+            }
+
+            default: {
+              // 未知状态，继续轮询
+              console.log(`⚠️ 未知状态: ${status}，继续轮询...`);
+              await new Promise(resolve => setTimeout(resolve, pollInterval));
+              if (isPolling) {
+                videoPollingIntervalRef.current = setTimeout(poll, 0);
+              }
+              break;
           }
         }
-      } catch (error) {
+      } catch (error: any) {
+        // 检查是否被中止
+        if (error?.name === 'AbortError' || abortControllerRef.current?.signal.aborted) {
+          console.log('⏹️ 轮询已中止');
+          isPolling = false;
+          setMessages(prev => {
+            const newMessages = [...prev];
+            const lastMsg = newMessages[newMessages.length - 1];
+            if (lastMsg && lastMsg.id === aiMessageId) {
+              lastMsg.content = '视频生成已取消';
+            }
+            return newMessages;
+          });
+          return;
+        }
+
         console.error('查询视频任务状态失败:', error);
-        retries++;
-        videoPollingIntervalRef.current = setTimeout(poll, pollingInterval);
+        // 网络错误等，继续轮询
+        await new Promise(resolve => setTimeout(resolve, pollInterval));
+        if (isPolling) {
+          videoPollingIntervalRef.current = setTimeout(poll, 0);
+        }
       }
     };
 
-    // 等待5秒后开始轮询
-    setTimeout(() => {
+    // 等待5秒后开始轮询（让后端有时间处理任务）
+    console.log('⏳ 等待5秒后开始轮询查询...');
+    videoPollingIntervalRef.current = setTimeout(() => {
       poll();
     }, 5000);
   };
@@ -1697,33 +2486,33 @@ const ChatPage: React.FC = () => {
             {/* 对话模式参数 */}
             {currentMode === 'chat' && (
               <>
-                <div className="space-y-2">
-                   <div className="flex justify-between text-sm">
-                     <span className="font-medium">{t.temperature}</span>
-                     <span className="text-primary">{temperature}</span>
-                   </div>
-                   <input 
-                     type="range" min="0" max="2" step="0.1" 
-                     value={temperature}
-                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                   />
-                   <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
-                </div>
+            <div className="space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="font-medium">{t.temperature}</span>
+                 <span className="text-primary">{temperature}</span>
+               </div>
+               <input 
+                 type="range" min="0" max="2" step="0.1" 
+                 value={temperature}
+                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+               />
+               <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
+            </div>
 
-                <div className="space-y-2">
-                   <div className="flex justify-between text-sm">
-                     <span className="font-medium">{t.presencePenalty}</span>
-                     <span className="text-primary">{presencePenalty}</span>
-                   </div>
-                   <input 
-                     type="range" min="-2" max="2" step="0.1" 
-                     value={presencePenalty}
-                     onChange={(e) => setPresencePenalty(parseFloat(e.target.value))}
-                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-                   />
-                   <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
-                </div>
+            <div className="space-y-2">
+               <div className="flex justify-between text-sm">
+                 <span className="font-medium">{t.presencePenalty}</span>
+                    <span className="text-primary">{presencePenalty}</span>
+               </div>
+               <input 
+                 type="range" min="-2" max="2" step="0.1" 
+                    value={presencePenalty}
+                    onChange={(e) => setPresencePenalty(parseFloat(e.target.value))}
+                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+               />
+               <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
+            </div>
               </>
             )}
 
@@ -1748,17 +2537,17 @@ const ChatPage: React.FC = () => {
 
                 {/* 图片质量 (仅部分模型支持) */}
                 {selectedModel.startsWith('gpt-image') && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">图片质量</label>
-                    <select
-                      value={imageQuality}
-                      onChange={(e) => setImageQuality(e.target.value as 'standard' | 'hd')}
-                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    >
-                      <option value="standard">标准</option>
-                      <option value="hd">高清</option>
-                    </select>
-                  </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">图片质量</label>
+                  <select
+                    value={imageQuality}
+                    onChange={(e) => setImageQuality(e.target.value as 'standard' | 'hd')}
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="standard">标准</option>
+                    <option value="hd">高清</option>
+                  </select>
+                </div>
                 )}
 
                 {/* 生成数量 */}
@@ -1786,20 +2575,147 @@ const ChatPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* 引导系数 (豆包模型) */}
-                {selectedModel.includes('doubao') && (
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
+                {/* 引导系数 (doubao-seedream-3.0 和 doubao-seededit-3.0) */}
+                {ModelCapabilities.supportsGuidanceScale(selectedModel) && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
                       <span className="font-medium">引导系数 (Guidance Scale)</span>
                       <span className="text-primary">{guidanceScale}</span>
-                    </div>
-                    <input 
+                  </div>
+                  <input 
                       type="range" min="1" max="20" step="0.1" 
                       value={guidanceScale}
                       onChange={(e) => setGuidanceScale(parseFloat(e.target.value))}
-                      className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <p className="text-xs text-muted">控制生成图像与提示词的匹配程度，值越高越严格遵循提示词</p>
+                </div>
+                )}
+
+                {/* 组图功能 (doubao-seedream-4-0) */}
+                {ModelCapabilities.supportsSequentialImageGeneration(selectedModel) && (
+                <div className="space-y-3 border-t border-border pt-3">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">组图功能</label>
+                    <input
+                      type="checkbox"
+                      checked={sequentialImageGeneration}
+                      onChange={(e) => setSequentialImageGeneration(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
                     />
                   </div>
+                  {sequentialImageGeneration && (
+                    <>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">生成图像数量 ({sequentialImageGenerationOptions.max_images})</label>
+                        <input 
+                          type="range" min="1" max="15" step="1" 
+                          value={sequentialImageGenerationOptions.max_images}
+                          onChange={(e) => setSequentialImageGenerationOptions({
+                            ...sequentialImageGenerationOptions,
+                            max_images: parseInt(e.target.value)
+                          })}
+                          className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">布局方式</label>
+                        <select
+                          value={sequentialImageGenerationOptions.layout}
+                          onChange={(e) => setSequentialImageGenerationOptions({
+                            ...sequentialImageGenerationOptions,
+                            layout: e.target.value as 'grid' | 'sequence'
+                          })}
+                          className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        >
+                          <option value="grid">网格布局</option>
+                          <option value="sequence">序列布局</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium">提示词优化模式</label>
+                        <select
+                          value={optimizePromptOptionsMode}
+                          onChange={(e) => setOptimizePromptOptionsMode(e.target.value as 'standard' | 'fast')}
+                          className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                        >
+                          <option value="standard">标准模式（质量更高但耗时较长）</option>
+                          <option value="fast">快速模式（耗时更短但质量一般）</option>
+                        </select>
+                      </div>
+                    </>
+                  )}
+                </div>
+                )}
+
+                {/* GPT图片质量 (GPT模型) */}
+                {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">图片质量</label>
+                  <select
+                    value={gptImageQuality}
+                    onChange={(e) => setGptImageQuality(e.target.value as 'low' | 'medium' | 'high')}
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="low">低质量</option>
+                    <option value="medium">中等质量</option>
+                    <option value="high">高质量</option>
+                  </select>
+                </div>
+                )}
+
+                {/* GPT图片输入保真度 (GPT模型，仅图生图) */}
+                {ModelCapabilities.supportsGptImageInputFidelity(selectedModel) && uploadedImages.length > 0 && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">细节保留</label>
+                  <select
+                    value={gptImageInputFidelity}
+                    onChange={(e) => setGptImageInputFidelity(e.target.value as 'low' | 'high')}
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    <option value="low">低</option>
+                    <option value="high">高</option>
+                  </select>
+                </div>
+                )}
+
+                {/* GPT生成数量 (GPT模型) */}
+                {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">生成数量 ({gptImageN})</label>
+                  <input 
+                    type="range" min="1" max="10" step="1" 
+                    value={gptImageN}
+                    onChange={(e) => setGptImageN(parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
+                )}
+
+                {/* Qwen提示词扩展 (qwen-image-plus) */}
+                {ModelCapabilities.supportsQwenPromptExtend(selectedModel) && (
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium">提示词扩展</label>
+                  <input
+                    type="checkbox"
+                    checked={qwenPromptExtend}
+                    onChange={(e) => setQwenPromptExtend(e.target.checked)}
+                    className="rounded border-border text-primary focus:ring-primary"
+                  />
+                </div>
+                )}
+
+                {/* Qwen编辑生成数量 (qwen-image-edit) */}
+                {ModelCapabilities.supportsQwenImageEditN(selectedModel) && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">输出图像数量 ({qwenImageEditN})</label>
+                  <input 
+                    type="range" min="1" max="6" step="1" 
+                    value={qwenImageEditN}
+                    onChange={(e) => setQwenImageEditN(parseInt(e.target.value))}
+                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                </div>
                 )}
 
                 {/* 水印设置 */}
@@ -1835,29 +2751,35 @@ const ChatPage: React.FC = () => {
               <>
                 {/* 图生视频模式选择 (仅在有图片且支持时显示) */}
                 {uploadedImages.length > 0 && ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
-                  <div className="space-y-2">
+                <div className="space-y-2">
                     <label className="text-sm font-medium">生成模式</label>
-                    <select
+                  <select
                       value={imageGenerationMode}
                       onChange={(e) => setImageGenerationMode(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    >
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
                       {IMAGE_TO_VIDEO_MODES.map((mode) => (
                         <option key={mode.id} value={mode.id}>{mode.name}</option>
                       ))}
-                    </select>
+                  </select>
                     <p className="text-xs text-muted">
                       {IMAGE_TO_VIDEO_MODES.find(m => m.id === imageGenerationMode)?.description}
                     </p>
-                  </div>
+                </div>
                 )}
 
                 {/* 视频分辨率 */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">分辨率</label>
                   <select
-                    value={videoResolution}
-                    onChange={(e) => setVideoResolution(e.target.value as '720p' | '1080p' | '480p')}
+                    value={selectedModel.includes('wan2.5') ? wan25Resolution : videoResolution}
+                    onChange={(e) => {
+                      if (selectedModel.includes('wan2.5')) {
+                        setWan25Resolution(e.target.value as '480p' | '720p' | '1080p');
+                      } else {
+                        setVideoResolution(e.target.value as '720p' | '1080p' | '480p');
+                      }
+                    }}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {getVideoResolutions(selectedModel).map((res) => (
@@ -1866,36 +2788,49 @@ const ChatPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* 视频宽高比 (Wan2.5 i2v 不支持自定义) */}
+                {/* 视频宽高比 */}
                 {!selectedModel.includes('wan2.5-i2v') && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">宽高比</label>
-                    <select
-                      value={videoAspectRatio}
-                      onChange={(e) => setVideoAspectRatio(e.target.value as any)}
-                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    >
-                      {getVideoRatios(selectedModel).map((ratio) => (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">宽高比</label>
+                  <select
+                    value={selectedModel.includes('wan2.5-t2v') ? wan25AspectRatio : videoAspectRatio}
+                    onChange={(e) => {
+                      if (selectedModel.includes('wan2.5-t2v')) {
+                        setWan25AspectRatio(e.target.value as '16:9' | '9:16' | '1:1' | '4:3' | '3:4');
+                      } else {
+                        setVideoAspectRatio(e.target.value as any);
+                      }
+                    }}
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                      {selectedModel.includes('wan2.5-t2v') 
+                        ? ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution).map((ratioId) => {
+                            const ratio = VIDEO_RATIOS.find(r => r.id === ratioId);
+                            return ratio ? (
                         <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                            ) : null;
+                          })
+                        : getVideoRatios(selectedModel).map((ratio) => (
+                            <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
+                          ))
+                      }
+                  </select>
+                </div>
                 )}
 
-                {/* 视频时长 (Wan2.5 有特定时长) */}
-                {!selectedModel.includes('wan2.5') && (
-                  <div className="space-y-2">
+                {/* 视频时长 */}
+                <div className="space-y-2">
                     <label className="text-sm font-medium">视频时长</label>
-                    <select
+                  <select
                       value={videoDuration}
                       onChange={(e) => setVideoDuration(parseInt(e.target.value))}
-                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                    >
-                      <option value="5">5秒</option>
-                      <option value="10">10秒</option>
-                    </select>
-                  </div>
-                )}
+                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                  >
+                    {ModelCapabilities.getVideoDurationOptions(selectedModel).map((dur) => (
+                      <option key={dur} value={dur}>{dur}秒</option>
+                    ))}
+                  </select>
+                </div>
 
                 {/* 随机种子 */}
                 {ModelCapabilities.supportsSeed(selectedModel) && (
@@ -1908,7 +2843,7 @@ const ChatPage: React.FC = () => {
                       onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                     />
-                  </div>
+          </div>
                 )}
 
                 {/* 固定摄像头 (豆包模型) */}
@@ -1921,7 +2856,7 @@ const ChatPage: React.FC = () => {
                       onChange={(e) => setCameraFixed(e.target.checked)}
                       className="rounded border-border text-primary focus:ring-primary"
                     />
-                  </div>
+            </div>
                 )}
 
                 {/* Wan2.5 特定选项 */}
@@ -1948,6 +2883,53 @@ const ChatPage: React.FC = () => {
                     />
                   </div>
                 )}
+
+                {/* Wan2.5 音频上传 */}
+                {ModelCapabilities.supportsAudioUpload(selectedModel) && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">音频文件 (可选)</label>
+                    {!wan25AudioFile ? (
+                      <label className="flex items-center justify-center w-full px-4 py-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
+                        <input
+                          type="file"
+                          accept=".wav,.mp3"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleAudioUpload(file);
+                          }}
+                          className="hidden"
+                        />
+                        <span className="text-sm text-muted">🎵 上传音频 (WAV/MP3, 最大15MB)</span>
+                      </label>
+                    ) : (
+                      <div className="flex items-center justify-between px-3 py-2 bg-surface rounded-lg border border-border">
+                        <span className="text-sm truncate flex-1">{wan25AudioFile.name}</span>
+                        <button
+                          type="button"
+                          onClick={removeAudio}
+                          className="ml-2 text-red-500 hover:text-red-600 transition-colors"
+                          title="移除音频"
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Wan2.5 随机种子 */}
+                {selectedModel.includes('wan2.5') && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <input
+                      type="number"
+                      placeholder="默认随机"
+                      value={wan25Seed || ''}
+                      onChange={(e) => setWan25Seed(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1957,7 +2939,7 @@ const ChatPage: React.FC = () => {
              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                <h3 className="font-semibold text-foreground">{t.historyTitle}</h3>
                <div className="flex items-center gap-1">
-                 <button
+               <button
                    onClick={handleClear}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
                    title="清空对话"
@@ -1983,12 +2965,12 @@ const ChatPage: React.FC = () => {
                  </button>
                  <button
                    onClick={refreshRecords}
-                   disabled={recordsLoading}
+                 disabled={recordsLoading}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                    title="刷新记录"
-                 >
-                   <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
-                 </button>
+               >
+                 <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
+               </button>
                </div>
              </div>
              
@@ -1999,18 +2981,18 @@ const ChatPage: React.FC = () => {
                  if (recordsLoading && chatRecords.length === 0) {
                    return (
                      <div className="h-full flex flex-col items-center justify-center text-foreground gap-2">
-                       <Loader2 size={24} className="animate-spin" />
-                       <span className="text-sm">加载中...</span>
-                     </div>
+                 <Loader2 size={24} className="animate-spin" />
+                 <span className="text-sm">加载中...</span>
+               </div>
                    );
                  }
                  
                  if (chatRecords.length === 0) {
                    return (
                      <div className="h-full flex flex-col items-center justify-center text-foreground gap-2 opacity-50">
-                       <MessageSquare size={32} strokeWidth={1.5} />
-                       <span className="text-sm">{t.noHistory}</span>
-                     </div>
+               <MessageSquare size={32} strokeWidth={1.5} />
+               <span className="text-sm">{t.noHistory}</span>
+             </div>
                    );
                  }
                  
@@ -2020,22 +3002,22 @@ const ChatPage: React.FC = () => {
                      {chatRecords.map((record) => {
                        console.log('🔍 渲染记录:', record.id, record.title);
                        return (
-                     <div
-                       key={record.id}
+                   <div
+                     key={record.id}
                        onClick={() => loadRecord(record.id)}
                        className={`group relative p-2 rounded-lg cursor-pointer transition-colors bg-surface border border-transparent hover:border-border ${
-                         selectedRecordId === record.id
+                       selectedRecordId === record.id
                            ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-100 border-indigo-500/30'
                            : 'text-foreground hover:bg-background'
-                       }`}
-                     >
-                         <div className="flex items-start justify-between gap-2">
-                           <div className="flex-1 min-w-0">
+                     }`}
+                   >
+                     <div className="flex items-start justify-between gap-2">
+                       <div className="flex-1 min-w-0">
                              <div className="text-sm font-medium truncate text-foreground">{record.title}</div>
                              {record.model && (
                                <div className="text-xs text-muted-foreground mt-0.5">
                                  {record.model}
-                               </div>
+                         </div>
                              )}
                              <div className="text-xs text-muted-foreground/70 mt-0.5">
                                {(() => {
@@ -2048,20 +3030,20 @@ const ChatPage: React.FC = () => {
                                  const seconds = String(date.getSeconds()).padStart(2, '0');
                                  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
                                })()}
-                             </div>
-                           </div>
-                           <button
-                             onClick={(e) => deleteChatRecord(record.id, e)}
-                             className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity flex-shrink-0"
-                             title="删除记录"
-                           >
-                             <Trash2 size={12} />
-                           </button>
                          </div>
                        </div>
+                       <button
+                         onClick={(e) => deleteChatRecord(record.id, e)}
+                             className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity flex-shrink-0"
+                         title="删除记录"
+                       >
+                         <Trash2 size={12} />
+                       </button>
+                     </div>
+                   </div>
                        );
                      })}
-                   </div>
+               </div>
                  );
                })()}
              </div>
@@ -2115,6 +3097,11 @@ const ChatPage: React.FC = () => {
               message={msg}
               onCopy={handleCopy}
               onQuoteCode={handleQuoteCode}
+              onPreview={(type, url) => setPreviewModal({ isOpen: true, type, url })}
+              progress={progress}
+              onQuote={handleQuoteMessage}
+              onResend={handleResendMessage}
+              currentMode={currentMode}
             />
           ))}
           <div ref={messagesEndRef} />
@@ -2129,33 +3116,21 @@ const ChatPage: React.FC = () => {
               {uploadedImages.length > 0 && (
                 <div className="p-4 pb-0 border-b border-gray-100">
                   <div className="flex gap-2 flex-wrap">
-                    {uploadedImages.map((img, index) => (
+                  {uploadedImages.map((img, index) => (
                       <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
-                        <img 
-                          src={img} 
-                          alt={`上传图片 ${index + 1}`}
+                      <img 
+                        src={img} 
+                        alt={`上传图片 ${index + 1}`}
                           className="w-full h-full object-contain"
-                        />
-                        <button
-                          onClick={() => removeUploadedImage(index)}
+                      />
+                      <button
+                        onClick={() => removeUploadedImage(index)}
                           className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 z-10"
-                        >
+                      >
                           <X size={12} strokeWidth={3} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* 进度条 */}
-              {progress > 0 && progress < 100 && (
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div 
-                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${progress}%` }}
-                    />
+                      </button>
+                    </div>
+                  ))}
                   </div>
                 </div>
               )}
@@ -2183,42 +3158,42 @@ const ChatPage: React.FC = () => {
                 />
                 
                 {/* 图片上传按钮 */}
-                {(currentMode === 'image' || currentMode === 'video') && (
+                   {(currentMode === 'image' || currentMode === 'video') && (
                   <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      className="hidden"
+                       <input
+                         type="file"
+                         accept="image/*"
+                         multiple
+                         onChange={handleImageUpload}
+                         className="hidden"
                       disabled={isLoading || !selectedModel}
-                    />
+                       />
                     <ImageIcon size={16} />
-                  </label>
-                )}
-                
+                     </label>
+                   )}
+                 
                 {/* 发送/停止按钮 */}
-                {isStreaming ? (
-                  <button 
-                    onClick={handleStop}
+                   {isStreaming ? (
+                     <button 
+                       onClick={handleStop}
                     className="flex-shrink-0 w-9 h-9 border-none rounded-lg bg-red-500 text-white cursor-pointer transition-all flex items-center justify-center hover:bg-red-600"
-                  >
+                     >
                     <Square size={16} fill="currentColor" />
-                  </button>
-                ) : (
-                  <button 
-                    onClick={handleSend}
-                    disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
+                     </button>
+                   ) : (
+                   <button 
+                     onClick={handleSend}
+                       disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
                     className={`flex-shrink-0 w-9 h-9 border-none rounded-lg cursor-pointer transition-all flex items-center justify-center
                       ${(inputValue.trim() || uploadedImages.length > 0) && !isLoading && selectedModel
                         ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:scale-110 hover:shadow-[0_4px_12px_rgba(102,126,234,0.4)]'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                       }`}
-                  >
-                    <Send size={16} />
-                  </button>
-                )}
-              </div>
+                   >
+                     <Send size={16} />
+                   </button>
+                   )}
+                 </div>
               
               {/* 底部提示栏 */}
               <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 bg-gray-50/50 rounded-b-[10px]">
@@ -2232,9 +3207,9 @@ const ChatPage: React.FC = () => {
                       {' '}· 支持格式: {ModelCapabilities.getFormatDisplayText(selectedModel)} · 最大: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
                     </span>
                   )}
-                </div>
-                <span className="text-xs text-gray-500 font-medium">{inputValue.length}/2000</span>
               </div>
+                <span className="text-xs text-gray-500 font-medium">{inputValue.length}/2000</span>
+            </div>
             </div>
             
             {/* 底部温馨提示 */}
@@ -2255,6 +3230,56 @@ const ChatPage: React.FC = () => {
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
         type="danger"
       />
+
+      {/* 预览模态框 */}
+      {previewModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          onClick={() => setPreviewModal({ isOpen: false, type: 'image', url: '' })}
+        >
+          <div 
+            className="relative max-w-7xl max-h-[90vh] w-full mx-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setPreviewModal({ isOpen: false, type: 'image', url: '' })}
+              className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+              title="关闭"
+            >
+              <X size={20} />
+            </button>
+
+            {/* 复制链接按钮 */}
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(previewModal.url);
+                toast.success('链接已复制');
+              }}
+              className="absolute top-4 right-16 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+              title="复制链接"
+            >
+              <Copy size={20} />
+            </button>
+
+            {/* 预览内容 */}
+            {previewModal.type === 'image' ? (
+              <img 
+                src={previewModal.url} 
+                alt="预览图片"
+                className="w-full h-auto max-h-[90vh] object-contain rounded-lg"
+              />
+            ) : (
+              <video 
+                src={previewModal.url} 
+                controls
+                autoPlay
+                className="w-full h-auto max-h-[90vh] rounded-lg"
+              />
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -2263,9 +3288,69 @@ interface MessageBubbleProps {
   message: ExtendedChatMessage;
   onCopy: (content: string) => void;
   onQuoteCode?: (code: string) => void;
+  onPreview?: (type: 'image' | 'video', url: string) => void;
+  progress?: number; // 视频生成进度
+  onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
+  onResend?: (message: ExtendedChatMessage) => void; // 重新发送
+  currentMode?: 'chat' | 'image' | 'video'; // 当前模式
 }
 
-const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteCode }) => {
+// 视频播放器组件，支持fallback到iframe
+const VideoPlayer: React.FC<{ url: string }> = ({ url }) => {
+  const [useIframe, setUseIframe] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  const handleVideoError = () => {
+    console.warn('Video标签加载失败，尝试使用iframe');
+    setUseIframe(true);
+  };
+
+  if (useIframe) {
+    return (
+      <iframe
+        src={url}
+        className="w-full max-w-md aspect-video rounded-lg border border-border"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+        frameBorder="0"
+      />
+    );
+  }
+
+  // 先尝试不使用crossOrigin，如果失败再尝试crossOrigin
+  return (
+    <video
+      ref={videoRef}
+      src={url}
+      controls
+      preload="metadata"
+      className="w-full max-w-md rounded-lg border border-border"
+      onError={(e) => {
+        const videoElement = e.currentTarget;
+        // 如果还没有设置crossOrigin，先尝试设置
+        if (!videoElement.crossOrigin) {
+          videoElement.crossOrigin = 'anonymous';
+          videoElement.load();
+        } else {
+          // 如果crossOrigin也失败，使用iframe
+          handleVideoError();
+        }
+      }}
+    />
+  );
+};
+
+const MessageBubble: React.FC<MessageBubbleProps> = ({ 
+  message, 
+  onCopy, 
+  onQuoteCode, 
+  onPreview, 
+  progress = 0,
+  onQuote,
+  onResend,
+  currentMode = 'chat'
+}) => {
+  const navigate = useNavigate();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
   const [showReasoning, setShowReasoning] = useState(false);
@@ -2305,7 +3390,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteC
         `}>
           {isAssistant ? (
             <div className="markdown-content">
-              {message.content ? (
+              {/* 如果有正在生成的视频，不显示content文本，只显示视频进度条 */}
+              {message.content && !(message.generatedVideos && message.generatedVideos.some(v => v.status === 'processing')) ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
@@ -2333,21 +3419,122 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteC
                         </code>
                       );
                     },
+                    a({ href, className, children, ...props }: any) {
+                      // 处理定价列表链接
+                      if (className?.includes('link-fix-price') || message.action === 'goFixPrice') {
+                        return (
+                          <a
+                            href={href || '#'}
+                            className={className}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              navigate('/pricing');
+                            }}
+                            {...props}
+                          >
+                            {children}
+                          </a>
+                        );
+                      }
+                      // 普通链接
+                      return (
+                        <a href={href} className={className} {...props}>
+                          {children}
+                        </a>
+                      );
+                    },
                   }}
                 >
                   {message.content}
                 </ReactMarkdown>
-              ) : message.isStreaming ? (
+              ) : message.isStreaming && currentMode === 'chat' ? (
                 <span>思考中...</span>
               ) : null}
-              {message.isStreaming && (
+              {message.isStreaming && currentMode === 'chat' && (
                 <span className="inline-block w-2 h-4 bg-indigo-600 ml-1 animate-pulse"></span>
+              )}
+
+              {/* AI生成的视频 - 显示在气泡框内部 */}
+              {message.generatedVideos && message.generatedVideos.length > 0 && (
+                <div className="mt-3">
+                  {(() => {
+                    // 只显示第一个视频（处理中的或已完成的）
+                    const video = message.generatedVideos[0];
+                    return (
+                    <div key={video.id} className="relative group">
+                      {video.status === 'processing' ? (
+                        <div className="px-4 py-3 rounded-lg bg-surface/50 border border-border/50">
+                          <div className="flex items-center gap-3">
+                            <Loader2 className="animate-spin text-primary" size={20} />
+                            <div className="flex-1">
+                              <p className="text-sm text-foreground font-medium">
+                                {(() => {
+                                  // 根据进度显示不同文本
+                                  if (progress < 10) return '任务提交成功，等待处理...';
+                                  if (progress < 20) return '正在准备生成任务，请稍候...';
+                                  return '正在创作精美视频...';
+                                })()}
+                              </p>
+                              <div className="mt-2 flex items-center gap-2">
+                                <div className="flex-1 h-1.5 bg-surface rounded-full overflow-hidden">
+                                  <div
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-300"
+                                    style={{ width: `${progress}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs text-muted font-medium min-w-[3rem] text-right">
+                                  {progress}%
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ) : video.status === 'succeeded' && video.url ? (
+                        <div className="relative">
+                          {/* 先尝试使用video标签，如果失败则使用iframe */}
+                          <VideoPlayer url={video.url} />
+                          {/* 操作按钮 */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigator.clipboard.writeText(video.url);
+                                toast.success('视频链接已复制');
+                              }}
+                              className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded backdrop-blur-sm transition-colors"
+                              title="复制链接"
+                            >
+                              <Copy size={14} />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPreview?.('video', video.url);
+                              }}
+                              className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded backdrop-blur-sm transition-colors"
+                              title="预览"
+                            >
+                              <Maximize2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      ) : video.status === 'failed' ? (
+                        <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
+                          <p className="text-sm text-red-600 dark:text-red-400">视频生成失败</p>
+                        </div>
+                      ) : null}
+                      {video.prompt && (
+                        <div className="mt-1 text-xs text-muted">{video.prompt}</div>
+                      )}
+                    </div>
+                    );
+                  })()}
+                </div>
               )}
             </div>
           ) : (
             <div className="whitespace-pre-wrap">{message.content}</div>
           )}
-        </div>
 
         {/* 用户上传的图片 */}
         {isUser && message.images && message.images.length > 0 && (
@@ -2371,7 +3558,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteC
                 <img 
                   src={img.url} 
                   alt={img.prompt || '生成的图片'}
-                  className="w-full rounded-lg border border-border"
+                  className="w-full rounded-lg border border-border cursor-pointer"
+                  onClick={() => onPreview?.('image', img.url)}
                 />
                 {img.prompt && (
                   <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
@@ -2380,37 +3568,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteC
             ))}
           </div>
         )}
-
-        {/* AI生成的视频 */}
-        {isAssistant && message.generatedVideos && message.generatedVideos.length > 0 && (
-          <div className="mt-2 space-y-3">
-            {message.generatedVideos.map((video) => (
-              <div key={video.id} className="relative">
-                {video.status === 'processing' ? (
-                  <div className="w-full aspect-video bg-surface border border-border rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <Loader2 className="animate-spin mx-auto mb-2" size={24} />
-                      <p className="text-sm text-muted">视频生成中...</p>
                     </div>
-                  </div>
-                ) : video.status === 'succeeded' && video.url ? (
-                  <video 
-                    src={video.url} 
-                    controls
-                    className="w-full rounded-lg border border-border"
-                  />
-                ) : video.status === 'failed' ? (
-                  <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
-                    <p className="text-sm text-red-600 dark:text-red-400">视频生成失败</p>
-                  </div>
-                ) : null}
-                {video.prompt && (
-                  <div className="mt-1 text-xs text-muted">{video.prompt}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* 思考内容 */}
         {hasReasoning && (
@@ -2432,15 +3590,50 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({ message, onCopy, onQuoteC
 
         <div className="text-[10px] text-muted px-1 flex items-center gap-2">
           <span>{formatTime(message.timestamp)}</span>
-          {isAssistant && message.content && (
+          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+            {/* 复制按钮 */}
+            {(message.content || message.generatedImages?.length || message.generatedVideos?.length) && (
             <button
-              onClick={() => onCopy(message.content)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-border rounded"
+                onClick={() => {
+                  if (message.content) {
+                    onCopy(message.content);
+                    toast.success('已复制到剪贴板');
+                  } else if (message.generatedImages?.length) {
+                    const urls = message.generatedImages.map(img => img.url).join('\n');
+                    onCopy(urls);
+                    toast.success('图片链接已复制');
+                  } else if (message.generatedVideos?.length && message.generatedVideos[0]?.url) {
+                    onCopy(message.generatedVideos[0].url);
+                    toast.success('视频链接已复制');
+                  }
+                }}
+                className="p-1 hover:bg-border rounded transition-colors"
               title="复制"
             >
               <Copy size={12} />
             </button>
           )}
+            {/* 引用按钮 - 只对用户消息和部分AI消息显示 */}
+            {onQuote && (isUser || (isAssistant && message.action !== 'goFixPrice' && message.id !== 'welcome')) && (
+              <button
+                onClick={() => onQuote(message)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title="引用"
+              >
+                <Reply size={12} />
+              </button>
+            )}
+            {/* 重新发送按钮 - 只对用户消息显示 */}
+            {onResend && isUser && (
+              <button
+                onClick={() => onResend(message)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title="重新发送"
+              >
+                <RefreshCw size={12} />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

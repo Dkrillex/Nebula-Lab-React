@@ -13,6 +13,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import MoveShareModal from '../../components/MoveShareModal';
 import { dictService } from '../../services/dictService';
 import { useDictStore } from '../../stores/dictStore';
+import { formatDateTime } from '../../utils/dateUtils';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -201,7 +202,7 @@ const AssetsPage: React.FC = () => {
     setBreadcrumbPath([{ id: null, name: '全部文件' }]);
     setPagination(prev => ({ ...prev, current: 1 }));
     setSelectedAssets(new Set());
-    fetchAssets();
+    // 移除手动调用 fetchAssets，useEffect 会在 activeTab 或 currentFolderId 变化时自动调用
   };
 
   // 文件夹点击处理
@@ -217,7 +218,7 @@ const AssetsPage: React.FC = () => {
     }]);
     setPagination(prev => ({ ...prev, current: 1 }));
     setSelectedAssets(new Set());
-    fetchAssets();
+    // 移除手动调用 fetchAssets，useEffect 会在 currentFolderId 变化时自动调用
   };
 
   // 面包屑导航处理
@@ -229,7 +230,7 @@ const AssetsPage: React.FC = () => {
     setBreadcrumbPath(breadcrumbPath.slice(0, index + 1));
     setPagination(prev => ({ ...prev, current: 1 }));
     setSelectedAssets(new Set());
-    fetchAssets();
+    // 移除手动调用 fetchAssets，useEffect 会在 currentFolderId 变化时自动调用
   };
 
   // 分页处理
@@ -393,6 +394,9 @@ const AssetsPage: React.FC = () => {
             assetPackageId: targetFolderId || undefined,
             designerId: user?.userId, // 保持创建者
           };
+          
+          // 明确排除 createTime，这是后端自动管理的字段
+          delete (shareData as any).createTime;
           
           if (targetTab === 'shared' && teamId) {
             shareData.teamId = teamId;
@@ -1162,7 +1166,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
       {asset.createTime && (
        <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
           <span className="text-[10px] text-muted">
-            {new Date(asset.createTime).toLocaleDateString()}
+            {formatDateTime(asset.createTime)}
           </span>
        </div>
       )}
@@ -1215,7 +1219,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ asset, onClose, onDownload 
               </div>
               <div>
                 <span className="text-muted">创建时间：</span>
-                <span>{asset.createTime}</span>
+                <span>{formatDateTime(asset.createTime)}</span>
               </div>
             </div>
             <button

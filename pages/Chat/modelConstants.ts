@@ -69,7 +69,7 @@ export const VIDEO_RATIOS = [
   { id: '9:16', name: '9:16 (竖屏)', description: '适合手机观看' },
   { id: '21:9', name: '21:9 (宽屏)', description: '电影宽屏' },
   { id: 'adaptive', name: '自适应', description: '根据图片自动调整' },
-];
+] as const;
 
 // 视频分辨率
 export const VIDEO_RESOLUTIONS = [
@@ -167,6 +167,62 @@ export const ModelCapabilities = {
     return model.includes('wan2.5');
   },
 
+  // 支持引导系数（Guidance Scale）
+  supportsGuidanceScale: (model: string) => {
+    return model === 'doubao-seedream-3-0-t2i-250415' || 
+           model === 'doubao-seededit-3-0-i2i-250628';
+  },
+
+  // 支持组图功能（Sequential Image Generation）
+  supportsSequentialImageGeneration: (model: string) => {
+    return model === 'doubao-seedream-4-0-250828';
+  },
+
+  // 支持提示词优化模式
+  supportsOptimizePromptOptions: (model: string) => {
+    return model === 'doubao-seedream-4-0-250828';
+  },
+
+  // 支持GPT图片质量选择
+  supportsGptImageQuality: (model: string) => {
+    return model.startsWith('gpt-image');
+  },
+
+  // 支持GPT图片输入保真度
+  supportsGptImageInputFidelity: (model: string) => {
+    return model.startsWith('gpt-image');
+  },
+
+  // 支持Qwen图片提示词扩展
+  supportsQwenPromptExtend: (model: string) => {
+    return model === 'qwen-image-plus';
+  },
+
+  // 支持Qwen编辑模型的多图生成
+  supportsQwenImageEditN: (model: string) => {
+    return model === 'qwen-image-edit-plus' || model === 'qwen-image-edit-plus-2025-10-30';
+  },
+
+  // 获取视频时长选项（根据模型）
+  getVideoDurationOptions: (model: string) => {
+    // Veo 模型支持 4/6/8 秒
+    if (model.toLowerCase().includes('veo')) {
+      return [4, 6, 8];
+    }
+    // Wan2.5 模型支持 5/10 秒
+    if (model.includes('wan2.5')) {
+      return [5, 10];
+    }
+    // 默认支持 3-12 秒
+    return [3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  },
+
+  // 检查模型是否支持特定视频时长
+  supportsVideoDuration: (model: string, duration: number) => {
+    const options = ModelCapabilities.getVideoDurationOptions(model);
+    return options.includes(duration);
+  },
+
   // 获取当前模型允许的图片格式
   getAllowedImageFormats: (model: string): string[] => {
     // doubao 模型限制为 JPEG 和 PNG
@@ -222,6 +278,54 @@ export const ModelCapabilities = {
     // 去重并大写
     const uniqueFormats = [...new Set(formats.map(f => f.toUpperCase()))];
     return uniqueFormats.join(', ');
-  }
+  },
+
+  // 获取 wan2.5 t2v 模型的 size 参数（根据分辨率和宽高比）
+  getWan25T2VSize: (resolution: string, aspectRatio: string): string => {
+    // 分辨率到宽高比的映射表
+    const sizeMap: Record<string, Record<string, string>> = {
+      '480p': {
+        '16:9': '832*480',
+        '9:16': '480*832',
+        '1:1': '624*624',
+      },
+      '720p': {
+        '16:9': '1280*720',
+        '9:16': '720*1280',
+        '1:1': '960*960',
+        '4:3': '1088*832',
+        '3:4': '832*1088',
+      },
+      '1080p': {
+        '16:9': '1920*1080',
+        '9:16': '1080*1920',
+        '1:1': '1440*1440',
+        '4:3': '1632*1248',
+        '3:4': '1248*1632',
+      },
+    };
+
+    const resolutionLower = resolution.toLowerCase();
+    const aspectRatioLower = aspectRatio.toLowerCase();
+
+    if (sizeMap[resolutionLower] && sizeMap[resolutionLower][aspectRatioLower]) {
+      return sizeMap[resolutionLower][aspectRatioLower];
+    }
+
+    // 默认值：720p 16:9
+    console.warn(`无法找到对应的 size，使用默认值 1280*720 (分辨率: ${resolution}, 宽高比: ${aspectRatio})`);
+    return '1280*720';
+  },
+
+  // 获取 wan2.5 t2v 模型可用的宽高比选项（根据分辨率）
+  getWan25T2VAspectRatios: (resolution: string): string[] => {
+    const aspectRatioMap: Record<string, string[]> = {
+      '480p': ['16:9', '9:16', '1:1'],
+      '720p': ['16:9', '9:16', '1:1', '4:3', '3:4'],
+      '1080p': ['16:9', '9:16', '1:1', '4:3', '3:4'],
+    };
+
+    return aspectRatioMap[resolution.toLowerCase()] || ['16:9', '9:16', '1:1'];
+  },
 };
 

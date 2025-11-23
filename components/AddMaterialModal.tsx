@@ -9,6 +9,7 @@ import { useDictStore } from '../stores/dictStore';
 import { dictService } from '../services/dictService';
 import { UploadedFile } from '../services/avatarService';
 import FolderSelectModal from './FolderSelectModal';
+import { formatDateForBackend } from '../utils/dateUtils';
 
 
 interface AddMaterialModalProps {
@@ -275,13 +276,19 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       
       // Step 2: Save to assets library
       // Prepare data with updated URL and ID
+      // 注意：不包含 createTime，这是后端自动管理的字段
       const baseData: AdsAssetsForm = {
         ...formData,
         assetUrl: finalAssetUrl,
         assetId: finalAssetId,
         dataType: isFolderMode ? 2 : 1,
         assetType: isFolderMode ? undefined : formData.assetType,
+        // 明确排除 createTime，避免格式问题
+        // createTime 由后端自动管理，不需要前端提交
       };
+      
+      // 如果 formData 中意外包含了 createTime，移除它
+      delete (baseData as any).createTime;
 
       if (isEdit) {
         // Edit mode: update existing asset

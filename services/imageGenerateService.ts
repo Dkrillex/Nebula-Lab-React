@@ -79,6 +79,7 @@ export const imageGenerateService = {
 
     return request.post<ImageGenerateResponse>('/ads/playground/image/completions', requestData, {
       timeout: 60000, // 60秒超时
+      _skipErrorDisplay: true, // 跳过默认错误提示，由组件自行处理错误（如余额不足、敏感词等）
     });
   },
 };
