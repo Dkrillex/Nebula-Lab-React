@@ -2,14 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, FolderPlus, Upload, Move, Trash2, X, 
   Folder, FileAudio, Image as ImageIcon, Film, MoreVertical,
-  ChevronRight, Loader2, Home, Edit2, Download, Eye
+  ChevronRight, Loader2, Home, Edit2, Download, Eye, XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '@/router';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import MoveShareModal from '../../components/MoveShareModal';
+import { dictService } from '../../services/dictService';
+import { useDictStore } from '../../stores/dictStore';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -22,6 +25,11 @@ const AssetsPage: React.FC = () => {
   const t = rawT.assetsPage;
 
   const { user } = useAuthStore();
+  const { getDict, setDict } = useDictStore();
+  
+  // 素材类型选项
+  const [assetTypeOptions, setAssetTypeOptions] = useState<Array<{ label: string; value: string | number }>>([]);
+  const [assetTypesLoading, setAssetTypesLoading] = useState(false);
   
   // 状态管理
   const [loading, setLoading] = useState(false);
@@ -344,30 +352,68 @@ const AssetsPage: React.FC = () => {
     setShowMoveModal(true);
   };
 
-  const handleMoveConfirm = async (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => {
+  const handleMoveConfirm = async (result: { 
+    targetFolderId: string | null, 
+    targetTab: 'personal' | 'shared', 
+    teamId?: string 
+  }) => {
     try {
       const ids = Array.from(selectedAssets);
-      const isShare = activeTab === 'personal' && targetTab === 'shared';
+      const { targetFolderId, targetTab, teamId } = result;
       
-      if (isShare && teamId) {
-        // 分享到共享文件（复制）
-        for (const id of ids) {
-          const asset = assets.find(a => String(a.id) === id);
-          if (!asset) continue;
-          
-          await assetsService.addAssets({
-            ...asset,
-            id: undefined,
-            assetPackageId: targetFolderId || undefined,
-            teamId: teamId,
-            isShare: 1,
-            createTime: undefined,
-            updateTime: undefined,
-          });
+      // 判断是移动还是分享
+      // 1. 个人文件 -> 共享文件：分享（复制）
+      // 2. 共享文件 -> 个人文件：分享（复制）
+      // 3. 共享文件 -> 共享文件（不同团队）：分享（复制）
+      // 4. 其他情况：移动
+      const isShare = 
+        (activeTab === 'personal' && targetTab === 'shared') || // 个人 -> 共享
+        (activeTab === 'shared' && targetTab === 'personal') || // 共享 -> 个人
+        (activeTab === 'shared' && targetTab === 'shared' && teamId && (currentFolderInfo as any)?.teamId && String(teamId) !== String((currentFolderInfo as any).teamId)); // 共享 -> 共享（不同团队）
+      
+      if (isShare) {
+        // 分享（复制）
+        if (targetTab === 'shared' && !teamId) {
+          toast.error('无法获取团队信息，分享失败');
+          return;
         }
+        
+        // 获取选中的文件详情
+        const selectedFiles = ids.map(id => 
+          assets.find(asset => String(asset.id) === id)
+        ).filter(Boolean) as AdsAssetsVO[];
+        
+        // 为每个文件创建分享副本
+        for (const file of selectedFiles) {
+          if (!file) continue;
+          
+          const shareData: Partial<AdsAssetsVO> = {
+            ...file,
+            id: undefined, // 新增时不传ID
+            assetPackageId: targetFolderId || undefined,
+            designerId: user?.userId, // 保持创建者
+          };
+          
+          if (targetTab === 'shared' && teamId) {
+            shareData.teamId = teamId;
+            shareData.isShare = 1;
+          } else if (targetTab === 'personal') {
+            shareData.isShare = 0;
+          }
+          
+          // 清理 undefined 字段
+          Object.keys(shareData).forEach(key => {
+            if (shareData[key as keyof AdsAssetsVO] === undefined) {
+              delete shareData[key as keyof AdsAssetsVO];
+            }
+          });
+          
+          await assetsService.addAssets(shareData as AdsAssetsVO);
+        }
+        
         toast.success('分享成功');
       } else {
-        // 移动文件
+        // 移动文件（在同一 tab 内移动，或同团队内移动）
         await assetsService.moveAssets(ids, targetFolderId || undefined);
         toast.success('移动成功');
       }
@@ -470,6 +516,39 @@ const AssetsPage: React.FC = () => {
     a.click();
   };
 
+  // 获取素材类型选项
+  useEffect(() => {
+    const loadAssetTypes = async () => {
+      try {
+        setAssetTypesLoading(true);
+        // 先检查缓存
+        const cached = getDict('nebula_assets_type');
+        if (cached && cached.length > 0) {
+          setAssetTypeOptions(cached);
+          setAssetTypesLoading(false);
+          return;
+        }
+        
+        // 从API获取
+        const dictData = await dictService.getDicts('nebula_assets_type');
+        const options = dictData.map(item => ({
+          label: item.dictLabel,
+          value: item.dictValue
+        }));
+        
+        // 保存到缓存
+        setDict('nebula_assets_type', options);
+        setAssetTypeOptions(options);
+      } catch (error) {
+        console.error('Failed to load asset types:', error);
+      } finally {
+        setAssetTypesLoading(false);
+      }
+    };
+    
+    loadAssetTypes();
+  }, []);
+
   // 初始化加载
   useEffect(() => {
     fetchAssets();
@@ -507,50 +586,96 @@ const AssetsPage: React.FC = () => {
         <div className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchName}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetName}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetName: e.target.value }))}
-              placeholder={t.namePlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.namePlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetName && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetName: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchType}</label>
-            <select 
+            <div className="relative">
+              <select 
                 value={filters.assetType || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetType: e.target.value ? Number(e.target.value) : undefined }))}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="">{t.chooseType}</option>
-                <option value="1">图片</option>
-                <option value="2">视频</option>
-                <option value="3">音频</option>
-                <option value="4">文档</option>
-            </select>
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none"
+                disabled={assetTypesLoading}
+              >
+                <option value="">{t.chooseType}</option>
+                {assetTypeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {filters.assetType && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetType: undefined }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <XCircle size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchTag}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetTag}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetTag: e.target.value }))}
-              placeholder={t.tagPlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.tagPlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetTag && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetTag: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
            <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchDesc}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetDesc}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetDesc: e.target.value }))}
-              placeholder={t.descPlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.descPlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetDesc && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetDesc: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-3 pt-2">
@@ -648,8 +773,17 @@ const AssetsPage: React.FC = () => {
                  value={resultSearch}
                  onChange={(e) => setResultSearch(e.target.value)}
                  placeholder={t.searchInResult}
-                 className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
+                 className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-9 text-sm focus:outline-none focus:border-primary"
                />
+               {resultSearch && (
+                 <button
+                   onClick={() => setResultSearch('')}
+                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                   type="button"
+                 >
+                   <X size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                 </button>
+               )}
             </div>
          </div>
 
@@ -793,19 +927,20 @@ const AssetsPage: React.FC = () => {
         />
       )}
 
-      {/* Move/Share Modal - Placeholder */}
+      {/* Move/Share Modal */}
       {showMoveModal && (
-        <MoveModal
+        <MoveShareModal
           visible={showMoveModal}
           onClose={() => setShowMoveModal(false)}
           onConfirm={handleMoveConfirm}
           sourceTab={activeTab}
           hasTeams={hasTeams}
-          teamIds={userTeams.map((t: any) => t.teamId).join(',')}
+          teamIds={userTeams.map((t: any) => String(t.teamId)).join(',')}
           excludeIds={Array.from(selectedAssets)
             .map(id => assets.find(a => String(a.id) === id))
             .filter(a => a && a.dataType === 2)
             .map(a => Number(a!.id))}
+          currentFolderId={currentFolderId}
         />
       )}
       
@@ -1097,84 +1232,5 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ asset, onClose, onDownload 
   );
 };
 
-// Move Modal Component (Simplified version - you can enhance this)
-interface MoveModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onConfirm: (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => void;
-  sourceTab: 'personal' | 'shared';
-  hasTeams: boolean;
-  teamIds: string;
-  excludeIds: number[];
-}
-
-const MoveModal: React.FC<MoveModalProps> = ({ visible, onClose, onConfirm, sourceTab, hasTeams, teamIds }) => {
-  const [targetTab, setTargetTab] = useState<'personal' | 'shared'>(sourceTab);
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-  const { user } = useAuthStore();
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6">
-        <h2 className="text-lg font-semibold mb-4">移动/分享到</h2>
-        
-        {sourceTab === 'personal' && hasTeams && (
-          <div className="space-y-4 mb-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="personal"
-                checked={targetTab === 'personal'}
-                onChange={() => setTargetTab('personal')}
-              />
-              个人文件夹
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="shared"
-                checked={targetTab === 'shared'}
-                onChange={() => setTargetTab('shared')}
-              />
-              共享文件夹
-            </label>
-          </div>
-        )}
-
-        {targetTab === 'shared' && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">选择团队</label>
-            <select
-              value={selectedTeamId}
-              onChange={(e) => setSelectedTeamId(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background"
-            >
-              <option value="">请选择团队</option>
-              {user?.team?.map((t: any) => (
-                <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border border-border rounded-lg">
-            取消
-          </button>
-          <button
-            onClick={() => onConfirm(null, targetTab, selectedTeamId)}
-            disabled={targetTab === 'shared' && !selectedTeamId}
-            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
-            确定
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default AssetsPage;

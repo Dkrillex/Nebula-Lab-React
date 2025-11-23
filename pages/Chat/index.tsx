@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import rehypeHighlight from 'rehype-highlight';
+import toast from 'react-hot-toast';
 import { chatService, ChatMessage, ChatRequest } from '../../services/chatService';
 import { modelsService, ModelsVO } from '../../services/modelsService';
 import { imageGenerateService, ImageGenerateRequest } from '../../services/imageGenerateService';
@@ -254,10 +255,12 @@ const ChatPage: React.FC = () => {
   // 监听模式切换，更新模型列表和历史记录
   useEffect(() => {
     setSelectedModel(''); // 切换模式时清空选中的模型
+    setChatRecords([]); // 切换模式时清空历史记录
     updateModelsForCurrentMode(); // 使用已加载的模型列表
     
     // 根据模式加载对应的历史记录
     if (user?.nebulaApiId) {
+      console.log('🔄 切换模式，加载历史记录:', currentMode);
       if (currentMode === 'chat') {
         fetchChatRecords();
       } else if (currentMode === 'image') {
@@ -267,6 +270,26 @@ const ChatPage: React.FC = () => {
       }
     }
   }, [currentMode, user?.nebulaApiId]);
+
+  // 监听模型列表变化，自动选择第一个模型
+  useEffect(() => {
+    if (models.length > 0 && !selectedModel) {
+      const firstModel = models[0].modelName;
+      if (firstModel) {
+        setSelectedModel(firstModel);
+        console.log('✅ 自动选择第一个模型:', firstModel);
+      }
+    }
+  }, [models, selectedModel]);
+
+  // 调试：监听chatRecords变化
+  useEffect(() => {
+    console.log('🔍 chatRecords状态变化:', {
+      length: chatRecords.length,
+      records: chatRecords,
+      recordsLoading
+    });
+  }, [chatRecords, recordsLoading]);
   
   // 监听模型切换,检查是否需要清除图片
   useEffect(() => {
@@ -332,11 +355,42 @@ const ChatPage: React.FC = () => {
         apiType: 'chat-completions',
       });
 
-      console.log('📋 获取对话记录响应:', res);
+      console.log('📋 获取对话记录响应 (完整):', JSON.stringify(res, null, 2));
+      console.log('📋 获取对话记录响应 (类型):', typeof res, Array.isArray(res));
 
+      // request.get 已经转换了响应
+      // 如果后端返回 { code: 200, data: { rows: [...], total: ... } }，request.get 会返回 { rows: [...], total: ... }
+      // 如果后端返回 { code: 200, data: { id: ..., ... } }，request.get 会返回 { id: ..., ... }
+      let rows: any[] = [];
+      
+      // 处理不同的响应格式
+      if (res && typeof res === 'object') {
+        // 格式1: { rows: [...], total: ... } - 标准分页格式
+        if (Array.isArray((res as any).rows)) {
+          rows = (res as any).rows;
+        }
+        // 格式2: { data: { rows: [...], total: ... } } - 嵌套的 data 字段
+        else if ((res as any).data && Array.isArray((res as any).data.rows)) {
+          rows = (res as any).data.rows;
+        }
+        // 格式3: 直接是数组
+        else if (Array.isArray(res)) {
+          rows = res;
+        }
+        // 格式4: 单个记录对象（可能是后端返回格式问题）
+        else if ((res as any).id && (res as any).apiType) {
+          // 如果是单个记录，包装成数组
+          console.warn('⚠️ 列表接口返回了单个记录，而不是列表格式');
+          rows = [res];
+        }
+      }
+      
+      console.log('📋 对话记录rows (解析后):', rows);
+      console.log('📋 对话记录rows 数量:', rows.length);
+      
       let records: ChatRecord[] = [];
-      if (res.code === 200) {
-        const rows = (res as any).data?.rows || (res as any).rows || [];
+      
+      if (Array.isArray(rows)) {
         records = rows.map((record: any) => {
           let messageCount = 0;
           let model = '';
@@ -383,6 +437,7 @@ const ChatPage: React.FC = () => {
       }
 
       console.log('📋 解析后的对话记录列表:', records);
+      console.log('📋 记录数量:', records.length);
       setChatRecords(records);
     } catch (error) {
       console.error('❌ 获取对话记录失败:', error);
@@ -402,64 +457,102 @@ const ChatPage: React.FC = () => {
         apiType: 'image-generates',
       });
 
-      console.log('📋 获取图片生成记录响应:', res);
+      console.log('📋 获取图片生成记录响应 (完整):', JSON.stringify(res, null, 2));
+      console.log('📋 获取图片生成记录响应 (类型):', typeof res, Array.isArray(res));
 
-      let records: ChatRecord[] = [];
-      if (res.code === 200) {
-        const rows = (res as any).data?.rows || (res as any).rows || [];
-        records = rows.map((record: any) => {
-          let imageCount = 0;
-          let model = '';
-          let title = `图片生成 ${record.id}`;
+      // request.get 已经转换了响应
+      // 如果后端返回 { code: 200, data: { rows: [...], total: ... } }，request.get 会返回 { rows: [...], total: ... }
+      // 如果后端返回 { code: 200, data: { id: ..., ... } }，request.get 会返回 { id: ..., ... }
+      let rows: any[] = [];
+      
+      // 处理不同的响应格式
+      if (res && typeof res === 'object') {
+        // 格式1: { rows: [...], total: ... } - 标准分页格式
+        if (Array.isArray((res as any).rows)) {
+          rows = (res as any).rows;
+        }
+        // 格式2: { data: { rows: [...], total: ... } } - 嵌套的 data 字段
+        else if ((res as any).data && Array.isArray((res as any).data.rows)) {
+          rows = (res as any).data.rows;
+        }
+        // 格式3: 直接是数组
+        else if (Array.isArray(res)) {
+          rows = res;
+        }
+        // 格式4: 单个记录对象（可能是后端返回格式问题）
+        else if ((res as any).id && (res as any).apiType) {
+          // 如果是单个记录，包装成数组
+          console.warn('⚠️ 列表接口返回了单个记录，而不是列表格式');
+          rows = [res];
+        }
+      }
+      
+      console.log('📋 图片记录rows (解析后):', rows);
+      console.log('📋 图片记录rows 数量:', rows.length);
+      
+      const records = rows.map((record: any) => {
+        let imageCount = 0;
+        let model = '';
+        let title = `图片生成 ${record.id}`;
 
-          // 从taskJson获取标题
-          try {
-            if (record.taskJson) {
-              const taskData = JSON.parse(record.taskJson);
-              if (taskData.title) {
-                title = taskData.title;
-              }
+        // 从taskJson获取标题
+        try {
+          if (record.taskJson) {
+            const taskData = JSON.parse(record.taskJson);
+            if (taskData.title) {
+              title = taskData.title;
             }
-          } catch (parseError) {
-            console.warn('解析taskJson失败:', parseError);
           }
+        } catch (parseError) {
+          console.warn('解析taskJson失败:', parseError);
+        }
 
-          // 从apiJson解析图片数量和模型信息
-          try {
-            if (record.apiJson) {
-              const parsedData = JSON.parse(record.apiJson);
-              if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
-                // 统计生成的图片数量
-                imageCount = parsedData.chatMessages.reduce((total: number, msg: any) => {
+        // 从apiJson解析图片数量和模型信息
+        try {
+          if (record.apiJson) {
+            const parsedData = JSON.parse(record.apiJson);
+            if (
+              parsedData.chatMessages &&
+              Array.isArray(parsedData.chatMessages)
+            ) {
+              // 统计生成的图片数量
+              imageCount = parsedData.chatMessages.reduce(
+                (total: number, msg: any) => {
                   if (msg.type === 'assistant' && msg.generatedImages) {
                     return total + msg.generatedImages.length;
                   }
                   return total;
-                }, 0);
-              }
-              if (parsedData.settings && parsedData.settings.selectedModel) {
-                model = parsedData.settings.selectedModel;
-              }
+                },
+                0,
+              );
             }
-          } catch (parseError) {
-            console.warn('解析apiJson失败:', parseError);
+            if (parsedData.settings && parsedData.settings.selectedModel) {
+              model = parsedData.settings.selectedModel;
+            }
           }
+        } catch (parseError) {
+          console.warn('解析apiJson失败:', parseError);
+        }
 
-          return {
-            id: record.id,
-            title,
-            apiJson: record.apiJson || '',
-            taskJson: record.taskJson || '',
-            createTime: record.ctime || record.createTime || Date.now(),
-            updateTime: record.mtime || record.updateTime || Date.now(),
-            messageCount: imageCount, // 使用imageCount作为messageCount显示
-            model,
-          };
-        });
-      }
+        const chatRecord = {
+          id: record.id,
+          title,
+          apiJson: record.apiJson || '',
+          taskJson: record.taskJson || '',
+          createTime: record.ctime || record.createTime || Date.now(),
+          updateTime: record.mtime || record.updateTime || Date.now(),
+          messageCount: imageCount,
+          model,
+        };
+        
+        console.log('📋 处理后的记录:', chatRecord);
+        return chatRecord;
+      });
 
       console.log('📋 解析后的图片生成记录列表:', records);
+      console.log('📋 准备设置chatRecords，记录数量:', records.length);
       setChatRecords(records);
+      console.log('📋 已调用setChatRecords，设置记录数量:', records.length);
     } catch (error) {
       console.error('❌ 获取图片生成记录失败:', error);
       setChatRecords([]);
@@ -478,64 +571,99 @@ const ChatPage: React.FC = () => {
         apiType: 'video-generates',
       });
 
-      console.log('📋 获取视频生成记录响应:', res);
+      console.log('📋 获取视频生成记录响应 (完整):', JSON.stringify(res, null, 2));
+      console.log('📋 获取视频生成记录响应 (类型):', typeof res, Array.isArray(res));
 
-      let records: ChatRecord[] = [];
-      if (res.code === 200) {
-        const rows = (res as any).data?.rows || (res as any).rows || [];
-        records = rows.map((record: any) => {
-          let videoCount = 0;
-          let model = '';
-          let title = `视频生成 ${record.id}`;
+      // request.get 已经转换了响应
+      // 如果后端返回 { code: 200, data: { rows: [...], total: ... } }，request.get 会返回 { rows: [...], total: ... }
+      // 如果后端返回 { code: 200, data: { id: ..., ... } }，request.get 会返回 { id: ..., ... }
+      let rows: any[] = [];
+      
+      // 处理不同的响应格式
+      if (res && typeof res === 'object') {
+        // 格式1: { rows: [...], total: ... } - 标准分页格式
+        if (Array.isArray((res as any).rows)) {
+          rows = (res as any).rows;
+        }
+        // 格式2: { data: { rows: [...], total: ... } } - 嵌套的 data 字段
+        else if ((res as any).data && Array.isArray((res as any).data.rows)) {
+          rows = (res as any).data.rows;
+        }
+        // 格式3: 直接是数组
+        else if (Array.isArray(res)) {
+          rows = res;
+        }
+        // 格式4: 单个记录对象（可能是后端返回格式问题）
+        else if ((res as any).id && (res as any).apiType) {
+          // 如果是单个记录，包装成数组
+          console.warn('⚠️ 列表接口返回了单个记录，而不是列表格式');
+          rows = [res];
+        }
+      }
+      
+      console.log('📋 视频记录rows (解析后):', rows);
+      console.log('📋 视频记录rows 数量:', rows.length);
+      
+      const records = rows.map((record: any) => {
+        let videoCount = 0;
+        let model = '';
+        let title = `视频生成 ${record.id}`;
 
-          // 从taskJson获取标题
-          try {
-            if (record.taskJson) {
-              const taskData = JSON.parse(record.taskJson);
-              if (taskData.title) {
-                title = taskData.title;
-              }
+        // 从taskJson获取标题
+        try {
+          if (record.taskJson) {
+            const taskData = JSON.parse(record.taskJson);
+            if (taskData.title) {
+              title = taskData.title;
             }
-          } catch (parseError) {
-            console.warn('解析taskJson失败:', parseError);
           }
+        } catch (parseError) {
+          console.warn('解析taskJson失败:', parseError);
+        }
 
-          // 从apiJson解析视频数量和模型信息
-          try {
-            if (record.apiJson) {
-              const parsedData = JSON.parse(record.apiJson);
-              if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
-                // 统计生成的视频数量
-                videoCount = parsedData.chatMessages.reduce((total: number, msg: any) => {
+        // 从apiJson解析视频数量和模型信息
+        try {
+          if (record.apiJson) {
+            const parsedData = JSON.parse(record.apiJson);
+            if (
+              parsedData.chatMessages &&
+              Array.isArray(parsedData.chatMessages)
+            ) {
+              // 统计生成的视频数量
+              videoCount = parsedData.chatMessages.reduce(
+                (total: number, msg: any) => {
                   if (msg.type === 'assistant' && msg.generatedVideos) {
                     return total + msg.generatedVideos.length;
                   }
                   return total;
-                }, 0);
-              }
-              if (parsedData.settings && parsedData.settings.selectedModel) {
-                model = parsedData.settings.selectedModel;
-              }
+                },
+                0,
+              );
             }
-          } catch (parseError) {
-            console.warn('解析apiJson失败:', parseError);
+            if (parsedData.settings && parsedData.settings.selectedModel) {
+              model = parsedData.settings.selectedModel;
+            }
           }
+        } catch (parseError) {
+          console.warn('解析apiJson失败:', parseError);
+        }
 
-          return {
-            id: record.id,
-            title,
-            apiJson: record.apiJson || '',
-            taskJson: record.taskJson || '',
-            createTime: record.ctime || record.createTime || Date.now(),
-            updateTime: record.mtime || record.updateTime || Date.now(),
-            messageCount: videoCount, // 使用videoCount作为messageCount显示
-            model,
-          };
-        });
-      }
+        return {
+          id: record.id,
+          title,
+          apiJson: record.apiJson || '',
+          taskJson: record.taskJson || '',
+          createTime: record.ctime || record.createTime || Date.now(),
+          updateTime: record.mtime || record.updateTime || Date.now(),
+          messageCount: videoCount,
+          model,
+        };
+      });
 
       console.log('📋 解析后的视频生成记录列表:', records);
+      console.log('📋 准备设置chatRecords，记录数量:', records.length);
       setChatRecords(records);
+      console.log('📋 已调用setChatRecords，设置记录数量:', records.length);
     } catch (error) {
       console.error('❌ 获取视频生成记录失败:', error);
       setChatRecords([]);
@@ -558,13 +686,14 @@ const ChatPage: React.FC = () => {
   };
 
   // 加载指定的对话记录
+  // 加载对话记录（chat模式）
   const loadChatRecord = async (recordId: string | number) => {
     try {
       setRecordsLoading(true);
       const res = await chatService.getChatRecordInfo(recordId);
 
-      if (res.code === 200) {
-        const recordData = (res as any).data || res;
+      // request.get已经转换了响应，对于单个对象返回的是 data 字段或整个对象（除了code/msg）
+      const recordData = (res as any)?.data || res;
 
         // 解析聊天消息数据
         let messages: ExtendedChatMessage[] = [];
@@ -612,11 +741,163 @@ const ChatPage: React.FC = () => {
         setTimeout(() => {
           messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
-      }
     } catch (error) {
       console.error('❌ 加载对话记录失败:', error);
     } finally {
       setRecordsLoading(false);
+    }
+  };
+
+  // 加载图片生成记录（image模式）
+  const loadImageRecord = async (recordId: string | number) => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecordInfo(recordId);
+
+      // request.get已经转换了响应，对于单个对象返回的是 data 字段或整个对象（除了code/msg）
+      const recordData = (res as any)?.data || res;
+
+      // 解析图片生成数据
+      let messages: ExtendedChatMessage[] = [];
+      let settings: any = null;
+
+      try {
+        if (recordData.apiJson) {
+          const parsedData = JSON.parse(recordData.apiJson);
+
+          // 恢复聊天消息（图片模式使用 chatMessages）
+          if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
+            messages = parsedData.chatMessages.map((msg: any) => ({
+              ...msg,
+              id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+              timestamp: msg.timestamp || Date.now(),
+              role: msg.type === 'user' ? 'user' : 'assistant',
+            }));
+          }
+
+          // 恢复设置
+          if (parsedData.settings) {
+            settings = parsedData.settings;
+          }
+        }
+      } catch (parseError) {
+        console.warn('解析图片生成内容失败:', parseError);
+      }
+
+      // 更新当前对话状态
+      setMessages(messages.length > 0 ? messages : [
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: t.welcomeMessage,
+          timestamp: Date.now()
+        }
+      ]);
+      setSelectedRecordId(recordId);
+
+      // 恢复设置（如果有的话）
+      if (settings) {
+        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.selectedSize) setImageSize(settings.selectedSize);
+        if (settings.selectedStyle) setImageStyle(settings.selectedStyle);
+        if (settings.temperature !== undefined) setTemperature(settings.temperature);
+        if (settings.watermark !== undefined) setWatermark(settings.watermark);
+        if (settings.guidanceScale !== undefined) setGuidanceScale(settings.guidanceScale);
+        console.log('⚙️ 已恢复图片生成设置');
+      }
+
+      console.log('📂 已加载图片生成记录:', recordId, '消息数量:', messages.length);
+      
+      // 滚动到底部
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (error) {
+      console.error('❌ 加载图片生成记录失败:', error);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 加载视频生成记录（video模式）
+  const loadVideoRecord = async (recordId: string | number) => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecordInfo(recordId);
+
+      // request.get已经转换了响应，对于单个对象返回的是 data 字段或整个对象（除了code/msg）
+      const recordData = (res as any)?.data || res;
+
+      // 解析视频生成数据
+      let messages: ExtendedChatMessage[] = [];
+      let settings: any = null;
+
+      try {
+        if (recordData.apiJson) {
+          const parsedData = JSON.parse(recordData.apiJson);
+
+          // 恢复聊天消息（视频模式使用 chatMessages）
+          if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
+            messages = parsedData.chatMessages.map((msg: any) => ({
+              ...msg,
+              id: msg.id || `msg-${Date.now()}-${Math.random()}`,
+              timestamp: msg.timestamp || Date.now(),
+              role: msg.type === 'user' ? 'user' : 'assistant',
+            }));
+          }
+
+          // 恢复设置
+          if (parsedData.settings) {
+            settings = parsedData.settings;
+          }
+        }
+      } catch (parseError) {
+        console.warn('解析视频生成内容失败:', parseError);
+      }
+
+      // 更新当前对话状态
+      setMessages(messages.length > 0 ? messages : [
+        {
+          id: 'welcome',
+          role: 'assistant',
+          content: t.welcomeMessage,
+          timestamp: Date.now()
+        }
+      ]);
+      setSelectedRecordId(recordId);
+
+      // 恢复设置（如果有的话）
+      if (settings) {
+        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.videoDuration !== undefined) setVideoDuration(settings.videoDuration);
+        if (settings.videoAspectRatio) setVideoAspectRatio(settings.videoAspectRatio);
+        if (settings.videoResolution) setVideoResolution(settings.videoResolution);
+        if (settings.imageGenerationMode) setImageGenerationMode(settings.imageGenerationMode);
+        if (settings.cameraFixed !== undefined) setCameraFixed(settings.cameraFixed);
+        console.log('⚙️ 已恢复视频生成设置');
+      }
+
+      console.log('📂 已加载视频生成记录:', recordId, '消息数量:', messages.length);
+      
+      // 滚动到底部
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    } catch (error) {
+      console.error('❌ 加载视频生成记录失败:', error);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 根据当前模式加载对应的记录
+  const loadRecord = async (recordId: string | number) => {
+    if (currentMode === 'chat') {
+      await loadChatRecord(recordId);
+    } else if (currentMode === 'image') {
+      await loadImageRecord(recordId);
+    } else if (currentMode === 'video') {
+      await loadVideoRecord(recordId);
     }
   };
 
@@ -631,21 +912,23 @@ const ChatPage: React.FC = () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
           const res = await chatService.deleteChatRecord(recordId);
-          if (res.code === 200) {
-            // 如果删除的是当前选中的记录，清空消息
-            if (selectedRecordId === recordId) {
-              setMessages([{
-                id: 'welcome',
-                role: 'assistant',
-                content: t.welcomeMessage,
-                timestamp: Date.now()
-              }]);
-              setSelectedRecordId(null);
-            }
-            // 重新获取记录列表
-            await refreshRecords();
+          // request.delete 已经转换了响应，成功时不会抛出异常
+          // 如果删除成功，刷新记录列表
+          // 如果删除的是当前选中的记录，清空消息
+          if (selectedRecordId === recordId) {
+            setMessages([{
+              id: 'welcome',
+              role: 'assistant',
+              content: t.welcomeMessage,
+              timestamp: Date.now()
+            }]);
+            setSelectedRecordId(null);
           }
+          // 重新获取记录列表
+          await refreshRecords();
+          toast.success('对话记录已删除');
         } catch (error) {
+          toast.error('删除对话记录失败');
           console.error('❌ 删除对话记录失败:', error);
         }
       },
@@ -700,6 +983,116 @@ const ChatPage: React.FC = () => {
       timestamp: Date.now()
       }
     ]);
+    setSelectedRecordId(null);
+  };
+
+  // 保存对话记录
+  const handleSaveChat = async () => {
+    // 过滤掉欢迎消息
+    const validMessages = messages.filter(msg => msg.id !== 'welcome');
+    if (validMessages.length === 0) {
+      toast.error('没有可保存的消息');
+      return;
+    }
+
+    const saveToast = toast.loading('正在保存...');
+    
+    try {
+
+      let apiType = 'chat-completions';
+      let chatData: any = {
+        messages: validMessages,
+        settings: {
+          model: selectedModel,
+          temperature,
+          presence_penalty: presencePenalty,
+        },
+        timestamp: Date.now(),
+      };
+
+      // 根据模式构建不同的数据结构
+      if (currentMode === 'image') {
+        apiType = 'image-generates';
+        chatData = {
+          chatMessages: validMessages,
+          generatedImages: validMessages
+            .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedImages)
+            .flatMap(msg => (msg as ExtendedChatMessage).generatedImages || []),
+          settings: {
+            selectedModel: selectedModel,
+            selectedSize: imageSize,
+            selectedStyle: imageStyle,
+            temperature,
+            watermark,
+            guidanceScale,
+            imageQuality,
+            imageN,
+            seed,
+          },
+          timestamp: Date.now(),
+        };
+      } else if (currentMode === 'video') {
+        apiType = 'video-generates';
+        chatData = {
+          chatMessages: validMessages,
+          generatedVideos: validMessages
+            .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedVideos)
+            .flatMap(msg => (msg as ExtendedChatMessage).generatedVideos || []),
+          settings: {
+            selectedModel: selectedModel,
+            videoDuration,
+            videoAspectRatio,
+            videoResolution,
+            imageGenerationMode,
+            cameraFixed,
+            wan25SmartRewrite,
+            wan25GenerateAudio,
+          },
+          timestamp: Date.now(),
+        };
+      }
+
+      // 生成标题
+      const firstUserMessage = validMessages.find(msg => msg.role === 'user');
+      const title = firstUserMessage?.content?.slice(0, 30) || 
+        (currentMode === 'image' ? '新图片生成' : currentMode === 'video' ? '新视频生成' : '新对话');
+
+      const apiTalkData = {
+        apiType,
+        apiJson: JSON.stringify(chatData),
+        taskJson: JSON.stringify({ title }),
+      };
+
+      if (selectedRecordId) {
+        // 更新现有记录
+        await chatService.updateChatRecord({
+          ...apiTalkData,
+          id: selectedRecordId,
+        });
+        toast.dismiss(saveToast);
+        toast.success('对话记录已更新');
+        console.log('💾 对话记录已更新:', selectedRecordId);
+      } else {
+        // 新增记录
+        const response = await chatService.addChatRecord(apiTalkData);
+        const newId = (response as any)?.data?.id || (response as any)?.id || (response as any);
+        if (newId) {
+          setSelectedRecordId(newId);
+          toast.dismiss(saveToast);
+          toast.success('对话记录已保存');
+          console.log('💾 对话记录已保存，ID:', newId);
+          // 刷新记录列表
+          refreshRecords();
+        } else {
+          toast.dismiss(saveToast);
+          toast.error('保存失败，未获取到记录ID');
+        }
+      }
+    } catch (error) {
+      toast.dismiss(saveToast);
+      toast.error('保存对话记录失败');
+      console.error('❌ 保存对话记录失败:', error);
+    }
   };
 
   // 停止生成
@@ -1559,84 +1952,119 @@ const ChatPage: React.FC = () => {
             )}
           </div>
 
-          {/* Shortcuts */}
-          <div className="space-y-4 mb-8 border-b border-border pb-8">
-            <h3 className="font-semibold">{t.shortcutsTitle}</h3>
-            <div className="grid grid-cols-1 gap-2">
-              <ActionButton icon={Trash2} label={t.actions.clear} onClick={handleClear} />
-              <ActionButton icon={Save} label={t.actions.save} />
-              <ActionButton icon={Plus} label={t.actions.new} onClick={() => {
-                handleClear();
-                setSelectedRecordId(null);
-              }} />
-              <ActionButton icon={RefreshCw} label={t.actions.refresh} onClick={refreshRecords} />
-            </div>
-          </div>
-
           {/* History */}
-          <div className="flex-1 min-h-0 flex flex-col">
-             <div className="flex items-center justify-between mb-4">
-               <h3 className="font-semibold">{t.historyTitle}</h3>
-               <button
-                 onClick={refreshRecords}
-                 disabled={recordsLoading}
-                 className="p-1 text-muted hover:text-foreground transition-colors"
-                 title="刷新历史记录"
-               >
-                 <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
-               </button>
+          <div className="flex-1 min-h-0 flex flex-col" style={{ minHeight: '200px', maxHeight: '100%' }}>
+             <div className="flex items-center justify-between mb-4 flex-shrink-0">
+               <h3 className="font-semibold text-foreground">{t.historyTitle}</h3>
+               <div className="flex items-center gap-1">
+                 <button
+                   onClick={handleClear}
+                   className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
+                   title="清空对话"
+                 >
+                   <Trash2 size={14} />
+                 </button>
+                 <button
+                   onClick={handleSaveChat}
+                   className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
+                   title="保存对话"
+                 >
+                   <Save size={14} />
+                 </button>
+                 <button
+                   onClick={() => {
+                     handleClear();
+                     setSelectedRecordId(null);
+                   }}
+                   className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
+                   title="新建对话"
+                 >
+                   <Plus size={14} />
+                 </button>
+                 <button
+                   onClick={refreshRecords}
+                   disabled={recordsLoading}
+                   className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                   title="刷新记录"
+                 >
+                   <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
+                 </button>
+               </div>
              </div>
              
-             {recordsLoading && chatRecords.length === 0 ? (
-               <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2">
-                 <Loader2 size={24} className="animate-spin" />
-                 <span className="text-sm">加载中...</span>
-               </div>
-             ) : chatRecords.length === 0 ? (
-             <div className="flex-1 flex flex-col items-center justify-center text-muted gap-2 opacity-50">
-               <MessageSquare size={32} strokeWidth={1.5} />
-               <span className="text-sm">{t.noHistory}</span>
-             </div>
-             ) : (
-               <div className="flex-1 overflow-y-auto space-y-1 custom-scrollbar">
-                 {chatRecords.map((record) => (
-                   <div
-                     key={record.id}
-                     onClick={() => loadChatRecord(record.id)}
-                     className={`group relative p-2 rounded-lg cursor-pointer transition-colors ${
-                       selectedRecordId === record.id
-                         ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-100'
-                         : 'hover:bg-border/50 text-muted hover:text-foreground'
-                     }`}
-                   >
-                     <div className="flex items-start justify-between gap-2">
-                       <div className="flex-1 min-w-0">
-                         <div className="text-sm font-medium truncate">{record.title}</div>
-                         <div className="text-xs opacity-70 mt-0.5">
-                           {record.messageCount} 条消息
-                           {record.model && ` · ${record.model}`}
-                         </div>
-                         <div className="text-xs opacity-50 mt-0.5">
-                           {new Date(record.updateTime).toLocaleString('zh-CN', {
-                             month: '2-digit',
-                             day: '2-digit',
-                             hour: '2-digit',
-                             minute: '2-digit',
-                           })}
+             <div className="flex-1 min-h-0 overflow-hidden">
+               {(() => {
+                 console.log('🔍 渲染历史记录 - 当前模式:', currentMode, '记录数量:', chatRecords.length, '加载中:', recordsLoading);
+                 
+                 if (recordsLoading && chatRecords.length === 0) {
+                   return (
+                     <div className="h-full flex flex-col items-center justify-center text-foreground gap-2">
+                       <Loader2 size={24} className="animate-spin" />
+                       <span className="text-sm">加载中...</span>
+                     </div>
+                   );
+                 }
+                 
+                 if (chatRecords.length === 0) {
+                   return (
+                     <div className="h-full flex flex-col items-center justify-center text-foreground gap-2 opacity-50">
+                       <MessageSquare size={32} strokeWidth={1.5} />
+                       <span className="text-sm">{t.noHistory}</span>
+                     </div>
+                   );
+                 }
+                 
+                 console.log('🔍 开始渲染记录列表，数量:', chatRecords.length);
+                 return (
+                   <div className="h-full overflow-y-auto space-y-1 custom-scrollbar pr-1">
+                     {chatRecords.map((record) => {
+                       console.log('🔍 渲染记录:', record.id, record.title);
+                       return (
+                     <div
+                       key={record.id}
+                       onClick={() => loadRecord(record.id)}
+                       className={`group relative p-2 rounded-lg cursor-pointer transition-colors bg-surface border border-transparent hover:border-border ${
+                         selectedRecordId === record.id
+                           ? 'bg-indigo-500/20 text-indigo-700 dark:text-indigo-100 border-indigo-500/30'
+                           : 'text-foreground hover:bg-background'
+                       }`}
+                     >
+                         <div className="flex items-start justify-between gap-2">
+                           <div className="flex-1 min-w-0">
+                             <div className="text-sm font-medium truncate text-foreground">{record.title}</div>
+                             {record.model && (
+                               <div className="text-xs text-muted-foreground mt-0.5">
+                                 {record.model}
+                               </div>
+                             )}
+                             <div className="text-xs text-muted-foreground/70 mt-0.5">
+                               {(() => {
+                                 const date = new Date(record.updateTime);
+                                 const year = date.getFullYear();
+                                 const month = String(date.getMonth() + 1).padStart(2, '0');
+                                 const day = String(date.getDate()).padStart(2, '0');
+                                 const hours = String(date.getHours()).padStart(2, '0');
+                                 const minutes = String(date.getMinutes()).padStart(2, '0');
+                                 const seconds = String(date.getSeconds()).padStart(2, '0');
+                                 return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                               })()}
+                             </div>
+                           </div>
+                           <button
+                             onClick={(e) => deleteChatRecord(record.id, e)}
+                             className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity flex-shrink-0"
+                             title="删除记录"
+                           >
+                             <Trash2 size={12} />
+                           </button>
                          </div>
                        </div>
-                       <button
-                         onClick={(e) => deleteChatRecord(record.id, e)}
-                         className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity"
-                         title="删除记录"
-                       >
-                         <Trash2 size={12} />
-                       </button>
-                     </div>
+                       );
+                     })}
                    </div>
-                 ))}
-               </div>
-             )}
+                 );
+               })()}
+             </div>
           </div>
         </div>
       </aside>
