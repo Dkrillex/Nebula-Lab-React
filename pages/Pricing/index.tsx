@@ -6,7 +6,8 @@ import { pricingService, PriceListVO } from '../../services/pricingService';
 import { orderService, OrderInfo } from '../../services/orderService';
 import { useAuthStore } from '../../stores/authStore';
 import BaseModal from '../../components/BaseModal';
-import InvoiceForm, { UserInvoiceForm, InvoiceFormRef } from '../../components/InvoiceForm';
+import InvoiceForm, { InvoiceFormRef } from '../../components/InvoiceForm';
+import { UserInvoiceForm } from '../../services/invoiceService';
 import toast from 'react-hot-toast';
 
 interface PricingPageProps {}
@@ -19,7 +20,12 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   // Hooks must be called unconditionally at the top level
   const [priceList, setPriceList] = useState<PriceListVO[]>([]);
   const [invoiceEnabled, setInvoiceEnabled] = useState(false);
-  const [invoiceForm, setInvoiceForm] = useState<UserInvoiceForm>({
+  const [loading, setLoading] = useState(true);
+  
+  // Invoice State
+  const invoiceFormRef = useRef<InvoiceFormRef>(null);
+  const [invoiceFormOpen, setInvoiceFormOpen] = useState(false);
+  const [invoiceFormData, setInvoiceFormData] = useState<UserInvoiceForm>({
     invoiceName: '',
     taxNumber: '',
     email: '',
@@ -28,22 +34,18 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     openingBank: '',
     bankAccount: '',
   });
-  const [loading, setLoading] = useState(true);
   
   // Payment State
   const [paymentType, setPaymentType] = useState('wechat');
   const [wxPayModalOpen, setWxPayModalOpen] = useState(false);
-  const [contactModalOpen, setContactModalOpen] = useState(false);
-  const [consultModalOpen, setConsultModalOpen] = useState(false);
+  const [contactModalOpen, setContactModalOpen] = useState(false); // 企业定制服务
+  const [consultModalOpen, setConsultModalOpen] = useState(false); // 在线咨询
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payStatus, setPayStatus] = useState<'pending' | 'success' | 'failed'>('pending');
-  const [totalAmount, setTotalAmount] = useState(0);
 
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const alipayPollTimer = useRef<NodeJS.Timeout | null>(null);
-  const invoiceFormRef = useRef<InvoiceFormRef>(null);
-  const originalBaseAmount = useRef(0);
 
   // Effects
   useEffect(() => {
@@ -53,27 +55,29 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     };
   }, []);
 
-  // 监听支付方式变化，非微信支付时自动取消发票选择，并更新自定义金额的默认值
+  // 监听支付方式变化，非微信支付时自动取消发票选择
   useEffect(() => {
     if (paymentType !== 'wechat' && invoiceEnabled) {
       setInvoiceEnabled(false);
+      setInvoiceFormData({
+        invoiceName: '',
+        taxNumber: '',
+        email: '',
+        companyAddress: '',
+        companyPhone: '',
+        openingBank: '',
+        bankAccount: '',
+      });
       toast('只有微信支付支持开发票，已自动取消发票选择', { icon: 'ℹ️' });
     }
     
-    // 如果当前有自定义金额的套餐，更新其默认值为最低金额
-    setPriceList(prev => prev.map(item => {
-      if (item.productQuantity === 6) {
-        const minAmount = getMinAmount(item);
-        const actualMinAmount = paymentType === 'wechat' 
-          ? minAmount 
-          : Number((minAmount / 7.3).toFixed(2));
-        // 如果当前金额小于新的最低金额，则更新为最低金额
-        if (!item.totalAmount || item.totalAmount < actualMinAmount) {
-          return { ...item, totalAmount: actualMinAmount };
-        }
-      }
-      return item;
-    }));
+    // 当支付方式改变时，重置价格表状态
+    // 重置所有价格项的自定义金额和数量，因为不同支付方式的货币单位不同
+    setPriceList(prev => prev.map(item => ({
+      ...item,
+      productQuantity: 1, // 重置为默认数量
+      totalAmount: undefined, // 清除自定义金额
+    })));
   }, [paymentType]);
 
   const stopPolling = () => {
@@ -127,23 +131,12 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     }
   };
 
-  const handleQuantityChange = (id: number | string, quantity: number, item?: PriceListVO) => {
-    setPriceList(prev => prev.map(priceItem => {
-      if (priceItem.id === id) {
-        const updated = { ...priceItem, productQuantity: quantity };
-        if (quantity !== 6) {
-          updated.totalAmount = Number(priceItem.productPrice) * quantity;
-        } else {
-          // 选择自定义时，设置默认值为最低金额
-          const minAmount = getMinAmount(priceItem);
-          const actualMinAmount = paymentType === 'wechat' 
-            ? minAmount 
-            : Number((minAmount / 7.3).toFixed(2));
-          updated.totalAmount = actualMinAmount;
-        }
-        return updated;
+  const handleQuantityChange = (id: number | string, quantity: number) => {
+    setPriceList(prev => prev.map(item => {
+      if (item.id === id) {
+        return { ...item, productQuantity: quantity };
       }
-      return priceItem;
+      return item;
     }));
   };
 
@@ -159,111 +152,47 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   // 获取最低金额限制
   const getMinAmount = (item: PriceListVO) => {
     if (item.productName === 'Business') {
-      return 398;
+      return 398; // 人民币
     }
     if (item.productName === 'Starter') {
-      return 10;
+      return 10; // 人民币
     }
-    return 1; // 其他版本的最低金额
-  };
-
-  // 计算积分
-  const calculatePoints = (item: PriceListVO, paymentType: string): number => {
-    let actualAmount = item.totalAmount || (Number(item.productPrice) * item.productQuantity);
-    
-    // 当是自定义数据的时候如果是美金输入的item.totalAmount按美金的值换算成人民币
-    if (item.productQuantity === 6 && paymentType !== 'wechat') {
-      actualAmount = (item.totalAmount || 0) * 7.3;
-    }
-
-    // 如果是支付宝支付（美金），需要将美金转换为人民币来计算积分
-    if (paymentType !== 'wechat') {
-      actualAmount = actualAmount * 7.3;
-    }
-
-    let pointsRatio = 2;
-    if (item.productName === 'Starter') {
-      pointsRatio = 1.72;
-    }
-    if (item.productName === 'Business') {
-      pointsRatio = 1.592;
-    }
-
-    let points;
-    if (paymentType !== 'wechat') {
-      points = (actualAmount / pointsRatio / 7.3).toFixed(2);
-    } else {
-      points = (actualAmount / pointsRatio).toFixed(2);
-    }
-
-    return Number(points);
-  };
-
-  // 获取价格显示文本
-  const getPriceText = (item: PriceListVO, paymentType: string): string => {
-    const price = Number(item.productPrice);
-    if (price === 9999) return "Let's talk!";
-    if (price === 0) return '免费';
-
-    const unit = paymentType === 'wechat' ? '￥' : '$';
-    let baseAmount = item.totalAmount || (price * item.productQuantity);
-
-    // 支付宝支付不支持开发票
-    if (paymentType !== 'wechat' && invoiceEnabled) {
-      const res = item.totalAmount || price;
-      return `${unit}${(res / 7.3).toFixed(2)}`;
-    }
-
-    // 微信支付：开票不加税点（根据Vue代码，实际不加税）
-    if (paymentType === 'wechat') {
-      if (item.totalAmount) {
-        return `${unit}${item.totalAmount}`;
-      } else {
-        return `${unit}${price}`;
-      }
-    }
-
-    // 支付宝支付（不开票）
-    const res = item.totalAmount || price;
-    return `${unit}${(res / 7.3).toFixed(2)}`;
+    return 1; // 其他版本的最低金额（人民币）
   };
 
   const handlePayment = async (item: PriceListVO) => {
     if (!user) {
-      toast.error('请先登录');
+      // Handle not logged in - maybe redirect to login or show auth modal
+      toast.error('Please login first');
       return;
+    }
+
+    // Validate custom amount
+    if (item.productQuantity === 6) {
+      const amount = Number(item.totalAmount);
+      if (!amount || amount <= 0) {
+        const currency = paymentType === 'wechat' ? '元' : '美元';
+        toast.error(`请输入有效的金额（${currency}）`);
+        return;
+      }
+      
+      // 检查最低金额限制
+      const minAmountRmb = getMinAmount(item);
+      const minAmount = paymentType === 'wechat' 
+        ? minAmountRmb 
+        : Number((minAmountRmb / 7.3).toFixed(2));
+      const currency = paymentType === 'wechat' ? '元' : '美元';
+      
+      if (amount < minAmount) {
+        toast.error(`${item.productName}版本最低金额为${minAmount}${currency}`);
+        return;
+      }
     }
 
     if (Number(item.productPrice) === 9999) {
-      setContactModalOpen(true);
-      return;
-    }
-
-    // 自定义金额验证
-    if (item.productQuantity === 6) {
-      if (!item.totalAmount) {
-        toast.error('请先输入自定义金额');
+        // Contact us logic
+        setContactModalOpen(true);
         return;
-      }
-      // 确保金额为整数
-      if (!Number.isInteger(Number(item.totalAmount))) {
-        toast.error('金额必须为整数');
-        return;
-      }
-      // 检查最低金额限制
-      const minAmount = getMinAmount(item);
-      const currency = paymentType === 'wechat' ? '元' : '美元';
-      const actualMinAmount =
-        paymentType === 'wechat'
-          ? minAmount
-          : Number((minAmount / 7.3).toFixed(2));
-
-      if (Number(item.totalAmount) < actualMinAmount) {
-        toast.error(
-          `${item.productName}版本最低金额为${actualMinAmount}${currency}`,
-        );
-        return;
-      }
     }
 
     // 只有微信支付支持开发票
@@ -272,12 +201,17 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       return;
     }
 
-    // 微信支付：判断是否开发票，需要验证发票信息
+    // 微信支付：判断是否开发票，若勾选则验证发票信息
     if (paymentType === 'wechat' && invoiceEnabled) {
       try {
-        await invoiceFormRef.current?.validate();
-      } catch {
+        if (!invoiceFormRef.current) {
+          toast.error('发票表单未初始化，请刷新页面重试');
+          return;
+        }
+        await invoiceFormRef.current.validate();
+      } catch (error) {
         toast.error('请先填写发票信息');
+        setInvoiceFormOpen(true);
         return;
       }
     }
@@ -295,26 +229,14 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       stopPolling();
       setPayStatus('pending');
 
-      let baseAmount = item.totalAmount || (Number(item.productPrice) * item.productQuantity);
-      originalBaseAmount.current = Math.round(baseAmount);
-
-      // 判断是否开发票，若勾选则加6%（但根据Vue代码实际不加）
-      if (invoiceEnabled) {
-        try {
-          await invoiceFormRef.current?.validate();
-          originalBaseAmount.current = Math.round(baseAmount);
-          baseAmount = Number((baseAmount).toFixed(2));
-        } catch {
-          toast.error('请先填写发票信息');
-          return;
-        }
-      }
-
-      setTotalAmount(baseAmount);
+      // 计算基础金额（不含税）
+      const baseAmount = item.totalAmount || Number(item.productPrice) * item.productQuantity;
+      // 传给后端的是原价，后端会根据 isInvoice 自动计算含税价格
+      const totalAmount = Number(baseAmount.toFixed(2));
 
       const params = {
         name: item.productName,
-        totalAmount: baseAmount,
+        totalAmount: totalAmount, // 传给后端的是原价（不含税），后端会自动加税
         type: 'wechat',
         userId: user?.userId,
         userName: user?.realName,
@@ -324,36 +246,41 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         appCount: item.productQuantity,
         productPeriod: item.productPeriod,
         isInvoice: invoiceEnabled ? 1 : 0,
-        originalPrice: originalBaseAmount.current,
-        invoiceName: invoiceEnabled ? invoiceForm.invoiceName : '',
-        taxNumber: invoiceEnabled ? invoiceForm.taxNumber : '',
-        email: invoiceEnabled ? invoiceForm.email : '',
-        companyAddress: invoiceEnabled ? invoiceForm.companyAddress : '',
-        companyPhone: invoiceEnabled ? invoiceForm.companyPhone : '',
-        openingBank: invoiceEnabled ? invoiceForm.openingBank : '',
-        bankAccount: invoiceEnabled ? invoiceForm.bankAccount : '',
+        originalPrice: Math.round(baseAmount), // 原始价格（不含税）
+        invoiceName: invoiceEnabled ? invoiceFormData.invoiceName : '',
+        taxNumber: invoiceEnabled ? invoiceFormData.taxNumber : '',
+        email: invoiceEnabled ? invoiceFormData.email : '',
+        companyAddress: invoiceEnabled ? invoiceFormData.companyAddress : '',
+        companyPhone: invoiceEnabled ? invoiceFormData.companyPhone : '',
+        openingBank: invoiceEnabled ? invoiceFormData.openingBank : '',
+        bankAccount: invoiceEnabled ? invoiceFormData.bankAccount : '',
       };
 
       const res: any = await orderService.createOrder(params);
-      const data = res.data || res;
+      // 根据用户反馈，数据结构包含 code, msg, data
+      // 且 request.ts 返回的是整个响应对象
+
+      const data = res.data || res; // 尝试从 res.data 获取，如果直接是 data 则使用 res
 
       if (data && data.codeUrl) {
+        // 保存订单信息，显示金额使用原价（不含税）
         const info = {
           ...data,
-          totalAmount: baseAmount
+          totalAmount: totalAmount, // 显示金额（不含税，原价）
+          originalAmount: baseAmount, // 原始金额（不含税，用于显示）
         };
         setOrderInfo(info);
         setWxPayModalOpen(true);
         startWxPolling(data.outTradeNo);
       } else {
         console.error('Failed to create WeChat order', res);
+        // 如果有错误信息，可以在这里显示
         if (res.msg) {
           toast.error(res.msg);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Payment error:', error);
-      toast.error(error?.message || '支付失败，请重试');
     } finally {
       setPayLoading(false);
     }
@@ -361,42 +288,32 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
   const startWxPolling = (outTradeNo: string) => {
     let attempts = 0;
-    let pollInterval = 10000; // 初始10秒
-
-    const poll = async () => {
+    pollTimer.current = setInterval(async () => {
       try {
         attempts++;
-        if (attempts > 3) {
-          stopPolling();
-          setPayStatus('failed');
-          toast.error('支付超时，请稍后在订单页面查看或联系客服');
-          return;
+        if (attempts > 60) { // Timeout after ~5 mins
+             stopPolling();
+             setPayStatus('failed');
+             return;
         }
 
         const res: any = await orderService.queryOrder({ outTradeNo });
+        // queryOrder 可能也返回类似 {code: 200, data: { tradeState: 'SUCCESS', ... }}
         const data = res.data || res;
 
-        if (data && data.tradeState === 'SUCCESS') {
+        if (data && (data.tradeState === 'SUCCESS' || data.tradeState === 'REFUND')) {
           stopPolling();
           setPayStatus('success');
-          toast.success('支付成功！');
           setTimeout(() => {
             setWxPayModalOpen(false);
-            useAuthStore.getState().fetchUserInfo();
+            // Refresh user info/credits
+             useAuthStore.getState().fetchUserInfo();
           }, 2000);
-        } else if (data && data.tradeState === 'NOTPAY') {
-          pollInterval += 5000;
-          if (pollTimer.current) {
-            clearInterval(pollTimer.current);
-          }
-          pollTimer.current = setTimeout(poll, pollInterval);
         }
       } catch (error) {
         console.error('Polling error:', error);
       }
-    };
-
-    pollTimer.current = setTimeout(poll, pollInterval);
+    }, 3000);
   };
 
   const handleAlipayPayment = async (item: PriceListVO) => {
@@ -404,11 +321,22 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       setPayLoading(true);
       stopPolling();
 
-      let baseAmount = item.totalAmount || (Number(item.productPrice) * item.productQuantity);
-      originalBaseAmount.current = Math.round(baseAmount);
+      // 非微信支付时，如果用户输入了自定义金额，那已经是美元了，不需要转换
+      // 如果没有自定义金额，需要将人民币价格转换为美元
+      let usdAmount: string;
+      if (item.productQuantity === 6 && item.totalAmount) {
+        // 自定义金额，用户输入的是美元
+        usdAmount = Number(item.totalAmount).toFixed(2);
+      } else {
+        // 非自定义金额，需要将人民币转换为美元
+        const baseAmount = Number(item.productPrice) * item.productQuantity;
+        usdAmount = (baseAmount / 7.3).toFixed(2);
+      }
 
-      // 美元汇率转换（除以7.3）
-      const usdAmount = (baseAmount / 7.3).toFixed(2);
+      // 计算原始价格（人民币），用于后端记录
+      const originalPrice = item.productQuantity === 6 && item.totalAmount
+        ? Math.round(Number(item.totalAmount) * 7.3) // 美元转人民币
+        : Math.round(Number(item.productPrice) * item.productQuantity);
 
       const params = {
         name: item.productName,
@@ -422,8 +350,15 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         appType: item.id,
         appCount: item.productQuantity,
         productPeriod: item.productPeriod,
-        isInvoice: 0, // 支付宝不支持发票
-        originalPrice: originalBaseAmount.current,
+        isInvoice: invoiceEnabled ? 1 : 0,
+        originalPrice: originalPrice,
+        invoiceName: invoiceEnabled ? invoiceFormData.invoiceName : '',
+        taxNumber: invoiceEnabled ? invoiceFormData.taxNumber : '',
+        email: invoiceEnabled ? invoiceFormData.email : '',
+        companyAddress: invoiceEnabled ? invoiceFormData.companyAddress : '',
+        companyPhone: invoiceEnabled ? invoiceFormData.companyPhone : '',
+        openingBank: invoiceEnabled ? invoiceFormData.openingBank : '',
+        bankAccount: invoiceEnabled ? invoiceFormData.bankAccount : '',
       };
 
       const res: any = await orderService.createAntomPaymentSession(params);
@@ -431,7 +366,6 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
       if (data && data.normalUrl) {
         window.open(data.normalUrl, '_blank');
-        toast.loading('已打开支付页面，请完成支付', { id: 'pay_poll' });
         startAlipayPolling(data.paymentRequestId);
       } else {
         console.error('Failed to create Antom payment session', res);
@@ -439,65 +373,34 @@ const PricingPage: React.FC<PricingPageProps> = () => {
           toast.error(res.msg);
         }
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Alipay error:', error);
-      toast.error(error?.message || '支付失败，请重试');
     } finally {
       setPayLoading(false);
     }
   };
 
   const startAlipayPolling = (paymentRequestId: string) => {
-    const maxAttempts = 30;
-    let attempts = 0;
-
     const poll = async () => {
       try {
-        attempts++;
-        if (attempts > maxAttempts) {
-          toast.dismiss('pay_poll');
-          toast('支付超时，请稍后在订单页面查看或联系客服', { icon: '⚠️' });
-          if (alipayPollTimer.current) {
-            clearTimeout(alipayPollTimer.current);
-            alipayPollTimer.current = null;
-          }
-          return;
-        }
-
         const res: any = await orderService.queryAntomPaymentResult(paymentRequestId);
         const data = res.data || res;
 
-        switch (data.paymentStatus) {
-          case 'FAIL': {
-            toast.dismiss('pay_poll');
-            toast.error('支付失败，请重试');
-            if (alipayPollTimer.current) {
-              clearTimeout(alipayPollTimer.current);
-              alipayPollTimer.current = null;
-            }
-            return;
-          }
-          case 'PROCESSING': {
-            // 继续轮询
-            alipayPollTimer.current = setTimeout(poll, 5000);
-            break;
-          }
-          case 'SUCCESS': {
-            toast.dismiss('pay_poll');
-            toast.success('支付成功！充值处理中...');
-            useAuthStore.getState().fetchUserInfo();
-            if (alipayPollTimer.current) {
-              clearTimeout(alipayPollTimer.current);
-              alipayPollTimer.current = null;
-            }
-            return;
-          }
+        if (data.paymentStatus === 'SUCCESS') {
+          setPayStatus('success');
+          toast.success('Payment Successful!');
+          // Refresh user info
+          useAuthStore.getState().fetchUserInfo();
+        } else if (data.paymentStatus === 'FAIL') {
+          setPayStatus('failed');
+        } else {
+          // Continue polling
+          alipayPollTimer.current = setTimeout(poll, 5000);
         }
       } catch (error) {
         console.error('Alipay polling error:', error);
       }
     };
-
     poll();
   };
 
@@ -517,86 +420,130 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   }
 
   const paymentOptions = [
-    { value: 'wechat', label: '微信支付' },
-    { value: 'Alipay', label: '支付宝支付' },
-    { value: 'AlipayHK', label: 'AlipayHK' },
-    { value: 'BillEase', label: 'BillEase' },
-    { value: 'Boost', label: 'Boost' },
-    { value: 'BPI', label: 'BPI' },
-    { value: 'GCash', label: 'GCash' },
-    { value: 'Kredivo', label: 'Kredivo' },
-    { value: 'LINE Pay', label: 'Rabbit LINE Pay' },
-    { value: "Touch'n Go eWallet", label: "Touch'n Go eWallet" },
+    { value: 'wechat', label: t.wechatPay || '微信支付', color: '#00c300' },
+    { value: 'Alipay', label: '支付宝支付', color: '#1677ff' },
+    { value: 'AlipayHK', label: 'AlipayHK', color: '#1677ff' },
+    { value: 'BillEase', label: 'BillEase', color: '#722ed1' },
+    { value: 'Boost', label: 'Boost', color: '#52c41a' },
+    { value: 'BPI', label: 'BPI', color: '#1890ff' },
+    { value: 'GCash', label: 'GCash', color: '#fa8c16' },
+    { value: 'Kredivo', label: 'Kredivo', color: '#eb2f96' },
+    { value: 'LINE Pay', label: 'Rabbit LINE Pay', color: '#00c300' },
+    { value: "Touch'n Go eWallet", label: "Touch'n Go eWallet", color: '#13c2c2' },
   ];
 
   return (
     <div className="bg-surface/30 min-h-screen pb-12 font-sans">
-      <div className="container mx-auto px-4 max-w-6xl pt-8">
-        {/* Configuration Bar - 移除付费周期选择 */}
+      {/* Header */}
+      <div className="w-full pt-12 pb-8 px-4 text-center">
+        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">{t.title}</h1>
+        <p className="text-muted opacity-90 max-w-2xl mx-auto">{t.subtitle}</p>
+      </div>
+
+      <div className="container mx-auto px-4 max-w-6xl">
+        
+        {/* Configuration Bar */}
         <div className="bg-background rounded-xl shadow-sm border border-border p-4 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                setConsultModalOpen(true);
-              }}
-              className="text-sm text-blue-600 hover:text-blue-800 underline flex items-center gap-1"
-            >
-              <HelpCircle size={14} />
-              充值有疑问？请点击此处
-            </a>
-          </div>
-          
-          <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-8">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-700">支付方式</span>
-              <select
-                value={paymentType}
-                onChange={(e) => setPaymentType(e.target.value)}
-                className="bg-white border border-gray-300 rounded-md text-sm px-3 py-1.5 outline-none focus:border-blue-500 min-w-[150px]"
-              >
-                {paymentOptions.map(opt => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-700">是否开具发票</span>
-              <button 
-                onClick={() => {
-                  if (paymentType === 'wechat') {
-                    setInvoiceEnabled(!invoiceEnabled);
-                  }
-                }}
-                className={`w-11 h-6 rounded-full relative transition-colors ${
-                  invoiceEnabled ? 'bg-blue-600' : 'bg-gray-300'
-                } ${paymentType !== 'wechat' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                disabled={paymentType !== 'wechat'}
-              >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
-                  invoiceEnabled ? 'translate-x-5' : 'translate-x-0'
-                }`}></div>
-              </button>
-              {invoiceEnabled && paymentType === 'wechat' && (
-                <button
-                  onClick={() => invoiceFormRef.current?.open()}
-                  className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+           <div className="flex items-center gap-4">
+             <h2 className="font-bold text-lg text-foreground">{t.paymentCycle}</h2>
+             {/* <a href="#" className="text-xs text-primary hover:underline flex items-center gap-1">
+               <HelpCircle size={12} />
+               {t.questions}
+             </a> */}
+             <a 
+               href="javascript:void(0)"
+               onClick={(e) => {
+                 e.preventDefault();
+                 setConsultModalOpen(true);
+               }}
+               className="text-sm text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
+             >
+               如对充值有疑问？请点击此处
+             </a>
+           </div>
+           
+           <div className="flex flex-col sm:flex-row items-center gap-4 md:gap-8">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted">{t.paymentMethod}</span>
+                <div className="relative">
+                  <select
+                    value={paymentType}
+                    onChange={(e) => setPaymentType(e.target.value)}
+                    className="bg-background border border-border rounded-md text-sm px-3 py-2 pr-8 outline-none focus:border-primary appearance-none cursor-pointer min-w-[200px]"
+                    style={{
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: 'no-repeat',
+                      backgroundPosition: 'right 0.5rem center',
+                      paddingRight: '2rem',
+                    }}
+                  >
+                    {paymentOptions.map(opt => (
+                      <option key={opt.value} value={opt.value}>{opt.label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-muted">{t.invoice}</span>
+                <button 
+                  onClick={() => {
+                    if (paymentType !== 'wechat') {
+                      return; // 非微信支付时直接返回
+                    }
+                    const newEnabled = !invoiceEnabled;
+                    setInvoiceEnabled(newEnabled);
+                    if (newEnabled && (!invoiceFormData.invoiceName || !invoiceFormData.taxNumber || !invoiceFormData.email)) {
+                      // 如果启用发票但信息不完整，打开表单
+                      setTimeout(() => {
+                        setInvoiceFormOpen(true);
+                      }, 100); // 延迟一点，让开关动画完成
+                    } else if (!newEnabled) {
+                      // 关闭开关时，清空发票数据
+                      setInvoiceFormData({
+                        invoiceName: '',
+                        taxNumber: '',
+                        email: '',
+                        companyAddress: '',
+                        companyPhone: '',
+                        openingBank: '',
+                        bankAccount: '',
+                      });
+                    }
+                  }}
+                  className={`w-10 h-5 rounded-full relative transition-colors ${
+                    invoiceEnabled ? 'bg-primary' : 'bg-secondary/30'
+                  } ${
+                    paymentType !== 'wechat' ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                  }`}
+                  disabled={paymentType !== 'wechat'}
+                  type="button"
                 >
-                  填写发票信息
+                  <div 
+                    className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                      invoiceEnabled ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  ></div>
                 </button>
-              )}
-            </div>
-          </div>
+                {invoiceEnabled && paymentType === 'wechat' && (
+                  <button
+                    onClick={() => setInvoiceFormOpen(true)}
+                    className="text-xs text-primary hover:underline cursor-pointer"
+                    type="button"
+                  >
+                    填写发票信息
+                  </button>
+                )}
+              </div>
+           </div>
         </div>
 
         {/* Pricing Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            <div className="col-span-full flex justify-center py-12">
-              <Loader2 className="animate-spin text-white" size={32} />
-            </div>
+             <div className="col-span-full flex justify-center py-12">
+                <Loader2 className="animate-spin text-primary" />
+             </div>
           ) : (
             priceList.map((item) => {
               const price = Number(item.productPrice);
@@ -604,42 +551,79 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               const isFree = price === 0;
 
               // Determine styles based on price type
-              let borderColor = 'border-indigo-200';
-              let bgColor = 'bg-gradient-to-br from-blue-50 to-indigo-50';
+              let borderColor = 'border-indigo-200 dark:border-indigo-800';
               let btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               
               if (isEnterprise) {
-                borderColor = 'border-purple-300';
-                bgColor = 'bg-gradient-to-br from-purple-50 to-pink-50';
-                btnColor = 'bg-purple-600 hover:bg-purple-700';
+                borderColor = 'border-indigo-400 dark:border-indigo-600';
+                btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               } else if (isFree) {
-                borderColor = 'border-green-200';
-                bgColor = 'bg-gradient-to-br from-green-50 to-emerald-50';
+                borderColor = 'border-green-200 dark:border-green-800';
                 btnColor = 'bg-green-600 hover:bg-green-700';
+              } else if (item.productName === 'Business') {
+                borderColor = 'border-indigo-200 dark:border-indigo-800';
+                btnColor = 'bg-indigo-600 hover:bg-indigo-700';
               }
 
               return (
-                <PricingCard 
+          <PricingCard 
                   key={item.id}
                   item={item}
                   isEnterprise={isEnterprise}
-                  isFree={isFree}
                   paymentType={paymentType}
                   invoiceEnabled={invoiceEnabled}
                   onQuantityChange={(q) => handleQuantityChange(item.id, q)}
                   onCustomAmountChange={(amount) => handleCustomAmountChange(item.id, amount)}
                   onBuy={() => handlePayment(item)}
                   loading={payLoading}
-                  getPriceText={getPriceText}
-                  calculatePoints={calculatePoints}
-                  getMinAmount={getMinAmount}
+             labels={t.labels}
                   borderColor={borderColor}
-                  bgColor={bgColor}
                   btnColor={btnColor}
                 />
               );
             })
           )}
+        </div>
+
+        {/* 服务优势 和 需要帮助 */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-16">
+            {/* 服务优势 */}
+            <div className="flex-1">
+              <h4 className="text-xl font-semibold text-foreground mb-4">
+                服务优势
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  ✨ AI智能创作
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  🚀 高效内容生成
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  💎 专业技术支持
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  🔒 数据安全保障
+                </span>
+              </div>
+            </div>
+
+            {/* 需要帮助 */}
+            <div className="flex-shrink-0 text-center">
+              <h4 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">
+                需要帮助？
+              </h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                请拨打电话：<a 
+                  href="tel:18890659150" 
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  18890659150
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -647,10 +631,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       <BaseModal
         isOpen={wxPayModalOpen}
         onClose={handleCloseModal}
-        title={null}
+        title={payStatus === 'success' ? '支付成功' : '扫码支付'}
         width="max-w-md"
       >
-        <div className="flex flex-col items-center justify-center py-8 space-y-6">
+        <div className="flex flex-col items-center justify-center py-6 space-y-6">
           {payStatus === 'success' ? (
             <div className="flex flex-col items-center text-green-600 animate-in fade-in zoom-in duration-300">
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
@@ -659,170 +643,186 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               <h3 className="text-xl font-bold">支付成功！</h3>
               <p className="text-gray-500 mt-2">感谢您的购买</p>
             </div>
-          ) : totalAmount === 9999 ? (
-            <div className="flex flex-col items-center space-y-6">
-              <h3 className="text-xl font-bold text-gray-900">企业定制服务</h3>
-              <p className="text-sm text-gray-600">为您提供专业的AI解决方案</p>
-              <div className="space-y-4 w-full">
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl">📱</div>
-                  <div>
-                    <div className="text-xs text-gray-500">联系电话</div>
-                    <div className="text-sm font-semibold">18890659150</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-                  <div className="text-2xl">⏰</div>
-                  <div>
-                    <div className="text-xs text-gray-500">服务时间</div>
-                    <div className="text-sm font-semibold">工作日 9:00-18:00</div>
-                  </div>
-                </div>
-              </div>
-            </div>
           ) : (
             <>
-              <div className="text-center space-y-2">
-                <p className="text-sm text-gray-500">支付金额</p>
-                <div className="text-3xl font-bold text-gray-900">
-                  ¥{totalAmount.toFixed(2)}
+              {/* 支付金额显示 */}
+              <div className="text-center space-y-2 w-full">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">支付金额</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                  ¥{orderInfo ? Number(orderInfo.originalAmount || orderInfo.totalAmount || 0).toFixed(2) : '0.00'}
                 </div>
-                {invoiceEnabled && (
-                  <div className="mt-4 text-left space-y-2 text-sm">
-                    <div className="font-medium text-gray-700">发票信息</div>
-                    <div className="space-y-1 text-gray-600">
-                      <div>发票抬头：{invoiceForm.invoiceName}</div>
-                      <div>纳税人识别号：{invoiceForm.taxNumber}</div>
-                      <div>邮箱：{invoiceForm.email}</div>
+              </div>
+
+              {/* 二维码区域 */}
+              <div className="relative w-full flex justify-center">
+                {orderInfo?.codeUrl ? (
+                  <div className="relative inline-block">
+                    {/* 二维码容器 */}
+                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative">
+                      <QRCodeSVG value={orderInfo.codeUrl} size={180} />
+                      {/* 四个角的装饰框 - 在二维码容器内部 */}
+                      <div className="absolute top-0 left-0 w-6 h-6 border-t-4 border-l-4 border-blue-500 rounded-tl-lg pointer-events-none"></div>
+                      <div className="absolute top-0 right-0 w-6 h-6 border-t-4 border-r-4 border-blue-500 rounded-tr-lg pointer-events-none"></div>
+                      <div className="absolute bottom-0 left-0 w-6 h-6 border-b-4 border-l-4 border-blue-500 rounded-bl-lg pointer-events-none"></div>
+                      <div className="absolute bottom-0 right-0 w-6 h-6 border-b-4 border-r-4 border-blue-500 rounded-br-lg pointer-events-none"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100">
+                    <div className="w-[180px] h-[180px] flex flex-col items-center justify-center space-y-3">
+                      <Loader2 size={32} className="animate-spin text-primary" />
+                      <div className="text-center">
+                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          正在生成支付二维码
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                          请稍候...
+                        </p>
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="bg-white p-4 rounded-xl shadow-sm border-2 border-gray-200 relative">
-                {orderInfo?.codeUrl ? (
-                  <>
-                    <QRCodeSVG value={orderInfo.codeUrl} size={200} />
-                    <div className="absolute top-4 left-4 w-5 h-5 border-t-2 border-l-2 border-blue-600"></div>
-                    <div className="absolute top-4 right-4 w-5 h-5 border-t-2 border-r-2 border-blue-600"></div>
-                    <div className="absolute bottom-4 left-4 w-5 h-5 border-b-2 border-l-2 border-blue-600"></div>
-                    <div className="absolute bottom-4 right-4 w-5 h-5 border-b-2 border-r-2 border-blue-600"></div>
-                  </>
-                ) : (
-                  <div className="w-[200px] h-[200px] bg-gray-100 animate-pulse rounded-lg flex items-center justify-center text-gray-400">
-                    <Loader2 className="animate-spin" size={32} />
+              {/* 支付说明步骤 */}
+              <div className="w-full space-y-3">
+                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
+                    1
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-3 w-full">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</div>
                   <span>打开微信扫一扫</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">2</div>
+                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
+                    2
+                  </div>
                   <span>扫描上方二维码</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">3</div>
+                <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
+                    3
+                  </div>
                   <span>确认支付完成购买</span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg w-full">
-                <div className="text-xl">💡</div>
-                <div className="text-sm text-yellow-800">
+              {/* 支付提示 */}
+              <div className="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-start gap-2">
+                <span className="text-lg">💡</span>
+                <p className="text-xs text-orange-800 dark:text-orange-200 flex-1">
                   支付完成后将自动关闭此窗口，请勿重复支付
-                </div>
-              </div>
-
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <Loader2 size={16} className="animate-spin" />
-                等待支付中...
+                </p>
               </div>
             </>
           )}
         </div>
       </BaseModal>
 
-      {/* Contact Modal */}
-      <BaseModal
-        isOpen={contactModalOpen}
-        onClose={() => setContactModalOpen(false)}
-        title="企业定制服务"
-        width="max-w-md"
-      >
-        <div className="flex flex-col items-center justify-center py-6 text-center space-y-6">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900 mb-2">企业定制服务</h3>
-            <p className="text-sm text-gray-500">为您提供专业的AI解决方案</p>
-          </div>
-          
-          <div className="space-y-4 w-full">
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl">📱</div>
-              <div className="text-left">
-                <div className="text-xs text-gray-500">联系电话</div>
-                <div className="text-sm font-semibold">18890659150</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
-              <div className="text-2xl">⏰</div>
-              <div className="text-left">
-                <div className="text-xs text-gray-500">服务时间</div>
-                <div className="text-sm font-semibold">工作日 9:00-18:00</div>
-              </div>
-            </div>
-          </div>
-
-          <div className="text-center">
-            <div className="text-sm font-semibold text-gray-700 mb-2">微信联系</div>
-            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 inline-block">
-              <img 
-                src="/zhenshangWxCode.png" 
-                alt="微信联系方式" 
-                className="w-32 h-32 object-contain"
-              />
-            </div>
-            <div className="text-xs text-gray-500 mt-2">扫码添加企业微信</div>
-          </div>
-        </div>
-      </BaseModal>
-
-      {/* Consult Modal */}
+      {/* 在线咨询 Modal */}
       <BaseModal
         isOpen={consultModalOpen}
         onClose={() => setConsultModalOpen(false)}
         title="在线咨询"
         width="max-w-sm"
       >
-        <div className="flex flex-col items-center justify-center py-6 text-center space-y-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">需要帮助？</h3>
-            <p className="text-sm text-gray-600">扫描下方二维码，立即咨询</p>
-          </div>
-          
-          <div className="bg-white p-4 rounded-lg shadow-md">
-            <img 
-              src="/zhenshangWxCode.png" 
-              alt="微信二维码" 
-              className="w-48 h-48 object-contain"
-            />
-          </div>
+         <div className="flex flex-col items-center justify-center py-6 text-center">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">联系我们</h3>
+            <p className="text-sm text-gray-500 mb-6">扫描下方二维码，立即咨询</p>
+            
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+               <img 
+                 src="/lab/zhenshangWxCode.png" 
+                 alt="微信联系方式" 
+                 className="w-[200px] h-[200px] object-contain"
+               />
+            </div>
 
-          <div className="text-sm text-gray-500 space-y-1">
-            <p>工作时间：周一至周五 9:00-18:00</p>
-            <p>我们将为您提供专业的服务支持</p>
-          </div>
-        </div>
+            <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
+              <p>工作时间：周一至周五 9:00-18:00</p>
+              <p>我们将为您提供专业的服务支持</p>
+            </div>
+         </div>
       </BaseModal>
 
-      {/* Invoice Form */}
+      {/* 企业定制服务 Modal */}
+      <BaseModal
+        isOpen={contactModalOpen}
+        onClose={() => setContactModalOpen(false)}
+        title="企业定制服务"
+        width="max-w-2xl"
+      >
+         <div className="py-2">
+            {/* 副标题 */}
+            <div className="text-center mb-6">
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                为您提供专业的AI解决方案
+              </p>
+            </div>
+
+            {/* 联系内容 */}
+            <div className="flex flex-col md:flex-row gap-8 mb-8">
+              {/* 联系信息 */}
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl flex-shrink-0">📱</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">联系电话</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">18890659150</div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="text-2xl flex-shrink-0">⏰</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">服务时间</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">工作日 9:00-18:00</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 微信联系 */}
+              <div className="flex-shrink-0 text-center">
+                <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+                  微信联系
+                </div>
+                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
+                  <img 
+                    src="/lab/zhenshangWxCode.png" 
+                    alt="微信联系方式" 
+                    className="w-[200px] h-[200px] object-contain mx-auto"
+                  />
+                </div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  扫码添加企业微信
+                </div>
+              </div>
+            </div>
+
+            {/* 功能标签 */}
+            <div className="flex justify-center gap-3 flex-wrap">
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                🎯 定制化方案
+              </div>
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                🔧 技术支持
+              </div>
+              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
+                📊 数据分析
+              </div>
+            </div>
+         </div>
+      </BaseModal>
+
+      {/* Invoice Form Modal */}
       <InvoiceForm
         ref={invoiceFormRef}
-        invoiceForm={invoiceForm}
-        onFormChange={setInvoiceForm}
+        isOpen={invoiceFormOpen}
+        onClose={() => setInvoiceFormOpen(false)}
+        initialData={invoiceFormData}
+        onSubmit={(data) => {
+          setInvoiceFormData(data);
+          toast.success('发票信息已保存');
+          setInvoiceFormOpen(false);
+        }}
       />
     </div>
   );
@@ -831,143 +831,215 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 interface PricingCardProps {
   item: PriceListVO;
   isEnterprise: boolean;
-  isFree: boolean;
   paymentType: string;
   invoiceEnabled: boolean;
   onQuantityChange: (quantity: number) => void;
   onCustomAmountChange: (amount: number) => void;
   onBuy: () => void;
   loading: boolean;
-  getPriceText: (item: PriceListVO, paymentType: string) => string;
-  calculatePoints: (item: PriceListVO, paymentType: string) => number;
-  getMinAmount: (item: PriceListVO) => number;
+  labels: any;
   borderColor: string;
-  bgColor: string;
   btnColor: string;
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
-  item, isEnterprise, isFree, paymentType, invoiceEnabled, onQuantityChange, onCustomAmountChange, onBuy, loading, getPriceText, calculatePoints, getMinAmount, borderColor, bgColor, btnColor 
+  item, isEnterprise, paymentType, invoiceEnabled, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, borderColor, btnColor 
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
   const price = Number(item.productPrice);
   const quantity = item.productQuantity || 1;
   const isCustom = quantity === 6;
+  const isWechat = paymentType === 'wechat';
+  const currencyUnit = isWechat ? '￥' : '$';
+  const exchangeRate = 7.3; // 人民币对美元汇率
   
-  const priceText = getPriceText(item, paymentType);
-  const points = calculatePoints(item, paymentType);
-  
-  // 计算自定义金额输入框的最低金额
-  const minAmount = getMinAmount(item);
-  const actualMinAmount = paymentType === 'wechat' 
-    ? minAmount 
-    : Number((minAmount / 7.3).toFixed(2));
+  // Calculate points and price
+  let totalPrice = price * quantity;
+  let totalPoints = Number(item.productScore) * quantity;
+
+  if (isCustom) {
+    const customAmount = Number(item.totalAmount) || 0;
+    // 如果是自定义金额且非微信支付，用户输入的是美元，需要转换为人民币来计算积分
+    const actualAmount = (isCustom && !isWechat && customAmount) ? customAmount * exchangeRate : customAmount;
+    totalPrice = customAmount; // 显示用户输入的金额（始终显示原价，不含税）
+    
+    // 计算积分：根据产品类型确定积分比例
+    let pointsRatio = 2; // 默认比例
+    if (item.productName === 'Starter') {
+      pointsRatio = 1.72;
+    } else if (item.productName === 'Business') {
+      pointsRatio = 1.592;
+    }
+    
+    // 计算积分
+    if (!isWechat) {
+      // 非微信支付：先将美元转换为人民币，计算积分，再转换回美元显示
+      const rmbAmount = actualAmount;
+      totalPoints = Number((rmbAmount / pointsRatio / exchangeRate).toFixed(2));
+    } else {
+      // 微信支付：直接用人民币计算积分
+      totalPoints = Number((actualAmount / pointsRatio).toFixed(2));
+    }
+  } else {
+    // 非自定义金额：根据支付方式转换价格显示
+    if (!isWechat) {
+      // 非微信支付：将人民币价格转换为美元显示
+      totalPrice = Number((totalPrice / exchangeRate).toFixed(2));
+      
+      // 计算积分：先将美元转换为人民币，计算积分，再转换回美元显示
+      const rmbAmount = price * quantity;
+      let pointsRatio = 2;
+      if (item.productName === 'Starter') {
+        pointsRatio = 1.72;
+      } else if (item.productName === 'Business') {
+        pointsRatio = 1.592;
+      }
+      totalPoints = Number((rmbAmount / pointsRatio / exchangeRate).toFixed(2));
+    } else {
+      // 微信支付：保持人民币价格（始终显示原价，不含税）
+      // 积分基于原始价格计算
+      let pointsRatio = 2;
+      if (item.productName === 'Starter') {
+        pointsRatio = 1.72;
+      } else if (item.productName === 'Business') {
+        pointsRatio = 1.592;
+      }
+      totalPoints = Number((totalPrice / pointsRatio).toFixed(2));
+    }
+  }
 
   return (
-    <div className={`bg-white border-2 ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-lg hover:shadow-xl transition-all ${bgColor} ${isEnterprise ? 'relative overflow-hidden' : ''}`}>
+    <div className={`bg-background border ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow ${isEnterprise ? 'relative overflow-hidden' : ''}`}>
       
-      <div className="text-center mb-4">
-        <h3 className="text-2xl font-bold text-gray-900">
-          {isEnterprise ? 'Enterprise' : `${item.productName}会员`}
-        </h3>
+      <div className="text-center mb-2 relative z-10">
+        <h3 className="text-xl font-bold text-foreground">{isEnterprise ? 'Enterprise' : item.productName}</h3>
+        {/* {isEnterprise && <div className="text-sm text-muted mt-1">{item.productDescription}</div>} */}
       </div>
 
-      <div className="text-center mb-4">
-        <div className="text-4xl font-bold text-indigo-600 h-20 flex items-center justify-center">
+      <div className="text-center mb-2 relative z-10">
+        <div className="text-4xl font-bold text-primary h-16 flex items-center justify-center">
           {isEnterprise ? "Let's talk!" : (
-            isCustom ? (
-              <div className="flex items-center justify-center gap-2">
-                <span className="text-2xl">{paymentType === 'wechat' ? '￥' : '$'}</span>
-                <input 
-                  type="number" 
-                  className="w-32 text-4xl font-bold text-indigo-600 bg-transparent border-b-2 border-indigo-300 focus:border-indigo-600 outline-none text-center"
-                  value={item.totalAmount || ''}
-                  placeholder="0"
-                  onChange={(e) => onCustomAmountChange(Number(e.target.value))}
-                  min={actualMinAmount}
-                  step={paymentType === 'wechat' ? 50 : 10}
-                  style={{
-                    MozAppearance: 'textfield',
-                  }}
-                />
-                <style>{`
-                  input[type=number]::-webkit-inner-spin-button, 
-                  input[type=number]::-webkit-outer-spin-button { 
-                    -webkit-appearance: none; 
-                    margin: 0; 
-                  }
-                `}</style>
-              </div>
-            ) : (
-              priceText
-            )
+             isCustom ? (
+               <div className="flex items-center justify-center">
+                 <span className="text-2xl mr-1">{currencyUnit}</span>
+                 <style>
+                   {`
+                     input[type=number]::-webkit-inner-spin-button, 
+                     input[type=number]::-webkit-outer-spin-button { 
+                       -webkit-appearance: none; 
+                       margin: 0; 
+                     }
+                     input[type=number] {
+                       -moz-appearance: textfield;
+                     }
+                   `}
+                 </style>
+                 <input 
+                   type="number" 
+                   className="w-32 text-4xl font-bold text-primary bg-transparent border-b-2 border-primary/30 focus:border-primary outline-none text-center appearance-none"
+                   value={item.totalAmount || ''}
+                   placeholder="0"
+                   onChange={(e) => onCustomAmountChange(Number(e.target.value))}
+                   min="1"
+                   step={isWechat ? 50 : 10}
+                 />
+               </div>
+             ) : (
+               `${currencyUnit} ${totalPrice.toFixed(2)}`
+             )
           )}
         </div>
         {!isEnterprise && (
-          <div className="text-sm text-gray-600 mt-2">
-            可使用积分：{points.toFixed(2)}
-          </div>
+        <div className="text-sm text-muted mt-1">
+            {labels.credits} {totalPoints.toFixed(2)}
+            <span className="text-xs ml-1 opacity-70">
+              ({isWechat ? 'CNY' : 'USD'})
+            </span>
+        </div>
         )}
       </div>
 
-      <div className="my-6 border-t border-gray-200"></div>
+      <div className="my-6 border-t border-border relative z-10"></div>
 
       {!isEnterprise && (
-        <div className="mb-6">
-          <div className="text-xs text-gray-600 font-medium mb-4">购买数量</div>
-          
-          <div className="relative px-1">
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-gray-200 -translate-y-1/2 rounded-full"></div>
+        <div className="pt-0 border-t border-transparent mb-6">
+         <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
+         
+         {/* Custom Slider */}
+         <div className="relative mb-8 px-1">
+            {/* Track */}
+            <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
             
+            {/* Progress - 6个步骤：1, 2, 3, 4, 5, 自定义 */}
             <div 
-              className="absolute top-1/2 left-0 h-1 bg-indigo-600 -translate-y-1/2 rounded-full transition-all duration-300"
-              style={{ width: `${((Math.min(quantity, 5) - 1) / 4) * 100}%` }}
+              className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
+              style={{ width: `${((quantity - 1) / 5) * 100}%` }}
             ></div>
 
+            {/* Steps */}
             <div className="relative flex justify-between">
               {steps.slice(0, 5).map((step) => (
-                <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
-                  <div className={`w-4 h-4 rounded-full border-2 transition-all ${
-                    step <= quantity ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'
-                  }`}></div>
-                  <span className={`text-[10px] ${step === quantity ? 'text-indigo-600 font-bold' : 'text-gray-500'}`}>
+                  <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
+                    <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
+                    <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
                     {step}倍
                   </span>
                 </div>
               ))}
-              <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(6)}>
-                <div className={`w-4 h-4 rounded-full border-2 transition-all ${
-                  quantity === 6 ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'
-                }`}></div>
-                <span className={`text-[10px] ${quantity === 6 ? 'text-indigo-600 font-bold' : 'text-gray-500'}`}>
-                  自定义
-                </span>
+                <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(6)}>
+                   <div className={`w-3 h-3 rounded-full border-2 transition-all ${quantity === 6 ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
+                   <span className={`text-[10px] ${quantity === 6 ? 'text-foreground font-bold' : 'text-muted'}`}>
+                    {labels.custom}
+                 </span>
               </div>
             </div>
-          </div>
-        </div>
+         </div>
+      </div>
       )}
 
-      <div className="flex-1 space-y-3 mb-8 text-center">
-        {!isEnterprise && item.productDescription && (
-          <div className="text-sm text-gray-600 whitespace-pre-line leading-relaxed">
-            {item.productDescription}
-          </div>
-        )}
-        {isEnterprise && (
-          <div className="text-sm text-gray-600">
-            Contact us for custom solutions
-          </div>
-        )}
+      <div className="flex-1 space-y-3 mb-8 relative z-10">
+         {!isEnterprise && item.productDescription && (
+            <div className="text-xs text-muted/80 whitespace-pre-line text-center">
+               {item.productDescription}
+            </div>
+         )}
+         {isEnterprise && (
+            <ul className="space-y-2.5 text-left">
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义团队席位
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义积分额度
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义数字人
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义AI音色
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                自定义功能
+              </li>
+              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
+                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                定制化功能开发
+              </li>
+            </ul>
+         )}
       </div>
 
       <button
         onClick={onBuy}
         disabled={loading}
-        className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}
+        className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md relative z-10 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}
       >
         {loading && <Loader2 size={18} className="animate-spin" />}
-        {isEnterprise ? '联系我们' : '立即购买'}
+        {isEnterprise ? labels.contact : labels.buy}
       </button>
     </div>
   );

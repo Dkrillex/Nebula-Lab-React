@@ -10,6 +10,7 @@ const KeysPage = React.lazy(() => import('../../pages/Keys'));
 const ModelSquarePage = React.lazy(() => import('../../pages/Models'));
 const ExpensesPage = React.lazy(() => import('../../pages/Expenses'));
 const PricingPage = React.lazy(() => import('../../pages/Pricing'));
+const PriceListPage = React.lazy(() => import('../../pages/PriceList'));
 const ProfilePage = React.lazy(() => import('../../pages/Profile'));
 
 // Wrapper components defined inline or imported if complex logic needed
@@ -79,6 +80,15 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Pricing',
           icon: 'credit-card',
+          requiresAuth: true
+        }
+      },
+      {
+        path: 'price-list',
+        element: <PriceListPage />,
+        meta: {
+          title: 'Price List',
+          icon: 'list',
           requiresAuth: true
         }
       },
