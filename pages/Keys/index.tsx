@@ -323,8 +323,21 @@ const KeysPage: React.FC<KeysPageProps> = () => {
   }
 
   return (
-    <div className="llm-model-page" style={{ padding: '0.8rem', background: '#fff', minHeight: 'calc(100vh - 67px)' }}>
-      <div className="main-content" style={{ maxWidth: '1600px', margin: '0 auto' }}>
+    <div className="llm-model-page" style={{ 
+      padding: '0.8rem', 
+      background: '#fff', 
+      height: 'calc(100vh - 67px)',
+      overflow: 'hidden',
+      boxSizing: 'border-box'
+    }}>
+      <div className="main-content" style={{ 
+        maxWidth: '1600px', 
+        margin: '0 auto',
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        boxSizing: 'border-box'
+      }}>
         {/* 右侧列表 */}
         <div className="assets-display" style={{ 
           flex: 1, 
@@ -333,8 +346,12 @@ const KeysPage: React.FC<KeysPageProps> = () => {
           borderRadius: '16px',
           padding: '1rem',
           boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-          maxHeight: 'calc(100vh - 67px)',
-          overflowY: 'auto'
+          height: '100%',
+          overflowY: 'auto',
+          overflowX: 'hidden',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column'
         }}>
           <div className="toolbar" style={{
             display: 'flex',
@@ -342,13 +359,18 @@ const KeysPage: React.FC<KeysPageProps> = () => {
             alignItems: 'center',
             marginBottom: '0.15rem',
             paddingBottom: '0.15rem',
-            borderBottom: '1px solid #e2e8f0'
+            borderBottom: '1px solid #e2e8f0',
+            flexShrink: 0,
+            width: '100%',
+            boxSizing: 'border-box',
+            gap: '0.5rem'
           }}>
-            <div className="toolbar-left">
+            <div className="toolbar-left" style={{ flexShrink: 0 }}>
               <div className="stats-info" style={{
                 fontSize: '0.9rem',
                 color: '#64748b',
-                fontWeight: 500
+                fontWeight: 500,
+                whiteSpace: 'nowrap'
               }}>
                 共 {pagination.total} 个令牌
               </div>
@@ -357,15 +379,21 @@ const KeysPage: React.FC<KeysPageProps> = () => {
               fontSize: '1.25rem',
               fontWeight: 700,
               color: '#2d3748',
-              margin: 0
+              margin: 0,
+              flex: 1,
+              textAlign: 'center',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap'
             }}>
               API 令牌管理
             </div>
-            <div className="toolbar-right">
+            <div className="toolbar-right" style={{ flexShrink: 0 }}>
               <div className="toolbar-actions" style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem'
+                gap: '0.75rem',
+                flexWrap: 'nowrap'
               }}>
                 {/* <div className="relative" style={{ width: '100%', maxWidth: '256px' }}>
                   <input 
@@ -481,7 +509,9 @@ const KeysPage: React.FC<KeysPageProps> = () => {
               display: 'flex',
               flexDirection: 'column',
               gap: '1rem',
-              marginBottom: '2rem'
+              marginBottom: '2rem',
+              width: '100%',
+              boxSizing: 'border-box'
             }}>
               {tokens.map((token) => {
                 const isActive = token.status === 1;
@@ -502,7 +532,9 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                       transition: 'all 0.3s ease',
                       position: 'relative',
                       border: '1px solid #e5e7eb',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      width: '100%',
+                      boxSizing: 'border-box'
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.transform = 'translateY(-2px)';
@@ -587,14 +619,28 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.5rem',
-                            flexWrap: 'wrap'
+                            flexWrap: 'wrap',
+                            width: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden'
                           }}>
-                            <span>API密钥:</span>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', flex: 1, minWidth: 0 }}>
+                            <span style={{ flexShrink: 0 }}>API密钥:</span>
+                            <div style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.25rem', 
+                              flex: 1, 
+                              minWidth: 0,
+                              overflow: 'hidden'
+                            }}>
                               <span style={{
                                 fontFamily: 'monospace',
                                 fontSize: '0.75rem',
-                                wordBreak: 'break-all'
+                                wordBreak: 'break-all',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                flex: 1,
+                                minWidth: 0
                               }}>{displayKey}</span>
                               <div style={{
                                 display: 'flex',
@@ -717,9 +763,18 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                         gap: '0.5rem',
                         alignItems: 'center',
                         marginTop: '0.5rem',
-                        justifyContent: 'space-between'
+                        justifyContent: 'space-between',
+                        width: '100%',
+                        boxSizing: 'border-box'
                       }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center', flex: 1 }}>
+                        <div style={{ 
+                          display: 'flex', 
+                          flexWrap: 'wrap', 
+                          gap: '0.5rem', 
+                          alignItems: 'center', 
+                          flex: 1,
+                          minWidth: 0
+                        }}>
                           <span className="capability-btn cap-chat" style={{
                             padding: '0.375rem 0.75rem',
                             border: '1px solid #93c5fd',
@@ -776,7 +831,9 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                         <div className="action-buttons" style={{
                           display: 'flex',
                           gap: '8px',
-                          alignItems: 'center'
+                          alignItems: 'center',
+                          flexShrink: 0,
+                          flexWrap: 'wrap'
                         }}>
                           <button
                             onClick={(e) => {
