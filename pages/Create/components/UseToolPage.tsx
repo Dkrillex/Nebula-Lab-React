@@ -194,7 +194,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 overflow-y-auto custom-scrollbar">
             
             {/* Prompt */}
-            <div className="mb-6">
+            {/* <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">提示词</label>
                 <textarea 
                     value={activeTool.prompt === 'CUSTOM' ? customPrompt : activeTool.prompt}
@@ -205,7 +205,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     }`}
                     placeholder="描述你想要的效果..."
                 />
-            </div>
+            </div> */}
 
             {/* Image Uploaders */}
             <div className="space-y-6">
@@ -256,7 +256,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                     <Edit3 size={16} />
                                     {isMaskToolActive ? '退出蒙版编辑' : '绘制蒙版'}
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={() => {
                                         setPrimaryImageBase64(null);
                                         setPrimaryFile(null);
@@ -267,7 +267,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                     className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                 >
                                     清除
-                                </button>
+                                </button> */}
                             </div>
                             {isMaskToolActive && (
                                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
