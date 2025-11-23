@@ -110,8 +110,12 @@ function createRequestClient(
       ...customConfig
     } = options;
 
-    const controller = new AbortController();
-    const id = setTimeout(() => controller.abort(), requestTimeout);
+    // 使用外部提供的 signal 或创建新的 AbortController
+    const externalSignal = (customConfig as any).signal;
+    const controller = externalSignal ? 
+      { signal: externalSignal, abort: () => {} } as AbortController :
+      new AbortController();
+    const id = externalSignal ? null : setTimeout(() => controller.abort(), requestTimeout);
 
     // 1. URL & Params Handling (tansParams)
     let url = `${baseURL}${endpoint}`;
@@ -202,11 +206,14 @@ function createRequestClient(
       headers['Authorization'] = 'Bearer ' + token;
     }
 
+    // 优先使用外部传入的 signal
+    const signal = (customConfig as any).signal || controller.signal;
+
     const config: RequestInit = {
       ...customConfig,
       body: requestBody,
       headers,
-      signal: controller.signal,
+      signal,
     };
 
     try {
@@ -219,7 +226,7 @@ function createRequestClient(
       }
 
       const response = await fetch(url, config);
-      clearTimeout(id);
+      if (id) clearTimeout(id);
 
       // Handle non-200 HTTP status codes (Network/Server errors)
       if (!response.ok) {
@@ -275,7 +282,8 @@ function createRequestClient(
 
       // Ruoyi Standard: { code, msg, data }
       const code = resData.code || 200;
-      const msg = errorCode[code] || resData.msg || errorCode['default'];
+      // 优先使用后端返回的 msg，如果没有则使用错误码映射，最后使用默认错误消息
+      const msg = resData.msg || errorCode[code] || errorCode['default'];
 
       // Business Logic Error Handling
       if (code === 200 || code === '200') {
@@ -334,7 +342,7 @@ function createRequestClient(
       throw new ApiError(errorMsg, code);
 
     } catch (error: any) {
-      clearTimeout(id);
+      if (id) clearTimeout(id);
 
       if (error._skipErrorHint || _skipErrorDisplay) {
         throw error;
