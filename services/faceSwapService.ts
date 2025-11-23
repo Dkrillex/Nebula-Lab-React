@@ -243,12 +243,18 @@ export const faceSwapService = {
       
       console.log('Face swap API完整响应:', response);
       
-      // 检查响应结构：{ code: 200, msg: "...", data: { data: [...], created: ... } }
-      if (response.code === 200 && response.data?.data && response.data.data.length > 0 && response.data.data[0].url) {
-        return {
+      // 统一响应处理，与 aiToolService.editImage 保持一致
+      if (response.code === 200 && response.data?.data && response.data.data.length > 0) {
+        const result = {
           imageUrl: response.data.data[0].url,
-          text: response.data.data[0].revised_prompt,
+          text: response.data.data[0].revised_prompt || '换脸生成成功',
         };
+        
+        if (!result.imageUrl) {
+          throw new Error('生成失败，未返回有效的图片URL');
+        }
+        
+        return result;
       } else {
         console.error('Face swap响应数据结构不符合预期:', response);
         throw new Error(response.msg || '生成失败，未返回有效结果');
