@@ -68,17 +68,13 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [cursor, setCursor] = useState({ x: 0, y: 0, visible: false });
   
-  // 文本输入对话框状态
-  const [textInputDialog, setTextInputDialog] = useState<{
-    isOpen: boolean;
-    position: { x: number; y: number } | null;
-    onConfirm: (text: string) => void;
-  }>({
-    isOpen: false,
-    position: null,
-    onConfirm: () => {},
-  });
-  const [textInputValue, setTextInputValue] = useState('');
+  // 文本输入状态（直接在画布上显示）
+  const [textInputState, setTextInputState] = useState<{
+    isVisible: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
   
   // Refs for mutable state during interactions
   const isPanningRef = useRef(false);
@@ -350,29 +346,17 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
     const normalizedPos = canvasToNormalizedCoords(x, y);
 
     if (tool === 'text') {
-        setTextInputValue('');
-        setTextInputDialog({
-            isOpen: true,
-            position: normalizedPos,
-            onConfirm: (text: string) => {
-                if (text) {
-                    const newStroke: Stroke = {
-                        type: 'text',
-                        path: [normalizedPos],
-                        text,
-                        textOptions: { ...textOptions }, // Copy current options
-                        brushSize,
-                        color: brushColor,
-                        globalCompositeOperation: 'source-over'
-                    };
-                    drawnShapesRef.current.push(newStroke);
-                    actionHistoryRef.current.push({ type: 'add', shape: newStroke });
-                    redrawAllShapes();
-                }
-                setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
-                setTextInputValue('');
-            },
+        // 直接在画布上显示输入框，不弹出对话框
+        const canvasPos = normalizedToCanvasCoords(normalizedPos.x, normalizedPos.y);
+        setTextInputState({
+            isVisible: true,
+            x: canvasPos.x,
+            y: canvasPos.y
         });
+        // 使用 setTimeout 确保 DOM 更新后再聚焦
+        setTimeout(() => {
+            textInputRef.current?.focus();
+        }, 10);
         return;
     }
 
@@ -753,48 +737,73 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
         </div>
       )}
       
-      {/* 文本输入对话框 */}
-      {textInputDialog.isOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-4 text-foreground">请输入文本</h3>
-            <input
-              type="text"
-              value={textInputValue}
-              onChange={(e) => setTextInputValue(e.target.value)}
-              autoFocus
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none mb-4"
-              placeholder="输入文本..."
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  textInputDialog.onConfirm(textInputValue);
-                } else if (e.key === 'Escape') {
-                  setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
-                  setTextInputValue('');
-                }
-              }}
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setTextInputDialog({ isOpen: false, position: null, onConfirm: () => {} });
-                  setTextInputValue('');
-                }}
-                className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  textInputDialog.onConfirm(textInputValue);
-                }}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-              >
-                确定
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* 文本输入框（直接在画布上显示） */}
+      {textInputState?.isVisible && (
+        <input
+          ref={textInputRef}
+          type="text"
+          placeholder="输入文本..."
+          className="absolute z-[1000]"
+          style={{
+            left: `${textInputState.x}px`,
+            top: `${textInputState.y}px`,
+            zIndex: 1000,
+            padding: '4px 8px',
+            border: '2px solid #667eea',
+            borderRadius: '4px',
+            background: 'var(--background, white)',
+            fontSize: `${textOptions.fontSize}px`,
+            fontFamily: textOptions.fontFamily,
+            color: brushColor,
+            outline: 'none',
+            minWidth: '120px'
+          }}
+          onBlur={(e) => {
+            const text = e.target.value.trim();
+            if (text && textInputState) {
+              // 将画布坐标转换回归一化坐标
+              const normalizedPos = canvasToNormalizedCoords(textInputState.x, textInputState.y);
+              const newStroke: Stroke = {
+                type: 'text',
+                path: [normalizedPos],
+                text,
+                textOptions: { ...textOptions },
+                brushSize,
+                color: brushColor,
+                globalCompositeOperation: 'source-over'
+              };
+              drawnShapesRef.current.push(newStroke);
+              actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+              redrawAllShapes();
+            }
+            setTextInputState(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const text = e.currentTarget.value.trim();
+              if (text && textInputState) {
+                const normalizedPos = canvasToNormalizedCoords(textInputState.x, textInputState.y);
+                const newStroke: Stroke = {
+                  type: 'text',
+                  path: [normalizedPos],
+                  text,
+                  textOptions: { ...textOptions },
+                  brushSize,
+                  color: brushColor,
+                  globalCompositeOperation: 'source-over'
+                };
+                drawnShapesRef.current.push(newStroke);
+                actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+                redrawAllShapes();
+              }
+              setTextInputState(null);
+              e.currentTarget.blur();
+            } else if (e.key === 'Escape') {
+              setTextInputState(null);
+              e.currentTarget.blur();
+            }
+          }}
+        />
       )}
     </div>
   );
