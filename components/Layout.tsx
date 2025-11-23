@@ -176,7 +176,7 @@ const Layout: React.FC = () => {
       />
       
       <main className="flex-1">
-        <CachedOutlet />
+        <CachedOutlet context={{ t, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
       </main>
 
       {/* Conditional Footer rendering based on route can be handled here or CSS */}

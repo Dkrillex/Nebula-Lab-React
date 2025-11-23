@@ -40,14 +40,20 @@ const shouldCacheRoute = (pathname: string): boolean => {
   return false;
 };
 
+interface CachedOutletProps {
+  context?: any; // 可选的 context，如果提供则使用，否则从 useOutletContext 获取
+}
+
 /**
  * CachedOutlet 组件
  * 用于在路由切换时缓存组件状态
  * 根据路由的 meta.keepAlive 配置决定是否缓存
  */
-const CachedOutlet: React.FC = () => {
+const CachedOutlet: React.FC<CachedOutletProps> = ({ context: propContext }) => {
   const location = useLocation();
-  const context = useOutletContext();
+  const outletContext = useOutletContext();
+  // 优先使用 prop 传入的 context，否则使用 useOutletContext 获取的
+  const context = propContext !== undefined ? propContext : outletContext;
   const { updateCachedComponents } = useCacheStore();
 
   // 根据当前路由更新缓存列表

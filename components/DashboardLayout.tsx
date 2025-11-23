@@ -26,7 +26,7 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onSignIn: propOnSignI
       
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0">
-        <CachedOutlet />
+        <CachedOutlet context={{ t }} />
       </main>
     </div>
   );
