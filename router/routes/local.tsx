@@ -1,6 +1,8 @@
 import React from 'react';
 import { AppRouteObject } from '../AuthGuard';
 import DashboardLayout from '../../components/DashboardLayout';
+// 暂时禁用 KeepAliveWrapper，因为它会影响 context 传递
+// import { KeepAliveWrapper } from '../../components/KeepAliveWrapper';
 
 // 懒加载组件
 const CreatePage = React.lazy(() => import('../../pages/Create'));

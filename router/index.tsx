@@ -1,5 +1,6 @@
 import React, { Suspense } from 'react';
 import { createHashRouter, useOutletContext } from 'react-router-dom';
+import { KeepAlive } from 'react-activation';
 import { coreRoutes } from './routes/core';
 import { localRoutes } from './routes/local';
 import { AppRouteObject, AuthGuard } from './AuthGuard';
@@ -24,22 +25,31 @@ function processRoutes(routes: AppRouteObject[]): any[] {
       // 仅对直接通过 element 定义的组件包裹 Wrapper，
       // 如果 element 是 Layout 组件，通常不需要传递 t，因为 Layout 自己会处理 t
       
+      // 构建要渲染的元素
+      let elementToRender = route.element;
+      
+      // 如果需要认证，包裹 AuthGuard
+      if (route.meta?.requiresAuth) {
+        elementToRender = <AuthGuard>{elementToRender}</AuthGuard>;
+      }
+      
+      // 暂时禁用 KeepAlive 包裹，避免在路由配置阶段创建导致的问题
+      // TODO: 需要在组件渲染时处理缓存，而不是在路由配置时
+      // if (route.meta?.keepAlive) {
+      //   const cacheKey = route.path 
+      //     ? (route.path === '/' ? 'home' : route.path.replace(/^\//, ''))
+      //     : (route.index ? 'index' : `route-${Math.random().toString(36).substr(2, 9)}`);
+      //   
+      //   elementToRender = (
+      //     <KeepAlive id={cacheKey} name={cacheKey} saveScrollPosition="screen">
+      //       {elementToRender}
+      //     </KeepAlive>
+      //   );
+      // }
+      
       newRoute.element = (
         <Suspense fallback={<LoadingFallback />}>
-          {/* 
-             如果需要包装器逻辑，可以在这里动态生成
-             目前我们直接渲染 element，页面组件内部负责 context 消费
-          */}
-          {/* 
-             应用 AuthGuard
-             注意：通常 Layout 不需要 AuthGuard，而是其子路由需要
-             这里简单处理：如果 meta.requiresAuth 为 true，则包裹 AuthGuard
-          */}
-          {route.meta?.requiresAuth ? (
-            <AuthGuard>{route.element}</AuthGuard>
-          ) : (
-            route.element
-          )}
+          {elementToRender}
         </Suspense>
       );
     }
@@ -71,9 +81,21 @@ export const router = createHashRouter(finalRoutes);
 
 // 为了保持组件中使用的 useOutletContext 类型提示，这里导出一个 hook
 export function useAppOutletContext() {
-  return useOutletContext<{
+  const context = useOutletContext<{
     t: any;
     handleNavClick: (href: string) => void;
     onSignIn: () => void;
   }>();
+  
+  // 如果 context 为 null，返回一个默认值，避免子组件报错
+  if (!context) {
+    console.warn('useAppOutletContext: context is null, returning default value');
+    return {
+      t: null,
+      handleNavClick: () => {},
+      onSignIn: () => {}
+    };
+  }
+  
+  return context;
 }

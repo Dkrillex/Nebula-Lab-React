@@ -2,15 +2,19 @@
 
 ## 📋 概述
 
-本文档说明了在 React 项目中实现的组件缓存功能，该功能类似于 Vue3 的 `keep-alive`，可以在路由切换时保持组件状态，避免数据丢失。
+本文档说明了在 React 项目中尝试实现的组件缓存功能，该功能类似于 Vue3 的 `keep-alive`，可以在路由切换时保持组件状态，避免数据丢失。
 
-## 🎯 功能特性
+**⚠️ 当前状态：功能暂时禁用**
 
-- ✅ **组件状态保持**：切换标签页时，组件状态（包括表单数据、滚动位置等）会被保留
-- ✅ **自动缓存管理**：根据路由配置自动管理缓存，无需手动干预
-- ✅ **标签页联动**：关闭标签页时自动清除对应缓存
-- ✅ **灵活配置**：通过路由元数据 `keepAlive` 控制是否缓存
-- ✅ **性能优化**：使用 `react-activation` 库实现高效的组件缓存
+由于 `react-activation` 的 `KeepAlive` 组件在包裹页面组件时会影响 React Router 的 context 传递机制，导致 `useOutletContext()` 返回 null，因此缓存功能暂时禁用。后续需要寻找其他解决方案。
+
+## 🎯 功能特性（计划中）
+
+- ⏸️ **组件状态保持**：切换标签页时，组件状态（包括表单数据、滚动位置等）会被保留（暂时未实现）
+- ⏸️ **自动缓存管理**：根据路由配置自动管理缓存，无需手动干预（暂时未实现）
+- ⏸️ **标签页联动**：关闭标签页时自动清除对应缓存（暂时未实现）
+- ⏸️ **灵活配置**：通过路由元数据 `keepAlive` 控制是否缓存（配置已添加，但功能未启用）
+- ⏸️ **性能优化**：使用 `react-activation` 库实现高效的组件缓存（暂时未实现）
 
 ## 📁 文件结构
 
@@ -81,11 +85,13 @@ interface CacheState {
 }
 ```
 
-## 📖 使用方法
+## 📖 使用方法（暂时禁用）
 
-### 1. 启用缓存
+**注意**：由于当前缓存功能暂时禁用，以下使用方法仅供参考，实际功能未启用。
 
-在路由配置中设置 `meta.keepAlive: true`：
+### 1. 启用缓存（计划中）
+
+在路由配置中设置 `meta.keepAlive: true`（当前已配置，但功能未启用）：
 
 ```typescript
 // router/routes/local.tsx
@@ -94,7 +100,7 @@ interface CacheState {
   element: <ChatPage />,
   meta: {
     title: 'Chat',
-    keepAlive: true  // 启用缓存
+    keepAlive: true  // 已配置，但功能暂时禁用
   }
 }
 ```
@@ -114,7 +120,7 @@ interface CacheState {
 }
 ```
 
-### 3. 在组件中使用
+### 3. 在组件中使用（计划中）
 
 组件无需特殊处理，缓存会自动生效。例如：
 
@@ -124,7 +130,7 @@ const ChatPage: React.FC = () => {
   const [messages, setMessages] = useState([]);
   // ... 其他状态
   
-  // 当切换标签页再回来时，messages 状态会被保留
+  // 当切换标签页再回来时，messages 状态会被保留（当前未实现）
   return (
     <div>
       {/* 组件内容 */}
@@ -161,22 +167,38 @@ const routeCacheConfig: Record<string, boolean> = {
 - 带查询参数：`/create?tool=image` → 缓存 key: `/create?tool=image`
 - 首页：`/` → 缓存 key: `/`
 
-## 🔄 工作流程
+## 🔄 工作流程（计划中）
 
-1. **路由切换**
+**注意**：以下工作流程是计划中的实现，当前功能暂时禁用。
+
+1. **路由切换**（计划中）
    - 用户点击标签页或导航链接
    - `CachedOutlet` 检测路由变化
    - 根据 `routeCacheConfig` 判断是否需要缓存
 
-2. **缓存管理**
+2. **缓存管理**（计划中）
    - 如果路由配置了 `keepAlive: true`，组件会被 `KeepAlive` 包装
    - 组件状态保存在 `react-activation` 的缓存中
    - `Layout` 组件根据打开的标签页更新缓存列表
 
-3. **标签页关闭**
+3. **标签页关闭**（计划中）
    - 用户关闭标签页
    - `Layout` 组件从缓存列表中移除对应组件
    - 组件状态被清除
+
+## 🔧 当前实现状态
+
+### 已完成的组件
+- ✅ `stores/cacheStore.ts` - 缓存状态管理 Store（已实现，但未使用）
+- ✅ `components/KeepAlive.tsx` - KeepAlive 包装组件和 Provider（已实现，但未使用）
+- ✅ `components/KeepAliveWrapper.tsx` - KeepAlive 包装组件（已实现，但暂时禁用）
+- ✅ `components/CachedOutlet.tsx` - 支持缓存的 Outlet 组件（已实现，但缓存功能禁用）
+- ✅ `App.tsx` - 已添加 `KeepAliveProvider`（已添加，但功能未启用）
+
+### 已配置但未启用的功能
+- ⏸️ 路由配置中的 `keepAlive: true` 已添加，但 `KeepAliveWrapper` 已移除
+- ⏸️ `Layout` 组件中的缓存管理逻辑已添加，但未启用
+- ⏸️ `DashboardLayout` 中的 context 传递已优化，但缓存功能未启用
 
 ## 🎨 与 Vue3 实现的对比
 
@@ -212,28 +234,28 @@ const routeCacheConfig: Record<string, boolean> = {
 
 ## 🐛 常见问题
 
-### Q1: 为什么某些页面切换后状态丢失？
+### Q1: 为什么缓存功能没有生效？
 
-**A**: 检查路由配置中是否设置了 `keepAlive: true`，以及 `routeCacheConfig` 中是否包含该路径。
+**A**: 当前缓存功能暂时禁用。原因是 `react-activation` 的 `KeepAlive` 会影响 React Router 的 context 传递，导致 `useOutletContext()` 返回 null。所有 `KeepAliveWrapper` 已暂时移除。
 
-### Q2: 如何手动清除缓存？
+### Q2: 页面切换后状态丢失怎么办？
 
-**A**: 使用 `useCacheStore` 的 `removeCachedComponent` 方法：
+**A**: 由于缓存功能暂时禁用，页面切换时状态会丢失。这是预期行为。如果需要保持状态，可以考虑：
+- 使用全局状态管理（如 Zustand）保存关键状态
+- 使用 `sessionStorage` 或 `localStorage` 持久化数据
+- 等待缓存功能重新实现
 
-```typescript
-import { useCacheStore } from '../stores/cacheStore';
+### Q3: 什么时候会重新启用缓存功能？
 
-const { removeCachedComponent } = useCacheStore();
-removeCachedComponent('/chat'); // 清除指定路由的缓存
-```
+**A**: 需要找到解决 context 传递问题的方案后才会重新启用。可能的方案包括：
+- 使用其他缓存库
+- 自定义缓存实现
+- 等待 `react-activation` 更新
+- 修改 `react-activation` 源码
 
-### Q3: 缓存是否会影响性能？
+### Q4: 如何调试缓存相关问题？
 
-**A**: 适度使用缓存不会影响性能。建议只对需要保持状态的页面启用缓存，避免缓存过多组件。
-
-### Q4: 如何调试缓存问题？
-
-**A**: 可以在浏览器控制台中查看 `useCacheStore` 的状态：
+**A**: 当前缓存功能已禁用，无需调试。如果后续重新启用，可以在浏览器控制台中查看 `useCacheStore` 的状态：
 
 ```typescript
 import { useCacheStore } from './stores/cacheStore';
@@ -241,14 +263,62 @@ const store = useCacheStore.getState();
 console.log('Cached components:', Array.from(store.cachedComponents));
 ```
 
+## ⚠️ 已知问题
+
+### 问题：KeepAlive 影响 Context 传递
+
+**现象**：
+- 当使用 `KeepAliveWrapper` 包裹页面组件时，`useOutletContext()` 返回 null
+- 导致页面组件无法获取到 context，报错：`Cannot destructure property 't' of 'useAppOutletContext(...)' as it is null`
+
+**原因分析**：
+- `react-activation` 的 `KeepAlive` 在缓存组件时，可能会创建新的 React 上下文
+- 这导致 React Router 的 `useOutletContext` 无法正确获取到通过 `Outlet` 传递的 context
+- Context 传递机制被 `KeepAlive` 的缓存机制干扰
+
+**尝试的解决方案**：
+1. ✅ 在路由配置中包裹 `KeepAlive` - 失败，影响 context 传递
+2. ✅ 在 `CachedOutlet` 中使用 `useOutlet` 获取组件 - 失败，仍然影响 context
+3. ✅ 在 `useAppOutletContext` 中添加默认值处理 - 部分缓解，但根本问题未解决
+
+**当前状态**：
+- 所有 `KeepAliveWrapper` 已暂时移除
+- 路由配置中的 `keepAlive: true` 保留，但功能未启用
+- 页面可以正常打开和使用，但切换标签页时数据会丢失
+
+## 🔄 后续解决方案建议
+
+### 方案 1：使用其他缓存库
+- 考虑使用 `react-router-cache-route` 或其他专门为 React Router 设计的缓存库
+- 优点：可能更好地兼容 React Router
+- 缺点：需要重新实现
+
+### 方案 2：自定义缓存实现
+- 在组件内部使用 `useMemo` 或全局状态管理保存关键状态
+- 使用 `sessionStorage` 或 `localStorage` 持久化数据
+- 优点：完全可控，不影响 context 传递
+- 缺点：需要手动管理，实现复杂度较高
+
+### 方案 3：等待 react-activation 更新
+- 关注 `react-activation` 库的更新，看是否有修复 context 传递问题的版本
+- 或者向库的维护者提交 issue
+
+### 方案 4：修改 react-activation 源码
+- Fork `react-activation` 库，修改源码以支持 React Router 的 context 传递
+- 优点：可以完全控制实现
+- 缺点：需要维护 fork 版本
+
 ## 📝 更新日志
 
 ### 2024-11-23
-- ✅ 初始实现组件缓存功能
+- ✅ 初始尝试实现组件缓存功能
 - ✅ 集成 `react-activation` 库
-- ✅ 实现基于路由的自动缓存管理
-- ✅ 添加标签页联动缓存清除功能
-- ✅ 更新所有主要页面路由配置
+- ✅ 创建缓存 Store (`cacheStore.ts`)
+- ✅ 创建 `KeepAliveWrapper` 组件
+- ✅ 创建 `CachedOutlet` 组件
+- ✅ 更新路由配置，添加 `keepAlive` 元数据
+- ⚠️ 发现 `KeepAlive` 影响 context 传递的问题
+- ⏸️ 暂时禁用缓存功能，等待后续解决方案
 
 ## 🔗 相关资源
 

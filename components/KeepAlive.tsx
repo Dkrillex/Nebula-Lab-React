@@ -33,16 +33,15 @@ const KeepAliveWrapper: React.FC<KeepAliveWrapperProps> = ({
     return <>{children}</>;
   }
 
-  // 如果缓存列表为空或者包含当前 key，则缓存
-  // 当缓存列表为空时，默认缓存所有配置了 keepAlive 的组件
-  const shouldCache = cachedComponents.size === 0 || cachedComponents.has(key);
-
-  if (!shouldCache) {
-    return <>{children}</>;
-  }
-
+  // 如果 keepAlive 为 true 且不在排除列表中，则缓存
+  // 使用 name 属性来标识缓存的组件，id 用于 react-activation 内部管理
   return (
-    <KeepAlive id={key} name={key} saveScrollPosition="screen">
+    <KeepAlive 
+      id={key} 
+      name={key}
+      saveScrollPosition="screen"
+      cacheKey={key}
+    >
       {children}
     </KeepAlive>
   );

@@ -63,7 +63,7 @@ const Layout: React.FC = () => {
   };
 
   const { view: currentView, tool: activeTool } = getCurrentViewAndTool();
-  const { updateCachedComponents, removeCachedComponent } = useCacheStore();
+  const { removeCachedComponent } = useCacheStore();
 
   // Update Tabs History and Cache
   useEffect(() => {
@@ -82,24 +82,8 @@ const Layout: React.FC = () => {
     });
   }, [currentView, activeTool]);
 
-  // 根据打开的标签页更新缓存列表（类似 Vue3 的 updateCacheTabs）
-  useEffect(() => {
-    const cachedKeys: string[] = [];
-    
-    visitedViews.forEach(tab => {
-      // 根据 view 和 tool 生成缓存 key
-      const cacheKey = tab.view === 'create' && tab.activeTool
-        ? `/create?tool=${tab.activeTool}`
-        : tab.view === 'home' ? '/' : `/${tab.view}`;
-      
-      // 检查路由是否配置了 keepAlive（这里简化处理，假设所有标签页都支持缓存）
-      // 实际应该根据路由配置来判断
-      cachedKeys.push(cacheKey);
-    });
-
-    // 更新缓存组件列表
-    updateCachedComponents(cachedKeys);
-  }, [visitedViews, updateCachedComponents]);
+  // 注意：缓存列表由 CachedOutlet 自动管理，这里不需要手动更新
+  // 只在标签页关闭时清除对应的缓存
 
   // Navigation Handlers
   const handleNavClick = (href: string) => {
