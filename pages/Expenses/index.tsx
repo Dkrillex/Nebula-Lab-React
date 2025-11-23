@@ -202,6 +202,7 @@ const ExpensesPage: React.FC = () => {
         day: '2-digit',
         hour: '2-digit',
         minute: '2-digit',
+        second: '2-digit',
       });
     }
 
@@ -216,6 +217,8 @@ const ExpensesPage: React.FC = () => {
       type: isConsumption ? 'consumption' as const : 'recharge' as const,
       duration: useTime,
       totalTokens: (Number(log.promptTokens) || 0) + (Number(log.completionTokens) || 0),
+      promptTokens: Number(log.promptTokens) || 0,
+      completionTokens: Number(log.completionTokens) || 0,
       timestamp: timeStr,
     };
   };
@@ -232,151 +235,186 @@ const ExpensesPage: React.FC = () => {
   }
 
   return (
-    <div className="bg-background min-h-screen pb-12 font-sans">
+    <div className="min-h-screen pb-12 font-sans" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
       
-      {/* Simplified Header */}
-      <div className="w-full border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4 max-w-5xl flex flex-col md:flex-row items-center justify-between gap-4">
-          <div>
-            <h1 className="text-lg font-bold text-foreground">{t.title}</h1>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-               <span>{currentMode === 'balance' ? '当前余额' : '积分概览'}</span>
-            </div>
-          </div>
-
-          <div className="flex items-center bg-secondary/50 rounded-lg p-1 border border-border/50">
-            <button
-              onClick={() => handleModeChange('balance')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                currentMode === 'balance'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-indigo-600'
-              }`}
-            >
-              {t.buttons.balance}
-            </button>
-            <button
-              onClick={() => handleModeChange('points')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
-                currentMode === 'points'
-                  ? 'bg-indigo-600 text-white shadow-sm'
-                  : 'text-muted-foreground hover:text-indigo-600'
-              }`}
-            >
-              {t.buttons.points}
-            </button>
-          </div>
-        </div>
+      {/* Page Header */}
+      <div className="w-full text-center py-6">
+        <h1 className="text-3xl font-bold text-white mb-2 drop-shadow-lg">{t.title}</h1>
+        <p className="text-lg text-white/90 max-w-2xl mx-auto">
+          {currentMode === 'balance' ? '余额管理与使用记录' : '积分账户与流水记录'}
+        </p>
       </div>
 
-      <div className="container mx-auto px-4 py-8 max-w-5xl space-y-8">
-
-        {/* Balance Card */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="md:col-span-2 bg-card rounded-xl p-6 border border-border shadow-sm">
-            <div className="text-sm text-muted-foreground mb-2">
-              {currentMode === 'balance' ? '可用余额 (CNY)' : '总积分 (Points)'}
-            </div>
-            <div className="text-4xl font-bold text-indigo-600 dark:text-indigo-400 tracking-tight">
-              {currentMode === 'balance' ? (
-                 <>
-                   <span className="text-2xl mr-1">¥</span>
-                   {quotaLoading ? '...' : formatPoints(balance)}
-                 </>
-              ) : (
-                 <>
-                   {quotaLoading ? '...' : formatPoints(totalPoints)}
-                   <span className="text-lg ml-2 text-muted-foreground font-normal">pts</span>
-                 </>
-              )}
-            </div>
-
-            {currentMode === 'balance' && (
-              <div className="mt-4 flex items-center gap-4 text-sm text-muted-foreground">
-                <div className="flex items-center gap-1.5">
-                  <ArrowRightLeft size={14} />
-                  <span>可兑换积分: <span className="text-orange-600 font-medium">{formatPoints(points)}</span></span>
+      <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
+        
+        {/* Balance/Points Card - 完全按照 Nebula1 图片布局 */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border-0">
+          <div className="bg-gradient-to-r from-indigo-600 to-purple-600 p-8">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-8">
+              {/* 左侧：余额显示 - 始终显示余额信息，不随模式切换 */}
+              <div className="flex-1">
+                {/* 大号余额数字 - 最突出 */}
+                <div className="text-6xl md:text-7xl font-bold text-white mb-3 tracking-tight leading-none">
+                  <span className="text-4xl mr-2">¥</span>
+                  {quotaLoading ? '...' : formatPoints(balance)}
+                </div>
+                
+                {/* 余额和转换可用积分 - 同一行 */}
+                <div className="flex items-center gap-4 text-white text-base">
+                  <span className="text-lg font-medium">余额</span>
+                  <span>转换可用积分:</span>
+                  <span className="text-yellow-300 font-semibold text-xl">{formatPoints(points)}</span>
                 </div>
               </div>
+
+              {/* 右侧：按钮组 - 水平排列，按照图片布局 */}
+              <div className="flex flex-wrap items-center gap-2 justify-end">
+                {/* 日志/账单按钮（如果有团队权限或渠道ID） */}
+                {(user?.team?.length > 0 || user?.channelId) && (
+                  <button
+                    onClick={() => {/* TODO: 切换到日志模式 */}}
+                    className="flex items-center gap-2 px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white border border-white/30 rounded-xl text-sm font-medium transition-all"
+                  >
+                    <span className="text-base">📑</span>
+                    <span>日志/账单</span>
+                  </button>
+                )}
+                
+                {/* 积分按钮 */}
+                <button
+                  onClick={() => handleModeChange('points')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    currentMode === 'points'
+                      ? 'bg-white/30 text-white shadow-md border border-white/40'
+                      : 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
+                  }`}
+                >
+                  <span className="text-base">💎</span>
+                  <span>{t.buttons.points}</span>
+                </button>
+                
+                {/* 余额按钮 */}
+                <button
+                  onClick={() => handleModeChange('balance')}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    currentMode === 'balance'
+                      ? 'bg-white/30 text-white shadow-md border border-white/40'
+                      : 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
+                  }`}
+                >
+                  <span className="text-base">💰</span>
+                  <span>{t.buttons.balance}</span>
+                </button>
+                
+                {/* 免费会员状态 */}
+                <div className="flex items-center gap-2 px-4 py-2.5 bg-white/20 text-white border border-white/30 rounded-xl">
+                  <div className="w-2 h-2 rounded-full bg-green-400 shadow-sm"></div>
+                  <span className="text-sm font-medium">{t.buttons.freeMember}</span>
+                </div>
+                
+                {/* 刷新按钮 */}
+                <button
+                  onClick={handleRefresh}
+                  disabled={loading || quotaLoading}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all ${
+                    loading || quotaLoading
+                      ? 'bg-white/20 text-white border border-white/30'
+                      : 'bg-white/20 hover:bg-white/30 text-white border border-white/30'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  <RefreshCw size={16} className={loading || quotaLoading ? 'animate-spin' : ''} />
+                  <span>{t.buttons.refresh}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Usage List - 借鉴 Nebula1 的卡片式设计 */}
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden border-0">
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-800 pl-2 border-l-4 border-indigo-600">
+                {t.recordsTitle}
+              </h2>
+              <span className="text-sm text-gray-500">
+                共 {pagination.total} 条记录
+              </span>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16 text-gray-500">
+                <RefreshCw className="animate-spin mr-2" size={20} />
+                加载中...
+              </div>
+            ) : (
+              <>
+                {/* 卡片网格布局 - 借鉴 Nebula1 */}
+                <div className={`grid gap-4 mb-6 ${
+                  currentMode === 'balance' 
+                    ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' 
+                    : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4'
+                }`}>
+                  {(currentMode === 'balance' ? expenseLogs : scoreList).length === 0 ? (
+                    <div className="col-span-full py-16 text-center">
+                      <div className="text-6xl mb-4 opacity-50">📊</div>
+                      <div className="text-gray-500 text-lg font-medium">暂无记录</div>
+                      <div className="text-gray-400 text-sm mt-2">
+                        {currentMode === 'balance' ? '暂无使用记录' : '暂无积分流水'}
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      {currentMode === 'balance' ? (
+                        expenseLogs.map((log) => (
+                          <ExpenseRow key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
+                        ))
+                      ) : (
+                        scoreList.map((score) => (
+                          <ScoreCard key={score.id} score={score} t={t} />
+                        ))
+                      )}
+                    </>
+                  )}
+                </div>
+
+                {/* Pagination Footer */}
+                {!loading && pagination.total > pagination.pageSize && (
+                  <div className="flex items-center justify-center gap-4 pt-4 border-t border-gray-200">
+                    <button
+                      onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current - 1) : fetchScoreList(pagination.current - 1)}
+                      disabled={pagination.current <= 1}
+                      className="px-4 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-50"
+                    >
+                      上一页
+                    </button>
+                    <span className="text-sm text-gray-600 font-medium">
+                      {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
+                    </span>
+                    <button
+                      onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current + 1) : fetchScoreList(pagination.current + 1)}
+                      disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                      className="px-4 py-2 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-600 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-indigo-50"
+                    >
+                      下一页
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
-          <div className="bg-card rounded-xl p-6 border border-border shadow-sm flex flex-col justify-center items-start gap-3">
-             <div className="text-sm font-medium text-foreground">快捷操作</div>
-             <button
-                onClick={handleRefresh}
-                disabled={loading || quotaLoading}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 transition-colors text-sm font-medium text-white disabled:opacity-50 shadow-sm"
-             >
-                <RefreshCw size={16} className={loading || quotaLoading ? 'animate-spin' : ''} />
-                {t.buttons.refresh}
-             </button>
-             <div className="text-xs text-muted-foreground text-center w-full">
-                数据同步可能存在延迟
-             </div>
-          </div>
-        </div>
-
-        {/* Usage List */}
-        <div>
-           <div className="flex items-center justify-between mb-4">
-              <h2 className="text-base font-semibold text-foreground">{t.recordsTitle}</h2>
-              <span className="text-xs text-muted-foreground">
-                 共 {pagination.total} 条记录
+          {/* Footer Tip */}
+          <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100 border-t border-gray-200">
+            <div className="flex items-center gap-3 text-gray-600">
+              <span className="text-xl">💡</span>
+              <span className="text-sm font-medium">
+                {currentMode === 'points' 
+                  ? '积分可用于平台各项服务消费' 
+                  : '余额可用于大模型API调用服务'}
               </span>
-           </div>
-
-           <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-              {loading ? (
-                 <div className="flex items-center justify-center py-12 text-muted-foreground">
-                    <RefreshCw className="animate-spin mr-2" size={16} />
-                    加载中...
-                 </div>
-              ) : (
-                 <div className="divide-y divide-border/50">
-                   {(currentMode === 'balance' ? expenseLogs : scoreList).length === 0 ? (
-                      <div className="py-12 text-center text-muted-foreground text-sm">
-                        暂无记录
-                      </div>
-                   ) : (
-                     <>
-                      {currentMode === 'balance' ? (
-                         expenseLogs.map((log) => (
-                           <ExpenseRow key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
-                         ))
-                      ) : (
-                         scoreList.map((score) => (
-                           <ScoreCard key={score.id} score={score} t={t} />
-                         ))
-                      )}
-                     </>
-                   )}
-                 </div>
-              )}
-
-              {/* Pagination Footer */}
-              {!loading && pagination.total > pagination.pageSize && (
-                <div className="p-4 bg-secondary/10 flex items-center justify-center gap-4 border-t border-border/50">
-                   <button
-                     onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current - 1) : fetchScoreList(pagination.current - 1)}
-                     disabled={pagination.current <= 1}
-                     className="text-sm px-3 py-1 rounded-md hover:bg-indigo-50 hover:text-indigo-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current"
-                   >
-                     上一页
-                   </button>
-                   <span className="text-xs text-muted-foreground">
-                     {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                   </span>
-                   <button
-                     onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current + 1) : fetchScoreList(pagination.current + 1)}
-                     disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                     className="text-sm px-3 py-1 rounded-md hover:bg-indigo-50 hover:text-indigo-600 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-current"
-                   >
-                     下一页
-                   </button>
-                </div>
-              )}
-           </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -391,95 +429,168 @@ const ExpenseRow: React.FC<{
     type: 'consumption' | 'recharge';
     duration: string;
     totalTokens: number;
+    promptTokens?: number;
+    completionTokens?: number;
     timestamp: string;
   }; 
   t: ExpensesPageProps['t'];
 }> = ({ record, t }) => {
   const isConsumption = record.type === 'consumption';
+  const promptTokens = record.promptTokens || 0;
+  const completionTokens = record.completionTokens || 0;
   
   return (
-    <div className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 group">
-       <div className="flex items-start gap-3">
-          <div className={`mt-0.5 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-            isConsumption ? 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400' : 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-          }`}>
-             {isConsumption ? <Receipt size={16} /> : <Wallet size={16} />}
-          </div>
-          <div>
-             <div className="text-sm font-medium text-foreground">{record.modelName}</div>
-             <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-                <Clock size={10} />
-                {record.timestamp}
-                <span className="hidden sm:inline text-border">|</span>
-                <span className="hidden sm:inline">{record.duration}</span>
-             </div>
-          </div>
-       </div>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+      {/* Card Header - 按照 Nebula1 布局 */}
+      <div className="p-4">
+        {/* 模型信息 */}
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">🤖</span>
+          <span className="font-semibold text-gray-800">{record.modelName}</span>
+        </div>
+        {/* 金额 - 红色，浅粉色背景高亮 */}
+        <div className={`inline-flex items-center px-3 py-1.5 rounded text-base font-bold font-mono ${
+          isConsumption 
+            ? 'text-red-600 bg-pink-50' 
+            : 'text-green-600 bg-green-50'
+        }`}>
+          ¥{isConsumption ? '-' : '+'}{record.cost.toFixed(6)}
+        </div>
+      </div>
 
-       <div className="flex items-center justify-between sm:justify-end gap-6 pl-11 sm:pl-0">
-          {isConsumption && record.totalTokens > 0 && (
-            <div className="text-xs text-muted-foreground bg-secondary/50 px-2 py-1 rounded hidden sm:block">
-               {record.totalTokens.toLocaleString()} tokens
+      {/* Card Body - 两列布局 */}
+      <div className="px-4 pb-4">
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          {/* 左列 */}
+          <div className="space-y-3">
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-xs mb-1">{t.record.type}:</span>
+              <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium w-fit ${
+                isConsumption 
+                  ? 'bg-red-50 text-red-700 border border-red-200' 
+                  : 'bg-green-50 text-green-700 border border-green-200'
+              }`}>
+                {isConsumption ? t.record.consumption : '充值'}
+              </span>
             </div>
-          )}
-          <div className={`text-sm font-mono font-bold ${
-            isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
-          }`}>
-             {isConsumption ? '-' : '+'} {record.cost.toFixed(4)}
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-xs mb-1">{t.record.input}</span>
+              <span className="text-gray-800 font-medium">{promptTokens.toLocaleString()}</span>
+            </div>
           </div>
-       </div>
+          
+          {/* 右列 */}
+          <div className="space-y-3">
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-xs mb-1">{t.record.duration}:</span>
+              <span className="text-gray-800 font-medium">{record.duration}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-gray-500 text-xs mb-1">{t.record.output}</span>
+              <span className="text-gray-800 font-medium">{completionTokens.toLocaleString()}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Card Footer */}
+      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Clock size={12} />
+          <span>{record.timestamp}</span>
+        </div>
+      </div>
     </div>
   );
 };
 
-// 积分流水卡片组件
+// 积分流水卡片组件 - 完全按照 Nebula1 图片布局
 const ScoreCard: React.FC<{
   score: ScoreRecord;
   t: ExpensesPageProps['t'];
 }> = ({ score, t }) => {
   const scoreValue = Number(score.score) || 0;
   const isPositive = scoreValue > 0;
-  const assetTypeMap: Record<number, string> = {
-    1: '图片生成',
-    2: '视频生成',
-    3: '音频生成',
-    4: '其他服务',
+  const assetTypeMap: Record<number, { text: string; icon: string }> = {
+    // 1: { text: '图片生成', icon: '🎨' },
+    // 2: { text: '视频生成', icon: '🎬' },
+    // 3: { text: '音频生成', icon: '🎤' },
+    // 4: { text: '其他服务', icon: '🤖' },
+    // 15: { text: 'AI创作实验室', icon: '🧪' },
+     1: { text:  '视频生成', icon: '🎬' },
+    2: { text: 'AI对话', icon: '🤖' },
+    3: { text: '视频编辑', icon: '🎥' },
+    4: { text: '视频制作', icon: '🎞️' },
+    5: { text: '视频录制', icon: '📹' },
+    6: { text: '特效处理', icon: '🌟' },
+    7: { text: '图像处理', icon: '🎨' },
+    8: { text: '语音处理', icon: '🎤' },
+    9: { text: 'AI助手', icon: '🤖' },
+    10: { text: '智能分析', icon: '🤖' },
+    15: { text: 'AI创作实验室', icon: '🤖' },
+  };
+  
+  const typeInfo = assetTypeMap[score.assetType] || { text: '未知服务', icon: '❓' };
+  
+  // 状态映射 - 根据图片，"已扣款"对应已完成状态（status === '1'）
+  const statusInfo = {
+    '1': { text: '已扣款', class: 'bg-blue-100 text-white' }, // 已完成 -> 已扣款，浅蓝色背景，白色文字
+    '0': { text: '进行中', class: 'bg-yellow-50 text-yellow-700' },
+    '-1': { text: '失败', class: 'bg-red-50 text-red-700' },
+  }[String(score.status) || '0'] || { text: '未知', class: 'bg-gray-50 text-gray-700' };
+  
+  // 格式化时间戳为 2025/11/21 18:15:39 格式
+  const formatTimestamp = (timeStr: string) => {
+    if (!timeStr || timeStr === '-') return '-';
+    try {
+      const date = new Date(timeStr);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      return `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+    } catch {
+      return timeStr;
+    }
   };
   
   return (
-    <div className="p-4 hover:bg-muted/30 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-      <div className="flex items-start gap-3">
-         <div className="mt-0.5 w-8 h-8 rounded-lg bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 flex items-center justify-center shrink-0">
-            <Wallet size={16} />
-         </div>
-         <div>
-            <div className="text-sm font-medium text-foreground">
-               {assetTypeMap[score.assetType] || '未知服务'}
-            </div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-0.5">
-               <Clock size={10} />
-               {score.createTime || '-'}
-               {score.taskId && (
-                 <>
-                   <span className="text-border">|</span>
-                   <span>ID: {score.taskId}</span>
-                 </>
-               )}
-            </div>
-         </div>
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+      {/* Top Section - 服务名称和图标 - 按照 Nebula1 图片布局 */}
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-3">
+          {/* 图标容器 - 白色背景，圆角方形 */}
+          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100">
+            <span className="text-xl">{typeInfo.icon}</span>
+          </div>
+          <span className="font-semibold text-gray-800">{typeInfo.text}</span>
+        </div>
       </div>
 
-      <div className="pl-11 sm:pl-0 text-right">
-         <div className={`text-sm font-mono font-bold ${
-           isPositive ? 'text-green-600 dark:text-green-400' : 'text-foreground'
-         }`}>
-            {isPositive ? '+' : ''}{scoreValue}
-         </div>
-         <div className={`text-xs mt-0.5 ${
-            score.status === '1' ? 'text-green-600' : score.status === '-1' ? 'text-red-500' : 'text-muted-foreground'
-         }`}>
-            {score.status === '1' ? '已完成' : score.status === '0' ? '进行中' : '失败'}
-         </div>
+      {/* Middle Section - 积分值和状态 */}
+      <div className="px-4 pb-4 border-b border-gray-100">
+        <div className="flex items-center justify-between">
+          {/* 左侧：积分值 */}
+          <div className="text-base font-bold text-gray-800">
+            {isPositive ? '+' : '-'}{Math.abs(scoreValue)} 积分
+          </div>
+          {/* 右侧：状态按钮 */}
+          <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-medium ${
+            statusInfo.class
+          }`}>
+            {statusInfo.text}
+          </span>
+        </div>
+      </div>
+
+      {/* Bottom Section - 时间戳 */}
+      <div className="px-4 py-3 bg-gray-50">
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <Clock size={12} />
+          <span>{formatTimestamp(score.createTime || '-')}</span>
+        </div>
       </div>
     </div>
   );
