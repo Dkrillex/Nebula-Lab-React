@@ -159,8 +159,10 @@ const KeysPage: React.FC<KeysPageProps> = () => {
   };
 
   // 表单成功回调
-  const handleFormSuccess = () => {
-    fetchTokens();
+  const handleFormSuccess = async () => {
+    // 新增成功后，重置到第一页并刷新列表
+    setPagination(prev => ({ ...prev, current: 1 }));
+    await fetchTokens(1);
   };
 
   // 复制密钥
@@ -553,7 +555,7 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                           justifyContent: 'center',
                           flexShrink: 0
                         }}>
-                          <img src="/logo.png" alt="token" className="icon-img" style={{
+                          <img src="img/nebula-data-logo.png" alt="token" className="icon-img" style={{
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover'

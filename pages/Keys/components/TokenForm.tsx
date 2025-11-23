@@ -38,6 +38,9 @@ const TokenForm: React.FC<TokenFormProps> = ({
   const [modelSearchValue, setModelSearchValue] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // 永不过期的日期：2099-12-31 23:59:59
+  const NEVER_EXPIRE_DATE = '2099-12-31T23:59:59';
 
   // 加载模型列表
   const loadModels = async (search?: string) => {
@@ -95,8 +98,8 @@ const TokenForm: React.FC<TokenFormProps> = ({
           const date = new Date(timestamp);
           setExpiredTimeDate(date.toISOString().slice(0, 16));
         } else {
-          // 永不过期时，设置为空字符串（表示永不过期）
-          setExpiredTimeDate('');
+          // 永不过期时，设置为2099-12-31 23:59:59
+          setExpiredTimeDate(NEVER_EXPIRE_DATE.slice(0, 16));
         }
       } else {
         // 新建模式
@@ -110,7 +113,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
           expiredTime: null,
           nebulaApiId: user?.nebulaApiId,
         });
-        setExpiredTimeDate('');
+        setExpiredTimeDate(NEVER_EXPIRE_DATE.slice(0, 16));
       }
       setKeyVisible(false);
       loadModels();
@@ -146,6 +149,8 @@ const TokenForm: React.FC<TokenFormProps> = ({
       const submitData: TokenFormType = {
         ...formData,
         nebulaApiId: user?.nebulaApiId,
+        userId: user?.nebulaApiId || user?.userId, // 添加userId字段，参考Nebula1的payload
+        status: formData.status ?? 1, // 确保status有默认值
       } as TokenFormType;
 
       // 转换 quotaRmb 为 remainQuota
@@ -154,7 +159,8 @@ const TokenForm: React.FC<TokenFormProps> = ({
       }
 
       // 处理过期时间（参考旧项目：-1 表示永不过期）
-      if (expiredTimeDate) {
+      // 如果日期是2099-12-31 23:59:59，表示永不过期，转换为-1
+      if (expiredTimeDate && expiredTimeDate !== NEVER_EXPIRE_DATE.slice(0, 16)) {
         submitData.expiredTime = Math.floor(new Date(expiredTimeDate).getTime() / 1000);
       } else {
         submitData.expiredTime = -1; // 永不过期（使用 -1，参考旧项目）
@@ -163,7 +169,38 @@ const TokenForm: React.FC<TokenFormProps> = ({
       // 处理模型限制
       if (Array.isArray(submitData.modelLimits)) {
         submitData.modelLimits = submitData.modelLimits.join(',');
+      } else if (!submitData.modelLimits) {
+        submitData.modelLimits = '';
       }
+
+      // 添加其他可能需要的字段（参考Nebula1的payload）
+      if (!submitData.group && !submitData.userGroup) {
+        submitData.group = submitData.userGroup || '';
+      }
+      if (!submitData.allowIps) {
+        submitData.allowIps = '';
+      }
+      if (submitData.accessedTime === undefined) {
+        submitData.accessedTime = 0;
+      }
+      // 确保unlimitedQuota有默认值
+      if (submitData.unlimitedQuota === undefined) {
+        submitData.unlimitedQuota = 0;
+      }
+      // 确保modelLimitsEnabled有默认值
+      if (submitData.modelLimitsEnabled === undefined) {
+        submitData.modelLimitsEnabled = 0;
+      }
+
+      // 生成随机key的辅助函数（如果需要前端生成）
+      const generateRandomKey = (length: number = 22): string => {
+        const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+          result += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return result;
+      };
 
       if (token?.id) {
         // 更新
@@ -174,8 +211,13 @@ const TokenForm: React.FC<TokenFormProps> = ({
           key: token.key,
         });
       } else {
-        // 新建
-        await keyService.createToken(submitData);
+        // 新建 - 添加key字段（参考Nebula1的payload格式）
+        // 如果后端需要key字段，生成一个随机key；如果后端会生成，可以传递空字符串
+        const createData = {
+          ...submitData,
+          key: generateRandomKey(), // 生成随机key，匹配Nebula1的payload格式
+        };
+        await keyService.createToken(createData);
       }
 
       onSuccess();
@@ -195,7 +237,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
 
     switch (type) {
       case 'never':
-        setExpiredTimeDate('');
+        setExpiredTimeDate(NEVER_EXPIRE_DATE.slice(0, 16));
         return;
       case 'hour':
         targetTime = new Date(now.getTime() + 60 * 60 * 1000);
