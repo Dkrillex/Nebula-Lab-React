@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, RefreshCw, Edit3 } from 'lucide-react';
 import { TOOLS_DATA, Tool } from '../data';
 import UploadComponent from '../../../components/UploadComponent';
 import { aiToolService } from '../../../services/aiToolService';
 import { UploadedFile } from '../../../services/avatarService';
+import MaskCanvas, { MaskCanvasRef } from './MaskCanvas';
 
 interface UseToolPageProps {
   // t?: any; 
@@ -25,6 +26,12 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
   const [generating, setGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Mask related state
+  const [isMaskToolActive, setIsMaskToolActive] = useState(false);
+  const [maskDataUrl, setMaskDataUrl] = useState<string | null>(null);
+  const [brushSize, setBrushSize] = useState(20);
+  const maskCanvasRef = useRef<MaskCanvasRef>(null);
 
   // Load tool from state or query param
   useEffect(() => {
@@ -62,6 +69,8 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
     setPrimaryFile(file);
     setResultUrl(null);
     setError(null);
+    setMaskDataUrl(null);
+    setIsMaskToolActive(false);
     // Convert to base64 for preview/sending
     const reader = new FileReader();
     reader.onload = (e) => setPrimaryImageBase64(e.target?.result as string);
@@ -110,19 +119,46 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
           };
       }
 
-      const res = await aiToolService.editImage(
+      // 获取蒙版数据（如果有）
+      let maskBase64 = null;
+      if (maskCanvasRef.current) {
+        try {
+          const maskBlob = await maskCanvasRef.current.getMask();
+          if (maskBlob) {
+            const reader = new FileReader();
+            maskBase64 = await new Promise<string>((resolve, reject) => {
+              reader.onload = (e) => resolve(e.target?.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(maskBlob);
+            });
+          }
+        } catch (err) {
+          console.warn('获取蒙版失败:', err);
+          // 如果获取失败，尝试使用缓存的 maskDataUrl
+          if (maskDataUrl) {
+            maskBase64 = maskDataUrl;
+          }
+        }
+      } else if (maskDataUrl) {
+        maskBase64 = maskDataUrl;
+      }
+
+      const result = await aiToolService.editImage(
         primaryImageBase64,
         mimeType,
         promptToUse,
-        null, // Mask support to be added later if needed
+        maskBase64,
         secondaryPayload,
-        activeTool.title
+        activeTool // 传入完整的 tool 对象
       );
 
-      if (res.code === 200 && res.data?.[0]?.url) {
-        setResultUrl(res.data[0].url);
+      console.log('生成结果:', result);
+      
+      // 新的 editImage 已经统一处理响应，直接返回 { imageUrl, text }
+      if (result.imageUrl) {
+        setResultUrl(result.imageUrl);
       } else {
-        throw new Error(res.msg || '生成失败');
+        throw new Error('生成失败：未返回有效的图片URL');
       }
     } catch (err: any) {
       console.error(err);
@@ -158,7 +194,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 overflow-y-auto custom-scrollbar">
             
             {/* Prompt */}
-            <div className="mb-6">
+            {/* <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">提示词</label>
                 <textarea 
                     value={activeTool.prompt === 'CUSTOM' ? customPrompt : activeTool.prompt}
@@ -169,7 +205,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     }`}
                     placeholder="描述你想要的效果..."
                 />
-            </div>
+            </div> */}
 
             {/* Image Uploaders */}
             <div className="space-y-6">
@@ -180,19 +216,93 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                             {activeTool.primaryUploaderDescription}
                         </span>
                     </label>
-                    <UploadComponent 
-                        onUploadComplete={(f) => {}} // We use file selected directly
-                        onFileSelected={handlePrimarySelect}
-                        uploadType="oss"
-                        className="h-48 w-full"
-                        showPreview={true}
-                        immediate={false} // Don't upload to OSS immediately, wait for generate
-                    >
-                        <div className="text-center p-4">
-                            <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-600">点击或拖拽上传图片</p>
+                    {!primaryImageBase64 ? (
+                        <UploadComponent 
+                            onUploadComplete={(f) => {}} // We use file selected directly
+                            onFileSelected={handlePrimarySelect}
+                            uploadType="oss"
+                            className="h-48 w-full"
+                            showPreview={true}
+                            immediate={false} // Don't upload to OSS immediately, wait for generate
+                        >
+                            <div className="text-center p-4">
+                                <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                                <p className="text-sm text-gray-600">点击或拖拽上传图片</p>
+                            </div>
+                        </UploadComponent>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="relative h-64 w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
+                                <MaskCanvas
+                                    ref={maskCanvasRef}
+                                    imageUrl={primaryImageBase64}
+                                    tool={isMaskToolActive ? 'pencil' : 'pencil'}
+                                    brushSize={brushSize}
+                                    brushColor="rgba(113, 102, 240, 0.7)"
+                                    mode="mask"
+                                    enableZoom={true}
+                                    className="w-full h-full"
+                                />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setIsMaskToolActive(!isMaskToolActive)}
+                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                        isMaskToolActive
+                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                    }`}
+                                >
+                                    <Edit3 size={16} />
+                                    {isMaskToolActive ? '退出蒙版编辑' : '绘制蒙版'}
+                                </button>
+                                {/* <button
+                                    onClick={() => {
+                                        setPrimaryImageBase64(null);
+                                        setPrimaryFile(null);
+                                        setMaskDataUrl(null);
+                                        setIsMaskToolActive(false);
+                                        maskCanvasRef.current?.clearCanvas();
+                                    }}
+                                    className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                >
+                                    清除
+                                </button> */}
+                            </div>
+                            {isMaskToolActive && (
+                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                    <label className="block text-xs font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                        画笔大小: {brushSize}px
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="5"
+                                        max="100"
+                                        value={brushSize}
+                                        onChange={(e) => setBrushSize(Number(e.target.value))}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                    />
+                                    <div className="flex gap-2 mt-2">
+                                        <button
+                                            onClick={() => maskCanvasRef.current?.undoLastAction()}
+                                            className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                        >
+                                            撤销
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                maskCanvasRef.current?.clearCanvas();
+                                                setMaskDataUrl(null);
+                                            }}
+                                            className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                        >
+                                            清除蒙版
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    </UploadComponent>
+                    )}
                 </div>
 
                 {activeTool.isMultiImage && (

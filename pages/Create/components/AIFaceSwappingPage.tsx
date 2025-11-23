@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Wand2, Sparkles } from 'lucide-react';
+import { Wand2, Sparkles, Gem, Check } from 'lucide-react';
 import { faceSwapService, FaceSwapParams } from '../../../services/faceSwapService';
 import MultiImageUploader from './MultiImageUploader';
 import FaceSwapResultDisplay from './FaceSwapResultDisplay';
@@ -215,7 +215,7 @@ const AIFaceSwappingPage: React.FC = () => {
             <button
               onClick={handleGenerate}
               disabled={isGenerateDisabled}
-              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] px-4 py-3 font-semibold text-[#ffffff] shadow-lg shadow-[rgba(255,150,172,0.25)] transition-all duration-200 hover:shadow-lg hover:shadow-[#7d6fdd]/30 disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:from-[#e5e7eb] disabled:to-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
+              className="mt-6 flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] px-4 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:shadow-xl disabled:cursor-not-allowed disabled:bg-[#e5e7eb] disabled:from-[#e5e7eb] disabled:to-[#e5e7eb] disabled:text-[#9ca3af] disabled:shadow-none"
             >
               {isGenerating ? (
                 <>
@@ -224,7 +224,11 @@ const AIFaceSwappingPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Wand2 className="h-5 w-5" />
+                  <div className="relative">
+                    <Gem className="h-5 w-5" />
+                    <Check className="absolute -top-1 -right-1 h-3 w-3" />
+                  </div>
+                  <span className="text-sm font-semibold">0.3</span>
                   <span>生成换脸图片</span>
                 </>
               )}

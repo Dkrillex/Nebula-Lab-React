@@ -36,10 +36,14 @@ export interface AiTemplateRequest {
 export interface AiTemplateResponse {
   code: number;
   msg?: string;
-  data: Array<{
-    url?: string;
-    text?: string;
-  }>;
+  data: {
+    data: Array<{
+      url?: string;
+      b64_json?: string;
+      revised_prompt?: string;
+    }>;
+    created?: number;
+  };
 }
 
 export const aiToolService = {
@@ -56,13 +60,16 @@ export const aiToolService = {
       score: "0.3"
     };
 
+    // request.ts 会提取 data 字段，所以禁用 transform 以获取完整响应
     return request.post<AiTemplateResponse>('/aiTool/v1/AiTemplate', requestData, {
       timeout: 60000,
+      isTransformResponse: false,
     });
   },
 
   /**
    * 编辑图像 helper function
+   * 借鉴 Nebula1 的实现方式，支持传入 selectedTool 参数
    */
   editImage: async (
     base64ImageData: string | null,
@@ -70,13 +77,16 @@ export const aiToolService = {
     prompt: string,
     maskBase64: string | null,
     secondaryImage: { base64: string; mimeType: string } | null,
-    titleKey: string
+    titleKey: string | any // 支持传入 Tool 对象或字符串
   ) => {
     try {
-      const partsArr: Array<object> = [];
+      const partsArr: Array<{ text?: string; image?: string }> = [];
       const fullPrompt = prompt;
 
-      const fileName = titleKey || 'image';
+      // 支持传入 Tool 对象或字符串
+      const fileName = typeof titleKey === 'string' 
+        ? titleKey 
+        : (titleKey?.title || titleKey?.key || 'image');
       
       partsArr.push({
         text: maskBase64
@@ -93,9 +103,11 @@ export const aiToolService = {
         );
         // @ts-ignore
         const url = res.data?.url || res.url; 
-        partsArr.push({
-          image: url,
-        });
+        if (url) {
+          partsArr.push({
+            image: url,
+          });
+        }
       }
 
       if (maskBase64) {
@@ -107,9 +119,11 @@ export const aiToolService = {
         );
         // @ts-ignore
         const url = res.data?.url || res.url;
-        partsArr.push({
-          image: url,
-        });
+        if (url) {
+          partsArr.push({
+            image: url,
+          });
+        }
       }
 
       if (secondaryImage) {
@@ -121,9 +135,11 @@ export const aiToolService = {
         );
         // @ts-ignore
         const url = res.data?.url || res.url;
-        partsArr.push({
-          image: url,
-        });
+        if (url) {
+          partsArr.push({
+            image: url,
+          });
+        }
       }
 
       const requestData: AiTemplateRequest = {
@@ -139,10 +155,22 @@ export const aiToolService = {
         ],
       };
 
-      return await aiToolService.generateAiTemplate(requestData);
+      const response = await aiToolService.generateAiTemplate(requestData);
+      
+      // 统一响应处理，借鉴 Nebula1 的方式
+      if (response.code === 200 && response.data?.data && response.data.data.length > 0) {
+        return {
+          imageUrl: response.data.data[0].url,
+          text: response.data.data[0].revised_prompt || fileName,
+        };
+      } else {
+        throw new Error(response.msg || '生成失败，未返回有效结果');
+      }
     } catch (error) {
       console.error('Error calling AI Tool API:', error);
-      throw error;
+      throw error instanceof Error 
+        ? error 
+        : new Error('图像编辑失败，请重试');
     }
   }
 };

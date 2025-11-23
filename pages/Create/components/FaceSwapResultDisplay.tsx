@@ -154,22 +154,20 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
       <div className="flex flex-col gap-4">
         {/* 模式切换按钮 */}
         {originalImageUrl && availableModes.length > 1 && (
-          <div className="flex justify-center">
-            <div className="inline-flex items-center gap-1 rounded-lg bg-[#f3f4f6] p-1">
-              {availableModes.map((mode) => (
-                <button
-                  key={mode}
-                  onClick={() => setViewMode(mode)}
-                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors duration-200 ${
-                    viewMode === mode
-                      ? 'bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] text-white'
-                      : 'text-[#111827] hover:bg-[rgba(107,114,128,0.2)]'
-                  }`}
-                >
-                  {getModeLabel(mode)}
-                </button>
-              ))}
-            </div>
+          <div className="flex justify-center gap-2">
+            {availableModes.map((mode) => (
+              <button
+                key={mode}
+                onClick={() => setViewMode(mode)}
+                className={`px-4 py-2 text-sm font-semibold rounded-[10px] transition-all duration-200 shadow-lg ${
+                  viewMode === mode
+                    ? 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white hover:shadow-xl'
+                    : 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white opacity-60 hover:opacity-80'
+                }`}
+              >
+                {getModeLabel(mode)}
+              </button>
+            ))}
           </div>
         )}
 
