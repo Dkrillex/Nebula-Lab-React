@@ -860,10 +860,10 @@ const PricingCard: React.FC<PricingCardProps> = ({
             {/* Track */}
             <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
             
-            {/* Progress */}
+            {/* Progress - 6个步骤：1, 2, 3, 4, 5, 自定义 */}
             <div 
               className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
-                style={{ width: `${((Math.min(quantity, 5) - 1) / 4) * 100}%` }}
+              style={{ width: `${((quantity - 1) / 5) * 100}%` }}
             ></div>
 
             {/* Steps */}
