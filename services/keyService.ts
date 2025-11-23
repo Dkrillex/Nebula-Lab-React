@@ -124,7 +124,7 @@ export const keyService = {
    * @returns 创建结果
    */
   createToken: (data: TokenForm) => {
-    return request.post<ApiResponse<void>>('/ads/llmToken', data);
+    return request.post<ApiResponse<void>>('/llm/tokens', data);
   },
 
   /**
@@ -133,7 +133,7 @@ export const keyService = {
    * @returns 更新结果
    */
   updateToken: (data: TokenForm) => {
-    return request.put<ApiResponse<void>>('/ads/llmToken', data);
+    return request.put<ApiResponse<void>>('/llm/tokens', data);
   },
 
   /**
@@ -143,7 +143,7 @@ export const keyService = {
    */
   deleteToken: (id: string | number | (string | number)[]) => {
     const ids = Array.isArray(id) ? id.join(',') : id;
-    return request.delete<ApiResponse<void>>(`/ads/llmToken/${ids}`);
+    return request.delete<ApiResponse<void>>(`/llm/tokens/${ids}`);
   },
 
   /**
