@@ -60,6 +60,7 @@ export interface RouteMeta {
   hideInMenu?: boolean;
   roles?: string[]; // 允许的角色
   requiresAuth?: boolean; // 是否需要登录
+  keepAlive?: boolean; // 是否缓存组件（类似 Vue 的 keep-alive）
 }
 
 // 扩展的路由对象类型

@@ -26,7 +26,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Create',
           icon: 'magic',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -35,7 +36,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Assets',
           icon: 'folder',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -44,7 +46,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Chat',
           icon: 'message',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -53,7 +56,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Keys',
           icon: 'key',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -62,7 +66,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Models',
           icon: 'grid',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -71,7 +76,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Expenses',
           icon: 'dollar-sign',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -80,7 +86,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Pricing',
           icon: 'credit-card',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -89,7 +96,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Price List',
           icon: 'list',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       },
       {
@@ -98,7 +106,8 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Profile',
           icon: 'user',
-          requiresAuth: true
+          requiresAuth: true,
+          keepAlive: true
         }
       }
     ]

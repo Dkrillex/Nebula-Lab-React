@@ -3,10 +3,11 @@ import React from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import { Toaster } from 'react-hot-toast';
+import { KeepAliveProvider } from './components/KeepAlive';
 
 const App: React.FC = () => {
   return (
-    <>
+    <KeepAliveProvider>
       <RouterProvider router={router} />
       <Toaster 
         position="top-center"
@@ -34,7 +35,7 @@ const App: React.FC = () => {
           },
         }}
       />
-    </>
+    </KeepAliveProvider>
   );
 };
 

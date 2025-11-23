@@ -1,13 +1,15 @@
 
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationModal from './NotificationModal';
+import CachedOutlet from './CachedOutlet';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
+import { useCacheStore } from '../stores/cacheStore';
 
 import MobileSidebar from './MobileSidebar';
 
@@ -61,8 +63,9 @@ const Layout: React.FC = () => {
   };
 
   const { view: currentView, tool: activeTool } = getCurrentViewAndTool();
+  const { updateCachedComponents, removeCachedComponent } = useCacheStore();
 
-  // Update Tabs History
+  // Update Tabs History and Cache
   useEffect(() => {
     setVisitedViews(prev => {
       const exists = prev.some(t => 
@@ -78,6 +81,25 @@ const Layout: React.FC = () => {
       }];
     });
   }, [currentView, activeTool]);
+
+  // 根据打开的标签页更新缓存列表（类似 Vue3 的 updateCacheTabs）
+  useEffect(() => {
+    const cachedKeys: string[] = [];
+    
+    visitedViews.forEach(tab => {
+      // 根据 view 和 tool 生成缓存 key
+      const cacheKey = tab.view === 'create' && tab.activeTool
+        ? `/create?tool=${tab.activeTool}`
+        : tab.view === 'home' ? '/' : `/${tab.view}`;
+      
+      // 检查路由是否配置了 keepAlive（这里简化处理，假设所有标签页都支持缓存）
+      // 实际应该根据路由配置来判断
+      cachedKeys.push(cacheKey);
+    });
+
+    // 更新缓存组件列表
+    updateCachedComponents(cachedKeys);
+  }, [visitedViews, updateCachedComponents]);
 
   // Navigation Handlers
   const handleNavClick = (href: string) => {
@@ -103,6 +125,13 @@ const Layout: React.FC = () => {
     const targetTab = visitedViews[index];
     const newTabs = visitedViews.filter((_, i) => i !== index);
     setVisitedViews(newTabs);
+
+    // 当标签页关闭时，从缓存中移除对应的组件
+    // 根据 view 和 tool 生成缓存 key
+    const cacheKey = targetTab.view === 'create' && targetTab.activeTool
+      ? `/create?tool=${targetTab.activeTool}`
+      : targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
+    removeCachedComponent(cacheKey);
 
     // If closing active tab, navigate to last available
     const isActive = targetTab.view === currentView && 
@@ -147,7 +176,7 @@ const Layout: React.FC = () => {
       />
       
       <main className="flex-1">
-        <Outlet context={{ t, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} /> 
+        <CachedOutlet />
       </main>
 
       {/* Conditional Footer rendering based on route can be handled here or CSS */}

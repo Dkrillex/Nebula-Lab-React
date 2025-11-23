@@ -24,7 +24,8 @@ export const coreRoutes: AppRouteObject[] = [
         element: <Home />, // 需要在 RouterProvider 中配合 Suspense
         meta: {
           title: 'Home',
-          requiresAuth: false
+          requiresAuth: false,
+          keepAlive: false // 首页通常不需要缓存
         }
       },
       {
@@ -32,7 +33,8 @@ export const coreRoutes: AppRouteObject[] = [
         element: <PrivacyPage />,
         meta: {
           title: 'Privacy',
-          requiresAuth: false
+          requiresAuth: false,
+          keepAlive: false
         }
       }
     ]
