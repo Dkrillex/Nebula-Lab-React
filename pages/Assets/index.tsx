@@ -10,6 +10,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { useAppOutletContext } from '../../router';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import MoveShareModal from '../../components/MoveShareModal';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -344,30 +345,68 @@ const AssetsPage: React.FC = () => {
     setShowMoveModal(true);
   };
 
-  const handleMoveConfirm = async (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => {
+  const handleMoveConfirm = async (result: { 
+    targetFolderId: string | null, 
+    targetTab: 'personal' | 'shared', 
+    teamId?: string 
+  }) => {
     try {
       const ids = Array.from(selectedAssets);
-      const isShare = activeTab === 'personal' && targetTab === 'shared';
+      const { targetFolderId, targetTab, teamId } = result;
       
-      if (isShare && teamId) {
-        // 分享到共享文件（复制）
-        for (const id of ids) {
-          const asset = assets.find(a => String(a.id) === id);
-          if (!asset) continue;
-          
-          await assetsService.addAssets({
-            ...asset,
-            id: undefined,
-            assetPackageId: targetFolderId || undefined,
-            teamId: teamId,
-            isShare: 1,
-            createTime: undefined,
-            updateTime: undefined,
-          });
+      // 判断是移动还是分享
+      // 1. 个人文件 -> 共享文件：分享（复制）
+      // 2. 共享文件 -> 个人文件：分享（复制）
+      // 3. 共享文件 -> 共享文件（不同团队）：分享（复制）
+      // 4. 其他情况：移动
+      const isShare = 
+        (activeTab === 'personal' && targetTab === 'shared') || // 个人 -> 共享
+        (activeTab === 'shared' && targetTab === 'personal') || // 共享 -> 个人
+        (activeTab === 'shared' && targetTab === 'shared' && teamId && (currentFolderInfo as any)?.teamId && String(teamId) !== String((currentFolderInfo as any).teamId)); // 共享 -> 共享（不同团队）
+      
+      if (isShare) {
+        // 分享（复制）
+        if (targetTab === 'shared' && !teamId) {
+          toast.error('无法获取团队信息，分享失败');
+          return;
         }
+        
+        // 获取选中的文件详情
+        const selectedFiles = ids.map(id => 
+          assets.find(asset => String(asset.id) === id)
+        ).filter(Boolean) as AdsAssetsVO[];
+        
+        // 为每个文件创建分享副本
+        for (const file of selectedFiles) {
+          if (!file) continue;
+          
+          const shareData: Partial<AdsAssetsVO> = {
+            ...file,
+            id: undefined, // 新增时不传ID
+            assetPackageId: targetFolderId || undefined,
+            designerId: user?.userId, // 保持创建者
+          };
+          
+          if (targetTab === 'shared' && teamId) {
+            shareData.teamId = teamId;
+            shareData.isShare = 1;
+          } else if (targetTab === 'personal') {
+            shareData.isShare = 0;
+          }
+          
+          // 清理 undefined 字段
+          Object.keys(shareData).forEach(key => {
+            if (shareData[key as keyof AdsAssetsVO] === undefined) {
+              delete shareData[key as keyof AdsAssetsVO];
+            }
+          });
+          
+          await assetsService.addAssets(shareData as AdsAssetsVO);
+        }
+        
         toast.success('分享成功');
       } else {
-        // 移动文件
+        // 移动文件（在同一 tab 内移动，或同团队内移动）
         await assetsService.moveAssets(ids, targetFolderId || undefined);
         toast.success('移动成功');
       }
@@ -793,19 +832,20 @@ const AssetsPage: React.FC = () => {
         />
       )}
 
-      {/* Move/Share Modal - Placeholder */}
+      {/* Move/Share Modal */}
       {showMoveModal && (
-        <MoveModal
+        <MoveShareModal
           visible={showMoveModal}
           onClose={() => setShowMoveModal(false)}
           onConfirm={handleMoveConfirm}
           sourceTab={activeTab}
           hasTeams={hasTeams}
-          teamIds={userTeams.map((t: any) => t.teamId).join(',')}
+          teamIds={userTeams.map((t: any) => String(t.teamId)).join(',')}
           excludeIds={Array.from(selectedAssets)
             .map(id => assets.find(a => String(a.id) === id))
             .filter(a => a && a.dataType === 2)
             .map(a => Number(a!.id))}
+          currentFolderId={currentFolderId}
         />
       )}
       
@@ -1097,84 +1137,5 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ asset, onClose, onDownload 
   );
 };
 
-// Move Modal Component (Simplified version - you can enhance this)
-interface MoveModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onConfirm: (targetFolderId: string | null, targetTab: 'personal' | 'shared', teamId?: string) => void;
-  sourceTab: 'personal' | 'shared';
-  hasTeams: boolean;
-  teamIds: string;
-  excludeIds: number[];
-}
-
-const MoveModal: React.FC<MoveModalProps> = ({ visible, onClose, onConfirm, sourceTab, hasTeams, teamIds }) => {
-  const [targetTab, setTargetTab] = useState<'personal' | 'shared'>(sourceTab);
-  const [selectedTeamId, setSelectedTeamId] = useState('');
-  const { user } = useAuthStore();
-
-  if (!visible) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-6">
-        <h2 className="text-lg font-semibold mb-4">移动/分享到</h2>
-        
-        {sourceTab === 'personal' && hasTeams && (
-          <div className="space-y-4 mb-4">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="personal"
-                checked={targetTab === 'personal'}
-                onChange={() => setTargetTab('personal')}
-              />
-              个人文件夹
-            </label>
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                value="shared"
-                checked={targetTab === 'shared'}
-                onChange={() => setTargetTab('shared')}
-              />
-              共享文件夹
-            </label>
-          </div>
-        )}
-
-        {targetTab === 'shared' && (
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2">选择团队</label>
-            <select
-              value={selectedTeamId}
-              onChange={(e) => setSelectedTeamId(e.target.value)}
-              className="w-full px-4 py-2 rounded-lg border border-border bg-background"
-            >
-              <option value="">请选择团队</option>
-              {user?.team?.map((t: any) => (
-                <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2 border border-border rounded-lg">
-            取消
-          </button>
-          <button
-            onClick={() => onConfirm(null, targetTab, selectedTeamId)}
-            disabled={targetTab === 'shared' && !selectedTeamId}
-            className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50"
-          >
-            确定
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 export default AssetsPage;
