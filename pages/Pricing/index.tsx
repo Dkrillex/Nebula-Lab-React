@@ -584,6 +584,47 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             })
           )}
         </div>
+
+        {/* 服务优势 和 需要帮助 */}
+        <div className="mt-12 pt-8 border-t border-border">
+          <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-16">
+            {/* 服务优势 */}
+            <div className="flex-1">
+              <h4 className="text-xl font-semibold text-foreground mb-4">
+                服务优势
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  ✨ AI智能创作
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  🚀 高效内容生成
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  💎 专业技术支持
+                </span>
+                <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
+                  🔒 数据安全保障
+                </span>
+              </div>
+            </div>
+
+            {/* 需要帮助 */}
+            <div className="flex-shrink-0 text-center">
+              <h4 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">
+                需要帮助？
+              </h4>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                请拨打电话：<a 
+                  href="tel:18890659150" 
+                  className="text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  18890659150
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Wechat Pay Modal */}
