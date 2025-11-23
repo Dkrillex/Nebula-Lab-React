@@ -435,12 +435,16 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
               toast.success('已添加到素材库');
+              setShowMaterialModal(false);
           }}
           initialData={{
               assetName: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
+              assetTag: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
+              assetDesc: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
               assetUrl: resultVideoUrl || '',
               assetType: 4 // Video
           }}
+          disableAssetTypeSelection={true}
        />
     </div>
   );

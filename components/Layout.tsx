@@ -176,6 +176,7 @@ const Layout: React.FC = () => {
         isOpen={isAuthModalOpen}  
         onClose={() => setIsAuthModalOpen(false)} 
         onLoginSuccess={() => fetchUserInfo()}
+        lang={lang}
         t={t.auth}
       />
 

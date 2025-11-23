@@ -501,14 +501,17 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         onSuccess={() => {
-          // Optional: Show a success toast or update generated image state to show "added"
+          setIsAddModalOpen(false);
           console.log('Added to materials');
         }}
         initialData={{
           assetUrl: previewImage || '',
-          assetName: `Generated Image ${new Date().toLocaleString()}`,
-          assetType: 6, // Image type
+          assetName: 'AI生图',
+          assetType: 7, // AI生图
+          assetTag: 'AI生图',
+          assetDesc: 'AI生图',
         }}
+        disableAssetTypeSelection={true}
       />
 
       {/* Full Screen Preview Modal */}

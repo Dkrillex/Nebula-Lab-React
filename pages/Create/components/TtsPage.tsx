@@ -205,10 +205,11 @@ const TtsPage: React.FC = () => {
       }
 
       // 准备素材数据
+      const materialName = `文本转语音_${Date.now()}`;
       const materialData: Partial<AdsAssetsForm> = {
-        assetName: `文本转语音_${Date.now()}`,
-        assetTag: 'TTS,语音合成,AI创作',
-        assetDesc: `文本转语音生成 - ${text.substring(0, 50)}${text.length > 50 ? '...' : ''}`,
+        assetName: materialName,
+        assetTag: materialName,
+        assetDesc: materialName,
         assetId: generatedAudio.requestId || `tts_${Date.now()}`,
         assetUrl: finalAudioUrl,
         assetType: 8, // 音频类型
@@ -380,6 +381,7 @@ const TtsPage: React.FC = () => {
         }}
         onSuccess={handleImportSuccess}
         initialData={pendingMaterialData}
+        disableAssetTypeSelection={true}
       />
     </div>
   );

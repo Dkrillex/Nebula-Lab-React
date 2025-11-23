@@ -68,6 +68,14 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [cursor, setCursor] = useState({ x: 0, y: 0, visible: false });
   
+  // 文本输入状态（直接在画布上显示）
+  const [textInputState, setTextInputState] = useState<{
+    isVisible: boolean;
+    x: number;
+    y: number;
+  } | null>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
+  
   // Refs for mutable state during interactions
   const isPanningRef = useRef(false);
   const isSpacePressedRef = useRef(false);
@@ -338,21 +346,17 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
     const normalizedPos = canvasToNormalizedCoords(x, y);
 
     if (tool === 'text') {
-        const text = window.prompt('请输入文本:');
-        if (text) {
-            const newStroke: Stroke = {
-                type: 'text',
-                path: [normalizedPos],
-                text,
-                textOptions: { ...textOptions }, // Copy current options
-                brushSize,
-                color: brushColor,
-                globalCompositeOperation: 'source-over'
-            };
-            drawnShapesRef.current.push(newStroke);
-            actionHistoryRef.current.push({ type: 'add', shape: newStroke });
-            redrawAllShapes();
-        }
+        // 直接在画布上显示输入框，不弹出对话框
+        const canvasPos = normalizedToCanvasCoords(normalizedPos.x, normalizedPos.y);
+        setTextInputState({
+            isVisible: true,
+            x: canvasPos.x,
+            y: canvasPos.y
+        });
+        // 使用 setTimeout 确保 DOM 更新后再聚焦
+        setTimeout(() => {
+            textInputRef.current?.focus();
+        }, 10);
         return;
     }
 
@@ -731,6 +735,75 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
         <div className="absolute top-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs pointer-events-none z-10">
           {Math.round(zoomScale * 100)}%
         </div>
+      )}
+      
+      {/* 文本输入框（直接在画布上显示） */}
+      {textInputState?.isVisible && (
+        <input
+          ref={textInputRef}
+          type="text"
+          placeholder="输入文本..."
+          className="absolute z-[1000]"
+          style={{
+            left: `${textInputState.x}px`,
+            top: `${textInputState.y}px`,
+            zIndex: 1000,
+            padding: '4px 8px',
+            border: '2px solid #667eea',
+            borderRadius: '4px',
+            background: 'var(--background, white)',
+            fontSize: `${textOptions.fontSize}px`,
+            fontFamily: textOptions.fontFamily,
+            color: brushColor,
+            outline: 'none',
+            minWidth: '120px'
+          }}
+          onBlur={(e) => {
+            const text = e.target.value.trim();
+            if (text && textInputState) {
+              // 将画布坐标转换回归一化坐标
+              const normalizedPos = canvasToNormalizedCoords(textInputState.x, textInputState.y);
+              const newStroke: Stroke = {
+                type: 'text',
+                path: [normalizedPos],
+                text,
+                textOptions: { ...textOptions },
+                brushSize,
+                color: brushColor,
+                globalCompositeOperation: 'source-over'
+              };
+              drawnShapesRef.current.push(newStroke);
+              actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+              redrawAllShapes();
+            }
+            setTextInputState(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              const text = e.currentTarget.value.trim();
+              if (text && textInputState) {
+                const normalizedPos = canvasToNormalizedCoords(textInputState.x, textInputState.y);
+                const newStroke: Stroke = {
+                  type: 'text',
+                  path: [normalizedPos],
+                  text,
+                  textOptions: { ...textOptions },
+                  brushSize,
+                  color: brushColor,
+                  globalCompositeOperation: 'source-over'
+                };
+                drawnShapesRef.current.push(newStroke);
+                actionHistoryRef.current.push({ type: 'add', shape: newStroke });
+                redrawAllShapes();
+              }
+              setTextInputState(null);
+              e.currentTarget.blur();
+            } else if (e.key === 'Escape') {
+              setTextInputState(null);
+              e.currentTarget.blur();
+            }
+          }}
+        />
       )}
     </div>
   );

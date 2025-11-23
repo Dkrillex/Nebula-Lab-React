@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, TestTube } from 'lucide-react';
+import { ArrowLeft, Wand2, Loader2, Image as ImageIcon } from 'lucide-react';
+import toast from 'react-hot-toast';
 import UploadComponent from '../../../components/UploadComponent';
 import ThreeDModelViewer from './ThreeDModelViewer';
 import { threeDModelService } from '../../../services/threeDModelService';
@@ -14,7 +15,6 @@ const ThreeDModelPage: React.FC = () => {
   const [primaryImageBase64, setPrimaryImageBase64] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
-  const [error, setError] = useState<string | null>(null);
   const [generatedContent, setGeneratedContent] = useState<{ imageUrl: string } | null>(null);
   const [fileUrl, setFileUrl] = useState('');
   const [modelUrl, setModelUrl] = useState<string | null>(null);
@@ -35,7 +35,6 @@ const ThreeDModelPage: React.FC = () => {
   const handlePrimaryImageSelect = (file: File) => {
     setPrimaryFile(file);
     setGeneratedContent(null);
-    setError(null);
     setModelUrl(null);
     if (modelUrlRef.current) {
       URL.revokeObjectURL(modelUrlRef.current);
@@ -55,7 +54,6 @@ const ThreeDModelPage: React.FC = () => {
     setPrimaryImageBase64(null);
     setPrimaryFile(null);
     setGeneratedContent(null);
-    setError(null);
     setModelUrl(null);
     if (modelUrlRef.current) {
       URL.revokeObjectURL(modelUrlRef.current);
@@ -88,7 +86,6 @@ const ThreeDModelPage: React.FC = () => {
     
     setIsTestingZip(true);
     setTestResult(null);
-    setError(null);
     setModelUrl(null);
     
     // 清理之前的 blob URL
@@ -116,7 +113,7 @@ const ThreeDModelPage: React.FC = () => {
       console.error('测试失败:', error);
       const errorMsg = error.message || '测试失败';
       setTestResult(`❌ 测试失败: ${errorMsg}`);
-      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsTestingZip(false);
     }
@@ -125,12 +122,11 @@ const ThreeDModelPage: React.FC = () => {
   // 生成 3D 模型
   const handleGenerateImage = async () => {
     if (!primaryImageBase64) {
-      setError('请上传图片');
+      toast.error('请上传图片');
       return;
     }
 
     setIsLoading(true);
-    setError(null);
     setGeneratedContent(null);
     setLoadingMessage('');
 
@@ -256,7 +252,7 @@ const ThreeDModelPage: React.FC = () => {
       });
     } catch (error: any) {
       console.error(error);
-      setError(error.message || '生成3D效果失败');
+      toast.error(error.message || '生成3D效果失败');
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
@@ -316,12 +312,6 @@ const ThreeDModelPage: React.FC = () => {
                   : 'bg-red-50 text-red-600'
               }`}>
                 {testResult}
-              </div>
-            )}
-
-            {error && (
-              <div className="mt-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm text-center">
-                {error}
               </div>
             )}
           </div>
@@ -452,4 +442,3 @@ const ThreeDModelPage: React.FC = () => {
 };
 
 export default ThreeDModelPage;
-

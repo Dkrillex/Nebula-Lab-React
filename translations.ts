@@ -111,10 +111,8 @@ interface Translation {
     tabs: string[];
     authModal?: {
       loginTitle: string;
-      registerTitle?: string;
       tabPassword: string;
       tabPhone: string;
-      tabRegister?: string;
       accountLabel: string;
       accountPlaceholder: string;
       passwordLabel: string;
@@ -126,9 +124,6 @@ interface Translation {
       sendCode: string;
       codeSent: string;
       signIn: string;
-      signUp?: string;
-      usernameLabel?: string;
-      usernamePlaceholder?: string;
       agreePolicy?: string;
       privacyPolicy?: string;
       terms?: string;
@@ -554,6 +549,11 @@ interface Translation {
     sendCode: string;
     codeSent: string;
     signIn: string;
+    countries?: {
+      china: string;
+      japan: string;
+      indonesia: string;
+    };
   };
 }
 
@@ -670,10 +670,8 @@ export const translations: Record<string, Translation> = {
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
       authModal: {
         loginTitle: 'Welcome Back',
-        registerTitle: 'Create Account',
         tabPassword: 'Password',
         tabPhone: 'Phone',
-        tabRegister: 'Register',
         accountLabel: 'Account',
         accountPlaceholder: 'Enter your account',
         passwordLabel: 'Password',
@@ -685,9 +683,6 @@ export const translations: Record<string, Translation> = {
         sendCode: 'Send Code',
         codeSent: 'Code Sent',
         signIn: 'Sign In',
-        signUp: 'Sign Up',
-        usernameLabel: 'Username',
-        usernamePlaceholder: 'Enter your username',
         agreePolicy: 'I agree to the',
         privacyPolicy: 'Privacy Policy',
         terms: 'Terms of Service',
@@ -1195,7 +1190,12 @@ export const translations: Record<string, Translation> = {
       codePlaceholder: '4-digit code',
       sendCode: 'Send Code',
       codeSent: 'Sent!',
-      signIn: 'Sign In'
+      signIn: 'Sign In',
+      countries: {
+        china: 'China',
+        japan: 'Japan',
+        indonesia: 'Indonesia'
+      }
     }
   },
   zh: {
@@ -1310,10 +1310,8 @@ export const translations: Record<string, Translation> = {
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
       authModal: {
         loginTitle: '欢迎回来',
-        registerTitle: '创建账户',
         tabPassword: '密码登录',
         tabPhone: '手机登录',
-        tabRegister: '注册',
         accountLabel: '账号',
         accountPlaceholder: '请输入账号',
         passwordLabel: '密码',
@@ -1325,9 +1323,6 @@ export const translations: Record<string, Translation> = {
         sendCode: '发送验证码',
         codeSent: '验证码已发送',
         signIn: '登录',
-        signUp: '注册',
-        usernameLabel: '用户名',
-        usernamePlaceholder: '请输入用户名',
         agreePolicy: '我已阅读并同意',
         privacyPolicy: '隐私政策',
         terms: '服务条款',
@@ -1868,7 +1863,12 @@ export const translations: Record<string, Translation> = {
       codePlaceholder: '4位验证码',
       sendCode: '获取验证码',
       codeSent: '已发送',
-      signIn: '立即登录'
+      signIn: '立即登录',
+      countries: {
+        china: '中国大陆',
+        japan: '日本',
+        indonesia: '印度尼西亚'
+      }
     }
   }
 };

@@ -18,6 +18,14 @@ import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
 import { useAppOutletContext } from '../../router';
 import CodeBlock from './components/CodeBlock';
+import ConfirmDialog from '../../components/ConfirmDialog';
+import {
+  getImageSizes,
+  getVideoRatios,
+  getVideoResolutions,
+  ModelCapabilities,
+  IMAGE_TO_VIDEO_MODES
+} from './modelConstants';
 
 // 扩展消息类型，支持图片和视频
 interface ExtendedChatMessage extends ChatMessage {
@@ -68,11 +76,28 @@ const ChatPage: React.FC = () => {
   const [imageSize, setImageSize] = useState('1024x1024');
   const [imageStyle, setImageStyle] = useState('');
   const [imageQuality, setImageQuality] = useState<'standard' | 'hd'>('standard');
+  const [imageN, setImageN] = useState(1); // 生成数量
+  const [seed, setSeed] = useState<number | undefined>(undefined); // 随机种子
   
+  // 豆包模型专用参数
+  const [watermark, setWatermark] = useState(false);
+  const [guidanceScale, setGuidanceScale] = useState(2.5);
+  const [sequentialImageGeneration, setSequentialImageGeneration] = useState(false);
+  
+  // qwen模型专用参数
+  const [qwenNegativePrompt, setQwenNegativePrompt] = useState('');
+  const [qwenPromptExtend, setQwenPromptExtend] = useState(true);
+
   // 视频生成参数
   const [videoDuration, setVideoDuration] = useState(5);
   const [videoAspectRatio, setVideoAspectRatio] = useState<'16:9' | '9:16'>('16:9');
   const [videoResolution, setVideoResolution] = useState<'720p' | '1080p'>('720p');
+  const [imageGenerationMode, setImageGenerationMode] = useState('first_frame'); // first_frame, first_last_frame, reference
+  const [cameraFixed, setCameraFixed] = useState(false);
+  
+  // Wan2.5模型专用参数
+  const [wan25SmartRewrite, setWan25SmartRewrite] = useState(true);
+  const [wan25GenerateAudio, setWan25GenerateAudio] = useState(true);
   
   const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -84,64 +109,178 @@ const ChatPage: React.FC = () => {
   const [chatRecords, setChatRecords] = useState<ChatRecord[]>([]);
   const [recordsLoading, setRecordsLoading] = useState(false);
   const [selectedRecordId, setSelectedRecordId] = useState<string | number | null>(null);
+  
+  // 确认对话框状态
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const videoPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // 存储所有模式的模型列表
+  const [chatModels, setChatModels] = useState<ModelsVO[]>([]);
+  const [imageModels, setImageModels] = useState<ModelsVO[]>([]);
+  const [videoModels, setVideoModels] = useState<ModelsVO[]>([]);
 
-  // 获取模型列表
+  // 初始化时同时获取所有模式的模型
   useEffect(() => {
-    fetchModels();
+    fetchAllModels();
   }, []);
 
-  const fetchModels = async () => {
+  // 同时获取所有模式的模型列表
+  const fetchAllModels = async () => {
     try {
       setModelsLoading(true);
-      let tags = '对话,思考,推理,上下文,图片理解';
       
-      // 根据模式获取不同的模型标签
-      if (currentMode === 'image') {
-        tags = '图片生成,文生图,图生图';
-      } else if (currentMode === 'video') {
-        tags = '视频生成,文生视频,图生视频';
+      // 并行获取三种模式的模型
+      const [chatRes, imageRes, videoRes] = await Promise.all([
+        modelsService.getModelsList({
+          pageNum: 1,
+          pageSize: 100,
+          status: 1,
+          tags: '对话,思考,推理,上下文,图片理解',
+        }),
+        modelsService.getModelsList({
+          pageNum: 1,
+          pageSize: 100,
+          status: 1,
+          tags: '文生图,图生图,图片生成,视觉模型',
+        }),
+        modelsService.getModelsList({
+          pageNum: 1,
+          pageSize: 100,
+          status: 1,
+          tags: '文生视频,图生视频,视频生成',
+        }),
+      ]);
+      
+      // 处理聊天模型
+      let chatModelList: any[] = [];
+      if (chatRes && Array.isArray(chatRes.rows)) {
+        chatModelList = chatRes.rows;
+      } else if (chatRes.code === 200 && chatRes.rows) {
+        chatModelList = Array.isArray(chatRes.rows) ? chatRes.rows : [];
       }
+      chatModelList = chatModelList.filter(m => m.modelName);
+      setChatModels(chatModelList);
       
-      const res = await modelsService.getModelsList({
-        pageNum: 1,
-        pageSize: 100,
-        status: 1,
-        tags,
+      // 处理图片模型 - 白名单过滤
+      let imageModelList: any[] = [];
+      if (imageRes && Array.isArray(imageRes.rows)) {
+        imageModelList = imageRes.rows;
+      } else if (imageRes.code === 200 && imageRes.rows) {
+        imageModelList = Array.isArray(imageRes.rows) ? imageRes.rows : [];
+      }
+      const allowedImageModels = new Set([
+        'doubao-seededit-3-0-i2i-250628',
+        'doubao-seedream-3-0-t2i-250415',
+        'doubao-seedream-4-0-250828',
+        'gemini-2.5-flash-image',
+        'gemini-2.5-flash-image-preview',
+        'gemini-3-pro-image-preview',
+        'gpt-image-1',
+        'gpt-image-1-mini',
+        'qwen-image-plus',
+        'qwen-image-edit-plus-2025-10-30',
+        'qwen-image-edit-plus',
+      ]);
+      imageModelList = imageModelList.filter(m => m.modelName && allowedImageModels.has(m.modelName));
+      setImageModels(imageModelList);
+      
+      // 处理视频模型 - 黑名单过滤
+      let videoModelList: any[] = [];
+      if (videoRes && Array.isArray(videoRes.rows)) {
+        videoModelList = videoRes.rows;
+      } else if (videoRes.code === 200 && videoRes.rows) {
+        videoModelList = Array.isArray(videoRes.rows) ? videoRes.rows : [];
+      }
+      const blockedVideoModels = new Set([
+        'jimeng_vgfm_i2v_l20',
+        'wan2-1-14b-i2v-250225',
+        'veo-3.1-generate-preview',
+        'veo-3.0-generate-preview',
+      ]);
+      videoModelList = videoModelList.filter(m => m.modelName && !blockedVideoModels.has(m.modelName));
+      setVideoModels(videoModelList);
+      
+      // 根据当前模式设置models
+      updateModelsForCurrentMode();
+      
+      console.log('✅ 已同时加载所有模式的模型:', {
+        chat: chatModelList.length,
+        image: imageModelList.length,
+        video: videoModelList.length
       });
-        console.log("res",res)
-      
-      // 兼容直接返回 { rows, total } 的格式
-      if (res && Array.isArray(res.rows)) {
-        const modelList = res.rows;
-        setModels(modelList);
-        if (modelList.length > 0 && !selectedModel) {
-          setSelectedModel(modelList[0].modelName || '');
-        }
-      }
-      else if (res.code === 200 && res.rows) {
-        const modelList = Array.isArray(res.rows) ? res.rows : [];
-        setModels(modelList);
-        if (modelList.length > 0 && !selectedModel) {
-          setSelectedModel(modelList[0].modelName || '');
-        }
-      } else {
-        setModels([]);
-      }
     } catch (error) {
       console.error('获取模型列表失败:', error);
+      setModels([]);
     } finally {
       setModelsLoading(false);
     }
   };
+  
+  // 根据当前模式更新显示的模型列表
+  const updateModelsForCurrentMode = () => {
+    let currentModels: ModelsVO[] = [];
+    
+    if (currentMode === 'chat') {
+      currentModels = chatModels;
+    } else if (currentMode === 'image') {
+      currentModels = imageModels;
+    } else if (currentMode === 'video') {
+      currentModels = videoModels;
+    }
+    
+    setModels(currentModels);
+    
+    // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
+    const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
+    
+    if (currentModels.length > 0 && !isSelectedValid) {
+      setSelectedModel(currentModels[0].modelName || '');
+    }
+  };
 
-  // 监听模式切换，重新获取模型列表
+  // 监听模式切换，更新模型列表和历史记录
   useEffect(() => {
-    fetchModels();
-  }, [currentMode]);
+    setSelectedModel(''); // 切换模式时清空选中的模型
+    updateModelsForCurrentMode(); // 使用已加载的模型列表
+    
+    // 根据模式加载对应的历史记录
+    if (user?.nebulaApiId) {
+      if (currentMode === 'chat') {
+        fetchChatRecords();
+      } else if (currentMode === 'image') {
+        fetchImageRecords();
+      } else if (currentMode === 'video') {
+        fetchVideoRecords();
+      }
+    }
+  }, [currentMode, user?.nebulaApiId]);
+  
+  // 监听模型切换,检查是否需要清除图片
+  useEffect(() => {
+    if (!selectedModel) return;
+    
+    // 检查当前模型是否支持图片上传
+    const supportsUpload = ModelCapabilities.supportsImageUpload(selectedModel, currentMode as 'image' | 'video');
+    
+    // 如果当前模型不支持图片上传，且有已上传的图片，则清除
+    if (!supportsUpload && uploadedImages.length > 0) {
+      console.log(`模型 ${selectedModel} 不支持图片上传，清除已上传的图片`);
+      setUploadedImages([]);
+    }
+  }, [selectedModel, currentMode]);
 
   // 监听 URL 参数，处理"做同款"跳转
   useEffect(() => {
@@ -253,6 +392,171 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  // 获取图片生成历史记录
+  const fetchImageRecords = async () => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecords({
+        pageNum: 1,
+        pageSize: 10,
+        apiType: 'image-generates',
+      });
+
+      console.log('📋 获取图片生成记录响应:', res);
+
+      let records: ChatRecord[] = [];
+      if (res.code === 200) {
+        const rows = (res as any).data?.rows || (res as any).rows || [];
+        records = rows.map((record: any) => {
+          let imageCount = 0;
+          let model = '';
+          let title = `图片生成 ${record.id}`;
+
+          // 从taskJson获取标题
+          try {
+            if (record.taskJson) {
+              const taskData = JSON.parse(record.taskJson);
+              if (taskData.title) {
+                title = taskData.title;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析taskJson失败:', parseError);
+          }
+
+          // 从apiJson解析图片数量和模型信息
+          try {
+            if (record.apiJson) {
+              const parsedData = JSON.parse(record.apiJson);
+              if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
+                // 统计生成的图片数量
+                imageCount = parsedData.chatMessages.reduce((total: number, msg: any) => {
+                  if (msg.type === 'assistant' && msg.generatedImages) {
+                    return total + msg.generatedImages.length;
+                  }
+                  return total;
+                }, 0);
+              }
+              if (parsedData.settings && parsedData.settings.selectedModel) {
+                model = parsedData.settings.selectedModel;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析apiJson失败:', parseError);
+          }
+
+          return {
+            id: record.id,
+            title,
+            apiJson: record.apiJson || '',
+            taskJson: record.taskJson || '',
+            createTime: record.ctime || record.createTime || Date.now(),
+            updateTime: record.mtime || record.updateTime || Date.now(),
+            messageCount: imageCount, // 使用imageCount作为messageCount显示
+            model,
+          };
+        });
+      }
+
+      console.log('📋 解析后的图片生成记录列表:', records);
+      setChatRecords(records);
+    } catch (error) {
+      console.error('❌ 获取图片生成记录失败:', error);
+      setChatRecords([]);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 获取视频生成历史记录
+  const fetchVideoRecords = async () => {
+    try {
+      setRecordsLoading(true);
+      const res = await chatService.getChatRecords({
+        pageNum: 1,
+        pageSize: 10,
+        apiType: 'video-generates',
+      });
+
+      console.log('📋 获取视频生成记录响应:', res);
+
+      let records: ChatRecord[] = [];
+      if (res.code === 200) {
+        const rows = (res as any).data?.rows || (res as any).rows || [];
+        records = rows.map((record: any) => {
+          let videoCount = 0;
+          let model = '';
+          let title = `视频生成 ${record.id}`;
+
+          // 从taskJson获取标题
+          try {
+            if (record.taskJson) {
+              const taskData = JSON.parse(record.taskJson);
+              if (taskData.title) {
+                title = taskData.title;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析taskJson失败:', parseError);
+          }
+
+          // 从apiJson解析视频数量和模型信息
+          try {
+            if (record.apiJson) {
+              const parsedData = JSON.parse(record.apiJson);
+              if (parsedData.chatMessages && Array.isArray(parsedData.chatMessages)) {
+                // 统计生成的视频数量
+                videoCount = parsedData.chatMessages.reduce((total: number, msg: any) => {
+                  if (msg.type === 'assistant' && msg.generatedVideos) {
+                    return total + msg.generatedVideos.length;
+                  }
+                  return total;
+                }, 0);
+              }
+              if (parsedData.settings && parsedData.settings.selectedModel) {
+                model = parsedData.settings.selectedModel;
+              }
+            }
+          } catch (parseError) {
+            console.warn('解析apiJson失败:', parseError);
+          }
+
+          return {
+            id: record.id,
+            title,
+            apiJson: record.apiJson || '',
+            taskJson: record.taskJson || '',
+            createTime: record.ctime || record.createTime || Date.now(),
+            updateTime: record.mtime || record.updateTime || Date.now(),
+            messageCount: videoCount, // 使用videoCount作为messageCount显示
+            model,
+          };
+        });
+      }
+
+      console.log('📋 解析后的视频生成记录列表:', records);
+      setChatRecords(records);
+    } catch (error) {
+      console.error('❌ 获取视频生成记录失败:', error);
+      setChatRecords([]);
+    } finally {
+      setRecordsLoading(false);
+    }
+  };
+
+  // 根据当前模式刷新历史记录
+  const refreshRecords = () => {
+    if (!user?.nebulaApiId) return;
+    
+    if (currentMode === 'chat') {
+      fetchChatRecords();
+    } else if (currentMode === 'image') {
+      fetchImageRecords();
+    } else if (currentMode === 'video') {
+      fetchVideoRecords();
+    }
+  };
+
   // 加载指定的对话记录
   const loadChatRecord = async (recordId: string | number) => {
     try {
@@ -319,37 +623,34 @@ const ChatPage: React.FC = () => {
   // 删除对话记录
   const deleteChatRecord = async (recordId: string | number, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm('确定要删除这条对话记录吗？')) {
-      return;
-    }
-
-    try {
-      const res = await chatService.deleteChatRecord(recordId);
-      if (res.code === 200) {
-        // 如果删除的是当前选中的记录，清空消息
-        if (selectedRecordId === recordId) {
-          setMessages([{
-            id: 'welcome',
-            role: 'assistant',
-            content: t.welcomeMessage,
-            timestamp: Date.now()
-          }]);
-          setSelectedRecordId(null);
+    setConfirmDialog({
+      isOpen: true,
+      title: '确认删除',
+      message: '确定要删除这条对话记录吗？',
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          const res = await chatService.deleteChatRecord(recordId);
+          if (res.code === 200) {
+            // 如果删除的是当前选中的记录，清空消息
+            if (selectedRecordId === recordId) {
+              setMessages([{
+                id: 'welcome',
+                role: 'assistant',
+                content: t.welcomeMessage,
+                timestamp: Date.now()
+              }]);
+              setSelectedRecordId(null);
+            }
+            // 重新获取记录列表
+            await refreshRecords();
+          }
+        } catch (error) {
+          console.error('❌ 删除对话记录失败:', error);
         }
-        // 重新获取记录列表
-        await fetchChatRecords();
-      }
-    } catch (error) {
-      console.error('❌ 删除对话记录失败:', error);
-    }
+      },
+    });
   };
-
-  // 初始化时获取历史记录
-  useEffect(() => {
-    if (user?.nebulaApiId) {
-      fetchChatRecords();
-    }
-  }, [user?.nebulaApiId]);
 
   // 清理轮询定时器
   useEffect(() => {
@@ -633,9 +934,41 @@ const ChatPage: React.FC = () => {
         style: imageStyle || undefined,
         temperature: temperature,
         quality: imageQuality,
-        n: 1,
+        n: imageN,
         responseFormat: 'url',
+        seed: seed,
+        watermark: watermark,
       };
+
+      // Doubao specific
+      if (selectedModel.includes('doubao')) {
+        requestData.guidance_scale = guidanceScale;
+      }
+
+      // Qwen specific
+      if (selectedModel.includes('qwen')) {
+        requestData.extra = {
+          input: {
+             messages: [
+                {
+                   role: "user",
+                   content: [
+                      {
+                         text: prompt
+                      }
+                   ]
+                }
+             ]
+          },
+          parameters: {
+            negative_prompt: qwenNegativePrompt,
+            prompt_extend: qwenPromptExtend,
+            watermark: watermark,
+            seed: seed,
+            n: imageN
+          }
+        };
+      }
 
       // 如果有上传的图片，添加图生图参数
       if (images && images.length > 0) {
@@ -704,11 +1037,32 @@ const ChatPage: React.FC = () => {
         width,
         height,
         seconds: videoDuration,
+        resolution: videoResolution, // For Veo/Wan
+        aspectRatio: videoAspectRatio, // For Veo/Wan
+        duration: videoDuration, // For Wan
+        durationSeconds: videoDuration, // For Veo
+        seed: seed,
+        watermark: watermark,
+        camera_fixed: cameraFixed,
       };
+
+      // Wan2.5 specific
+      if (selectedModel.includes('wan2.5')) {
+        requestData.smart_rewrite = wan25SmartRewrite;
+        requestData.generate_audio = wan25GenerateAudio;
+        requestData.size = videoResolution === '480p' ? '832*480' : 
+                           videoResolution === '720p' ? '1280*720' : '1920*1080'; // Simplified logic
+      }
 
       // 如果有上传的图片，添加图生视频参数
       if (images && images.length > 0) {
-        requestData.input_reference = images[0]; // 使用第一张图片作为参考
+        requestData.input_reference = images[0]; // sora-2
+        requestData.image = images[0]; // veo
+        
+        // 根据模式设置
+        if (imageGenerationMode === 'first_last_frame' && images.length > 1) {
+          requestData.lastFrame = images[1];
+        }
       }
 
       const result = await videoGenerateService.submitVideoTask(requestData);
@@ -950,39 +1304,40 @@ const ChatPage: React.FC = () => {
             {/* 对话模式参数 */}
             {currentMode === 'chat' && (
               <>
-            <div className="space-y-2">
-               <div className="flex justify-between text-sm">
-                 <span className="font-medium">{t.temperature}</span>
-                 <span className="text-primary">{temperature}</span>
-               </div>
-               <input 
-                 type="range" min="0" max="2" step="0.1" 
-                 value={temperature}
-                 onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-               />
-               <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
-            </div>
+                <div className="space-y-2">
+                   <div className="flex justify-between text-sm">
+                     <span className="font-medium">{t.temperature}</span>
+                     <span className="text-primary">{temperature}</span>
+                   </div>
+                   <input 
+                     type="range" min="0" max="2" step="0.1" 
+                     value={temperature}
+                     onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                   />
+                   <p className="text-xs text-muted leading-tight">{t.temperatureDesc}</p>
+                </div>
 
-            <div className="space-y-2">
-               <div className="flex justify-between text-sm">
-                 <span className="font-medium">{t.presencePenalty}</span>
-                    <span className="text-primary">{presencePenalty}</span>
-               </div>
-               <input 
-                 type="range" min="-2" max="2" step="0.1" 
-                    value={presencePenalty}
-                    onChange={(e) => setPresencePenalty(parseFloat(e.target.value))}
-                 className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
-               />
-               <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
-            </div>
+                <div className="space-y-2">
+                   <div className="flex justify-between text-sm">
+                     <span className="font-medium">{t.presencePenalty}</span>
+                     <span className="text-primary">{presencePenalty}</span>
+                   </div>
+                   <input 
+                     type="range" min="-2" max="2" step="0.1" 
+                     value={presencePenalty}
+                     onChange={(e) => setPresencePenalty(parseFloat(e.target.value))}
+                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                   />
+                   <p className="text-xs text-muted leading-tight">{t.presencePenaltyDesc}</p>
+                </div>
               </>
             )}
 
             {/* 图片生成参数 */}
             {currentMode === 'image' && (
               <>
+                {/* 图片尺寸 */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">图片尺寸</label>
                   <select
@@ -990,77 +1345,216 @@ const ChatPage: React.FC = () => {
                     onChange={(e) => setImageSize(e.target.value)}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="1024x1024">1024×1024 (正方形)</option>
-                    <option value="1024x1792">1024×1792 (竖屏)</option>
-                    <option value="1792x1024">1792×1024 (横屏)</option>
+                    {getImageSizes(selectedModel).map((size) => (
+                      <option key={size.id} value={size.id}>
+                        {size.name}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">图片质量</label>
-                  <select
-                    value={imageQuality}
-                    onChange={(e) => setImageQuality(e.target.value as 'standard' | 'hd')}
-                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  >
-                    <option value="standard">标准</option>
-                    <option value="hd">高清</option>
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{t.temperature}</span>
-                    <span className="text-primary">{temperature}</span>
+                {/* 图片质量 (仅部分模型支持) */}
+                {selectedModel.startsWith('gpt-image') && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">图片质量</label>
+                    <select
+                      value={imageQuality}
+                      onChange={(e) => setImageQuality(e.target.value as 'standard' | 'hd')}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    >
+                      <option value="standard">标准</option>
+                      <option value="hd">高清</option>
+                    </select>
                   </div>
+                )}
+
+                {/* 生成数量 */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">生成数量 ({imageN})</label>
                   <input 
-                    type="range" min="0" max="2" step="0.1" 
-                    value={temperature}
-                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                    type="range" min="1" max="4" step="1" 
+                    value={imageN}
+                    onChange={(e) => setImageN(parseInt(e.target.value))}
                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                 </div>
+
+                {/* 随机种子 (部分模型不支持) */}
+                {ModelCapabilities.supportsSeed(selectedModel) && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <input
+                      type="number"
+                      placeholder="默认随机"
+                      value={seed || ''}
+                      onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* 引导系数 (豆包模型) */}
+                {selectedModel.includes('doubao') && (
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">引导系数 (Guidance Scale)</span>
+                      <span className="text-primary">{guidanceScale}</span>
+                    </div>
+                    <input 
+                      type="range" min="1" max="20" step="0.1" 
+                      value={guidanceScale}
+                      onChange={(e) => setGuidanceScale(parseFloat(e.target.value))}
+                      className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                    />
+                  </div>
+                )}
+
+                {/* 水印设置 */}
+                {ModelCapabilities.supportsWatermark(selectedModel) && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">添加水印</label>
+                    <input
+                      type="checkbox"
+                      checked={watermark}
+                      onChange={(e) => setWatermark(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
+                    />
+                  </div>
+                )}
+
+                {/* 负面提示词 (Qwen模型) */}
+                {ModelCapabilities.supportsNegativePrompt(selectedModel) && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">负面提示词</label>
+                    <textarea
+                      value={qwenNegativePrompt}
+                      onChange={(e) => setQwenNegativePrompt(e.target.value)}
+                      placeholder="不想生成的元素..."
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
+                    />
+                  </div>
+                )}
               </>
             )}
 
             {/* 视频生成参数 */}
             {currentMode === 'video' && (
               <>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">视频时长</label>
-                  <select
-                    value={videoDuration}
-                    onChange={(e) => setVideoDuration(parseInt(e.target.value))}
-                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  >
-                    <option value="5">5秒</option>
-                    <option value="10">10秒</option>
-                  </select>
-                </div>
+                {/* 图生视频模式选择 (仅在有图片且支持时显示) */}
+                {uploadedImages.length > 0 && ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">生成模式</label>
+                    <select
+                      value={imageGenerationMode}
+                      onChange={(e) => setImageGenerationMode(e.target.value)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    >
+                      {IMAGE_TO_VIDEO_MODES.map((mode) => (
+                        <option key={mode.id} value={mode.id}>{mode.name}</option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted">
+                      {IMAGE_TO_VIDEO_MODES.find(m => m.id === imageGenerationMode)?.description}
+                    </p>
+                  </div>
+                )}
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">宽高比</label>
-                  <select
-                    value={videoAspectRatio}
-                    onChange={(e) => setVideoAspectRatio(e.target.value as '16:9' | '9:16')}
-                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  >
-                    <option value="16:9">16:9 (横屏)</option>
-                    <option value="9:16">9:16 (竖屏)</option>
-                  </select>
-                </div>
-
+                {/* 视频分辨率 */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium">分辨率</label>
                   <select
                     value={videoResolution}
-                    onChange={(e) => setVideoResolution(e.target.value as '720p' | '1080p')}
+                    onChange={(e) => setVideoResolution(e.target.value as '720p' | '1080p' | '480p')}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="720p">720p</option>
-                    <option value="1080p">1080p</option>
+                    {getVideoResolutions(selectedModel).map((res) => (
+                      <option key={res.id} value={res.id}>{res.name}</option>
+                    ))}
                   </select>
                 </div>
+
+                {/* 视频宽高比 (Wan2.5 i2v 不支持自定义) */}
+                {!selectedModel.includes('wan2.5-i2v') && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">宽高比</label>
+                    <select
+                      value={videoAspectRatio}
+                      onChange={(e) => setVideoAspectRatio(e.target.value as any)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    >
+                      {getVideoRatios(selectedModel).map((ratio) => (
+                        <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* 视频时长 (Wan2.5 有特定时长) */}
+                {!selectedModel.includes('wan2.5') && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">视频时长</label>
+                    <select
+                      value={videoDuration}
+                      onChange={(e) => setVideoDuration(parseInt(e.target.value))}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    >
+                      <option value="5">5秒</option>
+                      <option value="10">10秒</option>
+                    </select>
+                  </div>
+                )}
+
+                {/* 随机种子 */}
+                {ModelCapabilities.supportsSeed(selectedModel) && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <input
+                      type="number"
+                      placeholder="默认随机"
+                      value={seed || ''}
+                      onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* 固定摄像头 (豆包模型) */}
+                {ModelCapabilities.supportsCameraFixed(selectedModel) && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">固定摄像头</label>
+                    <input
+                      type="checkbox"
+                      checked={cameraFixed}
+                      onChange={(e) => setCameraFixed(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
+                    />
+                  </div>
+                )}
+
+                {/* Wan2.5 特定选项 */}
+                {ModelCapabilities.supportsSmartRewrite(selectedModel) && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">智能扩写提示词</label>
+                    <input
+                      type="checkbox"
+                      checked={wan25SmartRewrite}
+                      onChange={(e) => setWan25SmartRewrite(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
+                    />
+                  </div>
+                )}
+                
+                {selectedModel.includes('wan2.5') && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">生成音效</label>
+                    <input
+                      type="checkbox"
+                      checked={wan25GenerateAudio}
+                      onChange={(e) => setWan25GenerateAudio(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
+                    />
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -1075,7 +1569,7 @@ const ChatPage: React.FC = () => {
                 handleClear();
                 setSelectedRecordId(null);
               }} />
-              <ActionButton icon={RefreshCw} label={t.actions.refresh} onClick={fetchChatRecords} />
+              <ActionButton icon={RefreshCw} label={t.actions.refresh} onClick={refreshRecords} />
             </div>
           </div>
 
@@ -1084,7 +1578,7 @@ const ChatPage: React.FC = () => {
              <div className="flex items-center justify-between mb-4">
                <h3 className="font-semibold">{t.historyTitle}</h3>
                <button
-                 onClick={fetchChatRecords}
+                 onClick={refreshRecords}
                  disabled={recordsLoading}
                  className="p-1 text-muted hover:text-foreground transition-colors"
                  title="刷新历史记录"
@@ -1201,95 +1695,138 @@ const ChatPage: React.FC = () => {
         {/* Input Area */}
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
-            <div className="relative rounded-xl border border-border bg-surface shadow-sm focus-within:ring-1 focus-within:ring-primary focus-within:border-primary transition-all">
-              <textarea
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder={t.inputPlaceholder}
-                disabled={isLoading || !selectedModel}
-                className="w-full max-h-48 min-h-[80px] bg-transparent border-none p-4 text-sm focus:ring-0 resize-none placeholder-muted disabled:opacity-50 disabled:cursor-not-allowed"
-                rows={3}
-              />
+            <div className="border-2 border-border rounded-xl bg-white transition-all overflow-hidden focus-within:border-indigo-500 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]">
               
               {/* 上传的图片预览 */}
               {uploadedImages.length > 0 && (
-                <div className="px-4 py-2 border-b border-border/50 flex gap-2 flex-wrap">
-                  {uploadedImages.map((img, index) => (
-                    <div key={index} className="relative group">
-                      <img 
-                        src={img} 
-                        alt={`上传图片 ${index + 1}`}
-                        className="w-16 h-16 object-cover rounded-lg border border-border"
-                      />
-                      <button
-                        onClick={() => removeUploadedImage(index)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
+                <div className="p-4 pb-0 border-b border-gray-100">
+                  <div className="flex gap-2 flex-wrap">
+                    {uploadedImages.map((img, index) => (
+                      <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+                        <img 
+                          src={img} 
+                          alt={`上传图片 ${index + 1}`}
+                          className="w-full h-full object-contain"
+                        />
+                        <button
+                          onClick={() => removeUploadedImage(index)}
+                          className="absolute -top-1.5 -right-1.5 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-all hover:scale-110 z-10"
+                        >
+                          <X size={12} strokeWidth={3} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
               {/* 进度条 */}
               {progress > 0 && progress < 100 && (
-                <div className="px-4 py-2 border-b border-border/50">
-                  <div className="w-full bg-surface rounded-full h-2">
+                <div className="px-4 py-2 border-b border-gray-100">
+                  <div className="w-full bg-gray-200 rounded-full h-2">
                     <div 
-                      className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
                 </div>
               )}
               
-              <div className="flex items-center justify-between px-3 py-2 border-t border-border/50 bg-background/30 rounded-b-xl">
-                 <div className="flex gap-2">
-                   {(currentMode === 'image' || currentMode === 'video') && (
-                     <label className="p-1.5 text-muted hover:text-foreground hover:bg-border rounded transition-colors cursor-pointer">
-                       <input
-                         type="file"
-                         accept="image/*"
-                         multiple
-                         onChange={handleImageUpload}
-                         className="hidden"
-                       />
-                       <ImageIcon size={18} />
-                     </label>
-                   )}
-                 </div>
-                 
-                 <div className="flex items-center gap-3">
-                   <span className="text-xs text-muted hidden sm:inline-block">{inputValue.length}/2000</span>
-                   {isStreaming ? (
-                     <button 
-                       onClick={handleStop}
-                       className="p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors shadow-sm flex items-center gap-1"
-                     >
-                       <Square size={14} fill="currentColor" />
-                       <span className="text-xs">停止</span>
-                     </button>
-                   ) : (
-                   <button 
-                     onClick={handleSend}
-                       disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
-                       className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-                   >
-                     <Send size={16} />
-                   </button>
-                   )}
-                 </div>
+              {/* 输入区域 */}
+              <div className="flex items-end p-4 gap-3">
+                <textarea
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    currentMode === 'chat' 
+                      ? '输入您的问题... (Enter发送, Shift+Enter换行)'
+                      : currentMode === 'image'
+                      ? '描述您想要生成的图片'
+                      : '描述您想要生成的视频,也可以上传参考图片...'
+                  }
+                  disabled={isLoading || !selectedModel}
+                  className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 placeholder-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  rows={1}
+                  style={{ 
+                    lineHeight: '1.5',
+                    fontFamily: 'inherit'
+                  }}
+                />
+                
+                {/* 图片上传按钮 */}
+                {(currentMode === 'image' || currentMode === 'video') && (
+                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isLoading || !selectedModel}
+                    />
+                    <ImageIcon size={16} />
+                  </label>
+                )}
+                
+                {/* 发送/停止按钮 */}
+                {isStreaming ? (
+                  <button 
+                    onClick={handleStop}
+                    className="flex-shrink-0 w-9 h-9 border-none rounded-lg bg-red-500 text-white cursor-pointer transition-all flex items-center justify-center hover:bg-red-600"
+                  >
+                    <Square size={16} fill="currentColor" />
+                  </button>
+                ) : (
+                  <button 
+                    onClick={handleSend}
+                    disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
+                    className={`flex-shrink-0 w-9 h-9 border-none rounded-lg cursor-pointer transition-all flex items-center justify-center
+                      ${(inputValue.trim() || uploadedImages.length > 0) && !isLoading && selectedModel
+                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:scale-110 hover:shadow-[0_4px_12px_rgba(102,126,234,0.4)]'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                      }`}
+                  >
+                    <Send size={16} />
+                  </button>
+                )}
+              </div>
+              
+              {/* 底部提示栏 */}
+              <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 bg-gray-50/50 rounded-b-[10px]">
+                <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Enter</span>
+                  <span>发送 ·</span>
+                  <span className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Shift + Enter</span>
+                  <span>换行</span>
+                  {currentMode === 'image' && ModelCapabilities.supportsImageUpload(selectedModel, 'image') && (
+                    <span className="text-orange-500 font-medium">
+                      {' '}· 支持格式: {ModelCapabilities.getFormatDisplayText(selectedModel)} · 最大: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
+                    </span>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500 font-medium">{inputValue.length}/2000</span>
               </div>
             </div>
+            
+            {/* 底部温馨提示 */}
             <p className="text-[10px] text-center text-muted mt-2">
-              {t.footerTip}
+              温馨提示: 所有内容均由AI模型生成,准确性和完整性无法保证,不代表平台的态度或观点
             </p>
           </div>
         </div>
 
       </main>
+      
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        type="danger"
+      />
     </div>
   );
 };

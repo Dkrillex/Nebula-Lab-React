@@ -181,7 +181,7 @@ export const chatService = {
    * Endpoint: GET /api/apiTalk/list
    */
   getChatRecords: async (params?: ApiTalkQuery): Promise<ApiResponse<{ rows: ApiTalkVO[]; total: number }>> => {
-    return request.get<{ rows: ApiTalkVO[]; total: number }>('/apiTalk/list', {
+    return request.get<{ rows: ApiTalkVO[]; total: number }>('/api/apiTalk/list', {
       params: {
         pageNum: 1,
         pageSize: 10,
@@ -196,7 +196,7 @@ export const chatService = {
    * Endpoint: GET /api/apiTalk/{id}
    */
   getChatRecordInfo: async (id: string | number): Promise<ApiResponse<ApiTalkVO>> => {
-    return request.get<ApiTalkVO>(`/apiTalk/${id}`);
+    return request.get<ApiTalkVO>(`/api/apiTalk/${id}`);
   },
 
   /**
@@ -204,7 +204,7 @@ export const chatService = {
    * Endpoint: DELETE /api/apiTalk/{id}
    */
   deleteChatRecord: async (id: string | number): Promise<ApiResponse<void>> => {
-    return request.delete<void>(`/apiTalk/${id}`);
+    return request.delete<void>(`/api/apiTalk/${id}`);
   },
 };
 

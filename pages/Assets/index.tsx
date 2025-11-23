@@ -4,10 +4,12 @@ import {
   Folder, FileAudio, Image as ImageIcon, Film, MoreVertical,
   ChevronRight, Loader2, Home, Edit2, Download, Eye
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
 import { useAppOutletContext } from '../../router';
 import AddMaterialModal from '../../components/AddMaterialModal';
+import ConfirmDialog from '../../components/ConfirmDialog';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -62,6 +64,19 @@ const AssetsPage: React.FC = () => {
   const [showMoveModal, setShowMoveModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [previewAsset, setPreviewAsset] = useState<AdsAssetsVO | null>(null);
+  
+  // 确认对话框状态
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
 
   // 拖拽状态
   const [draggedAsset, setDraggedAsset] = useState<AdsAssetsVO | null>(null);
@@ -283,30 +298,44 @@ const AssetsPage: React.FC = () => {
 
   // 删除处理
   const handleDelete = async (asset: AdsAssetsVO) => {
-    if (!confirm(`确认删除该${asset.dataType === 2 ? '文件夹' : '素材'}吗？`)) return;
-    
-    try {
-      await assetsService.removeAssets(asset.id);
-      await fetchAssets();
-    } catch (error) {
-      console.error('Delete failed:', error);
-      alert('删除失败');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: '确认删除',
+      message: `确认删除该${asset.dataType === 2 ? '文件夹' : '素材'}吗？`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          await assetsService.removeAssets(asset.id);
+          await fetchAssets();
+          toast.success('删除成功');
+        } catch (error) {
+          console.error('Delete failed:', error);
+          toast.error('删除失败');
+        }
+      },
+    });
   };
 
   const handleMultiDelete = async () => {
     if (selectedAssets.size === 0) return;
-    if (!confirm(`确认删除选中的 ${selectedAssets.size} 个素材吗？`)) return;
-
-    try {
-      const ids: (number | string)[] = Array.from(selectedAssets);
-      await assetsService.removeAssets(ids);
-      setSelectedAssets(new Set());
-      await fetchAssets();
-    } catch (error) {
-      console.error('Multi delete failed:', error);
-      alert('删除失败');
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: '确认删除',
+      message: `确认删除选中的 ${selectedAssets.size} 个素材吗？`,
+      onConfirm: async () => {
+        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+        try {
+          const ids: (number | string)[] = Array.from(selectedAssets);
+          await assetsService.removeAssets(ids);
+          setSelectedAssets(new Set());
+          await fetchAssets();
+          toast.success('删除成功');
+        } catch (error) {
+          console.error('Multi delete failed:', error);
+          toast.error('删除失败');
+        }
+      },
+    });
   };
 
   // 移动功能
@@ -336,11 +365,11 @@ const AssetsPage: React.FC = () => {
             updateTime: undefined,
           });
         }
-        alert('分享成功');
+        toast.success('分享成功');
       } else {
         // 移动文件
         await assetsService.moveAssets(ids, targetFolderId || undefined);
-        alert('移动成功');
+        toast.success('移动成功');
       }
 
       setSelectedAssets(new Set());
@@ -348,7 +377,7 @@ const AssetsPage: React.FC = () => {
       await fetchAssets();
     } catch (error) {
       console.error('操作失败:', error);
-      alert('操作失败');
+      toast.error('操作失败');
     }
   };
 
@@ -390,10 +419,10 @@ const AssetsPage: React.FC = () => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], folderId);
       await fetchAssets();
-      alert('移动成功');
+      toast.success('移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      alert('移动失败');
+      toast.error('移动失败');
     } finally {
       handleDragEnd();
     }
@@ -406,7 +435,7 @@ const AssetsPage: React.FC = () => {
     if (!draggedAsset) return;
 
     if (activeTab === 'shared') {
-      alert('共享文件不支持拖拽到根目录');
+      toast.error('共享文件不支持拖拽到根目录');
       handleDragEnd();
       return;
     }
@@ -414,10 +443,10 @@ const AssetsPage: React.FC = () => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], undefined);
       await fetchAssets();
-      alert('移动成功');
+      toast.success('移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      alert('移动失败');
+      toast.error('移动失败');
     } finally {
       handleDragEnd();
     }
@@ -432,7 +461,7 @@ const AssetsPage: React.FC = () => {
   // 下载功能
   const handleDownload = async (asset: AdsAssetsVO) => {
     if (!asset.assetUrl || !asset.assetName) {
-      alert('素材URL或名称不存在');
+      toast.error('素材URL或名称不存在');
       return;
     }
     const a = document.createElement('a');
@@ -544,12 +573,6 @@ const AssetsPage: React.FC = () => {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
-         {/* Header Section */}
-        <div className="bg-white dark:bg-gray-900 border-b border-border py-6 px-8 flex-shrink-0">
-          <h1 className="text-3xl font-bold mb-2 text-foreground">{t.title}</h1>
-          <p className="text-muted">{t.subtitle}</p>
-        </div>
-
         {/* Tabs */}
         <div className="border-b border-border bg-background flex-shrink-0">
           <div className="flex items-center gap-1 px-8">
@@ -785,6 +808,16 @@ const AssetsPage: React.FC = () => {
             .map(a => Number(a!.id))}
         />
       )}
+      
+      {/* 确认对话框 */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
+        type="danger"
+      />
     </div>
   );
 };

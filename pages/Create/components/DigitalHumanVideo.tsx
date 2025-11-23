@@ -144,8 +144,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const trySample = async () => {
     try {
       setIsSampleLoading(true);
-      setErrorMessage(null);
-
+      
       // 1. Switch to audio mode (对应 Vue 中 segmentedValue.value = 1)
       setScriptMode('audio');
 
@@ -248,16 +247,16 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
       // Clear fields based on source type (matching index.vue handleSubmitTask logic)
       if (params.avatarSourceFrom === 0) {
-          params.aiAvatarId = '';
+        params.aiAvatarId = '';
       } else if (params.avatarSourceFrom === 1) {
-          params.videoFileId = '';
+        params.videoFileId = '';
       }
 
       if (params.audioSourceFrom === 0) {
-          params.ttsText = '';
-          params.voiceoverId = '';
+        params.ttsText = '';
+        params.voiceoverId = '';
       } else if (params.audioSourceFrom === 1) {
-          params.audioFileId = '';
+        params.audioFileId = '';
       }
 
       const submitRes = await avatarService.submitVideoCreationTask(params);
@@ -310,7 +309,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
             return;
           } else if (status === 'fail') {
             setTaskStatus('fail');
-            setErrorMessage(taskData.errorMsg || '任务执行失败');
+            toast.error(taskData.errorMsg || '任务执行失败');
             setGenerating(false);
             return;
           } else {
@@ -319,7 +318,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
               setTimeout(poll, interval);
             } else {
               setTaskStatus('fail');
-              setErrorMessage('任务超时');
+              toast.error('任务超时');
               setGenerating(false);
             }
           }
@@ -330,7 +329,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
             setTimeout(poll, interval);
         } else {
              setTaskStatus('fail');
-             setErrorMessage('查询失败');
+             toast.error('查询失败');
              setGenerating(false);
         }
       }
@@ -688,12 +687,16 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
               toast.success('已添加到素材库');
+              setShowMaterialModal(false);
           }}
           initialData={{
               assetName: `数字人视频_${new Date().toISOString().slice(0,10)}`,
+              assetTag: `数字人视频_${new Date().toISOString().slice(0,10)}`,
+              assetDesc: `数字人视频_${new Date().toISOString().slice(0,10)}`,
               assetUrl: previewVideoUrl || '',
               assetType: 4 // Video
           }}
+          disableAssetTypeSelection={true}
        />
     </div>
   );
