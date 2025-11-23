@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { profileService, UserProfileData } from '../../services/profileService';
 import { useAuthStore } from '../../stores/authStore';
-import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users } from 'lucide-react';
 import EnterprisePage from '../Enterprise';
+import ChannelManagement from './components/ChannelManagement';
 import { useAppOutletContext } from '../../router';
 import toast from 'react-hot-toast';
 
@@ -14,6 +15,7 @@ const ProfilePage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [activeTab, setActiveTab] = useState<'basic' | 'security' | 'enterprise'>('basic');
+  const [enterpriseSubTab, setEnterpriseSubTab] = useState<'channel' | 'team'>('channel');
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -37,14 +39,30 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
+    const subTab = params.get('subTab');
+    
     if (tab === 'enterprise') {
       setActiveTab('enterprise');
+      if (subTab === 'team') {
+        setEnterpriseSubTab('team');
+      } else {
+        // 如果没有 subTab 或 subTab 不是 'team'，默认设置为 'channel'
+        setEnterpriseSubTab('channel');
+        // 如果 URL 中没有 subTab，更新 URL
+        if (!subTab) {
+          const newParams = new URLSearchParams(location.search);
+          newParams.set('subTab', 'channel');
+          navigate({ search: newParams.toString() }, { replace: true });
+        }
+      }
     } else if (tab === 'security') {
       setActiveTab('security');
+      setEnterpriseSubTab('channel'); // 重置子 tab
     } else {
       setActiveTab('basic');
+      setEnterpriseSubTab('channel'); // 重置子 tab
     }
-  }, [location.search]);
+  }, [location.search, navigate]);
 
   useEffect(() => {
     loadProfile();
@@ -148,9 +166,25 @@ const ProfilePage: React.FC = () => {
     const params = new URLSearchParams(location.search);
     if (tab === 'basic') {
       params.delete('tab');
+      params.delete('subTab');
+    } else if (tab === 'enterprise') {
+      params.set('tab', tab);
+      // 如果还没有 subTab，默认设置为 channel
+      if (!params.get('subTab')) {
+        params.set('subTab', 'channel');
+      }
     } else {
       params.set('tab', tab);
+      params.delete('subTab');
     }
+    navigate({ search: params.toString() }, { replace: true });
+  };
+
+  const handleEnterpriseSubTabChange = (subTab: 'channel' | 'team') => {
+    setEnterpriseSubTab(subTab);
+    const params = new URLSearchParams(location.search);
+    params.set('tab', 'enterprise');
+    params.set('subTab', subTab);
     navigate({ search: params.toString() }, { replace: true });
   };
 
@@ -200,7 +234,7 @@ const ProfilePage: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Building2 size={18} />
-              团队管理
+              企业管理
             </div>
           </button>
         </div>
@@ -402,7 +436,46 @@ const ProfilePage: React.FC = () => {
 
       {/* Enterprise Management Tab */}
       {activeTab === 'enterprise' && (
-        <EnterprisePage t={t?.enterprisePage || t} />
+        <div>
+          {/* 子 Tab */}
+          <div className="mb-6 border-b border-border">
+            <div className="flex gap-4">
+              <button
+                onClick={() => handleEnterpriseSubTabChange('channel')}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                  enterpriseSubTab === 'channel'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 size={18} />
+                  企业管理
+                </div>
+              </button>
+              <button
+                onClick={() => handleEnterpriseSubTabChange('team')}
+                className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+                  enterpriseSubTab === 'team'
+                    ? 'border-indigo-600 text-indigo-600'
+                    : 'border-transparent text-muted hover:text-foreground'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Users size={18} />
+                  团队管理
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* 子 Tab 内容 */}
+          {enterpriseSubTab === 'channel' ? (
+            <ChannelManagement t={t} />
+          ) : (
+            <EnterprisePage t={t?.enterprisePage || t} />
+          )}
+        </div>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Users, Plus, RefreshCw, Search, Edit2, Trash2, 
   Eye, UserPlus, UserPlus2, X, Check, AlertCircle, 
@@ -41,6 +41,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     status: 1,
     teamRoles: [],
   });
+  const [roleInputValue, setRoleInputValue] = useState('');
 
   // 成员查看状态
   const [viewMembersModalVisible, setViewMembersModalVisible] = useState(false);
@@ -83,6 +84,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   const [currentAllocateMember, setCurrentAllocateMember] = useState<TeamUserDetailVO | null>(null);
   const [allocateQuotaAmountRmb, setAllocateQuotaAmountRmb] = useState<number>(0);
   const [currentUserQuotaInfo, setCurrentUserQuotaInfo] = useState<any>(null);
+  const [quotaLoading, setQuotaLoading] = useState(false);
 
   // 确认对话框状态
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -99,12 +101,27 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   });
 
   // 权限判断
-  const hasChannelPermission = user?.channelId !== null && 
-                               user?.channelId !== undefined && 
-                               user?.channelId !== '' && 
-                               user?.channelId !== 0;
+  // 检查用户是否有有效的 channelId（非空、非0）
+  const hasChannelPermission = (() => {
+    const channelId = user?.channelId;
+    if (channelId === null || channelId === undefined) {
+      return false;
+    }
+    // 处理 number 和 string 类型
+    if (typeof channelId === 'number') {
+      return channelId !== 0;
+    }
+    if (typeof channelId === 'string') {
+      return channelId !== '' && channelId !== '0';
+    }
+    return false;
+  })();
 
+  // 检查用户是否有团队或 channelId（Vue 中的逻辑：有团队列表或 channelId 不为 null）
   const hasTeams = (user?.team && user.team.length > 0) || user?.channelId !== null;
+  
+  // 如果用户有团队，即使没有 channelId 也应该能显示团队列表
+  const canShowTeamList = hasTeams;
 
   const canCreateTeam = user?.channelId !== null && 
                         user?.channelId !== undefined && 
@@ -153,6 +170,15 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     return quotaRmb.toFixed(2);
   };
 
+  // 将quota转换为人民币数值（返回数字字符串）
+  const formatRmbNumber = (quota: number) => {
+    const tokensPerDollar = 500000;
+    const dollarToRmbRate = 7.3;
+    const quotaDollar = quota / tokensPerDollar;
+    const quotaRmb = quotaDollar * dollarToRmbRate;
+    return quotaRmb.toFixed(2);
+  };
+
   const rmbToQuota = (rmb: number) => {
     const tokensPerDollar = 500000;
     const dollarToRmbRate = 7.3;
@@ -165,6 +191,88 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     const maxAmount = Math.max(0, currentBalance - 0.01);
     return parseFloat(maxAmount.toFixed(2));
   };
+
+  // 根据quota和会员等级计算积分
+  const calculateScore = (quota: number | undefined, memberLevel: string | undefined) => {
+    if (!quota) return '0.00';
+    const rmb = parseFloat(formatRmbNumber(quota));
+
+    if (memberLevel === 'Starter') {
+      return (rmb / 1.72).toFixed(2);
+    } else if (memberLevel === 'Business') {
+      return (rmb / 1.59).toFixed(2);
+    } else {
+      return (rmb / 2).toFixed(2); // 普通会员
+    }
+  };
+
+  // 获取会员等级文本显示
+  const getMemberLevelText = (level: string | undefined) => {
+    if (!level || level === '未知' || level === '') {
+      return '普通会员';
+    }
+    return level;
+  };
+
+  // 配额对应的quota值
+  const allocateQuotaAmount = useMemo(() => {
+    if (!allocateQuotaAmountRmb) return 0;
+    return rmbToQuota(allocateQuotaAmountRmb);
+  }, [allocateQuotaAmountRmb]);
+
+  // 成员配额后的余额（人民币）
+  const memberAfterQuotaRmb = useMemo(() => {
+    if (!currentAllocateMember?.quota || !allocateQuotaAmount) {
+      return formatRmb(currentAllocateMember?.quota);
+    }
+    const newQuota = currentAllocateMember.quota + allocateQuotaAmount;
+    return formatRmbNumber(newQuota);
+  }, [currentAllocateMember?.quota, allocateQuotaAmount]);
+
+  // 成员配额后的积分
+  const memberAfterQuotaScore = useMemo(() => {
+    if (!currentAllocateMember?.quota || !allocateQuotaAmount || !currentUserQuotaInfo) {
+      return '0.00';
+    }
+    const newQuota = currentAllocateMember.quota + allocateQuotaAmount;
+    const rmb = parseFloat(formatRmbNumber(newQuota));
+    const memberLevel = currentUserQuotaInfo.memberLevel; // 使用配额人的会员等级
+
+    if (memberLevel === 'Starter') {
+      return (rmb / 1.72).toFixed(2);
+    } else if (memberLevel === 'Business') {
+      return (rmb / 1.59).toFixed(2);
+    } else {
+      return (rmb / 2).toFixed(2);
+    }
+  }, [currentAllocateMember?.quota, allocateQuotaAmount, currentUserQuotaInfo]);
+
+  // 配额人配额后的余额（人民币）
+  const myAfterQuotaRmb = useMemo(() => {
+    if (!currentUserQuotaInfo?.quota || !allocateQuotaAmount) {
+      return currentUserQuotaInfo?.quotaRmb || '0.00';
+    }
+    const newQuota = currentUserQuotaInfo.quota - allocateQuotaAmount;
+    return formatRmbNumber(newQuota);
+  }, [currentUserQuotaInfo?.quota, allocateQuotaAmount]);
+
+  // 配额人配额后的积分
+  const myAfterQuotaScore = useMemo(() => {
+    if (!currentUserQuotaInfo?.quota || !allocateQuotaAmount) {
+      return currentUserQuotaInfo?.score || '0.00';
+    }
+    const newQuota = currentUserQuotaInfo.quota - allocateQuotaAmount;
+    const rmb = parseFloat(formatRmbNumber(newQuota));
+    const memberLevel = currentUserQuotaInfo.memberLevel;
+
+    if (memberLevel === 'Starter') {
+      return (rmb / 1.72).toFixed(2);
+    } else if (memberLevel === 'Business') {
+      return (rmb / 1.59).toFixed(2);
+    } else {
+      return (rmb / 2).toFixed(2);
+    }
+  }, [currentUserQuotaInfo?.quota, allocateQuotaAmount]);
 
   const getMemberLevelColor = (level: string | undefined) => {
     const colorMap: Record<string, string> = {
@@ -201,10 +309,14 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         pageSize: pagination.pageSize,
         teamName: searchKeyword || undefined,
       });
-      setTeamList(response.rows || []);
-      setPagination(prev => ({ ...prev, total: response.total || 0 }));
+      console.log('获取团队列表响应:', response);
+      console.log('团队列表数据:', response?.rows);
+      console.log('团队总数:', response?.total);
+      setTeamList(response?.rows || []);
+      setPagination(prev => ({ ...prev, total: response?.total || 0 }));
     } catch (error) {
       console.error('获取团队列表失败:', error);
+      toast.error('获取团队列表失败');
     } finally {
       setTeamLoading(false);
     }
@@ -227,12 +339,27 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   };
 
   const fetchInviteUserList = async () => {
-    if (!currentTeam || !currentTeam.channelId) return;
+    if (!currentTeam) return;
     
     setMemberLoading(true);
     try {
+      // 优先使用团队的 channelId
+      let channelId = currentTeam.channelId || (currentTeam as any).channel?.channelId;
+      
+      // 如果团队没有 channelId，则使用用户自己的 channelId
+      if (!channelId) {
+        channelId = user?.channelId;
+      }
+      
+      if (!channelId) {
+        console.error('添加成员 - 无法获取channelId');
+        toast.error('获取渠道ID失败，请确认团队已关联渠道');
+        setMemberLoading(false);
+        return;
+      }
+      
       const response = await userInviteService.userInviteDetailList(
-        currentTeam.channelId,
+        channelId,
         memberSearchKeyword,
         {
           pageNum: memberPagination.current,
@@ -243,6 +370,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       setMemberPagination(prev => ({ ...prev, total: response.total || 0 }));
     } catch (error) {
       console.error('获取邀请用户列表失败:', error);
+      toast.error('获取邀请用户列表失败');
     } finally {
       setMemberLoading(false);
     }
@@ -307,17 +435,17 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleTeamSubmit = async () => {
     if (!teamFormData.teamName.trim()) {
-      toast.warning('请输入团队名称');
+      toast.error('请输入团队名称');
       return;
     }
 
     if (!teamFormData.teamRoles || teamFormData.teamRoles.length === 0) {
-      toast.warning('请设置团队角色');
+      toast.error('请设置团队角色');
       return;
     }
 
     if (teamFormData.teamRoles.length > 10) {
-      toast.warning('团队角色最多支持10个');
+      toast.error('团队角色最多支持10个');
       return;
     }
 
@@ -330,10 +458,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         teamId = teamFormData.teamId;
         toast.success('编辑团队成功');
       } else {
-        teamId = await teamService.addTeam({
+        const response = await teamService.createTeam({
           ...teamFormData,
           channelId: user?.channelId,
         });
+        // 根据 request.ts 的处理，如果返回的是数字，直接使用；否则从响应中提取
+        teamId = typeof response === 'number' ? response : (response as any)?.teamId || (response as any)?.data;
         toast.success('新增团队成功');
       }
 
@@ -394,7 +524,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       toast.success('新用户邀请链接已复制到剪贴板');
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast.info(`新用户邀请链接：${inviteUrl}`);
+      toast(`新用户邀请链接：${inviteUrl}`, { duration: 5000 });
     }
   };
 
@@ -407,7 +537,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       toast.success('老用户邀请链接已复制到剪贴板');
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast.info(`老用户邀请链接：${loginUrl}`);
+      toast(`老用户邀请链接：${loginUrl}`, { duration: 5000 });
     }
   };
 
@@ -422,7 +552,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleAddMemberSubmit = async () => {
     if (selectedMemberIds.length === 0) {
-      toast.warning('请选择要添加的成员');
+      toast.error('请选择要添加的成员');
       return;
     }
 
@@ -492,7 +622,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     if (!currentEditMember || !currentTeam) return;
 
     if (selectedAuthType === 3) {
-      toast.warning('管理员权限已下架，渠道拥有者默认为管理员');
+      toast.error('管理员权限已下架，渠道拥有者默认为管理员');
       return;
     }
 
@@ -523,16 +653,17 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     if (!currentAllocateMember) return;
 
     if (!allocateQuotaAmountRmb || allocateQuotaAmountRmb <= 0) {
-      toast.warning('请输入有效的配额金额');
+      toast.error('请输入有效的配额金额');
       return;
     }
 
     const maxRmb = getMaxAllocateAmount();
     if (allocateQuotaAmountRmb > maxRmb) {
-      toast.warning(`配额金额不能超过 ¥${maxRmb.toFixed(2)}（已预留0.01元精度余量）`);
+      toast.error(`配额金额不能超过 ¥${maxRmb.toFixed(2)}（已预留0.01元精度余量）`);
       return;
     }
 
+    setQuotaLoading(true);
     try {
       const fromUserId = user?.nebulaApiId;
       const toUserId = currentAllocateMember.nebulaApiId;
@@ -545,7 +676,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       await quotaService.allocateQuota({
         fromUserId,
         toUserId,
-        quotaAmount: rmbToQuota(allocateQuotaAmountRmb),
+        quotaAmount: allocateQuotaAmount,
         memberLevel: currentUserQuotaInfo.memberLevel,
       });
 
@@ -559,6 +690,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     } catch (error) {
       console.error('配额失败:', error);
       toast.error('配额失败');
+    } finally {
+      setQuotaLoading(false);
     }
   };
 
@@ -592,13 +725,23 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   // 初始化
   useEffect(() => {
-    if (hasTeams) {
+    console.log('Enterprise 组件初始化/更新');
+    console.log('hasTeams:', hasTeams);
+    console.log('hasChannelPermission:', hasChannelPermission);
+    console.log('canShowTeamList:', canShowTeamList);
+    console.log('user?.channelId:', user?.channelId);
+    console.log('user?.team:', user?.team);
+    
+    if (canShowTeamList) {
+      console.log('开始获取团队列表');
       fetchTeamList();
       if (showQuotaInfo) {
         fetchCurrentUserQuotaInfo();
       }
+    } else {
+      console.log('条件不满足，不获取团队列表', { hasTeams, hasChannelPermission, canShowTeamList });
     }
-  }, []);
+  }, [canShowTeamList, showQuotaInfo]);
 
   useEffect(() => {
     if (currentTeam && addMemberModalVisible) {
@@ -606,13 +749,19 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     }
   }, [memberPagination.current, memberSearchKeyword]);
 
-  // 无权限提示
-  if (!hasTeams || !hasChannelPermission) {
-  return (
+  // 监听 teamList 变化，用于调试
+  useEffect(() => {
+    console.log('teamList 更新:', teamList);
+    console.log('teamList.length:', teamList.length);
+  }, [teamList]);
+
+  // 无权限提示：只有当用户既没有团队，也没有 channelId 时，才显示提示
+  if (!canShowTeamList) {
+    return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <AlertCircle className="text-yellow-500 mb-4" size={48} />
         <h3 className="text-lg font-semibold text-foreground mb-2">暂不支持该功能</h3>
-        <p className="text-muted">您还未加入任何团队，请联系管理员</p>
+        <p className="text-muted">您还未加入任何团队，请先加入企业</p>
       </div>
     );
   }
@@ -839,20 +988,88 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   <label className="block text-sm font-medium text-foreground mb-2">
                   团队角色 <span className="text-red-500">*</span>
                   </label>
+                  <div className="w-full min-h-[42px] px-3 py-2 border border-border rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent bg-background">
+                    <div className="flex flex-wrap gap-2 items-center">
+                      {teamFormData.teamRoles?.map((role, index) => (
+                        <span
+                          key={index}
+                          className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded text-sm"
+                        >
+                          {role}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTeamFormData(prev => ({
+                                ...prev,
+                                teamRoles: prev.teamRoles?.filter((_, i) => i !== index) || []
+                              }));
+                            }}
+                            className="hover:text-indigo-900 dark:hover:text-indigo-100"
+                          >
+                            <X size={14} />
+                          </button>
+                        </span>
+                      ))}
                       <input
-                  type="text"
-                  value={teamFormData.teamRoles?.join(', ') || ''}
-                  onChange={(e) => setTeamFormData(prev => ({ 
-                    ...prev, 
-                    teamRoles: e.target.value.split(',').map(r => r.trim()).filter(r => r) 
-                  }))}
-                  placeholder="请输入团队角色，如:开发者,测试员,观察者"
-                  className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
-                />
-                <p className="text-xs text-muted mt-1">
-                  （请输入团队角色，用逗号分隔，一个团队最多支持10个角色）
-                </p>
-              </div>
+                        type="text"
+                        value={roleInputValue}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setRoleInputValue(value);
+                          
+                          if (value.includes(',')) {
+                            const newRoles = value.split(',').map(r => r.trim()).filter(r => r);
+                            const currentRoles = teamFormData.teamRoles || [];
+                            const updatedRoles = [...currentRoles, ...newRoles].filter((role, index, self) => 
+                              self.indexOf(role) === index
+                            );
+                            if (updatedRoles.length <= 10) {
+                              setTeamFormData(prev => ({
+                                ...prev,
+                                teamRoles: updatedRoles
+                              }));
+                              setRoleInputValue('');
+                            } else {
+                              toast.error('团队角色最多支持10个');
+                              setRoleInputValue(newRoles.slice(0, 10 - currentRoles.length).join(','));
+                            }
+                          }
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ',') {
+                            e.preventDefault();
+                            const value = roleInputValue.trim();
+                            if (value) {
+                              const currentRoles = teamFormData.teamRoles || [];
+                              if (currentRoles.length >= 10) {
+                                toast.error('团队角色最多支持10个');
+                                setRoleInputValue('');
+                                return;
+                              }
+                              if (!currentRoles.includes(value)) {
+                                setTeamFormData(prev => ({
+                                  ...prev,
+                                  teamRoles: [...(prev.teamRoles || []), value]
+                                }));
+                              }
+                              setRoleInputValue('');
+                            }
+                          } else if (e.key === 'Backspace' && roleInputValue === '' && teamFormData.teamRoles && teamFormData.teamRoles.length > 0) {
+                            setTeamFormData(prev => ({
+                              ...prev,
+                              teamRoles: prev.teamRoles?.slice(0, -1) || []
+                            }));
+                          }
+                        }}
+                        placeholder={teamFormData.teamRoles?.length === 0 ? "请输入团队角色，如:开发者、测试员、观察者" : ""}
+                        className="flex-1 min-w-[120px] outline-none bg-transparent text-sm"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted mt-1">
+                    （请输入团队角色，按回车或逗号添加，一个团队最多支持10个角色）
+                  </p>
+                </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">备注</label>
@@ -1297,19 +1514,65 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
               </button>
             </div>
             
-            <div className="p-6 space-y-4">
-              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">成员信息</h4>
-                <p className="text-sm text-muted">用户名：{currentAllocateMember.userName}</p>
-                <p className="text-sm text-muted">当前余额：¥{formatRmb(currentAllocateMember.quota)}</p>
+            <div className="p-6 space-y-5">
+              {/* 成员信息部分 */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <h4 className="text-sm font-semibold text-foreground mb-3">成员信息</h4>
+                <p className="text-sm text-muted mb-2">
+                  用户名：{currentAllocateMember.userName}
+                </p>
+                <p className="text-sm text-muted mb-2">
+                  当前余额：¥{formatRmb(currentAllocateMember.quota)}
+                  {allocateQuotaAmountRmb > 0 && (
+                    <span className="text-green-600 font-semibold ml-2">
+                      → ¥{memberAfterQuotaRmb}
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-muted mb-2">
+                  积分：{calculateScore(currentAllocateMember.quota, currentUserQuotaInfo?.memberLevel)}
+                  {allocateQuotaAmountRmb > 0 && (
+                    <span className="text-green-600 font-semibold ml-2">
+                      → {memberAfterQuotaScore}
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-muted">
+                  会员等级：
+                  <span className={`ml-2 text-xs px-2 py-1 rounded ${getMemberLevelColor(currentAllocateMember.memberLevel)}`}>
+                    {getMemberLevelText(currentAllocateMember.memberLevel)}
+                  </span>
+                </p>
               </div>
 
-              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">我的余额</h4>
-                <p className="text-sm text-muted">当前余额：¥{currentUserQuotaInfo?.quotaRmb}</p>
-                <p className="text-sm text-muted">积分：{currentUserQuotaInfo?.score}</p>
+              {/* 我的余额部分 */}
+              <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <h4 className="text-sm font-semibold text-foreground mb-3">我的余额</h4>
+                <p className="text-sm text-muted mb-2">
+                  当前余额：¥{currentUserQuotaInfo?.quotaRmb || '0.00'}
+                  {allocateQuotaAmountRmb > 0 && (
+                    <span className="text-green-600 font-semibold ml-2">
+                      → ¥{myAfterQuotaRmb}
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-muted mb-2">
+                  积分：{currentUserQuotaInfo?.score || '0.00'}
+                  {allocateQuotaAmountRmb > 0 && (
+                    <span className="text-green-600 font-semibold ml-2">
+                      → {myAfterQuotaScore}
+                    </span>
+                  )}
+                </p>
+                <p className="text-sm text-muted">
+                  会员等级：
+                  <span className={`ml-2 text-xs px-2 py-1 rounded ${getMemberLevelColor(currentUserQuotaInfo?.memberLevel)}`}>
+                    {getMemberLevelText(currentUserQuotaInfo?.memberLevel)}
+                  </span>
+                </p>
               </div>
 
+              {/* 配额金额输入 */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">配额金额（人民币）</label>
                 <div className="flex items-center">
@@ -1321,29 +1584,36 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     min={0.01}
                     max={getMaxAllocateAmount()}
                     step={0.01}
-                    value={allocateQuotaAmountRmb}
+                    value={allocateQuotaAmountRmb || ''}
                     onChange={(e) => setAllocateQuotaAmountRmb(parseFloat(e.target.value) || 0)}
                     placeholder="请输入配额金额"
                     className="flex-1 px-4 py-2 border border-border rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                   />
                 </div>
                 <p className="text-xs text-muted mt-1">
-                  配额金额不能超过您的剩余余额 ¥{currentUserQuotaInfo?.quotaRmb}
+                  配额金额不能超过您的剩余余额 ¥{currentUserQuotaInfo?.quotaRmb || '0.00'}
                 </p>
               </div>
             </div>
 
             <div className="p-6 border-t border-border flex justify-end gap-2">
               <button
-                onClick={() => setAllocateQuotaModalVisible(false)}
+                onClick={() => {
+                  setAllocateQuotaModalVisible(false);
+                  setAllocateQuotaAmountRmb(0);
+                  setCurrentAllocateMember(null);
+                }}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                disabled={quotaLoading}
               >
                 取消
               </button>
               <button
                 onClick={handleAllocateQuotaSubmit}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={quotaLoading}
               >
+                {quotaLoading && <Loader2 size={16} className="animate-spin" />}
                 确定
               </button>
             </div>

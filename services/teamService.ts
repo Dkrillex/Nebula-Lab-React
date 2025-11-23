@@ -36,10 +36,10 @@ export const teamService = {
   /**
    * 创建团队
    * @param data 团队数据
-   * @returns 创建结果
+   * @returns 创建结果（返回 teamId）
    */
   createTeam: (data: LabTeamForm) => {
-    return request.post<ApiResponse<void>>('/ads/labTeam', data);
+    return request.post<ApiResponse<number>>('/ads/labTeam', data);
   },
 
   /**
