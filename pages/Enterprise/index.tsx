@@ -338,13 +338,14 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     }
   };
 
-  const fetchInviteUserList = async () => {
-    if (!currentTeam) return;
+  const fetchInviteUserList = async (team?: LabTeamVO) => {
+    const targetTeam = team || currentTeam;
+    if (!targetTeam) return;
     
     setMemberLoading(true);
     try {
       // 优先使用团队的 channelId
-      let channelId = currentTeam.channelId || (currentTeam as any).channel?.channelId;
+      let channelId = targetTeam.channelId || (targetTeam as any).channel?.channelId;
       
       // 如果团队没有 channelId，则使用用户自己的 channelId
       if (!channelId) {
@@ -403,18 +404,24 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       teamName: '',
       remark: '',
       status: 1,
+      channelId: user?.channelId,
       teamRoles: [],
     });
+    setRoleInputValue('');
     setIsTeamEditMode(false);
     setTeamModalVisible(true);
   };
 
   const handleEditTeam = async (team: LabTeamVO) => {
+    // 获取 channelId：优先使用团队的 channelId，否则使用用户的 channelId
+    const channelId = team.channelId || team.channel?.channelId || user?.channelId;
+    
     setTeamFormData({
       teamId: team.teamId,
       teamName: team.teamName,
       remark: team.remark || '',
       status: team.status,
+      channelId: channelId,
       teamRoles: [],
     });
     
@@ -454,7 +461,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       let teamId: number | undefined;
       
       if (isTeamEditMode && teamFormData.teamId) {
-        await teamService.updateTeam(teamFormData);
+        // 编辑团队时，确保包含 channelId
+        const updateData = {
+          ...teamFormData,
+          channelId: teamFormData.channelId || user?.channelId,
+        };
+        await teamService.updateTeam(updateData);
         teamId = teamFormData.teamId;
         toast.success('编辑团队成功');
       } else {
@@ -473,6 +485,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       }
 
       setTeamModalVisible(false);
+      setRoleInputValue('');
       fetchTeamList();
     } catch (error) {
       console.error('团队操作失败:', error);
@@ -546,7 +559,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     setSelectedMemberIds([]);
     setMemberPagination(prev => ({ ...prev, current: 1 }));
     fetchTeamMemberList(team.teamId);
-    fetchInviteUserList();
+    // 直接传递 team 参数，避免依赖异步的 currentTeam 状态
+    fetchInviteUserList(team);
     setAddMemberModalVisible(true);
   };
 
@@ -745,9 +759,9 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   useEffect(() => {
     if (currentTeam && addMemberModalVisible) {
-      fetchInviteUserList();
+      fetchInviteUserList(currentTeam);
     }
-  }, [memberPagination.current, memberSearchKeyword]);
+  }, [memberPagination.current, memberSearchKeyword, currentTeam, addMemberModalVisible]);
 
   // 监听 teamList 变化，用于调试
   useEffect(() => {
@@ -963,8 +977,11 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 {isTeamEditMode ? '编辑团队' : '新增团队'}
                 </h3>
                 <button
-                onClick={() => setTeamModalVisible(false)}
-                  className="text-muted hover:text-foreground"
+                onClick={() => {
+                  setTeamModalVisible(false);
+                  setRoleInputValue('');
+                }}
+                className="text-muted hover:text-foreground"
                 >
                   <X size={20} />
                 </button>
@@ -1085,7 +1102,10 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
             <div className="p-6 border-t border-border flex justify-end gap-2">
                   <button
-                onClick={() => setTeamModalVisible(false)}
+                onClick={() => {
+                  setTeamModalVisible(false);
+                  setRoleInputValue('');
+                }}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
                     取消
