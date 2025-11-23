@@ -2,15 +2,17 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Search, FolderPlus, Upload, Move, Trash2, X, 
   Folder, FileAudio, Image as ImageIcon, Film, MoreVertical,
-  ChevronRight, Loader2, Home, Edit2, Download, Eye
+  ChevronRight, Loader2, Home, Edit2, Download, Eye, XCircle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '@/router';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import MoveShareModal from '../../components/MoveShareModal';
+import { dictService } from '../../services/dictService';
+import { useDictStore } from '../../stores/dictStore';
 
 interface BreadcrumbItem {
   id: null | string;
@@ -23,6 +25,11 @@ const AssetsPage: React.FC = () => {
   const t = rawT.assetsPage;
 
   const { user } = useAuthStore();
+  const { getDict, setDict } = useDictStore();
+  
+  // 素材类型选项
+  const [assetTypeOptions, setAssetTypeOptions] = useState<Array<{ label: string; value: string | number }>>([]);
+  const [assetTypesLoading, setAssetTypesLoading] = useState(false);
   
   // 状态管理
   const [loading, setLoading] = useState(false);
@@ -509,6 +516,39 @@ const AssetsPage: React.FC = () => {
     a.click();
   };
 
+  // 获取素材类型选项
+  useEffect(() => {
+    const loadAssetTypes = async () => {
+      try {
+        setAssetTypesLoading(true);
+        // 先检查缓存
+        const cached = getDict('nebula_assets_type');
+        if (cached && cached.length > 0) {
+          setAssetTypeOptions(cached);
+          setAssetTypesLoading(false);
+          return;
+        }
+        
+        // 从API获取
+        const dictData = await dictService.getDicts('nebula_assets_type');
+        const options = dictData.map(item => ({
+          label: item.dictLabel,
+          value: item.dictValue
+        }));
+        
+        // 保存到缓存
+        setDict('nebula_assets_type', options);
+        setAssetTypeOptions(options);
+      } catch (error) {
+        console.error('Failed to load asset types:', error);
+      } finally {
+        setAssetTypesLoading(false);
+      }
+    };
+    
+    loadAssetTypes();
+  }, []);
+
   // 初始化加载
   useEffect(() => {
     fetchAssets();
@@ -546,50 +586,96 @@ const AssetsPage: React.FC = () => {
         <div className="space-y-5">
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchName}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetName}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetName: e.target.value }))}
-              placeholder={t.namePlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.namePlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetName && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetName: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchType}</label>
-            <select 
+            <div className="relative">
+              <select 
                 value={filters.assetType || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetType: e.target.value ? Number(e.target.value) : undefined }))}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            >
-              <option value="">{t.chooseType}</option>
-                <option value="1">图片</option>
-                <option value="2">视频</option>
-                <option value="3">音频</option>
-                <option value="4">文档</option>
-            </select>
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none"
+                disabled={assetTypesLoading}
+              >
+                <option value="">{t.chooseType}</option>
+                {assetTypeOptions.map(option => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {filters.assetType && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetType: undefined }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <XCircle size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchTag}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetTag}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetTag: e.target.value }))}
-              placeholder={t.tagPlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.tagPlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetTag && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetTag: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
 
            <div className="space-y-2">
             <label className="text-sm font-medium text-muted">{t.searchDesc}</label>
-            <input 
-              type="text" 
+            <div className="relative">
+              <input 
+                type="text" 
                 value={filters.assetDesc}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetDesc: e.target.value }))}
-              placeholder={t.descPlaceholder}
-              className="w-full h-10 rounded-lg border border-border bg-background px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-            />
+                placeholder={t.descPlaceholder}
+                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+              />
+              {filters.assetDesc && (
+                <button
+                  onClick={() => setFilters(prev => ({ ...prev, assetDesc: '' }))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  type="button"
+                >
+                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="flex gap-3 pt-2">
@@ -687,8 +773,17 @@ const AssetsPage: React.FC = () => {
                  value={resultSearch}
                  onChange={(e) => setResultSearch(e.target.value)}
                  placeholder={t.searchInResult}
-                 className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-4 text-sm focus:outline-none focus:border-primary"
+                 className="w-full h-9 rounded-full border border-border bg-surface pl-9 pr-9 text-sm focus:outline-none focus:border-primary"
                />
+               {resultSearch && (
+                 <button
+                   onClick={() => setResultSearch('')}
+                   className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                   type="button"
+                 >
+                   <X size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                 </button>
+               )}
             </div>
          </div>
 

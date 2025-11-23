@@ -213,7 +213,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       };
       
       // 如果是共享文件模式，需要添加团队ID和共享标识
-      if (activeTab === 'shared') {
+      if (activeTab === 'shared' && teamIds) {
         // 优先从当前路径中获取 teamId（用户已经进入某个团队文件夹）
         let teamId: string | number | undefined;
         
@@ -227,7 +227,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
         }
         
         // 如果路径中没有找到，则从 teamIds 中获取第一个
-        if (!teamId && teamIds) {
+        if (!teamId) {
           const teamIdList = teamIds.split(',').filter(id => id.trim());
           if (teamIdList.length > 0) {
             teamId = teamIdList[0];
@@ -235,6 +235,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
         }
         
         if (teamId) {
+          // 注意：不要用 Number() 转换，会导致大整数精度丢失！
           folderData.teamId = String(teamId);
           folderData.isShare = 1; // 共享文件
         }
