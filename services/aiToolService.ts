@@ -36,10 +36,14 @@ export interface AiTemplateRequest {
 export interface AiTemplateResponse {
   code: number;
   msg?: string;
-  data: Array<{
-    url?: string;
-    text?: string;
-  }>;
+  data: {
+    data: Array<{
+      url?: string;
+      b64_json?: string;
+      revised_prompt?: string;
+    }>;
+    created?: number;
+  };
 }
 
 export const aiToolService = {
@@ -56,8 +60,10 @@ export const aiToolService = {
       score: "0.3"
     };
 
+    // request.ts 会提取 data 字段，所以禁用 transform 以获取完整响应
     return request.post<AiTemplateResponse>('/aiTool/v1/AiTemplate', requestData, {
       timeout: 60000,
+      isTransformResponse: false,
     });
   },
 

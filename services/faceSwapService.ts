@@ -241,13 +241,17 @@ export const faceSwapService = {
       // 调用 API
       const response = await aiToolService.generateAiTemplate(requestData);
       
-      if (response.data && response.data.length > 0 && response.data[0].url) {
+      console.log('Face swap API完整响应:', response);
+      
+      // 检查响应结构：{ code: 200, msg: "...", data: { data: [...], created: ... } }
+      if (response.code === 200 && response.data?.data && response.data.data.length > 0 && response.data.data[0].url) {
         return {
-          imageUrl: response.data[0].url,
-          text: response.data[0].text,
+          imageUrl: response.data.data[0].url,
+          text: response.data.data[0].revised_prompt,
         };
       } else {
-        throw new Error('生成失败，未返回有效结果');
+        console.error('Face swap响应数据结构不符合预期:', response);
+        throw new Error(response.msg || '生成失败，未返回有效结果');
       }
     } catch (error) {
       console.error('Face swap error:', error);

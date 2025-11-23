@@ -119,10 +119,14 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
         activeTool.title
       );
 
-      if (res.code === 200 && res.data?.[0]?.url) {
-        setResultUrl(res.data[0].url);
+      console.log('API完整响应:', res);
+      
+      // 检查响应结构：{ code: 200, msg: "...", data: { data: [...], created: ... } }
+      if (res.code === 200 && res.data?.data?.[0]?.url) {
+        setResultUrl(res.data.data[0].url);
       } else {
-        throw new Error(res.msg || '生成失败');
+        console.error('响应数据结构不符合预期:', res);
+        throw new Error(res.msg || '生成失败：未返回有效的图片URL');
       }
     } catch (err: any) {
       console.error(err);
