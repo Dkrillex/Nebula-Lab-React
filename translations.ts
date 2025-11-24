@@ -248,6 +248,7 @@ interface Translation {
         placeholder: string;
       };
       generate: string;
+      credits: string;
       actions: {
         clearAll: string;
         downloadAll: string;
@@ -969,7 +970,8 @@ export const translations: Record<string, Translation> = {
           label: 'Negative Prompt (Optional)',
           placeholder: 'List content you do not want to see in the video. Example: animation, blur, distortion...'
         },
-        generate: '4 Credits',
+        generate: 'Generate',
+        credits: 'Credits',
         actions: {
           clearAll: 'Clear All',
           downloadAll: 'Download All'
@@ -1740,7 +1742,8 @@ export const translations: Record<string, Translation> = {
           label: '负面提示词（可选）',
           placeholder: '列出您不想在视频中看到的内容类型。示例：动画、模糊、扭曲、变形、低质量、拼贴、颗粒、微标、抽象、插图、计算机生成、扭曲......'
         },
-        generate: '4 积分',
+        generate: '生成',
+        credits: '积分',
         actions: {
           clearAll: '清空结果',
           downloadAll: '批量下载'
@@ -2544,7 +2547,8 @@ export const translations: Record<string, Translation> = {
           label: 'Prompt Negatif (Opsional)',
           placeholder: 'Daftar konten yang tidak ingin Anda lihat dalam video. Contoh: animasi, blur, distorsi...'
         },
-        generate: '4 Kredit',
+        generate: 'Buat',
+        credits: 'Kredit',
         actions: {
           clearAll: 'Hapus Semua',
           downloadAll: 'Unduh Semua'

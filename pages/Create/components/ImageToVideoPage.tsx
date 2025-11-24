@@ -186,6 +186,13 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   }, [activeTab]);
 
+  // Validate Duration when Best mode is selected
+  useEffect(() => {
+    if (activeTab === 'traditional' && quality === 'best' && ![5, 10].includes(duration)) {
+      setDuration(5);
+    }
+  }, [activeTab, quality, duration]);
+
   // Advanced Mode validation (commented out - Advanced Mode not open to public yet)
   // useEffect(() => {
   //   if (activeTab === 'multiModel') {
@@ -204,18 +211,19 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     } else {
       let base = 0;
       if (quality === 'best') {
-        // Vue logic: 5s->10, 10s->20, 12s->5
+        // Best模式只支持5、10秒
         if (duration === 5) base = 10;
         else if (duration === 10) base = 20;
-        else if (duration === 12) base = 5;
-        else base = 10; 
+        else base = 10; // 默认值，但应该被禁用
       } else if (quality === 'lite') {
+        // lite模式：3、5、8、10、12秒对应2、3、3.5、4、5积分
         if(duration === 3) base = 2;
         else if(duration === 5) base = 3;
         else if(duration === 8) base = 3.5;
         else if(duration === 10) base = 4;
         else if(duration === 12) base = 5;
-      } else if (quality === 'plus') { // UI: Pro
+      } else if (quality === 'plus') { // UI显示为Pro
+        // pro模式：3、5、8、10、12秒对应3、5、8、10、12积分
         if(duration === 3) base = 3;
         else if(duration === 5) base = 5;
         else if(duration === 8) base = 8;
@@ -616,8 +624,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                                     <Trash2 size={16} />
                                  </button>
                               </div>
-                              <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center">
-                                 {activeTab === 'startEnd' ? 'Start Frame' : 'Reference'}
+                              <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center truncate px-1" title={startImage.fileName}>
+                                 {startImage.fileName || (activeTab === 'startEnd' ? 'Start Frame' : 'Reference')}
                               </div>
                            </div>
                         ) : (
@@ -628,7 +636,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                               }`}
                            >
                               {uploadingStart ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
-                              <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
+                              <span className="text-xs text-muted text-center px-2 mt-1">{t.upload.button}</span>
                            </div>
                         )}
                      </div>
@@ -644,7 +652,9 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                                        <Trash2 size={16} />
                                     </button>
                                  </div>
-                                 <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center">End Frame</div>
+                                 <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center truncate px-1" title={endImage.fileName}>
+                                    {endImage.fileName || 'End Frame'}
+                                 </div>
                               </div>
                            ) : (
                               <div 
@@ -654,7 +664,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                                  }`}
                               >
                                  {uploadingEnd ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
-                                 <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
+                                 <span className="text-xs text-muted text-center px-2 mt-1">{t.upload.button}</span>
                               </div>
                            )}
                         </div>
@@ -674,8 +684,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                   <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
                   <button 
                      onClick={handleTextPolish} 
-                     disabled={isPolishing || !prompt}
-                     className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 font-medium"
+                     disabled={isPolishing || !prompt || isGenerating}
+                     className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
                   >
                      {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
                      {t.prompt.polish}
@@ -704,7 +714,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                            key={q.label}
                            onClick={() => {
                               setQuality(q.label as any);
-                              // Auto-switch duration if Best
+                              // Auto-switch duration if Best and current duration not supported
                               if (q.label === 'best' && ![5, 10].includes(duration)) {
                                 setDuration(5);
                               }
@@ -839,7 +849,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                ) : (
                  <>
                    <Wand2 size={18} />
-                   {t.generate} ({calculatedScore} pts)
+                   {calculatedScore} {t.credits || '积分'}
                  </>
                )}
             </button>
