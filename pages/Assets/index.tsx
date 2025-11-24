@@ -418,7 +418,7 @@ const AssetsPage: React.FC = () => {
         toast.success('分享成功');
       } else {
         // 移动文件（在同一 tab 内移动，或同团队内移动）
-        await assetsService.moveAssets(ids, targetFolderId || undefined);
+        await assetsService.moveAssets(ids as (string | number)[], targetFolderId || undefined);
         toast.success('移动成功');
       }
 
@@ -576,47 +576,47 @@ const AssetsPage: React.FC = () => {
     <div className="flex h-full bg-background overflow-hidden w-full">
       {/* Filter Sidebar */}
       {showFilterPanel && (
-      <aside className="w-80 border-r border-border bg-surface p-6 flex-shrink-0 hidden lg:block h-full overflow-y-auto custom-scrollbar">
-        <div className="flex items-center justify-between mb-6">
-           <h2 className="font-bold text-lg">{t.filterSearch}</h2>
+      <aside className="w-64 border-r border-border bg-surface p-4 flex-shrink-0 hidden lg:block h-full overflow-y-auto custom-scrollbar">
+        <div className="flex items-center justify-between mb-4">
+           <h2 className="font-bold text-base">{t.filterSearch}</h2>
             <button 
               onClick={() => setShowFilterPanel(false)}
               className="p-1 text-muted hover:text-foreground"
             >
-             <X size={16} />
+             <X size={14} />
            </button>
         </div>
 
-        <div className="space-y-5">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted">{t.searchName}</label>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted">{t.searchName}</label>
             <div className="relative">
               <input 
                 type="text" 
                 value={filters.assetName}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetName: e.target.value }))}
                 placeholder={t.namePlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                className="w-full h-9 rounded-lg border border-border bg-background px-2.5 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
               />
               {filters.assetName && (
                 <button
                   onClick={() => setFilters(prev => ({ ...prev, assetName: '' }))}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   type="button"
                 >
-                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                  <X size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                 </button>
               )}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted">{t.searchType}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted">{t.searchType}</label>
             <div className="relative">
               <select 
                 value={filters.assetType || ''}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetType: e.target.value ? Number(e.target.value) : undefined }))}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none"
+                className="w-full h-9 rounded-lg border border-border bg-background px-2.5 pr-7 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none appearance-none"
                 disabled={assetTypesLoading}
               >
                 <option value="">{t.chooseType}</option>
@@ -629,69 +629,69 @@ const AssetsPage: React.FC = () => {
               {filters.assetType && (
                 <button
                   onClick={() => setFilters(prev => ({ ...prev, assetType: undefined }))}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   type="button"
                 >
-                  <XCircle size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                  <XCircle size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                 </button>
               )}
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-muted">{t.searchTag}</label>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted">{t.searchTag}</label>
             <div className="relative">
               <input 
                 type="text" 
                 value={filters.assetTag}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetTag: e.target.value }))}
                 placeholder={t.tagPlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                className="w-full h-9 rounded-lg border border-border bg-background px-2.5 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
               />
               {filters.assetTag && (
                 <button
                   onClick={() => setFilters(prev => ({ ...prev, assetTag: '' }))}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   type="button"
                 >
-                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                  <X size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                 </button>
               )}
             </div>
           </div>
 
-           <div className="space-y-2">
-            <label className="text-sm font-medium text-muted">{t.searchDesc}</label>
+           <div className="space-y-1.5">
+            <label className="text-xs font-medium text-muted">{t.searchDesc}</label>
             <div className="relative">
               <input 
                 type="text" 
                 value={filters.assetDesc}
                 onChange={(e) => setFilters(prev => ({ ...prev, assetDesc: e.target.value }))}
                 placeholder={t.descPlaceholder}
-                className="w-full h-10 rounded-lg border border-border bg-background px-3 pr-9 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                className="w-full h-9 rounded-lg border border-border bg-background px-2.5 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
               />
               {filters.assetDesc && (
                 <button
                   onClick={() => setFilters(prev => ({ ...prev, assetDesc: '' }))}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
                   type="button"
                 >
-                  <X size={16} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+                  <X size={14} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
                 </button>
               )}
             </div>
           </div>
           
-          <div className="flex gap-3 pt-2">
+          <div className="flex gap-2 pt-1">
               <button 
                 onClick={handleSearch}
-                className="flex-1 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                className="flex-1 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700 transition-colors"
               >
                {t.search}
              </button>
              <button 
                onClick={handleReset}
-               className="flex-1 py-2 border border-border bg-surface text-foreground rounded-lg text-sm font-medium hover:bg-border/80 transition-colors"
+               className="flex-1 py-1.5 border border-border bg-surface text-foreground rounded-lg text-xs font-medium hover:bg-border/80 transition-colors"
              >
                {t.reset}
              </button>
@@ -856,7 +856,7 @@ const AssetsPage: React.FC = () => {
               <p>暂无素材</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                {filteredAssets.map(asset => (
                 <AssetCard 
                   key={asset.id} 
@@ -919,6 +919,7 @@ const AssetsPage: React.FC = () => {
           initialIsFolder={addModalConfig.isFolder}
           initialFolderId={addModalConfig.folderId}
           initialData={addModalConfig.editData}
+          isEdit={!!addModalConfig.editData}
         />
       )}
 
@@ -1000,6 +1001,20 @@ const AssetCard: React.FC<AssetCardProps> = ({
   const isFolder = asset.dataType === 2;
   const thumbnailUrl = asset.thumbnailUrl || asset.coverUrl || asset.assetUrl;
   const [showMenu, setShowMenu] = useState(false);
+  const { getDict } = useDictStore();
+  
+  // 获取素材类型标签
+  const getAssetTypeLabel = () => {
+    if (isFolder) return null;
+    const assetTypes = getDict('nebula_assets_type') as Array<{ label: string; value: string | number }> | undefined;
+    if (assetTypes && asset.assetType) {
+      const type = assetTypes.find((t) => Number(t.value) === asset.assetType);
+      return type?.label || `类型${asset.assetType}`;
+    }
+    return null;
+  };
+
+  const assetTypeLabel = getAssetTypeLabel();
 
   const getFileType = () => {
     if (isFolder) return 'folder';
@@ -1013,9 +1028,14 @@ const AssetCard: React.FC<AssetCardProps> = ({
 
   const fileType = getFileType();
 
+  // 处理多个标签（逗号分隔）
+  const assetTags = asset.assetTag 
+    ? (asset.assetTag.includes(',') ? asset.assetTag.split(',').map(tag => tag.trim()).filter(Boolean) : [asset.assetTag])
+    : [];
+
   return (
     <div 
-      className={`group relative bg-background rounded-xl border-2 p-4 hover:shadow-lg transition-all cursor-pointer flex flex-col ${
+      className={`group relative bg-background rounded-lg border-2 p-2.5 hover:shadow-md transition-all cursor-pointer flex flex-col ${
         isSelected ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-900/20' : 'border-border hover:border-indigo-300 dark:hover:border-indigo-700'
       } ${isDragOver ? 'border-green-500 bg-green-50 scale-105' : ''} ${isDragging ? 'opacity-30' : ''}`}
       onClick={isFolder ? onFolderClick : undefined}
@@ -1028,7 +1048,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
       onDragOver={(e) => isFolder && e.preventDefault()}
     >
       {/* Checkbox */}
-      <div className="absolute top-3 left-3 z-10">
+      <div className="absolute top-2 left-2 z-10">
         <input 
           type="checkbox" 
           checked={isSelected}
@@ -1037,13 +1057,13 @@ const AssetCard: React.FC<AssetCardProps> = ({
             onSelect();
           }}
           onClick={(e) => e.stopPropagation()}
-          className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          className="w-3.5 h-3.5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
         />
        </div>
        
        {/* More Menu */}
        {(canEdit || !isRootTeamFolder) && (
-       <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+       <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
         <div className="relative">
           <button 
             onClick={(e) => {
@@ -1115,17 +1135,17 @@ const AssetCard: React.FC<AssetCardProps> = ({
        )}
 
        {isRootTeamFolder && (
-         <div className="absolute top-3 right-3 z-10">
-           <span className="px-2 py-1 text-xs bg-purple-500 text-white rounded">团队文件夹</span>
+         <div className="absolute top-2 right-2 z-10">
+           <span className="px-1.5 py-0.5 text-[10px] bg-purple-500 text-white rounded">团队文件夹</span>
          </div>
        )}
 
-       {/* Thumbnail / Icon */}
-       <div className="flex-1 flex items-center justify-center mb-4 min-h-[120px] bg-surface/30 rounded-lg overflow-hidden">
+       {/* Thumbnail / Icon - 上方缩略图 */}
+       <div className="flex-shrink-0 w-full aspect-video flex items-center justify-center bg-surface/30 rounded-lg overflow-hidden mb-2">
           {isFolder ? (
-             <div className="relative">
-            <div className="w-20 h-16 bg-orange-200 dark:bg-orange-900/30 rounded-lg shadow-sm relative z-10 flex items-center justify-center">
-              <Folder size={32} className="text-orange-600 dark:text-orange-400" />
+             <div className="relative w-full h-full">
+            <div className="w-full h-full bg-orange-200 dark:bg-orange-900/30 rounded-lg shadow-sm relative z-10 flex items-center justify-center">
+              <Folder size={40} className="text-orange-600 dark:text-orange-400" />
                 </div>
              </div>
         ) : thumbnailUrl ? (
@@ -1139,37 +1159,54 @@ const AssetCard: React.FC<AssetCardProps> = ({
             }}
           />
              ) : (
-               <div className="text-slate-400">
-            {fileType === 'audio' && <FileAudio size={48} />}
-            {fileType === 'video' && <Film size={48} />}
-            {fileType === 'image' && <ImageIcon size={48} />}
-            {fileType === 'file' && <Folder size={48} />}
+               <div className="text-slate-400 w-full h-full flex items-center justify-center">
+            {fileType === 'audio' && <FileAudio size={40} />}
+            {fileType === 'video' && <Film size={40} />}
+            {fileType === 'image' && <ImageIcon size={40} />}
+            {fileType === 'file' && <Folder size={40} />}
                </div>
           )}
        </div>
 
-       {/* Info */}
-       <div className="text-center">
-        <h3 className="font-semibold text-sm text-foreground truncate mb-1" title={asset.assetName || '未命名'}>
+       {/* Info - 下方信息 */}
+       <div className="flex-1 flex flex-col gap-1.5 min-w-0">
+        {/* 第一行：素材名称（居中） */}
+        <h3 className="font-medium text-xs text-foreground truncate text-center" title={asset.assetName || '未命名'}>
           {asset.assetName || '未命名'}
         </h3>
-        <p className="text-xs text-muted mb-2">{asset.assetTag || (isFolder ? '文件夹' : '文件')}</p>
-          
+        
+        {/* 第二行：素材描述 */}
         {asset.assetDesc && (
-          <p className="text-xs text-muted truncate mb-2" title={asset.assetDesc}>
+          <p className="text-[10px] text-muted line-clamp-1 truncate text-center" title={asset.assetDesc}>
             {asset.assetDesc}
           </p>
-             )}
+        )}
+        
+        {/* 第三行：素材类型、标签和时间（同一行） */}
+        <div className="flex items-center justify-between gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {assetTypeLabel && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                {assetTypeLabel}
+              </span>
+            )}
+            {assetTags.map((tag, index) => (
+              <span 
+                key={index}
+                className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border border-blue-200 dark:border-blue-800"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+          {/* 创建时间 */}
+          {asset.createTime && (
+            <span className="text-[10px] text-muted flex-shrink-0">
+              {formatDateTime(asset.createTime)}
+            </span>
+          )}
+        </div>
        </div>
-       
-       {/* Footer Date */}
-      {asset.createTime && (
-       <div className="mt-4 pt-3 border-t border-border flex justify-between items-center">
-          <span className="text-[10px] text-muted">
-            {formatDateTime(asset.createTime)}
-          </span>
-       </div>
-      )}
     </div>
   );
 };

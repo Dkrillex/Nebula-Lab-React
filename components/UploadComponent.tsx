@@ -35,6 +35,8 @@ interface UploadComponentProps {
   onFileSelected?: (file: File) => void;
   // Optional: Callback when the file is cleared
   onClear?: () => void;
+  // Optional: Whether the component is disabled (for edit mode)
+  disabled?: boolean;
 }
 
 const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
@@ -49,7 +51,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   maxSize = 50,
   onError,
   onFileSelected,
-  onClear
+  onClear,
+  disabled = false
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
@@ -203,15 +206,16 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
   return (
     <div 
-        className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'} ${className}`}
-        onClick={() => !previewUrl && fileInputRef.current?.click()}
+        className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'} ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'} ${className}`}
+        onClick={() => !disabled && !previewUrl && fileInputRef.current?.click()}
     >
       <input 
           ref={fileInputRef} 
           type="file" 
           accept={accept} 
           onChange={handleFileChange} 
-          className="hidden" 
+          className="hidden"
+          disabled={disabled}
       />
       
       {uploading && (
@@ -236,15 +240,17 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             ) : (
                 <img src={previewUrl} className="w-full h-full object-contain rounded-xl p-2" alt="preview" />
             )}
-            <button 
-                onClick={handleClear} 
-                className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600 z-20 shadow-md transition-transform hover:scale-110"
-            >
-                <X size={12} />
-            </button>
+            {!disabled && (
+              <button 
+                  onClick={handleClear} 
+                  className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 rounded-full flex items-center justify-center hover:bg-red-600 z-20 shadow-md transition-transform hover:scale-110"
+              >
+                  <X size={12} />
+              </button>
+            )}
             
             {/* If manual upload is required and not uploaded yet */}
-            {!immediate && file && !uploading && (
+            {!disabled && !immediate && file && !uploading && (
                  <button 
                     onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
                     className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"

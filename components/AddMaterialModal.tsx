@@ -470,6 +470,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                 uploadType="oss" 
                 initialUrl={formData.assetUrl}
                 className="h-36"
+                disabled={isEdit}
               />
             </div>
           )}
@@ -537,7 +538,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
 
           {/* Storage Location (Conditional) */}
           {/* Only show if not editing AND not inside a folder already */}
-          {!isEdit && !initialFolderId && user?.team && user.team.length > 0 && (
+          {!isEdit && !initialFolderId && !isFolderMode && user?.team && user.team.length > 0 && (
              <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   存储位置
@@ -581,7 +582,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Personal Folder Selection */}
-           {!isEdit && !initialFolderId && (storageLocation === 'personal' || storageLocation === 'both') && (
+           {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'personal' || storageLocation === 'both') && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  {storageLocation === 'both' ? '个人文件夹' : '存储文件夹'}
@@ -608,7 +609,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Team Selection */}
-          {!isEdit && !initialFolderId && (storageLocation === 'shared' || storageLocation === 'both') && user?.team && (
+          {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'shared' || storageLocation === 'both') && user?.team && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  选择团队 <span className="text-red-500">*</span>
@@ -631,7 +632,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Shared Folder Selection */}
-          {!isEdit && !initialFolderId && (storageLocation === 'shared' || storageLocation === 'both') && selectedTeamId && (
+          {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'shared' || storageLocation === 'both') && selectedTeamId && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  {storageLocation === 'both' ? '共享文件夹' : '存储文件夹'} <span className="text-red-500">*</span>
