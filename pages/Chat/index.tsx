@@ -206,6 +206,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     try {
       setModelsLoading(true);
       
+      // 读取URL参数，确定当前模式
+      const urlMode = new URLSearchParams(window.location.search).get('mode');
+      const urlModelName = new URLSearchParams(window.location.search).get('model_name');
+      const effectiveMode = (urlMode && (urlMode === 'chat' || urlMode === 'image' || urlMode === 'video')) 
+        ? urlMode as Mode 
+        : currentMode;
+      
       // 并行获取三种模式的模型
       const [chatRes, imageRes, videoRes] = await Promise.all([
         modelsService.getModelsList({
@@ -277,30 +284,51 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       videoModelList = videoModelList.filter(m => m.modelName && !blockedVideoModels.has(m.modelName));
       setVideoModels(videoModelList);
       
-      // 根据当前模式设置models - 使用局部变量而不是state（因为setState是异步的）
+      // 根据有效模式设置models - 使用局部变量而不是state（因为setState是异步的）
       let currentModels: ModelsVO[] = [];
-      if (currentMode === 'chat') {
+      if (effectiveMode === 'chat') {
         currentModels = chatModelList;
-      } else if (currentMode === 'image') {
+      } else if (effectiveMode === 'image') {
         currentModels = imageModelList;
-      } else if (currentMode === 'video') {
+      } else if (effectiveMode === 'video') {
         currentModels = videoModelList;
       }
       
       setModels(currentModels);
       
-      // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
-      const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
-      if (currentModels.length > 0 && !isSelectedValid) {
-        setSelectedModel(currentModels[0].modelName || '');
+      // 检查URL中是否有model_name参数
+      if (urlModelName && currentModels.length > 0) {
+        // 在模型列表中查找匹配的模型
+        const matchedModel = currentModels.find(
+          (m) =>
+            m.modelName === urlModelName ||
+            m.modelName?.includes(urlModelName) ||
+            urlModelName.includes(m.modelName || '')
+        );
+        
+        if (matchedModel && matchedModel.modelName) {
+          console.log('✅ 从URL参数自动选择模型:', matchedModel.modelName);
+          setSelectedModel(matchedModel.modelName);
+        } else {
+          console.warn('⚠️ 未找到匹配的模型:', urlModelName, '，使用第一个可用模型');
+          // 如果找不到匹配的模型，使用第一个可用模型
+          setSelectedModel(currentModels[0].modelName || '');
+        }
+      } else {
+        // 没有URL参数时，检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
+        const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
+        if (currentModels.length > 0 && !isSelectedValid) {
+          setSelectedModel(currentModels[0].modelName || '');
+        }
       }
       
       console.log('✅ 已同时加载所有模式的模型:', {
         chat: chatModelList.length,
         image: imageModelList.length,
         video: videoModelList.length,
-        currentMode,
-        currentModelsCount: currentModels.length
+        effectiveMode,
+        currentModelsCount: currentModels.length,
+        urlModelName
       });
     } catch (error) {
       console.error('获取模型列表失败:', error);
@@ -678,7 +706,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             setUploadedImages([]);
           }
           
-          // 设置模型
+          // 设置模型（优先使用transferId中的modelName，如果没有则使用URL参数）
           if (modelName) {
             setSelectedModel(modelName);
           }
@@ -687,6 +715,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         console.error('解析做同款数据失败:', error);
       }
     }
+    // 注意：model_name参数的处理已经在fetchAllModels中完成，这里不需要重复处理
   }, [searchParams, getData]);
 
   // 获取历史对话记录
