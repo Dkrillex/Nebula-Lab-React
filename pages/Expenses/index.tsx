@@ -697,9 +697,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           </div>
 
           {/* 右侧：快捷操作框 */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center relative">
-            {/* 余额、积分和日志/账单切换按钮 - 右上角 */}
-            <div className="absolute top-4 right-4 flex items-center gap-2 flex-wrap justify-end">
+          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center space-y-4">
+            {/* 余额、积分和日志/账单切换按钮 */}
+            <div className="text-sm text-gray-600">快捷操作</div>
+
+            <div className="flex flex-wrap gap-2 justify-center">
               <button
                 onClick={() => handleModeChange('balance')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -733,22 +735,29 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 </button>
               )}
             </div>
-            <div className="text-sm text-gray-600 mb-4">快捷操作</div>
-            <button
-              onClick={handleRefresh}
-              disabled={loading || quotaLoading}
-              className={`w-full max-w-xs px-6 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
-                currentMode === 'points'
-                  ? 'bg-purple-600 hover:bg-purple-700'
-                  : currentMode === 'logos'
-                  ? 'bg-indigo-600 hover:bg-indigo-700'
-                  : 'bg-blue-600 hover:bg-blue-700'
-              }`}
-            >
-              <RefreshCw size={18} className={loading || quotaLoading ? 'animate-spin' : ''} />
-              {currentMode === 'points' ? '刷新积分' : currentMode === 'logos' ? '刷新日志' : '刷新余额'}
-            </button>
-            <p className="text-xs text-gray-500 mt-3">数据同步可能存在延迟</p>
+            <div className="flex flex-col items-center gap-3 w-full">
+              <button
+                onClick={handleRefresh}
+                disabled={loading || quotaLoading}
+                className={`min-w-[160px] px-4 py-2 text-sm text-white rounded-full font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                  currentMode === 'points'
+                    ? 'bg-purple-600 hover:bg-purple-700'
+                    : currentMode === 'logos'
+                    ? 'bg-indigo-600 hover:bg-indigo-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
+                }`}
+              >
+                <RefreshCw size={18} className={loading || quotaLoading ? 'animate-spin' : ''} />
+                <span className="whitespace-nowrap">
+                  {currentMode === 'points'
+                    ? '刷新积分'
+                    : currentMode === 'logos'
+                    ? '刷新日志'
+                    : '刷新余额'}
+                </span>
+              </button>
+              <p className="text-xs text-gray-500">数据同步可能存在延迟</p>
+            </div>
           </div>
         </div>
 
@@ -1390,8 +1399,8 @@ const ScoreListItem: React.FC<{
           <span>{formatTimestamp(score.createTime || '-')}</span>
           {score.taskId && (
             <>
-              <span className="mx-1">ID:</span>
-              <span className="font-mono">{score.taskId}</span>
+              {/* <span className="mx-1">ID:</span> */}
+              {/* <span className="font-mono">{score.taskId}</span> */}
             </>
           )}
         </div>

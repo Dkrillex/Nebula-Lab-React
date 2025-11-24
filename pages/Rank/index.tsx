@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { Trophy, TrendingUp, Zap, DollarSign, Brain, Code, Calculator } from 'lucide-react';
-import { useAppOutletContext } from '../../router';
+import { Trophy, Zap, DollarSign, Brain, Code, Calculator } from 'lucide-react';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 interface ModelCreator {
   id: string;
   name: string;
@@ -58,6 +59,8 @@ const RankPage: React.FC = () => {
   const [models, setModels] = useState<ModelData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const rankT = t?.rankPage || translations['zh'].rankPage;
+  const failureMessage = rankT.fetchError;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,23 +74,25 @@ const RankPage: React.FC = () => {
         });
         console.log("response", response);
         if (!response.ok) {
-          throw new Error('Failed to fetch data');
+          console.error('Rank fetch failed', response.statusText);
+          throw new Error(failureMessage);
         }
         const result: ApiResponse = await response.json();
         // Sort by intelligence index by default
-        const sortedData = result.data.sort((a, b) => 
+        const sortedData = result.data.sort((a, b) =>
           (b.evaluations.artificial_analysis_intelligence_index || 0) - (a.evaluations.artificial_analysis_intelligence_index || 0)
         );
         setModels(sortedData);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'An error occurred');
+        console.error('Rank fetch error', err);
+        setError(failureMessage);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, []);
+  }, [failureMessage]);
 
   if (loading) {
     return (
@@ -100,7 +105,7 @@ const RankPage: React.FC = () => {
   if (error) {
     return (
       <div className="flex items-center justify-center h-full min-h-[400px] text-red-500">
-        Error: {error}
+        {error}
       </div>
     );
   }
@@ -111,58 +116,58 @@ const RankPage: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Trophy className="text-yellow-500" />
-            AI Model Leaderboard
+            {rankT.title}
           </h1>
           <p className="text-muted mt-2">
-            Comprehensive ranking of LLM performance, speed, and pricing
+            {rankT.description}
           </p>
         </div>
-        <div className="text-xs text-muted">
-          Data source: artificialanalysis.ai
-        </div>
+        {/* <div className="text-xs text-muted">
+          {rankT.dataSourceLabel}: {rankT.dataSourceValue}
+        </div> */}
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-surface shadow-sm">
         <table className="w-full text-sm text-left">
-          <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-semibold">
+        <thead className="bg-muted/50 text-muted-foreground uppercase text-xs font-semibold">
             <tr>
-              <th className="px-6 py-4 min-w-[200px]">Model</th>
+              <th className="px-6 py-4 min-w-[200px]">{rankT.columns.model}</th>
               <th className="px-6 py-4 text-center min-w-[120px]">
-                <div className="flex items-center justify-center gap-1" title="Intelligence Index">
+                <div className="flex items-center justify-center gap-1" title={rankT.columns.intelligence}>
                   <Brain size={14} />
-                  <span>Intelligence</span>
+                  <span>{rankT.columns.intelligence}</span>
                 </div>
               </th>
               <th className="px-6 py-4 text-center min-w-[120px]">
-                <div className="flex items-center justify-center gap-1" title="Coding Index">
+                <div className="flex items-center justify-center gap-1" title={rankT.columns.coding}>
                   <Code size={14} />
-                  <span>Coding</span>
+                  <span>{rankT.columns.coding}</span>
                 </div>
               </th>
               <th className="px-6 py-4 text-center min-w-[120px]">
-                <div className="flex items-center justify-center gap-1" title="Math Index">
+                <div className="flex items-center justify-center gap-1" title={rankT.columns.math}>
                   <Calculator size={14} />
-                  <span>Math</span>
+                  <span>{rankT.columns.math}</span>
                 </div>
               </th>
               <th className="px-6 py-4 text-center min-w-[120px]">
-                <div className="flex items-center justify-center gap-1" title="Tokens per second">
+                <div className="flex items-center justify-center gap-1" title={rankT.columns.speed}>
                   <Zap size={14} />
-                  <span>Speed</span>
+                  <span>{rankT.columns.speed}</span>
                 </div>
               </th>
               <th className="px-6 py-4 text-center min-w-[120px]">
-                <div className="flex items-center justify-center gap-1" title="Price per 1M blended tokens">
+                <div className="flex items-center justify-center gap-1" title={rankT.columns.price}>
                   <DollarSign size={14} />
-                  <span>Price (1M)</span>
+                  <span>{rankT.columns.price}</span>
                 </div>
               </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
             {models.map((model, index) => (
-              <tr 
-                key={model.id} 
+              <tr
+                key={model.id}
                 className="hover:bg-muted/30 transition-colors"
               >
                 <td className="px-6 py-4">

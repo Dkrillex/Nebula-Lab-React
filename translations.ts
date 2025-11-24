@@ -76,6 +76,7 @@ interface Translation {
       modelSquare: string;
       apiKeys: string;
       apiDocs: string;
+      rank: string;
       // Creation Center items
       viralVideo: string;
       digitalHuman: string;
@@ -135,6 +136,7 @@ interface Translation {
       inputLabel: string;
       inputPlaceholder: string;
       aiPolish: string;
+      aiPolishThinking: string;
       settingsTitle: string;
       aspectRatio: string;
       generateConfig: string;
@@ -514,6 +516,16 @@ interface Translation {
       transWAVFail: string;
       downloadAll: string;
     };
+    imageTranslation: {
+      title: string;
+      subtitle: string;
+      primaryLabel: string;
+      referenceLabel: string;
+      promptPlaceholder: string;
+      generate: string;
+      resultTitle: string;
+      emptyState: string;
+    };
     workshop: {
       title: string;
       description: string;
@@ -530,6 +542,21 @@ interface Translation {
         };
       };
     };
+  };
+  rankPage: {
+    title: string;
+    description: string;
+    dataSourceLabel: string;
+    dataSourceValue: string;
+    columns: {
+      model: string;
+      intelligence: string;
+      coding: string;
+      math: string;
+      speed: string;
+      price: string;
+    };
+    fetchError: string;
   };
   chatPage: {
     settingsTitle: string;
@@ -791,6 +818,7 @@ export const translations: Record<string, Translation> = {
       upload: 'Upload',
       sideMenu: {
         home: 'Home',
+        createHome: 'Creation Home',
         modelCenter: 'Model Center',
         creationCenter: 'Creation Center',
         personalCenter: 'Personal Center',
@@ -798,6 +826,7 @@ export const translations: Record<string, Translation> = {
         modelSquare: 'Model Square',
         apiKeys: 'API Keys',
         apiDocs: 'API Docs',
+        rank: 'Leaderboard',
         viralVideo: 'Viral Video',
         digitalHuman: 'Digital Human',
         imgToVideo: 'Image to Video',
@@ -1235,6 +1264,16 @@ export const translations: Record<string, Translation> = {
         transWAVFail: 'Audio format conversion failed, will use original format',
         downloadAll: 'Download All'
       },
+      imageTranslation: {
+        title: 'Image Translation',
+        subtitle: 'Use AI to swap faces or styles between two images',
+        primaryLabel: 'Primary Image',
+        referenceLabel: 'Reference Image',
+        promptPlaceholder: 'Describe how to translate the reference style onto the primary image',
+        generate: 'Generate',
+        resultTitle: 'Translation Result',
+        emptyState: 'Upload images to open a new canvas',
+      },
       workshop: {
         title: 'Creation Workshop',
         description: 'Explore creative AI tools',
@@ -1276,6 +1315,21 @@ export const translations: Record<string, Translation> = {
           }
         }
       }
+    },
+    rankPage: {
+      title: 'AI Model Leaderboard',
+      description: 'Comprehensive ranking of LLM performance, speed, and pricing',
+      dataSourceLabel: 'Data source',
+      dataSourceValue: 'artificialanalysis.ai',
+      columns: {
+        model: 'Model',
+        intelligence: 'Intelligence',
+        coding: 'Coding',
+        math: 'Math',
+        speed: 'Speed',
+        price: 'Price (1M)'
+      },
+      fetchError: 'Failed to load ranking data'
     },
     chatPage: {
       settingsTitle: 'Dialogue Settings',
@@ -1561,6 +1615,7 @@ export const translations: Record<string, Translation> = {
       upload: '上传',
       sideMenu: {
         home: '首页',
+        createHome: '创作首页',
         modelCenter: '模型中心',
         creationCenter: '创作中心',
         personalCenter: '个人中心',
@@ -1568,6 +1623,7 @@ export const translations: Record<string, Translation> = {
         modelSquare: '模型广场',
         apiKeys: 'API密钥',
         apiDocs: 'API操作文档',
+        rank: '排行榜',
         viralVideo: 'AI混剪视频',
         digitalHuman: '数字人视频',
         imgToVideo: '图生视频',
@@ -2005,6 +2061,16 @@ export const translations: Record<string, Translation> = {
         transWAVFail: '音频格式转换失败，将使用原始格式',
         downloadAll: '批量下载'
       },
+      imageTranslation: {
+        title: '图像翻译',
+        subtitle: '使用 AI 在两张图片之间交换风格或面部',
+        primaryLabel: '主图',
+        referenceLabel: '参考图',
+        promptPlaceholder: '描述期望的风格或换脸效果',
+        generate: '生成',
+        resultTitle: '翻译结果',
+        emptyState: '上传图片开始图像翻译',
+      },
       workshop: {
         title: '创作工坊',
         description: '探索创意AI工具',
@@ -2046,6 +2112,21 @@ export const translations: Record<string, Translation> = {
           }
         }
       }
+    },
+    rankPage: {
+      title: 'AI 模型排行榜',
+      description: 'LLM 性能、速度与定价的综合排行',
+      dataSourceLabel: '数据来源',
+      dataSourceValue: 'artificialanalysis.ai',
+      columns: {
+        model: '模型',
+        intelligence: '智能指数',
+        coding: '编码指数',
+        math: '数学指数',
+        speed: '速度',
+        price: '价格（1M）'
+      },
+      fetchError: '排行榜数据加载失败'
     },
     chatPage: {
       settingsTitle: '对话设置',
@@ -2364,6 +2445,7 @@ export const translations: Record<string, Translation> = {
       upload: 'Unggah',
       sideMenu: {
         home: 'Beranda',
+        createHome: 'Beranda Kreatif',
         modelCenter: 'Pusat Model',
         creationCenter: 'Pusat Kreatif',
         personalCenter: 'Pusat Pribadi',
@@ -2371,6 +2453,7 @@ export const translations: Record<string, Translation> = {
         modelSquare: 'Plaza Model',
         apiKeys: 'Kunci API',
         apiDocs: 'Dokumen API',
+        rank: 'Papan Peringkat',
         viralVideo: 'Video Viral',
         digitalHuman: 'Manusia Digital',
         imgToVideo: 'Gambar ke Video',
@@ -2808,6 +2891,16 @@ export const translations: Record<string, Translation> = {
         transWAVFail: 'Konversi format audio gagal, akan menggunakan format asli',
         downloadAll: 'Unduh Semua'
       },
+      imageTranslation: {
+        title: 'Terjemahan Gambar',
+        subtitle: 'Gunakan AI untuk menukar wajah atau gaya antar gambar',
+        primaryLabel: 'Gambar Utama',
+        referenceLabel: 'Gambar Referensi',
+        promptPlaceholder: 'Jelaskan gaya atau wajah yang ingin Anda terjemahkan',
+        generate: 'Hasilkan',
+        resultTitle: 'Hasil Terjemahan',
+        emptyState: 'Unggah gambar untuk memulai',
+      },
       workshop: {
         title: 'Workshop Kreatif',
         description: 'Jelajahi alat AI kreatif',
@@ -2849,6 +2942,21 @@ export const translations: Record<string, Translation> = {
           }
         }
       }
+    },
+    rankPage: {
+      title: 'Papan Peringkat Model AI',
+      description: 'Peringkat komprehensif LLM berdasarkan performa, kecepatan, dan harga',
+      dataSourceLabel: 'Sumber data',
+      dataSourceValue: 'artificialanalysis.ai',
+      columns: {
+        model: 'Model',
+        intelligence: 'Kecerdasan',
+        coding: 'Pemrograman',
+        math: 'Matematika',
+        speed: 'Kecepatan',
+        price: 'Harga (1M)'
+      },
+      fetchError: 'Gagal memuat data peringkat'
     },
     chatPage: {
       settingsTitle: 'Pengaturan Dialog',

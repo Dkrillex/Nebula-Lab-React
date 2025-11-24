@@ -1166,7 +1166,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                 <div className="flex flex-col items-center gap-4 z-10">
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
                    <p className="text-indigo-600 font-medium">{t.inProcessing} {taskProgress > 0 && `${taskProgress}%`}</p>
-                   <p className="text-xs text-muted-foreground">任务ID: {taskId}</p>
+                   {/* <p className="text-xs text-muted-foreground">任务ID: {taskId}</p> */}
                 </div>
               ) : currentResult && currentResult.voice?.demoAudioUrl ? (
                 <div className="w-full max-w-md p-6 bg-white dark:bg-slate-800 rounded-2xl shadow-xl flex flex-col items-center gap-6 animate-in fade-in zoom-in duration-300">

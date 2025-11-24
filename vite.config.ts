@@ -76,11 +76,11 @@ export default defineConfig(({ mode, command }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/prod-api/, ''),
         },
-      },
-      '/api/rank': {
-        target: 'https://artificialanalysis.ai/api/v2/data/llms/models',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api\/rank/, ''),
+        '/api/rank': {
+          target: 'https://artificialanalysis.ai/api/v2/data/llms/models',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/rank/, ''),
+        },
       },
     },
   };

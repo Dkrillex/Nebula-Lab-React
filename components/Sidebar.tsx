@@ -121,7 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
         { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
-        { id: 'rank', icon: Trophy, label: 'Leaderboard', path: '/rank' },
+        { id: 'rank', icon: Trophy, label: t.rank, path: '/rank' },
       ]
     },
     { 
@@ -172,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
 
   const getActiveCategory = () => {
     const path = location.pathname;
-    if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys')) return 'modelCenter';
+    if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys') || path.startsWith('/rank')) return 'modelCenter';
     if (path.startsWith('/create')) return 'creationCenter';
     if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
     

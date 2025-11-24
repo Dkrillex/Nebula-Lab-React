@@ -17,6 +17,8 @@ const PricingPage = React.lazy(() => import('../../pages/Pricing'));
 const PriceListPage = React.lazy(() => import('../../pages/PriceList'));
 const ProfilePage = React.lazy(() => import('../../pages/Profile'));
 
+const RankPage = React.lazy(() => import('../../pages/Rank'));
+
 // Create Page Sub-components
 const TextToImagePage = React.lazy(() => import('../../pages/Create/components/TextToImagePage'));
 const ViralVideoPage = React.lazy(() => import('../../pages/Create/components/ViralVideoPage'));
@@ -54,7 +56,7 @@ export const localRoutes: AppRouteObject[] = [
             element: <RouteWrapper component={CreateHome} translationKey="createPage" />,
             meta: {
               title: 'Create Dashboard',
-              keepAlive: true 
+              keepAlive: true
             }
           },
           {
@@ -74,12 +76,12 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'digitalHuman',
-            element: <RouteWrapper 
-              component={DigitalHumanPage} 
-              mapContextToProps={(t) => ({ 
+            element: <RouteWrapper
+              component={DigitalHumanPage}
+              mapContextToProps={(t) => ({
                 t: t?.createPage?.digitalHuman,
-                productAvatarT: t?.createPage?.productAvatar 
-              })} 
+                productAvatarT: t?.createPage?.productAvatar
+              })}
             />,
             meta: { title: 'Digital Human', keepAlive: true }
           },
@@ -161,6 +163,16 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Keys',
           icon: 'key',
+          requiresAuth: true,
+          keepAlive: true
+        }
+      },
+      {
+        path: 'rank',
+        element: <RouteWrapper component={RankPage} translationKey="rankPage" />,
+        meta: {
+          title: 'Leaderboard',
+          icon: 'trophy',
           requiresAuth: true,
           keepAlive: true
         }

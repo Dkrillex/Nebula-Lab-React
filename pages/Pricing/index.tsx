@@ -946,9 +946,6 @@ const PricingCard: React.FC<PricingCardProps> = ({
         {!isEnterprise && (
         <div className="text-sm text-muted mt-1">
             {labels.credits} {totalPoints.toFixed(2)}
-            <span className="text-xs ml-1 opacity-70">
-              ({isWechat ? 'CNY' : 'USD'})
-            </span>
         </div>
         )}
       </div>
