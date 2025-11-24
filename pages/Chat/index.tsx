@@ -176,6 +176,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const videoPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const contentProcessedRef = useRef(false); // 跟踪是否已处理 content 参数
 
   // 存储所有模式的模型列表
   const [chatModels, setChatModels] = useState<ModelsVO[]>([]);
@@ -209,6 +210,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       // 读取URL参数，确定当前模式
       const urlMode = new URLSearchParams(window.location.search).get('mode');
       const urlModelName = new URLSearchParams(window.location.search).get('model_name');
+      
+      // 如果URL中有mode参数，先设置currentMode（同步设置，确保后续逻辑正确）
+      if (urlMode && (urlMode === 'chat' || urlMode === 'image' || urlMode === 'video')) {
+        setCurrentMode(urlMode as Mode);
+      }
+      
       const effectiveMode = (urlMode && (urlMode === 'chat' || urlMode === 'image' || urlMode === 'video')) 
         ? urlMode as Mode 
         : currentMode;
@@ -352,6 +359,25 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     
     setModels(currentModels);
     
+    // 检查URL中是否有model_name参数
+    const urlModelName = new URLSearchParams(window.location.search).get('model_name');
+    
+    if (urlModelName && currentModels.length > 0) {
+      // 在模型列表中查找匹配的模型
+      const matchedModel = currentModels.find(
+        (m) =>
+          m.modelName === urlModelName ||
+          m.modelName?.includes(urlModelName) ||
+          urlModelName.includes(m.modelName || '')
+      );
+      
+      if (matchedModel && matchedModel.modelName) {
+        console.log('✅ updateModelsForCurrentMode: 从URL参数自动选择模型:', matchedModel.modelName);
+        setSelectedModel(matchedModel.modelName);
+        return; // 如果找到了匹配的模型，就不需要后续逻辑了
+      }
+    }
+    
     // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
     const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
     
@@ -376,6 +402,64 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       console.log('⏳ 模型列表尚未加载完成，等待加载...');
     }
   }, [chatModels, imageModels, videoModels, currentMode]);
+
+  // 专门处理URL中的model_name参数，确保在模型列表加载完成后能正确选择模型
+  useEffect(() => {
+    const urlModelName = searchParams.get('model_name');
+    if (!urlModelName) return;
+
+    // 根据当前模式选择对应的模型列表
+    let currentModels: ModelsVO[] = [];
+    if (currentMode === 'chat') {
+      currentModels = chatModels;
+    } else if (currentMode === 'image') {
+      currentModels = imageModels;
+    } else if (currentMode === 'video') {
+      currentModels = videoModels;
+    }
+
+    // 如果模型列表还没有加载，不执行
+    if (currentModels.length === 0) {
+      console.log('⏳ 等待模型列表加载...', { currentMode, urlModelName });
+      return;
+    }
+
+    // 检查当前选中的模型是否已经是目标模型
+    if (selectedModel === urlModelName) {
+      console.log('✅ 模型已经正确选择:', selectedModel);
+      return;
+    }
+
+    // 尝试精确匹配
+    let matchedModel = currentModels.find(m => m.modelName === urlModelName);
+    
+    // 如果精确匹配失败，尝试部分匹配（但优先精确匹配）
+    if (!matchedModel) {
+      matchedModel = currentModels.find(
+        (m) =>
+          m.modelName?.toLowerCase() === urlModelName.toLowerCase() ||
+          m.modelName?.toLowerCase().includes(urlModelName.toLowerCase()) ||
+          urlModelName.toLowerCase().includes(m.modelName?.toLowerCase() || '')
+      );
+    }
+
+    if (matchedModel && matchedModel.modelName) {
+      console.log('✅ useEffect: 从URL参数自动选择模型:', {
+        urlModelName,
+        matchedModelName: matchedModel.modelName,
+        currentMode,
+        availableModels: currentModels.map(m => m.modelName)
+      });
+      setSelectedModel(matchedModel.modelName);
+    } else {
+      console.warn('⚠️ useEffect: 未找到匹配的模型:', {
+        urlModelName,
+        currentMode,
+        availableModels: currentModels.map(m => m.modelName),
+        currentSelected: selectedModel
+      });
+    }
+  }, [searchParams, currentMode, chatModels, imageModels, videoModels, selectedModel]);
 
   // 监听模式切换，更新模型列表和历史记录，并切换消息缓存
   useEffect(() => {
@@ -694,29 +778,76 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         if (data) {
           console.log('📋 读取到做同款数据:', data);
           
+          // 先设置模型，确保模型选择正确
+          if (modelName) {
+            setSelectedModel(modelName);
+          }
+          
           // 设置提示词
           if (data.sourcePrompt) {
             setInputValue(data.sourcePrompt);
           }
           
-          // 设置参考图
+          // 设置参考图 - 延迟设置，确保模型相关的 useEffect 执行完成
+          // 这样可以避免图片被模型切换逻辑清空
           if (data.images && Array.isArray(data.images) && data.images.length > 0) {
-            setUploadedImages(data.images); 
+            console.log('✅ 准备设置 transferId 图片:', {
+              images: data.images,
+              count: data.images.length,
+              currentMode: mode || currentMode,
+              selectedModel: modelName || selectedModel
+            });
+            
+            // 延迟设置，确保模型切换的 useEffect 执行完成
+            setTimeout(() => {
+              console.log('✅ 设置 transferId 图片到 uploadedImages');
+              setUploadedImages(data.images); 
+              
+              // 再次确认图片已设置
+              setTimeout(() => {
+                console.log('✅ 确认图片已设置，当前 uploadedImages 数量:', data.images.length);
+              }, 50);
+            }, 200); // 延迟 200ms，确保模型切换的 useEffect 执行完成
           } else {
+            console.log('⚠️ transferId 数据中没有图片');
             setUploadedImages([]);
-          }
-          
-          // 设置模型（优先使用transferId中的modelName，如果没有则使用URL参数）
-          if (modelName) {
-            setSelectedModel(modelName);
           }
         }
       } catch (error) {
         console.error('解析做同款数据失败:', error);
       }
     }
+
+    // 处理 content 参数（从创作中心首页跳转过来）
+    const content = searchParams.get('content');
+    if (content && !contentProcessedRef.current) {
+      const decodedContent = decodeURIComponent(content);
+      setInputValue(decodedContent);
+      contentProcessedRef.current = true; // 标记已处理
+    }
+    
+    // 当 URL 参数变化时，重置 contentProcessedRef
+    if (!content) {
+      contentProcessedRef.current = false;
+    }
     // 注意：model_name参数的处理已经在fetchAllModels中完成，这里不需要重复处理
   }, [searchParams, getData]);
+
+  // 处理 content 参数的自动发送（单独的 useEffect 避免依赖问题）
+  useEffect(() => {
+    const content = searchParams.get('content');
+    if (content && contentProcessedRef.current && inputValue.trim() && selectedModel && !isLoading) {
+      // 延迟自动发送，确保页面已完全加载
+      const autoSendTimer = setTimeout(() => {
+        if (inputValue.trim() && selectedModel && !isLoading) {
+          handleSend();
+          contentProcessedRef.current = false; // 发送后重置，避免重复发送
+        }
+      }, 1500); // 延迟1.5秒，确保模型选择完成
+      
+      return () => clearTimeout(autoSendTimer);
+    }
+  }, [inputValue, selectedModel, isLoading, searchParams]);
 
   // 获取历史对话记录
   const fetchChatRecords = async () => {

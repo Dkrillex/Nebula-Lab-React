@@ -42,7 +42,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
     const path = location.pathname.substring(1);
     if (path === 'create') {
       const tool = searchParams.get('tool');
-      if (tool === 'viralVideo') return 'viralVideo';
+      // if (tool === 'viralVideo') return 'viralVideo'; // 已隐藏
       if (tool === 'digitalHuman') return 'digitalHuman';
       if (tool === 'imgToVideo') return 'imgToVideo';
       if (tool === 'textToImage') return 'textToImage';
@@ -117,7 +117,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
         icon: Layers, 
         label: sideMenuMap.creationCenter,
         children: [
-          { id: 'viralVideo', icon: Scissors, label: sideMenuMap.viralVideo, tool: 'viralVideo' },
+          // { id: 'viralVideo', icon: Scissors, label: sideMenuMap.viralVideo, tool: 'viralVideo' }, // 已隐藏
           { id: 'digitalHuman', icon: User, label: sideMenuMap.digitalHuman, tool: 'digitalHuman' },
           { id: 'imgToVideo', icon: Film, label: sideMenuMap.imgToVideo, tool: 'imgToVideo' },
           { id: 'textToImage', icon: Image, label: sideMenuMap.textToImage, tool: 'textToImage' },

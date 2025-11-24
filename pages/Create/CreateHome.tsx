@@ -5,6 +5,7 @@ import { useActivate, useUnactivate } from 'react-activation';
 import { 
   ArrowRight, Sparkles, Loader2, X, Upload
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
@@ -28,6 +29,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const { isAuthenticated } = useAuthStore();
   const { setData } = useVideoGenerationStore();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
   
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -286,6 +288,11 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   }, [labTemplateData.length, hasMore, setupInfiniteScroll]);
 
   const handleTypeClick = (toolId: string) => {
+    // AI混剪视频功能暂未开放
+    if (toolId === 'viralVideo') {
+      toast.error('该功能暂未开放');
+      return;
+    }
     // 使用路由跳转而不是 query params
     navigate(toolId);
   };
@@ -367,47 +374,53 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       const isImageType = item.templateType === 1 || item.templateType === 2;
       const isImageToVideo = item.templateType === 4;
 
-      // 修改为路由路径
+      // 根据旧系统逻辑，统一跳转到 /chat 页面
       const targetUrl = isImageType
-        ? '/create/textToImage'
-        : (isImageToVideo ? '/create/imgToVideo' : '/chat?mode=video');
+        ? '/chat?mode=image'
+        : '/chat?mode=video';
 
       const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
+      // 固定模型名称，与旧系统保持一致
       const modelName = isImageType
         ? 'doubao-seedream-4-0-250828'
         : 'veo-3.1-fast-generate-preview';
 
       const referenceMedia = (() => {
-        if (item.templateType === 1) return '';
+        if (item.templateType === 1) return ''; // 文生图，无需参考图
         if (item.templateType === 2) {
+          // 图生图，使用原图
           return item.videoTemplateUrl || item.templateUrl || '';
         }
         if (isImageToVideo) {
-          // 图生视频
+          // 图生视频，优先使用原图作为参考
           return item.videoTemplateUrl || item.templateUrl || '';
         }
+        // 文生视频无需参考素材
         return '';
       })();
 
-      const images = referenceMedia ? [referenceMedia] : [];
+      // 处理图片 URL，移除反引号等特殊字符
+      const cleanImageUrl = referenceMedia ? referenceMedia.replace(/`/g, '') : '';
+      const images = cleanImageUrl ? [cleanImageUrl] : [];
       
       // 使用 store 存储数据
       setData(transferId, {
         images,
         sourcePrompt: item.templateDesc,
         timestamp: Date.now(),
-        source: isImageType ? 'imageGenerates' : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
+        source: isImageType 
+          ? 'imageGenerates' 
+          : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
       });
 
-      // 路由跳转，使用 ? 传递参数
-      if (isImageType) {
-        navigate(`${targetUrl}?transferId=${transferId}`);
-      } else if (isImageToVideo) {
-        navigate(`${targetUrl}?transferId=${transferId}`);
-      } else {
-        navigate(`${targetUrl}&transferId=${transferId}&model_name=${modelName}`);
-      }
+      // 路由跳转，传递 transferId 和 model_name 参数
+      // 使用 URLSearchParams 确保参数正确拼接
+      const urlParams = new URLSearchParams();
+      urlParams.set('mode', isImageType ? 'image' : 'video');
+      urlParams.set('transferId', transferId);
+      urlParams.set('model_name', modelName);
+      navigate(`/chat?${urlParams.toString()}`);
     };
 
     if (!isAuthenticated) {
@@ -429,6 +442,29 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     return map[type] || 'Unknown';
   };
 
+  // 处理键盘事件：Enter 发送，Shift + Enter 换行
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
+  // 处理发送消息
+  const handleSend = (skipAuthCheck = false) => {
+    const messageContent = inputValue.trim();
+    if (!messageContent) return;
+
+    // 检查登录状态（除非跳过检查，比如登录成功后）
+    if (!skipAuthCheck && !isAuthenticated) {
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    // 跳转到聊天页面（图片生成模式）
+    navigate(`/chat?mode=image&content=${encodeURIComponent(messageContent)}`);
+  };
+
   return (
     <div className="w-full">
       <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl">
@@ -442,8 +478,12 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
               <div className="max-w-3xl mx-auto relative mb-12">
                 <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
                   <textarea 
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
                     placeholder={t.inputPlaceholder || 'Describe your imagination...'}
-                    className="w-full h-28 resize-none bg-transparent p-5 text-base focus:outline-none text-foreground placeholder-muted/60"
+                    className="w-full h-14 resize-none bg-transparent p-5 text-base focus:outline-none text-foreground placeholder-muted/60"
+                    rows={2}
                   />
                   <div className="flex items-center justify-between px-4 py-3 bg-background/50 border-t border-border/50">
                     <div className="flex items-center gap-2">
@@ -453,8 +493,16 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
                       </button>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted hidden sm:inline">Enter {t.send || 'Send'} · Shift + Enter New Line</span>
-                      <button className="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all shadow-md shadow-primary/20">
+                      <span className="text-xs text-muted hidden sm:inline">{t.keyboardHint || 'Enter to send · Shift + Enter for new line'}</span>
+                      <button 
+                        onClick={handleSend}
+                        disabled={!inputValue.trim()}
+                        className={`h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md ${
+                          inputValue.trim()
+                            ? 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 cursor-pointer'
+                            : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
                         <ArrowRight size={18} />
                       </button>
                     </div>
@@ -614,7 +662,10 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
             onClose={() => setIsAuthModalOpen(false)}
             onLoginSuccess={() => {
               setIsAuthModalOpen(false);
-              // 如果有点击操作，可以在这里继续执行
+              // 登录成功后自动发送（跳过登录检查）
+              if (inputValue.trim()) {
+                handleSend(true);
+              }
             }}
             t={t.authModal}
           />
