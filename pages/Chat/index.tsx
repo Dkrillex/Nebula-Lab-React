@@ -176,6 +176,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const videoPollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const contentProcessedRef = useRef(false); // 跟踪是否已处理 content 参数
 
   // 存储所有模式的模型列表
   const [chatModels, setChatModels] = useState<ModelsVO[]>([]);
@@ -816,8 +817,37 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         console.error('解析做同款数据失败:', error);
       }
     }
+
+    // 处理 content 参数（从创作中心首页跳转过来）
+    const content = searchParams.get('content');
+    if (content && !contentProcessedRef.current) {
+      const decodedContent = decodeURIComponent(content);
+      setInputValue(decodedContent);
+      contentProcessedRef.current = true; // 标记已处理
+    }
+    
+    // 当 URL 参数变化时，重置 contentProcessedRef
+    if (!content) {
+      contentProcessedRef.current = false;
+    }
     // 注意：model_name参数的处理已经在fetchAllModels中完成，这里不需要重复处理
   }, [searchParams, getData]);
+
+  // 处理 content 参数的自动发送（单独的 useEffect 避免依赖问题）
+  useEffect(() => {
+    const content = searchParams.get('content');
+    if (content && contentProcessedRef.current && inputValue.trim() && selectedModel && !isLoading) {
+      // 延迟自动发送，确保页面已完全加载
+      const autoSendTimer = setTimeout(() => {
+        if (inputValue.trim() && selectedModel && !isLoading) {
+          handleSend();
+          contentProcessedRef.current = false; // 发送后重置，避免重复发送
+        }
+      }, 1500); // 延迟1.5秒，确保模型选择完成
+      
+      return () => clearTimeout(autoSendTimer);
+    }
+  }, [inputValue, selectedModel, isLoading, searchParams]);
 
   // 获取历史对话记录
   const fetchChatRecords = async () => {

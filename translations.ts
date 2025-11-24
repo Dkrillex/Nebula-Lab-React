@@ -65,6 +65,7 @@ interface Translation {
     inputPlaceholder: string;
     send: string;
     upload: string;
+    keyboardHint: string;
     sideMenu: {
       home: string;
       createHome: string;
@@ -789,6 +790,7 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: 'Describe the image you want to generate...',
       send: 'Generate',
       upload: 'Upload',
+      keyboardHint: 'Enter to send · Shift + Enter for new line',
       sideMenu: {
         home: 'Home',
         modelCenter: 'Model Center',
@@ -1559,6 +1561,7 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: '描述您想要生成的图片...',
       send: '发送',
       upload: '上传',
+      keyboardHint: 'Enter 发送 · Shift + Enter 换行',
       sideMenu: {
         home: '首页',
         modelCenter: '模型中心',
@@ -2362,6 +2365,7 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: 'Jelaskan gambar yang ingin Anda hasilkan...',
       send: 'Hasilkan',
       upload: 'Unggah',
+      keyboardHint: 'Enter untuk kirim · Shift + Enter untuk baris baru',
       sideMenu: {
         home: 'Beranda',
         modelCenter: 'Pusat Model',

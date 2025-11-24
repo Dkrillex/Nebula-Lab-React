@@ -38,7 +38,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       
       if (!tool || tool === 'home') return 'home';
       
-      if (tool === 'viralVideo') return 'viralVideo';
+      // if (tool === 'viralVideo') return 'viralVideo'; // 已隐藏
       if (tool === 'digitalHuman') return 'digitalHuman';
       if (tool === 'imgToVideo') return 'imgToVideo';
       if (tool === 'textToImage') return 'textToImage';
@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       // Check search params for legacy support or deep links
       const paramTool = searchParams.get('tool');
       if (paramTool) {
-         if (paramTool === 'viralVideo') return 'viralVideo';
+         // if (paramTool === 'viralVideo') return 'viralVideo'; // 已隐藏
          // ... other checks if needed, but path takes precedence now
       }
 
@@ -129,7 +129,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       icon: Layers, 
       label: t.creationCenter,
       children: [
-        { id: 'viralVideo', icon: Scissors, label: t.viralVideo, tool: 'viralVideo' },
+        // { id: 'viralVideo', icon: Scissors, label: t.viralVideo, tool: 'viralVideo' }, // 已隐藏
         { id: 'digitalHuman', icon: User, label: t.digitalHuman, tool: 'digitalHuman' },
         { id: 'imgToVideo', icon: Film, label: t.imgToVideo, tool: 'imgToVideo' },
         { id: 'textToImage', icon: Image, label: t.textToImage, tool: 'textToImage' },

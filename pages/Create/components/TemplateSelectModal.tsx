@@ -68,7 +68,9 @@ const TemplateSelectModal: React.FC<TemplateSelectModalProps> = ({
   const fetchCategories = async () => {
     try {
       const res = await styleTransferService.getTemplateCategories();
-      if (res.code === 200 && res.data) {
+      if (res && Array.isArray(res)) {
+        setCategories(res);
+      } else if (res && res.data) {
         setCategories(res.data);
       }
     } catch (error) {
@@ -93,8 +95,22 @@ const TemplateSelectModal: React.FC<TemplateSelectModalProps> = ({
         style: selectedStyle === 'all' ? '' : selectedStyle
       });
 
-      if (res.code === 200 && res.data) {
-        const newTemplates = res.data.data || [];
+      if (res) {
+        // 接口返回结构: { result: { total: 15412, data: [...] } }
+        // 或者: { data: [...], total: ... }
+        let newTemplates: Template[] = [];
+        let total = 0;
+        
+        if (res.result && res.result.data) {
+          // TopView 风格: { result: { data: [...], total: ... } }
+          newTemplates = res.result.data || [];
+          total = res.result.total || 0;
+        } else if (res.data) {
+          // 标准风格: { data: [...], total: ... }
+          newTemplates = Array.isArray(res.data) ? res.data : (res.data.data || []);
+          total = res.total || (res.data.total || 0);
+        }
+        
         setTemplates(prev => reset ? newTemplates : [...prev, ...newTemplates]);
         
         // Batch loading simulation for smoother UI (optional, but mimics Vue implementation)
@@ -112,7 +128,7 @@ const TemplateSelectModal: React.FC<TemplateSelectModalProps> = ({
         setPagination(prev => ({
           ...prev,
           current: page,
-          total: res.data?.total || 0
+          total: total
         }));
       }
     } catch (error) {
