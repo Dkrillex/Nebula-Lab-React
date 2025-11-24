@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOutletContext, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 // import CachedOutlet from './CachedOutlet';
+// import KeepAliveWrapper from './KeepAlive'; 
 import { translations } from '../translations';
 
 interface DashboardLayoutProps {

@@ -13,12 +13,14 @@ import AuthModal from '../../components/AuthModal';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
 
-const CreateHome: React.FC = () => {
-  const { t: rawT, handleNavClick } = useAppOutletContext();
+const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
+  const { t: contextT, handleNavClick } = useAppOutletContext();
   
-  // 安全获取 translations，即使 rawT 为空也能提供默认文本
-  const safeT = rawT?.createPage || translations['zh'].createPage;
-  const t = safeT; // 简写
+  // 安全获取 translations
+  // 1. 优先使用 props 中的 t (由 RouteWrapper 注入，已定位到 createPage)
+  // 2. 其次尝试从 context 获取 (需要手动定位到 createPage)
+  // 3. 最后使用默认语言包
+  const t = propT || contextT?.createPage || translations['zh'].createPage || {};
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchParams] = useSearchParams();

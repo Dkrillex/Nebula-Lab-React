@@ -14,9 +14,8 @@ interface RouteWrapperProps {
  * RouteWrapper
  * 
  * A generic wrapper for route components that:
- * 1. Handles Suspense loading state
- * 2. Safely injects translation data (t) from context or fallback
- * 3. Compatible with KeepAlive (handles context loss by falling back to default translations)
+ * 1. Safely injects translation data (t) from context or fallback
+ * 2. Works seamlessly within KeepAliveBoundary (consumes bridged AppContext)
  */
 export const RouteWrapper: React.FC<RouteWrapperProps> = ({ 
   component: Component, 
