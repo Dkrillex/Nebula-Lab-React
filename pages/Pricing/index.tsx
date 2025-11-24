@@ -868,21 +868,15 @@ const PricingCard: React.FC<PricingCardProps> = ({
     }
     
     // 计算积分
-    if (!isWechat) {
-      // 非微信支付：先将美元转换为人民币，计算积分，再转换回美元显示
-      const rmbAmount = actualAmount;
-      totalPoints = Number((rmbAmount / pointsRatio / exchangeRate).toFixed(2));
-    } else {
-      // 微信支付：直接用人民币计算积分
-      totalPoints = Number((actualAmount / pointsRatio).toFixed(2));
-    }
+    const rmbAmount = actualAmount;
+    totalPoints = Number((rmbAmount / pointsRatio).toFixed(2));
   } else {
     // 非自定义金额：根据支付方式转换价格显示
     if (!isWechat) {
       // 非微信支付：将人民币价格转换为美元显示
       totalPrice = Number((totalPrice / exchangeRate).toFixed(2));
       
-      // 计算积分：先将美元转换为人民币，计算积分，再转换回美元显示
+      // 计算积分：直接使用人民币金额，不再按汇率折算
       const rmbAmount = price * quantity;
       let pointsRatio = 2;
       if (item.productName === 'Starter') {
@@ -890,7 +884,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       } else if (item.productName === 'Business') {
         pointsRatio = 1.592;
       }
-      totalPoints = Number((rmbAmount / pointsRatio / exchangeRate).toFixed(2));
+      totalPoints = Number((rmbAmount / pointsRatio).toFixed(2));
     } else {
       // 微信支付：保持人民币价格（始终显示原价，不含税）
       // 积分基于原始价格计算
