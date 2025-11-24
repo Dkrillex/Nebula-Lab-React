@@ -5,7 +5,7 @@ import {
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
   UserCircle, Folder, CreditCard, DollarSign, 
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink,
-  RefreshCcw, MessageSquare, MonitorPlay
+  RefreshCcw, MessageSquare, MonitorPlay, X
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
@@ -24,6 +24,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   const { isAuthenticated } = useAuthStore();
   
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
+  const [showPromo, setShowPromo] = useState(true);
 
   // Determine active menu item based on URL
   const getActiveId = () => {
@@ -293,20 +294,28 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       
       <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
         {!isCollapsed ? (
-          <div className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
-              <div className="flex items-center gap-3 mb-2 text-indigo-500">
-                <Sparkles size={16} />
-                <span className="text-xs font-bold uppercase tracking-wider">NebulaLab全新版本</span>
-              </div>
-              {/* 新增个logo */}
-              <div className="flex justify-center my-3">
-                <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20" />
-              </div>
-              {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
-              {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
-                Upgrade
-              </button> */}
-          </div>
+          showPromo && (
+            <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
+                <button 
+                  onClick={() => setShowPromo(false)}
+                  className="absolute top-2 right-2 text-indigo-500/50 hover:text-indigo-500 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+                <div className="flex items-center gap-3 mb-2 text-indigo-500">
+                  <Sparkles size={16} />
+                  <span className="text-xs font-bold uppercase tracking-wider">NebulaLab全新版本</span>
+                </div>
+                {/* 新增个logo */}
+                <div className="flex justify-center">
+                  <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20 animate-float" />
+                </div>
+                {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
+                {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
+                  Upgrade
+                </button> */}
+            </div>
+          )
         ) : (
           <div className="flex justify-center py-2">
             <button 
@@ -324,7 +333,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
             <>
               <div className="flex items-center gap-2 text-xs text-muted flex-1">
                 <a 
-                  href="/privacy" 
+                  href="/#/privacy" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors"
@@ -332,14 +341,14 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                   隐私协议
                 </a>
                 <span className="text-border">|</span>
-                <a 
-                  href="https://beian.miit.gov.cn" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="hover:text-foreground transition-colors"
-                >
-                  备案信息
-                </a>
+                <div className="relative group cursor-pointer hover:text-foreground transition-colors">
+                  <span>备案信息</span>
+                  <div className="absolute bottom-full left-0 mb-2 w-max px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border border-border">
+                    <p>粤ICP备2022093288号-4</p>
+                    <p>Copyright © 2025</p>
+                    <p>星雲數據(香港)有限公司</p>
+                  </div>
+                </div>
               </div>
             </>
           )}
