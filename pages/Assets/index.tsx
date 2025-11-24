@@ -7,7 +7,8 @@ import {
 import toast from 'react-hot-toast';
 import { assetsService, AdsAssetsVO, AdsAssetsQuery } from '../../services/assetsService';
 import { useAuthStore } from '../../stores/authStore';
-import { useAppOutletContext } from '@/router';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import MoveShareModal from '../../components/MoveShareModal';
@@ -21,9 +22,13 @@ interface BreadcrumbItem {
   dataType?: number;
 }
 
-const AssetsPage: React.FC = () => {
+interface AssetsPageProps {
+  t?: any;
+}
+
+const AssetsPage: React.FC<AssetsPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
-  const t = rawT.assetsPage;
+  const t = props.t || rawT?.assetsPage || translations['zh'].assetsPage;
 
   const { user } = useAuthStore();
   const { getDict, setDict } = useDictStore();

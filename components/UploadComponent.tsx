@@ -184,9 +184,14 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             format: format
         };
       }
-      console.log(uploadedFile);
+      console.log('文件上传完成，调用 onUploadComplete:', uploadedFile);
       
-      onUploadComplete(uploadedFile);
+      // 确保 onUploadComplete 被调用
+      if (onUploadComplete) {
+        onUploadComplete(uploadedFile);
+      } else {
+        console.warn('onUploadComplete 回调未定义');
+      }
     } catch (error: any) {
       console.error('Upload error:', error);
       const err = error instanceof Error ? error : new Error('文件上传失败');

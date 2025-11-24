@@ -433,19 +433,13 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   ];
 
   return (
-    <div className="bg-surface/30 min-h-screen pb-12 font-sans">
-      {/* Header */}
-      <div className="w-full pt-12 pb-8 px-4 text-center">
-        <h1 className="text-3xl md:text-4xl font-bold mb-2 text-foreground">{t.title}</h1>
-        <p className="text-muted opacity-90 max-w-2xl mx-auto">{t.subtitle}</p>
-      </div>
-
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="bg-surface/30 pb-12 font-sans">
+      <div className="container mx-auto px-4 max-w-6xl pt-12">
         
         {/* Configuration Bar */}
         <div className="bg-background rounded-xl shadow-sm border border-border p-4 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
            <div className="flex items-center gap-4">
-             <h2 className="font-bold text-lg text-foreground">{t.paymentCycle}</h2>
+             {/* <h2 className="font-bold text-lg text-foreground">{t.paymentCycle}</h2> */}
              {/* <a href="#" className="text-xs text-primary hover:underline flex items-center gap-1">
                <HelpCircle size={12} />
                {t.questions}

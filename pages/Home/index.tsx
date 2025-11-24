@@ -3,7 +3,7 @@ import Hero from './components/Hero';
 import ModelList from './components/ModelList';
 import StatsRow from './components/StatsRow';
 import HomeFooter from './components/HomeFooter';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '../../router/context';
 
 const Home: React.FC = () => {
   const { t } = useAppOutletContext();
