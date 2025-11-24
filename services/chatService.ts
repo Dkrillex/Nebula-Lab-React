@@ -110,6 +110,7 @@ export const chatService = {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let buffer = ''; // 缓冲区，用于处理跨chunk的不完整行
 
       while (true) {
         const { done, value } = await reader.read();
@@ -119,7 +120,11 @@ export const chatService = {
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
+        buffer += chunk;
+        const lines = buffer.split('\n');
+        
+        // 保留最后一个不完整的行在缓冲区中
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           const trimmedLine = line.trim();
@@ -127,21 +132,50 @@ export const chatService = {
             continue;
           }
 
+          // 处理标准SSE格式 (data: ...)
           if (trimmedLine.startsWith('data: ')) {
             const data = trimmedLine.slice(6).trim();
+            if (!data || data === '[DONE]') {
+              continue;
+            }
             try {
               const parsed = JSON.parse(data);
               onChunk(parsed);
             } catch (parseError) {
               console.warn('解析SSE数据失败:', parseError, '原始数据:', data);
             }
-          } else if (trimmedLine.startsWith('{')) {
+          } 
+          // 处理直接的JSON数据（没有data:前缀）
+          else if (trimmedLine.startsWith('{')) {
             try {
               const parsed = JSON.parse(trimmedLine);
               onChunk(parsed);
             } catch (parseError) {
-              console.warn('解析JSON数据失败:', parseError);
+              console.warn('解析JSON数据失败:', parseError, '原始数据:', trimmedLine);
             }
+          }
+        }
+      }
+      
+      // 处理缓冲区中剩余的数据
+      if (buffer.trim()) {
+        const trimmedLine = buffer.trim();
+        if (trimmedLine.startsWith('data: ')) {
+          const data = trimmedLine.slice(6).trim();
+          if (data && data !== '[DONE]') {
+            try {
+              const parsed = JSON.parse(data);
+              onChunk(parsed);
+            } catch (parseError) {
+              console.warn('解析SSE数据失败:', parseError, '原始数据:', data);
+            }
+          }
+        } else if (trimmedLine.startsWith('{')) {
+          try {
+            const parsed = JSON.parse(trimmedLine);
+            onChunk(parsed);
+          } catch (parseError) {
+            console.warn('解析JSON数据失败:', parseError, '原始数据:', trimmedLine);
           }
         }
       }
