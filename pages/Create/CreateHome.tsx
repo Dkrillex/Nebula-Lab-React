@@ -367,47 +367,53 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       const isImageType = item.templateType === 1 || item.templateType === 2;
       const isImageToVideo = item.templateType === 4;
 
-      // 修改为路由路径
+      // 根据旧系统逻辑，统一跳转到 /chat 页面
       const targetUrl = isImageType
-        ? '/create/textToImage'
-        : (isImageToVideo ? '/create/imgToVideo' : '/chat?mode=video');
+        ? '/chat?mode=image'
+        : '/chat?mode=video';
 
       const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
+      // 固定模型名称，与旧系统保持一致
       const modelName = isImageType
         ? 'doubao-seedream-4-0-250828'
         : 'veo-3.1-fast-generate-preview';
 
       const referenceMedia = (() => {
-        if (item.templateType === 1) return '';
+        if (item.templateType === 1) return ''; // 文生图，无需参考图
         if (item.templateType === 2) {
+          // 图生图，使用原图
           return item.videoTemplateUrl || item.templateUrl || '';
         }
         if (isImageToVideo) {
-          // 图生视频
+          // 图生视频，优先使用原图作为参考
           return item.videoTemplateUrl || item.templateUrl || '';
         }
+        // 文生视频无需参考素材
         return '';
       })();
 
-      const images = referenceMedia ? [referenceMedia] : [];
+      // 处理图片 URL，移除反引号等特殊字符
+      const cleanImageUrl = referenceMedia ? referenceMedia.replace(/`/g, '') : '';
+      const images = cleanImageUrl ? [cleanImageUrl] : [];
       
       // 使用 store 存储数据
       setData(transferId, {
         images,
         sourcePrompt: item.templateDesc,
         timestamp: Date.now(),
-        source: isImageType ? 'imageGenerates' : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
+        source: isImageType 
+          ? 'imageGenerates' 
+          : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
       });
 
-      // 路由跳转，使用 ? 传递参数
-      if (isImageType) {
-        navigate(`${targetUrl}?transferId=${transferId}`);
-      } else if (isImageToVideo) {
-        navigate(`${targetUrl}?transferId=${transferId}`);
-      } else {
-        navigate(`${targetUrl}&transferId=${transferId}&model_name=${modelName}`);
-      }
+      // 路由跳转，传递 transferId 和 model_name 参数
+      // 使用 URLSearchParams 确保参数正确拼接
+      const urlParams = new URLSearchParams();
+      urlParams.set('mode', isImageType ? 'image' : 'video');
+      urlParams.set('transferId', transferId);
+      urlParams.set('model_name', modelName);
+      navigate(`/chat?${urlParams.toString()}`);
     };
 
     if (!isAuthenticated) {

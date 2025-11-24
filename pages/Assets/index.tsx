@@ -1053,7 +1053,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
       onDragOver={(e) => isFolder && e.preventDefault()}
     >
       {/* Checkbox */}
-      <div className="absolute top-2 left-2 z-10">
+      <div className="absolute top-2 left-2 z-30">
         <input 
           type="checkbox" 
           checked={isSelected}
