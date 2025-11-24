@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppOutletContext } from '../../router';
-import { modelService } from '../../services/modelService';
-import { AIModel } from '../../types';
+import { useAppOutletContext } from '@/router';
+import { modelService } from '@/services/modelService.ts';
+import { AIModel } from '@/types.ts';
+import toast from 'react-hot-toast';
 
 interface ModelSquarePageProps {
   t: {
@@ -395,6 +396,60 @@ const ModelSquarePage: React.FC = () => {
   // 切换侧边栏 (同时处理桌面和移动端)
   const toggleFilter = () => {
      setShowFilterPanel(!showFilterPanel);
+  };
+
+  // 复制模型名称到剪贴板
+  const copyModelName = (model: AIModel, event?: React.MouseEvent) => {
+    if (event) {
+      event.stopPropagation(); // 阻止事件冒泡，避免触发卡片点击事件
+    }
+    
+    const modelName = model.name || '';
+    if (!modelName) {
+      toast.error('模型名称为空，无法复制');
+      return;
+    }
+
+    // 使用现代浏览器的Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard
+        .writeText(modelName)
+        .then(() => {
+          toast.success(`已复制: ${modelName}`);
+        })
+        .catch(() => {
+          // 降级到传统方法
+          fallbackCopyTextToClipboard(modelName);
+        });
+    } else {
+      // 降级到传统方法
+      fallbackCopyTextToClipboard(modelName);
+    }
+  };
+
+  // 降级复制方法（兼容旧浏览器）
+  const fallbackCopyTextToClipboard = (text: string) => {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-999999px';
+    textArea.style.top = '-999999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        toast.success(`已复制: ${text}`);
+      } else {
+        toast.error('复制失败，请手动复制');
+      }
+    } catch {
+      toast.error('复制失败，请手动复制');
+    } finally {
+      document.body.removeChild(textArea);
+    }
   };
 
   // 格式化价格 (保持原有逻辑)
@@ -892,6 +947,7 @@ const ModelSquarePage: React.FC = () => {
                   formatPrice={formatPrice}
                   formatPriceUnit={formatPriceUnit}
                   onOpenDetail={openDetail}
+                  onCopyName={copyModelName}
                 />
               ))
             )}
@@ -955,6 +1011,7 @@ const ModelSquarePage: React.FC = () => {
           calculateImageEditCost={calculateImageEditCost}
           formatDetailPrice={formatDetailPrice}
           formatDetailPriceUnit={formatDetailPriceUnit}
+          onCopyName={copyModelName}
         />
       )}
     </div>
@@ -967,12 +1024,14 @@ const ModelCard: React.FC<{
   formatPrice: (model: AIModel, priceType?: 'discount' | 'origin') => string;
   formatPriceUnit: (model: AIModel) => string;
   onOpenDetail: (model: AIModel) => void;
+  onCopyName: (model: AIModel, event?: React.MouseEvent) => void;
 }> = ({ 
   model, 
   t, 
   formatPrice, 
   formatPriceUnit, 
-  onOpenDetail 
+  onOpenDetail,
+  onCopyName
 }) => {
   const getHeaderStyle = () => {
     // 移除高饱和度背景色逻辑，改为返回空字符串或保留用于边框/文字的颜色逻辑（如果需要）
@@ -1039,7 +1098,11 @@ const ModelCard: React.FC<{
         </div>
 
         <div className="mb-4">
-           <h3 className="font-medium text-lg text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">
+           <h3 
+             className="font-medium text-lg text-zinc-900 dark:text-zinc-100 mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1 cursor-pointer hover:underline"
+             title={model.name}
+             onClick={(e) => onCopyName(model, e)}
+           >
             {model.name}
            </h3>
            <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 h-10 leading-relaxed">
@@ -1107,6 +1170,7 @@ const ModelDetailDrawer = ({
   calculateImageEditCost: (quality: string, size: string, model: AIModel) => string;
   formatDetailPrice: (model: AIModel, type: 'cacheInput' | 'cacheOutput' | 'call' | 'input' | 'output', priceType?: 'discount' | 'origin') => string;
   formatDetailPriceUnit: () => string;
+  onCopyName: (model: AIModel, event?: React.MouseEvent) => void;
 }) => {
   const navigate = useNavigate();
 
@@ -1193,7 +1257,13 @@ const ModelDetailDrawer = ({
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                <h3 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{model.name}</h3>
+                <h3 
+                  className="text-lg font-bold text-zinc-900 dark:text-zinc-100 cursor-pointer hover:underline"
+                  title={model.name}
+                  onClick={(e) => onCopyName(model, e)}
+                >
+                  {model.name}
+                </h3>
               </div>
               <p className="text-sm text-zinc-500 mb-2">{model.vendorName || model.provider}</p>
               <div className="flex gap-2 flex-wrap">
