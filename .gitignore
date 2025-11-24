@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 dist
 lab
+lab.zip
+lab.zip-ssr
+lab-ssr
 dist-ssr
 *.local
 
@@ -24,3 +27,4 @@ dist-ssr
 *.sln
 *.sw?
 !/lab/
+/lab/
