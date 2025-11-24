@@ -16,7 +16,6 @@ const KeysPage: React.FC<KeysPageProps> = () => {
   const { user } = useAuthStore();
   const [tokens, setTokens] = useState<TokenVO[]>([]);
   const [loading, setLoading] = useState(false);
-  const [keyword, setKeyword] = useState(''); // 添加搜索关键字状态
   const [maskKeyFlags, setMaskKeyFlags] = useState<Record<string | number, boolean>>({});
   const [toggleStatusLoading, setToggleStatusLoading] = useState<string | number | null>(null);
   const [pagination, setPagination] = useState({
@@ -54,7 +53,6 @@ const KeysPage: React.FC<KeysPageProps> = () => {
         pageNum: pageNum,
         pageSize: pagination.pageSize,
         userId: user.nebulaApiId,
-        name: keyword || undefined,
       });
       console.log(res)
       
@@ -286,7 +284,7 @@ const KeysPage: React.FC<KeysPageProps> = () => {
   // 获取卡片渐变样式（参考 Nebula1）
   const getRibbonStyle = (token: TokenVO) => {
     const ribbonGradients = [
-      'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+      'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
     ];
     const apiKey = String(token?.id ?? token?.name ?? '');
     const hashStringToInt = (input: string): number => {
@@ -303,13 +301,6 @@ const KeysPage: React.FC<KeysPageProps> = () => {
     return { background: ribbonGradients[index] };
   };
 
-  // 搜索
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setPagination(prev => ({ ...prev, current: 1 }));
-    fetchTokens(1);
-  };
-
   const handlePageChange = (newPage: number) => {
     fetchTokens(newPage);
   };
@@ -324,164 +315,116 @@ const KeysPage: React.FC<KeysPageProps> = () => {
 
   return (
     <div className="llm-model-page" style={{ 
-      padding: '0.8rem', 
+      padding: '24px', 
       background: '#fff', 
-      height: 'calc(100vh - 67px)',
-      overflow: 'hidden',
+      minHeight: 'calc(100vh - 67px)',
       boxSizing: 'border-box'
     }}>
       <div className="main-content" style={{ 
         maxWidth: '1600px', 
         margin: '0 auto',
-        height: '100%',
         display: 'flex',
         flexDirection: 'column',
         boxSizing: 'border-box'
       }}>
-        {/* 右侧列表 */}
-        <div className="assets-display" style={{ 
-          flex: 1, 
-          background: 'rgba(255, 255, 255, 0.95)', 
-          backdropFilter: 'blur(10px)',
-          borderRadius: '16px',
-          padding: '1rem',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.2)',
-          height: '100%',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          boxSizing: 'border-box',
+        {/* 工具栏 */}
+        <div className="toolbar" style={{
           display: 'flex',
-          flexDirection: 'column'
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '16px',
+          gap: '12px',
+          flexWrap: 'wrap'
         }}>
-          <div className="toolbar" style={{
+          <div className="toolbar-left" style={{ 
+            flex: 1,
             display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '0.15rem',
-            paddingBottom: '0.15rem',
-            borderBottom: '1px solid #e2e8f0',
-            flexShrink: 0,
-            width: '100%',
-            boxSizing: 'border-box',
-            gap: '0.5rem'
+            flexDirection: 'column',
+            gap: '8px'
           }}>
-            <div className="toolbar-left" style={{ flexShrink: 0 }}>
-              <div className="stats-info" style={{
-                fontSize: '0.9rem',
-                color: '#64748b',
-                fontWeight: 500,
-                whiteSpace: 'nowrap'
-              }}>
-                共 {pagination.total} 个令牌
-              </div>
-            </div>
-            <div className="toolbar-center" style={{
-              fontSize: '1.25rem',
+            <h1 style={{
+              fontSize: '24px',
               fontWeight: 700,
-              color: '#2d3748',
-              margin: 0,
-              flex: 1,
-              textAlign: 'center',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
+              color: '#1f2937',
+              margin: 0
             }}>
               API 令牌管理
-            </div>
-            <div className="toolbar-right" style={{ flexShrink: 0 }}>
-              <div className="toolbar-actions" style={{
+            </h1>
+            <p style={{
+              fontSize: '14px',
+              color: '#6b7280',
+              margin: 0
+            }}>
+              管理您的 API 密钥以访问服务
+            </p>
+          </div>
+          <div className="toolbar-right" style={{ 
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            flexShrink: 0
+          }}>
+            <button 
+              onClick={() => fetchTokens()}
+              disabled={loading}
+              style={{
+                padding: '8px 16px',
+                border: '1px solid #e5e7eb',
+                borderRadius: '6px',
+                background: 'white',
+                color: '#374151',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: loading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
-                flexWrap: 'nowrap'
-              }}>
-                {/* <div className="relative" style={{ width: '100%', maxWidth: '256px' }}>
-                  <input 
-                    type="text" 
-                    placeholder="搜索密钥名称..." 
-                    value={keyword}
-                    onChange={(e) => setKeyword(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSearch(e)}
-                    style={{
-                      width: '100%',
-                      paddingLeft: '2.25rem',
-                      paddingRight: '1rem',
-                      paddingTop: '0.5rem',
-                      paddingBottom: '0.5rem',
-                      borderRadius: '6px',
-                      border: '1px solid #e5e7eb',
-                      background: 'white',
-                      fontSize: '0.875rem',
-                      transition: 'all 0.2s ease'
-                    }}
-                  />
-                  <div style={{
-                    position: 'absolute',
-                    left: '0.75rem',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    color: '#64748b'
-                  }}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                  </div>
-                </div> */}
-                <button 
-                  onClick={handleSearch}
-                  disabled={loading}
-                  style={{
-                    padding: '0.5rem 1rem',
-                    border: '1px solid #e5e7eb',
-                    borderRadius: '6px',
-                    background: 'white',
-                    color: '#374151',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    whiteSpace: 'nowrap'
-                  }}
-                >
-                  <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-                  刷新
-                </button>
-                <button 
-                  onClick={handleCreate}
-                  className="toolbar-btn primary"
-                  style={{
-                    padding: '0.5rem 1rem',
-                    border: 'none',
-                    borderRadius: '6px',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    fontSize: '0.875rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.5rem',
-                    whiteSpace: 'nowrap',
-                    boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                  }}
-                >
-                  <span style={{ fontSize: '1rem' }}>🔑</span>
-                  {t.createButton}
-                </button>
-              </div>
-            </div>
+                gap: '8px',
+                whiteSpace: 'nowrap',
+                opacity: loading ? 0.6 : 1
+              }}
+            >
+              <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
+              刷新
+            </button>
+            <button 
+              onClick={handleCreate}
+              style={{
+                padding: '8px 16px',
+                border: 'none',
+                borderRadius: '6px',
+                background: '#000',
+                color: 'white',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Plus size={16} />
+               新建 API 密钥
+            </button>
           </div>
+        </div>
 
-          {/* Cards Layout */}
+        {/* 表格容器 */}
+        <div style={{
+          background: 'white',
+          borderRadius: '8px',
+          border: '1px solid #e5e7eb',
+          overflow: 'hidden'
+        }}>
           {loading && tokens.length === 0 ? (
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               alignItems: 'center',
               padding: '4rem 2rem',
-              minHeight: 'calc(100vh - 200px - 60px - 1.6rem)'
+              minHeight: '400px'
             }}>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
                 <RefreshCw className="animate-spin" size={24} style={{ color: '#64748b' }} />
@@ -496,547 +439,444 @@ const KeysPage: React.FC<KeysPageProps> = () => {
               justifyContent: 'center',
               padding: '4rem 2rem',
               color: '#64748b',
-              textAlign: 'center'
+              textAlign: 'center',
+              minHeight: '400px'
             }}>
               <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>🔑</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>暂无令牌</div>
               <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                {keyword ? '未找到匹配的令牌，请尝试其他搜索条件' : '点击上方"新建 API 密钥"按钮创建您的第一个令牌'}
+                点击上方"新建 API 密钥"按钮创建您的第一个令牌
               </div>
             </div>
           ) : (
-            <div className="assets-grid" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '1rem',
-              marginBottom: '2rem',
-              width: '100%',
-              boxSizing: 'border-box'
-            }}>
-              {tokens.map((token) => {
-                const isActive = token.status === 1;
-                const isKeyVisible = getKeyVisibility(token.id); // true表示显示，false表示隐藏
-                const displayKey = isKeyVisible 
-                  ? `sk-${token.key}`
-                  : `sk-${maskKey(token.key)}`;
-
-                return (
-                  <div
-                    key={token.id}
-                    className="model-card"
-                    style={{
-                      background: 'white',
-                      borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.1)',
-                      overflow: 'hidden',
-                      transition: 'all 0.3s ease',
-                      position: 'relative',
-                      border: '1px solid #e5e7eb',
-                      cursor: 'pointer',
-                      width: '100%',
-                      boxSizing: 'border-box'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-2px)';
-                      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.1)';
-                    }}
-                    onClick={() => handleView(token)}
-                  >
-                    {/* Ribbon */}
-                    <div 
-                      className="model-ribbon"
-                      style={{
-                        ...getRibbonStyle(token),
-                        color: 'white',
-                        padding: '0.375rem 0.75rem',
-                        fontSize: '0.75rem',
+            <>
+              {/* 表格 */}
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse'
+                }}>
+                  <thead>
+                    <tr style={{
+                      background: '#f9fafb',
+                      borderBottom: '1px solid #e5e7eb'
+                    }}>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
                         fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.3s ease',
-                        height: '6px'
-                      }}
-                    />
+                        color: '#374151'
+                      }}>名称</th>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>API Key</th>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>状态</th>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>额度使用</th>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>过期时间</th>
+                      <th style={{
+                        padding: '12px 16px',
+                        textAlign: 'left',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#374151'
+                      }}>操作</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokens.map((token, index) => {
+                      const isActive = token.status === 1;
+                      const isKeyVisible = getKeyVisibility(token.id);
+                      const displayKey = isKeyVisible 
+                        ? `sk-${token.key}`
+                        : `sk-${maskKey(token.key)}`;
 
-                    {/* Card Content */}
-                    <div className="model-content" style={{ padding: '1rem' }}>
-                      {/* Header */}
-                      <div className="model-header" style={{
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '0.75rem',
-                        marginBottom: '0.75rem'
-                      }}>
-                        <div className="model-icon" style={{
-                          width: '2.5rem',
-                          height: '2.5rem',
-                          borderRadius: '6px',
-                          overflow: 'hidden',
-                          background: '#f3f4f6',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0
-                        }}>
-                          <img src="img/nebula-data-logo.png" alt="token" className="icon-img" style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover'
-                          }} />
-                        </div>
-                        <div className="model-info" style={{ flex: 1, minWidth: 0 }}>
-                          <div className="model-name" style={{
-                            fontSize: '1rem',
-                            fontWeight: 700,
-                            color: '#1f2937',
-                            marginBottom: '0.5rem',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                            WebkitBackgroundClip: 'text',
-                            WebkitTextFillColor: 'transparent',
-                            backgroundClip: 'text'
-                          }} title={token.name || String(token.id)}>
-                            {token.name || token.id}
-                          </div>
-                          <div className="model-developer" style={{
-                            fontSize: '0.85rem',
-                            color: '#4b5563',
-                            background: 'rgba(102, 126, 234, 0.05)',
-                            padding: '0.5rem',
-                            borderRadius: '8px',
-                            border: '1px solid rgba(102, 126, 234, 0.1)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem',
-                            flexWrap: 'wrap',
-                            width: '100%',
-                            boxSizing: 'border-box',
-                            overflow: 'hidden'
+                      return (
+                        <tr 
+                          key={token.id}
+                          style={{
+                            borderBottom: index < tokens.length - 1 ? '1px solid #e5e7eb' : 'none',
+                            transition: 'background-color 0.2s ease'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = '#f9fafb';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = 'transparent';
+                          }}
+                        >
+                          {/* 名称 */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px',
+                            color: '#1f2937'
                           }}>
-                            <span style={{ flexShrink: 0 }}>API密钥:</span>
-                            <div style={{ 
-                              display: 'flex', 
-                              alignItems: 'center', 
-                              gap: '0.25rem', 
-                              flex: 1, 
-                              minWidth: 0,
-                              overflow: 'hidden'
+                            {token.name || token.id}
+                          </td>
+                          {/* API Key */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
                             }}>
                               <span style={{
                                 fontFamily: 'monospace',
-                                fontSize: '0.75rem',
-                                wordBreak: 'break-all',
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                flex: 1,
-                                minWidth: 0
-                              }}>{displayKey}</span>
+                                fontSize: '13px',
+                                color: '#374151',
+                                wordBreak: 'break-all'
+                              }}>
+                                {displayKey}
+                              </span>
                               <div style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '0.25rem',
-                                borderLeft: '1px solid rgba(102, 126, 234, 0.2)',
-                                paddingLeft: '0.25rem',
-                                marginLeft: '0.25rem'
+                                gap: '4px',
+                                flexShrink: 0
                               }}>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     toggleKeyVisibility(token.id);
                                   }}
-                                  className="icon-btn"
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     width: '28px',
                                     height: '28px',
-                                    borderRadius: '6px',
-                                    background: '#fafafa',
-                                    color: '#666',
+                                    borderRadius: '4px',
+                                    background: 'transparent',
                                     border: 'none',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    color: '#6b7280',
+                                    transition: 'all 0.2s ease'
                                   }}
                                   onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#1890ff';
-                                    e.currentTarget.style.background = '#f6f9ff';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                    e.currentTarget.style.color = '#1f2937';
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = '#666';
-                                    e.currentTarget.style.background = '#fafafa';
-                                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#6b7280';
                                   }}
                                   title={isKeyVisible ? '隐藏密钥' : '显示密钥'}
                                 >
-                                  {isKeyVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                                  {isKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     copyKey(token.key);
                                   }}
-                                  className="icon-btn"
                                   style={{
                                     display: 'inline-flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     width: '28px',
                                     height: '28px',
-                                    borderRadius: '6px',
-                                    background: '#fafafa',
-                                    color: '#666',
+                                    borderRadius: '4px',
+                                    background: 'transparent',
                                     border: 'none',
-                                    transition: 'all 0.2s ease',
-                                    boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    color: '#6b7280',
+                                    transition: 'all 0.2s ease'
                                   }}
                                   onMouseEnter={(e) => {
-                                    e.currentTarget.style.color = '#1890ff';
-                                    e.currentTarget.style.background = '#f6f9ff';
-                                    e.currentTarget.style.boxShadow = '0 2px 4px rgba(24, 144, 255, 0.15)';
-                                    e.currentTarget.style.transform = 'translateY(-1px)';
+                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                    e.currentTarget.style.color = '#1f2937';
                                   }}
                                   onMouseLeave={(e) => {
-                                    e.currentTarget.style.color = '#666';
-                                    e.currentTarget.style.background = '#fafafa';
-                                    e.currentTarget.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
-                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#6b7280';
                                   }}
                                   title="复制密钥"
                                 >
-                                  <Copy size={12} />
+                                  <Copy size={16} />
                                 </button>
                               </div>
                             </div>
-                          </div>
-                        </div>
-                        <div className="model-price" style={{
-                          textAlign: 'right',
-                          minWidth: 'fit-content',
-                          background: 'rgba(255, 255, 255, 0.8)',
-                          padding: '0.5rem',
-                          borderRadius: '8px',
-                          border: '1px solid #e5e7eb',
-                          alignSelf: 'flex-end'
-                        }}>
-                          <div 
-                            className="price-value"
-                            style={{
-                              fontSize: '0.95rem',
-                              fontWeight: 700,
-                              textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)',
-                              color: isActive ? '#059669' : '#dc2626'
-                            }}
-                          >
-                            {isActive ? '启用' : '禁用'}
-                          </div>
-                          <div className="price-unit" style={{
-                            fontSize: '0.75rem',
-                            color: '#6b7280',
-                            fontWeight: 500
+                          </td>
+                          {/* 状态 */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px'
                           }}>
-                            状态
-                          </div>
-                        </div>
-                      </div>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px'
+                            }}>
+                              <div style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '50%',
+                                background: isActive ? '#10b981' : '#6b7280'
+                              }}></div>
+                              <span style={{
+                                color: isActive ? '#10b981' : '#6b7280',
+                                fontWeight: 500
+                              }}>
+                                {isActive ? '启用' : '禁用'}
+                              </span>
+                            </div>
+                          </td>
+                          {/* 额度使用 */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px',
+                            color: '#374151'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '4px'
+                            }}>
+                              <span>已用: {formatUsedQuota(token)}</span>
+                              <span>剩余: {token.unlimitedQuota === 1 ? '无限' : formatRemainingQuota(token)}</span>
+                            </div>
+                          </td>
+                          {/* 过期时间 */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px',
+                            color: '#374151'
+                          }}>
+                            {formatExpiration(token)}
+                          </td>
+                          {/* 操作 */}
+                          <td style={{
+                            padding: '16px',
+                            fontSize: '14px'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '8px'
+                            }}>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(token);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '4px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#eff6ff';
+                                  e.currentTarget.style.color = '#3b82f6';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.color = '#6b7280';
+                                }}
+                                title="编辑"
+                              >
+                                <Edit2 size={16} />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleStatus(token);
+                                }}
+                                disabled={toggleStatusLoading === token.id}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '4px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: toggleStatusLoading === token.id ? 'not-allowed' : 'pointer',
+                                  color: '#6b7280',
+                                  transition: 'all 0.2s ease',
+                                  opacity: toggleStatusLoading === token.id ? 0.5 : 1
+                                }}
+                                onMouseEnter={(e) => {
+                                  if (toggleStatusLoading !== token.id) {
+                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                    e.currentTarget.style.color = '#1f2937';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (toggleStatusLoading !== token.id) {
+                                    e.currentTarget.style.backgroundColor = 'transparent';
+                                    e.currentTarget.style.color = '#6b7280';
+                                  }
+                                }}
+                                title={isActive ? '禁用' : '启用'}
+                              >
+                                {toggleStatusLoading === token.id ? (
+                                  <RefreshCw size={16} className="animate-spin" />
+                                ) : (
+                                  <EyeOff size={16} />
+                                )}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteKey(token);
+                                }}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '4px',
+                                  background: 'transparent',
+                                  border: 'none',
+                                  cursor: 'pointer',
+                                  color: '#6b7280',
+                                  transition: 'all 0.2s ease'
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                                  e.currentTarget.style.color = '#ef4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.backgroundColor = 'transparent';
+                                  e.currentTarget.style.color = '#6b7280';
+                                }}
+                                title="删除"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
-                      {/* Quota Info and Action Buttons */}
-                      <div className="capability-buttons" style={{
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: '0.5rem',
-                        alignItems: 'center',
-                        marginTop: '0.5rem',
-                        justifyContent: 'space-between',
-                        width: '100%',
-                        boxSizing: 'border-box'
-                      }}>
-                        <div style={{ 
-                          display: 'flex', 
-                          flexWrap: 'wrap', 
-                          gap: '0.5rem', 
-                          alignItems: 'center', 
-                          flex: 1,
-                          minWidth: 0
-                        }}>
-                          <span className="capability-btn cap-chat" style={{
-                            padding: '0.375rem 0.75rem',
-                            border: '1px solid #93c5fd',
-                            borderRadius: '6px',
-                            background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
-                            color: '#1e40af',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            总额度: {token.unlimitedQuota === 1 ? '无限' : formatQuota(token)}
-                          </span>
-                          <span className="capability-btn cap-prefix" style={{
-                            padding: '0.375rem 0.75rem',
-                            border: '1px solid #86efac',
-                            borderRadius: '6px',
-                            background: 'linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%)',
-                            color: '#047857',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            剩余: {token.unlimitedQuota === 1 ? '无限' : formatRemainingQuota(token)}
-                          </span>
-                          <span className="capability-btn cap-tools" style={{
-                            padding: '0.375rem 0.75rem',
-                            border: '1px solid #fcd34d',
-                            borderRadius: '6px',
-                            background: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)',
-                            color: '#b45309',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            已用: {formatUsedQuota(token)}
-                          </span>
-                          <span className="capability-btn cap-expire" style={{
-                            padding: '0.375rem 0.75rem',
-                            border: '1px solid #f9a8d4',
-                            borderRadius: '6px',
-                            background: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%)',
-                            color: '#be185d',
-                            fontSize: '0.8rem',
-                            fontWeight: 600,
-                            transition: 'all 0.2s ease',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            过期: {formatExpiration(token)}
-                          </span>
-                        </div>
-                        <div className="action-buttons" style={{
-                          display: 'flex',
-                          gap: '8px',
-                          alignItems: 'center',
-                          flexShrink: 0,
-                          flexWrap: 'wrap'
-                        }}>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleStatus(token);
-                            }}
-                            disabled={toggleStatusLoading === token.id}
-                            className={`action-btn status-btn ${isActive ? 'status-disable' : 'status-enable'}`}
-                            style={{
-                              borderRadius: '8px',
-                              fontWeight: 500,
-                              height: '32px',
-                              padding: '0 16px',
-                              transition: 'all 0.3s ease',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: '60px',
-                              fontSize: '12px',
-                              border: 'none',
-                              color: 'white',
-                              background: isActive 
-                                ? 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)'
-                                : 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-                              boxShadow: isActive
-                                ? '0 4px 12px rgba(245, 158, 11, 0.3)'
-                                : '0 4px 12px rgba(16, 185, 129, 0.3)',
-                              opacity: toggleStatusLoading === token.id ? 0.5 : 1,
-                              cursor: toggleStatusLoading === token.id ? 'not-allowed' : 'pointer'
-                            }}
-                            onMouseEnter={(e) => {
-                              if (toggleStatusLoading !== token.id) {
-                                e.currentTarget.style.transform = 'translateY(-1px)';
-                                e.currentTarget.style.boxShadow = isActive
-                                  ? '0 6px 16px rgba(245, 158, 11, 0.4)'
-                                  : '0 6px 16px rgba(16, 185, 129, 0.4)';
-                              }
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = isActive
-                                ? '0 4px 12px rgba(245, 158, 11, 0.3)'
-                                : '0 4px 12px rgba(16, 185, 129, 0.3)';
-                            }}
-                            title={isActive ? '禁用令牌' : '启用令牌'}
-                          >
-                            {toggleStatusLoading === token.id ? (
-                              <RefreshCw size={12} className="animate-spin" />
-                            ) : (
-                              isActive ? '禁用' : '启用'
-                            )}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              deleteKey(token);
-                            }}
-                            className="action-btn delete-btn"
-                            style={{
-                              borderRadius: '8px',
-                              fontWeight: 500,
-                              height: '32px',
-                              padding: '0 16px',
-                              transition: 'all 0.3s ease',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: '60px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              border: 'none',
-                              background: 'linear-gradient(135deg, #f56565 0%, #e53e3e 100%)',
-                              color: 'white',
-                              boxShadow: '0 4px 12px rgba(245, 101, 101, 0.3)'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(245, 101, 101, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(245, 101, 101, 0.3)';
-                            }}
-                            title="删除令牌"
-                          >
-                            删除
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleEdit(token);
-                            }}
-                            className="action-btn edit-btn"
-                            style={{
-                              borderRadius: '8px',
-                              fontWeight: 500,
-                              height: '32px',
-                              padding: '0 16px',
-                              transition: 'all 0.3s ease',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              minWidth: '60px',
-                              fontSize: '12px',
-                              cursor: 'pointer',
-                              border: 'none',
-                              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                              color: 'white',
-                              boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
-                            }}
-                            onMouseEnter={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-1px)';
-                              e.currentTarget.style.boxShadow = '0 6px 16px rgba(102, 126, 234, 0.4)';
-                            }}
-                            onMouseLeave={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
-                            }}
-                            title="编辑令牌"
-                          >
-                            编辑
-                          </button>
-                        </div>
-                      </div>
-                    </div>
+              {/* 分页底部 */}
+              {!loading && pagination.total > 0 && (
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '16px',
+                  borderTop: '1px solid #e5e7eb',
+                  background: '#f9fafb'
+                }}>
+                  <div style={{
+                    fontSize: '14px',
+                    color: '#6b7280'
+                  }}>
+                    共 {pagination.total} 条记录
                   </div>
-                );
-              })}
-            </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    {/* <button
+                      onClick={() => handlePageChange(pagination.current - 1)}
+                      disabled={pagination.current === 1}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #e5e7eb',
+                        background: 'white',
+                        color: '#374151',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        cursor: pagination.current === 1 ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        opacity: pagination.current === 1 ? 0.5 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (pagination.current > 1) {
+                          e.currentTarget.style.background = '#f9fafb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (pagination.current > 1) {
+                          e.currentTarget.style.background = 'white';
+                        }
+                      }}
+                    >
+                      上一页
+                    </button>
+                    <span style={{
+                      fontSize: '14px',
+                      color: '#374151',
+                      padding: '0 12px'
+                    }}>
+                      {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
+                    </span>
+                    <button
+                      onClick={() => handlePageChange(pagination.current + 1)}
+                      disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #e5e7eb',
+                        background: 'white',
+                        color: '#374151',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        cursor: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        opacity: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 0.5 : 1
+                      }}
+                      onMouseEnter={(e) => {
+                        if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
+                          e.currentTarget.style.background = '#f9fafb';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
+                          e.currentTarget.style.background = 'white';
+                        }
+                      }}
+                    >
+                      下一页
+                    </button> */}
+                  </div>
+                </div>
+              )}
+            </>
           )}
-
-          {/* Pagination Footer */}
-          {/* {!loading && pagination.total > 0 && (
-            <div style={{
-              marginTop: '1.5rem',
-              paddingTop: '1.5rem',
-              borderTop: '1px solid #e2e8f0',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              gap: '0.5rem'
-            }}>
-              <button
-                onClick={() => handlePageChange(pagination.current - 1)}
-                disabled={pagination.current === 1}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  borderRadius: '6px',
-                  border: '1px solid #e5e7eb',
-                  background: 'white',
-                  color: '#374151',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  cursor: pagination.current === 1 ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  opacity: pagination.current === 1 ? 0.5 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (pagination.current > 1) {
-                    e.currentTarget.style.background = '#f9fafb';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                }}
-              >
-                上一页
-              </button>
-              <span style={{
-                fontSize: '0.875rem',
-                color: '#64748b',
-                padding: '0 0.5rem'
-              }}>
-                {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-              </span>
-              <button
-                onClick={() => handlePageChange(pagination.current + 1)}
-                disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                style={{
-                  padding: '0.375rem 0.75rem',
-                  borderRadius: '6px',
-                  border: '1px solid #e5e7eb',
-                  background: 'white',
-                  color: '#374151',
-                  fontSize: '0.875rem',
-                  fontWeight: 500,
-                  cursor: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 'not-allowed' : 'pointer',
-                  transition: 'all 0.2s ease',
-                  opacity: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 0.5 : 1
-                }}
-                onMouseEnter={(e) => {
-                  if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                    e.currentTarget.style.background = '#f9fafb';
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = 'white';
-                }}
-              >
-                下一页
-              </button>
-            </div>
-          )} */}
         </div>
       </div>
 
