@@ -19,7 +19,7 @@ interface EnterprisePageProps {
 }
 
 const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   
   // 团队列表状态
   const [teamLoading, setTeamLoading] = useState(false);
@@ -547,12 +547,15 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     // 新用户和老用户使用同一个链接
     const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     
+    // 添加提示信息到链接后面（作为注释说明）
+    const inviteUrlWithTip = `${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`;
+    
     try {
-      await navigator.clipboard.writeText(inviteUrl);
+      await navigator.clipboard.writeText(inviteUrlWithTip);
       toast.success('邀请链接已复制到剪贴板');
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast(`邀请链接：${inviteUrl}`, { duration: 5000 });
+      toast(`邀请链接：${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`, { duration: 8000 });
     }
   };
 
