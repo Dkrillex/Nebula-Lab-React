@@ -82,7 +82,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   // 图片上传状态
   const [productImage, setProductImage] = useState<UploadedImage | null>(null);
   const [templateImage, setTemplateImage] = useState<UploadedImage | null>(null);
-  const [garmentImage, setGarmentImage] = useState<UploadedImage | null>(null);
+  const [garmentImages, setGarmentImages] = useState<UploadedImage[]>([]); // 改为数组，支持多张图片
   const [modelImage, setModelImage] = useState<UploadedImage | null>(null);
   const [referenceImage, setReferenceImage] = useState<UploadedImage | null>(null);
   const [showReferenceImage, setShowReferenceImage] = useState(false);
@@ -125,6 +125,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const productInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
   const garmentInputRef = useRef<HTMLInputElement>(null);
+  const garmentTopInputRef = useRef<HTMLInputElement>(null); // 上衣上传
+  const garmentBottomInputRef = useRef<HTMLInputElement>(null); // 下衣上传
   const modelInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
@@ -207,7 +209,18 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         setTemplateImage(imgData);
         break;
       case 'garment':
-        setGarmentImage(imgData);
+        // 服装模式：full 模式支持最多2张，其他模式只支持1张
+        if (clothingType === 'full') {
+          // 全身模式：追加图片，最多2张
+          setGarmentImages(prev => {
+            const newImages = [...prev, imgData];
+            // 保持最多2张，移除最早的
+            return newImages.slice(-2);
+          });
+        } else {
+          // 上衣/下衣模式：只保留一张
+          setGarmentImages([imgData]);
+        }
         break;
       case 'model':
         setModelImage(imgData);
@@ -250,14 +263,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     }
   };
 
-  // 统一处理 S3 上传 URL（开发环境使用代理）
-  const getUploadUrl = (uploadUrl: string): string => {
-    if (import.meta.env.DEV) {
-      // 替换 S3 域名为代理路径
-      return uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
-    }
-    return uploadUrl;
-  };
 
   // 上传图片到TopView (标准模式和创意模式使用)
   const uploadImageToTopView = async (image: UploadedImage): Promise<UploadedImage> => {
@@ -282,13 +287,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     const { uploadUrl, fileName, fileId, format } = credRes.result;
     console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: image.file.size });
 
-    // PUT file to uploadUrl (使用统一的代理处理)
-    const finalUploadUrl = getUploadUrl(uploadUrl);
-    if (import.meta.env.DEV) {
-      console.log('使用代理上传:', finalUploadUrl);
-    }
-    
-    const uploadRes = await fetch(finalUploadUrl, {
+    // PUT file to uploadUrl
+    const uploadRes = await fetch(uploadUrl, {
       method: 'PUT',
       body: image.file,
       headers: {
@@ -643,10 +643,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 const { uploadUrl, fileId } = credRes.result;
                 console.log('产品蒙版上传凭证获取成功:', fileId);
                 
-                // 使用统一的代理处理
-                const finalUploadUrl = getUploadUrl(uploadUrl);
-                
-                const uploadRes = await fetch(finalUploadUrl, {
+                const uploadRes = await fetch(uploadUrl, {
                   method: 'PUT',
                   body: maskFile,
                   headers: { 'Content-Type': 'image/png' }
@@ -679,10 +676,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 const { uploadUrl, fileId } = credRes.result;
                 console.log('模板蒙版上传凭证获取成功:', fileId);
                 
-                // 使用统一的代理处理
-                const finalUploadUrl = getUploadUrl(uploadUrl);
-                
-                const uploadRes = await fetch(finalUploadUrl, {
+                const uploadRes = await fetch(uploadUrl, {
                   method: 'PUT',
                   body: maskFile,
                   headers: { 'Content-Type': 'image/png' }
@@ -756,7 +750,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
       } else if (selectedMode === 'clothing') {
         // 服装模式 - 上传到OSS
-        if (!garmentImage) {
+        if (garmentImages.length === 0) {
           toast.error('请上传服装图片');
           setIsGenerating(false);
           return;
@@ -767,18 +761,31 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           return;
         }
 
+        // 验证图片数量
+        if (clothingType === 'full' && garmentImages.length < 2) {
+          toast.error('全身模式需要上传两张图片（上衣和下衣）');
+          setIsGenerating(false);
+          return;
+        }
+        if (clothingType !== 'full' && garmentImages.length !== 1) {
+          toast.error(`${clothingType === 'top' ? '上衣' : '下衣'}模式只能上传一张图片`);
+          setIsGenerating(false);
+          return;
+        }
+
         console.log('开始上传服装模式图片到OSS...');
         
         // Parallel Uploads for Clothing Mode - 上传到OSS
-        const [uploadedGarment, uploadedModel] = await Promise.all([
-          uploadImageToOss(garmentImage),
-          uploadImageToOss(modelImage)
-        ]);
+        // 上传所有服装图片
+        const uploadedGarments = await Promise.all(
+          garmentImages.map(img => uploadImageToOss(img))
+        );
+        const uploadedModel = await uploadImageToOss(modelImage);
         
-        setGarmentImage(uploadedGarment);
+        setGarmentImages(uploadedGarments);
         setModelImage(uploadedModel);
 
-        console.log('服装图片上传完成:', uploadedGarment);
+        console.log('服装图片上传完成:', uploadedGarments);
         console.log('模特图片上传完成:', uploadedModel);
 
         // Logic for inference_config based on clothingType
@@ -789,18 +796,36 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         // keepUpper: !(hasUpperType)
         // keepLower: !(hasBottomType)
         
-        // Map 'top' to 'upper' for API
-        const apiClothingType = clothingType === 'top' ? 'upper' : clothingType;
+        // 构建 garments 数据数组
+        // 对于 full 模式，需要将两张图片分别标记为 'upper' 和 'bottom'
+        // 对于其他模式，使用对应的类型
+        const garmentsForRequest = uploadedGarments.map((img, index) => {
+          if (clothingType === 'full') {
+            // 全身模式：第一张是上衣，第二张是下衣
+            return {
+              type: index === 0 ? 'upper' : 'bottom',
+              url: img.fileUrl
+            };
+          } else {
+            // 上衣/下衣模式：使用对应的类型
+            const apiClothingType = clothingType === 'top' ? 'upper' : clothingType;
+            return {
+              type: apiClothingType,
+              url: img.fileUrl
+            };
+          }
+        });
 
-        const hasUpperType = apiClothingType === 'upper' || apiClothingType === 'full';
-        const hasBottomType = apiClothingType === 'bottom' || apiClothingType === 'full';
+        // 根据实际图片类型计算 inference_config
+        const hasUpperType = garmentsForRequest.some(item => item.type === 'upper' || item.type === 'full');
+        const hasBottomType = garmentsForRequest.some(item => item.type === 'bottom' || item.type === 'full');
         
         const keepUpper = !hasUpperType;
         const keepLower = !hasBottomType;
 
         console.log('服装类型配置:', {
           clothingType,
-          apiClothingType,
+          garmentsForRequest,
           hasUpperType,
           hasBottomType,
           keepUpper,
@@ -811,10 +836,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           score: '1', // 默认积分
           volcDressingV2Bo: {
             garment: {
-              data: [{
-                type: apiClothingType,
-                url: uploadedGarment.fileUrl
-              }]
+              data: garmentsForRequest
             },
             model: {
               id: '1', // ID is required
@@ -929,6 +951,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       return t.standard.support;
     };
     
+    // 服装模式在 full 模式下支持多选
+    const isMultiple = type === 'garment' && clothingType === 'full';
+    
     return (
       <UploadComponent
         onFileSelected={(file) => handleImageUpload(file, type)}
@@ -944,7 +969,12 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                   <Upload size={24} />
               </div>
               <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
-              {type !== 'template' && (
+              {type === 'garment' && clothingType === 'full' && (
+                <p className="text-[10px] text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded-full mt-1">
+                    全身模式：请上传两张图片（上衣和下衣）
+                </p>
+              )}
+              {type !== 'template' && !(type === 'garment' && clothingType === 'full') && (
                 <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
                     {getFormatText()}
                 </p>
@@ -969,7 +999,11 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
             type="radio" 
             className="hidden" 
             checked={clothingType === value} 
-            onChange={() => setClothingType(value)} 
+            onChange={() => {
+              setClothingType(value);
+              // 切换类型时清空已上传的图片
+              setGarmentImages([]);
+            }} 
         />
         <span className={`text-sm font-medium ${
           clothingType === value ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'
@@ -1335,6 +1369,11 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                           {renderRadio('bottom', t.clothing.types.bottom)}
                           {renderRadio('full', t.clothing.types.full)}
                       </div>
+                      {clothingType === 'full' && (
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
+                          全身模式需要上传两张图片：第一张为上衣，第二张为下衣
+                        </p>
+                      )}
                    </div>
                )}
 
@@ -1390,22 +1429,157 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                  </div>
                ) : (
                  <div className="flex-1 min-h-[300px]">
-                    {selectedMode === 'clothing' && garmentImage ? (
-                      <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
-                        <img src={garmentImage.fileUrl} alt="Garment" className="w-full h-full object-contain" />
-                        <button
-                          onClick={() => setGarmentImage(null)}
-                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
+                    {selectedMode === 'clothing' ? (
+                      clothingType === 'full' ? (
+                        // 全身模式：始终显示两个上传框
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* 上衣上传框 */}
+                          <div className="relative w-full aspect-square">
+                            {garmentImages[0] ? (
+                              <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
+                                <img src={garmentImages[0].fileUrl} alt="上衣" className="w-full h-full object-contain" />
+                                <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
+                                  上衣
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setGarmentImages(prev => prev.filter((_, i) => i !== 0));
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
+                                onClick={() => garmentTopInputRef.current?.click()}
+                              >
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                                    <Upload size={24} className="text-indigo-500" />
+                                  </div>
+                                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传上衣</p>
+                                  <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                                    {t.standard.support}
+                                  </p>
+                                </div>
+                                <input
+                                  ref={garmentTopInputRef}
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(file, 'garment');
+                                    }
+                                    if (e.target) e.target.value = '';
+                                  }}
+                                  className="hidden"
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* 下衣上传框 */}
+                          <div className="relative w-full aspect-square">
+                            {garmentImages[1] ? (
+                              <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
+                                <img src={garmentImages[1].fileUrl} alt="下衣" className="w-full h-full object-contain" />
+                                <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
+                                  下衣
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setGarmentImages(prev => prev.filter((_, i) => i !== 1));
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <div 
+                                className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
+                                onClick={() => garmentBottomInputRef.current?.click()}
+                              >
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                                    <Upload size={24} className="text-indigo-500" />
+                                  </div>
+                                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传下衣</p>
+                                  <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                                    {t.standard.support}
+                                  </p>
+                                </div>
+                                <input
+                                  ref={garmentBottomInputRef}
+                                  type="file"
+                                  accept="image/png,image/jpeg,image/jpg,image/webp"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      handleImageUpload(file, 'garment');
+                                    }
+                                    if (e.target) e.target.value = '';
+                                  }}
+                                  className="hidden"
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        // 上衣/下衣模式：显示单张图片或上传框
+                        garmentImages.length > 0 ? (
+                          <div className="flex flex-col gap-3">
+                            <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+                              <img src={garmentImages[0].fileUrl} alt="Garment" className="w-full h-full object-contain" />
+                              <button
+                                onClick={() => setGarmentImages([])}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                            <div 
+                              className="relative w-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors min-h-[100px]"
+                              onClick={() => garmentInputRef.current?.click()}
+                            >
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                <Upload size={20} className="text-indigo-400" />
+                                <p className="text-xs text-indigo-500 font-medium">重新上传</p>
+                              </div>
+                              <input
+                                ref={garmentInputRef}
+                                type="file"
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageUpload(file, 'garment');
+                                  }
+                                  if (e.target) e.target.value = '';
+                                }}
+                                className="hidden"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          renderUploadBox(
+                            null,
+                            'garment',
+                            t.clothing.uploadGarment,
+                            garmentInputRef
+                          )
+                        )
+                      )
                     ) : (
                       renderUploadBox(
-                        selectedMode === 'clothing' ? garmentImage : productImage,
-                        selectedMode === 'clothing' ? 'garment' : 'product',
-                        selectedMode === 'clothing' ? t.clothing.uploadGarment : t.standard.uploadProduct,
-                        selectedMode === 'clothing' ? garmentInputRef : productInputRef
+                        productImage,
+                        'product',
+                        t.standard.uploadProduct,
+                        productInputRef
                       )
                     )}
                  </div>
@@ -1551,7 +1725,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 <button 
                   onClick={handleGenerate}
                   disabled={isGenerating || 
-                    (selectedMode === 'clothing' ? (!garmentImage || !modelImage) : (!productImage || (!templateImage && !selectedTemplate)))}
+                    (selectedMode === 'clothing' ? (garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)) : (!productImage || (!templateImage && !selectedTemplate)))}
                   className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isGenerating ? (
