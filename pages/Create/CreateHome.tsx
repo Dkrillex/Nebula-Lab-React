@@ -294,7 +294,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       return;
     }
     // 使用路由跳转而不是 query params
-    navigate(toolId);
+    navigate(`/create/${toolId}`);
   };
 
   const switchCategory = (id: string) => {

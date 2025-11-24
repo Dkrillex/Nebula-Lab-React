@@ -321,7 +321,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
         {!isCollapsed ? (
           showPromo && (
-            <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-4 border border-indigo-500/20">
+            <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-2 border border-indigo-500/20">
                 <button 
                   onClick={() => setShowPromo(false)}
                   className="absolute top-2 right-2 text-indigo-500/50 hover:text-indigo-500 transition-colors"
