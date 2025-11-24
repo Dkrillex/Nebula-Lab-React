@@ -498,7 +498,9 @@ const ExpensesPage: React.FC = () => {
         <div className="flex items-start justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-black mb-1">积分/余额管理中心</h1>
-            <p className="text-sm text-gray-600">当前余额</p>
+            <p className="text-sm text-gray-600">
+              {currentMode === 'balance' ? '当前余额' : '积分概览'}
+            </p>
           </div>
           {/* 右上角切换按钮 */}
           <div className="flex items-center gap-2">
@@ -516,7 +518,7 @@ const ExpensesPage: React.FC = () => {
               onClick={() => handleModeChange('points')}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
                 currentMode === 'points'
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-purple-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
               }`}
             >
@@ -527,28 +529,43 @@ const ExpensesPage: React.FC = () => {
 
         {/* Balance and Quick Actions - 左右布局 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* 左侧：余额信息框 */}
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200">
-            <div className="text-sm text-gray-600 mb-2">可用余额 (CNY)</div>
-            <div className="text-4xl font-bold text-blue-600 mb-3">
-              ¥{quotaLoading ? '...' : formatPoints(balance)}
-            </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <span>可兑换积分:</span>
-              <span className="font-semibold text-gray-700">{formatPoints(points)}</span>
-            </div>
+          {/* 左侧：余额/积分信息框 */}
+          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+            {currentMode === 'balance' ? (
+              <>
+                <div className="text-sm text-gray-600 mb-2">可用余额 (CNY)</div>
+                <div className="text-4xl font-bold text-blue-600 mb-3">
+                  ¥{quotaLoading ? '...' : formatPoints(balance)}
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <span>可兑换积分:</span>
+                  <span className="font-semibold text-gray-700">{formatPoints(points)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-sm text-gray-600 mb-2">总积分(Points)</div>
+                <div className="text-4xl font-bold text-blue-600">
+                  {quotaLoading ? '...' : formatPoints(points)} pts
+                </div>
+              </>
+            )}
           </div>
 
           {/* 右侧：快捷操作框 */}
-          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 flex flex-col items-center justify-center">
+          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center">
             <div className="text-sm text-gray-600 mb-4">快捷操作</div>
             <button
               onClick={handleRefresh}
               disabled={loading || quotaLoading}
-              className="w-full max-w-xs px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className={`w-full max-w-xs px-6 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                currentMode === 'points'
+                  ? 'bg-purple-600 hover:bg-purple-700'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
             >
               <RefreshCw size={18} className={loading || quotaLoading ? 'animate-spin' : ''} />
-              刷新余额
+              {currentMode === 'points' ? '刷新积分' : '刷新余额'}
             </button>
             <p className="text-xs text-gray-500 mt-3">数据同步可能存在延迟</p>
           </div>
@@ -978,7 +995,7 @@ const ExpenseListItem: React.FC<{
   const totalTokens = record.totalTokens || 0;
   
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
+    <div className="flex items-start gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
       {/* 图标 - 橙色方块，白色文档符号 */}
       <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center flex-shrink-0">
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -986,23 +1003,29 @@ const ExpenseListItem: React.FC<{
         </svg>
       </div>
       
-      {/* 服务/模型名 */}
+      {/* 服务/模型名和时间戳+时长 */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-800 truncate">{record.modelName}</div>
+        <div className="text-sm font-medium text-gray-800 mb-1.5">{record.modelName}</div>
+        <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-1.5">
+            <Clock size={12} className="text-gray-400" />
+            <span>{record.timestamp}</span>
+          </div>
+          {/* 时长 */}
+          <div className="px-2 py-0.5 text-gray-700">
+            {record.duration}
+          </div>
+        </div>
       </div>
       
-      {/* 时间戳 */}
-      <div className="text-sm text-gray-600 whitespace-nowrap">{record.timestamp}</div>
-      
-      {/* 时长 */}
-      <div className="text-sm text-gray-600 whitespace-nowrap">{record.duration}</div>
-      
-      {/* Tokens */}
-      <div className="text-sm text-gray-600 whitespace-nowrap">{totalTokens.toLocaleString()} tokens</div>
+      {/* Tokens - 灰色边框框，带背景 */}
+      <div className="px-3 py-1 border border-gray-300 bg-gray-50 rounded text-sm text-gray-700 whitespace-nowrap self-center">
+        {totalTokens.toLocaleString()} tokens
+      </div>
       
       {/* 扣费金额 - 红色 */}
-      <div className="text-sm font-medium text-red-600 whitespace-nowrap">
-        - {record.cost.toFixed(4)}
+      <div className="text-sm font-medium text-red-600 whitespace-nowrap self-center">
+        -{record.cost.toFixed(4)}
       </div>
     </div>
   );
@@ -1048,26 +1071,47 @@ const ScoreListItem: React.FC<{
     }
   };
   
+  // 状态映射
+  const statusInfo = {
+    '1': { text: '已完成', class: 'text-gray-600' },
+    '0': { text: '进行中', class: 'text-gray-600' },
+    '-1': { text: '失败', class: 'text-red-600' },
+  }[String(score.status) || '0'] || { text: '未知', class: 'text-gray-600' };
+  
   return (
-    <div className="flex items-center gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
-      {/* 图标 - 橙色方块，白色文档符号 */}
-      <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center flex-shrink-0">
+    <div className="flex items-start gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
+      {/* 图标 - 浅蓝色方块，白色文档符号 */}
+      <div className="w-10 h-10 bg-blue-400 rounded flex items-center justify-center flex-shrink-0">
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
         </svg>
       </div>
       
-      {/* 服务名 */}
+      {/* 服务名和时间戳+ID */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-800 truncate">{typeInfo.text}</div>
+        <div className="text-sm font-medium text-gray-800 mb-1.5">{typeInfo.text}</div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <Clock size={12} className="text-gray-400" />
+          <span>{formatTimestamp(score.createTime || '-')}</span>
+          {score.taskId && (
+            <>
+              <span className="mx-1">ID:</span>
+              <span className="font-mono">{score.taskId}</span>
+            </>
+          )}
+        </div>
       </div>
       
-      {/* 时间戳 */}
-      <div className="text-sm text-gray-600 whitespace-nowrap">{formatTimestamp(score.createTime || '-')}</div>
-      
-      {/* 积分值 */}
-      <div className={`text-sm font-medium whitespace-nowrap ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
-        {isPositive ? '+' : '-'}{Math.abs(scoreValue)} 积分
+      {/* 右侧：积分值和状态，右对齐 */}
+      <div className="flex flex-col items-end gap-1">
+        {/* 积分值 - 绿色 */}
+        <div className="text-sm font-medium text-green-600">
+          {isPositive ? '+' : '-'}{Math.abs(scoreValue)}
+        </div>
+        {/* 状态 */}
+        <div className={`text-xs ${statusInfo.class}`}>
+          {statusInfo.text}
+        </div>
       </div>
     </div>
   );
