@@ -186,15 +186,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   }, [activeTab]);
 
-  useEffect(() => {
-    if (activeTab === 'multiModel') {
-      const isVeo2 = advancedModelId === 'veo2';
-      const validDurations = isVeo2 ? ['5', '8'] : ['5', '10'];
-      if (!validDurations.includes(advancedDuration)) {
-        setAdvancedDuration('5');
-      }
-    }
-  }, [advancedModelId, activeTab]);
+  // Advanced Mode validation (commented out - Advanced Mode not open to public yet)
+  // useEffect(() => {
+  //   if (activeTab === 'multiModel') {
+  //     const isVeo2 = advancedModelId === 'veo2';
+  //     const validDurations = isVeo2 ? ['5', '8'] : ['5', '10'];
+  //     if (!validDurations.includes(advancedDuration)) {
+  //       setAdvancedDuration('5');
+  //     }
+  //   }
+  // }, [advancedModelId, activeTab]);
 
   // --- Score Calculation ---
   const calculatedScore = useMemo(() => {
