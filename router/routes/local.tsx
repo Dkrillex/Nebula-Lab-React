@@ -3,11 +3,11 @@ import { AppRouteObject } from '../AuthGuard';
 import DashboardLayout from '../../components/DashboardLayout';
 import { RouteWrapper } from '../../components/RouteWrapper';
 
-import CreateHome from '../../pages/Create/CreateHome';
+// import CreateHome from '../../pages/Create/CreateHome';
 
 // 懒加载组件
 const CreateLayout = React.lazy(() => import('../../pages/Create'));
-// const CreateHome = React.lazy(() => import('../../pages/Create/CreateHome'));
+const CreateHome = React.lazy(() => import('../../pages/Create/CreateHome'));
 const AssetsPage = React.lazy(() => import('../../pages/Assets'));
 const ChatPage = React.lazy(() => import('../../pages/Chat'));
 const KeysPage = React.lazy(() => import('../../pages/Keys'));
@@ -15,7 +15,6 @@ const ModelSquarePage = React.lazy(() => import('../../pages/Models'));
 const ExpensesPage = React.lazy(() => import('../../pages/Expenses'));
 const PricingPage = React.lazy(() => import('../../pages/Pricing'));
 const PriceListPage = React.lazy(() => import('../../pages/PriceList'));
-const RankPage = React.lazy(() => import('../../pages/Rank'));
 const ProfilePage = React.lazy(() => import('../../pages/Profile'));
 
 // Create Page Sub-components
@@ -48,7 +47,6 @@ export const localRoutes: AppRouteObject[] = [
           title: 'Create',
           icon: 'magic',
           requiresAuth: true
-          // keepAlive: true // Disable caching for layout to allow children to handle their own caching
         },
         children: [
           {
@@ -56,7 +54,7 @@ export const localRoutes: AppRouteObject[] = [
             element: <RouteWrapper component={CreateHome} translationKey="createPage" />,
             meta: {
               title: 'Create Dashboard',
-              keepAlive: true
+              keepAlive: true 
             }
           },
           {
@@ -203,16 +201,6 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Price List',
           icon: 'list',
-          requiresAuth: true,
-          keepAlive: true
-        }
-      },
-      {
-        path: 'rank',
-        element: <RankPage />,
-        meta: {
-          title: 'Leaderboard',
-          icon: 'trophy',
           requiresAuth: true,
           keepAlive: true
         }

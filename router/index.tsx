@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react';
 import { createHashRouter } from 'react-router-dom';
-import KeepAliveWrapper from '../components/KeepAlive';
+import KeepAliveBoundary from '../components/KeepAlive';
 import { coreRoutes } from './routes/core';
 import { localRoutes } from './routes/local';
 import { AppRouteObject, AuthGuard } from './AuthGuard';
@@ -14,10 +14,26 @@ const LoadingFallback = () => (
 );
 
 // 递归处理路由配置，添加 Suspense 和 Wrapper
-function processRoutes(routes: AppRouteObject[]): any[] {
+function processRoutes(routes: AppRouteObject[], parentPath = ''): any[] {
   return routes.map(route => {
     const newRoute: any = { ...route };
     
+    // Calculate full path for KeepAlive key generation
+    let fullPath = parentPath;
+    if (route.path) {
+      if (route.path.startsWith('/')) {
+        fullPath = route.path;
+      } else {
+        // Ensure clean path joining without double slashes
+        const separator = parentPath.endsWith('/') ? '' : '/';
+        fullPath = `${parentPath}${separator}${route.path}`;
+      }
+    }
+    // Remove trailing slash if not root (standardize)
+    if (fullPath !== '/' && fullPath.endsWith('/')) {
+      fullPath = fullPath.slice(0, -1);
+    }
+
     // 如果有 element，用 Suspense 包裹
     if (newRoute.element) {
       // 如果需要 Wrapper 组件来传递 Outlet Context（兼容旧代码），可以在这里处理
@@ -29,30 +45,48 @@ function processRoutes(routes: AppRouteObject[]): any[] {
       // 构建要渲染的元素
       let elementToRender = route.element;
 
-      // 1. 处理 KeepAlive 和 Suspense 的顺序
-      // 关键修改：
-      // 正确的顺序应该是: KeepAlive (外) -> Suspense (内) -> LazyComponent
-      // 这样 KeepAlive 可以稳定地保持住 Suspense 的容器，即使内部正在加载。
-      // 如果 Suspense 在 KeepAlive 外部，当组件被缓存再恢复时，可能会因为 Suspense 的重新挂载机制
-      // 导致 KeepAlive 的 Portal 目标丢失或时序错乱，从而产生白屏。
+      // 1. 处理 Suspense (最内层，直接包裹 Lazy 组件，或者由 KeepAlive 包裹它？)
+      // 官方推荐：KeepAlive > Suspense > Component
+      // 这样 KeepAlive 缓存的是已经 Suspense 完成后的组件结构，
+      // 或者是 KeepAlive 自身处理 Suspense 状态。
+      // 但如果 Component 是 lazy 的，React Router 需要 Suspense 来等待它加载。
       
-      // 我们先包裹 Suspense，确保组件自身的懒加载被捕获
-      elementToRender = (
+      // 修正顺序：
+      // 原来：Suspense > KeepAlive > Component
+      // 导致：KeepAlive 试图缓存一个正在 Suspense 的组件，可能导致白屏或状态问题。
+      
+      // 正确顺序建议：
+      // KeepAlive 内部应该包含 Suspense，或者 KeepAlive 缓存的是 Suspense 的结果。
+      // react-activation 文档指出：
+      // <KeepAlive>
+      //   <Suspense fallback=...>
+      //      <Component />
+      //   </Suspense>
+      // </KeepAlive>
+      
+      // 构建基础组件 (Lazy Component)
+      let innerElement = route.element;
+
+      // 包裹 Suspense
+      innerElement = (
         <Suspense fallback={<LoadingFallback />}>
-          {elementToRender}
+          {innerElement}
         </Suspense>
       );
-      
-      // 然后再包裹 KeepAlive，将整个 Suspense + Component 作为一个单元进行缓存
+
+      // 包裹 KeepAlive
       if (route.meta?.keepAlive) {
-        elementToRender = (
-          <KeepAliveWrapper keepAlive={true}>
-            {elementToRender}
-          </KeepAliveWrapper>
+        const cacheName = route.meta.keepAliveKey || fullPath || '/';
+        innerElement = (
+          <KeepAliveBoundary key={cacheName} name={cacheName} keepAlive={true}>
+            {innerElement}
+          </KeepAliveBoundary>
         );
       }
 
-      // 3. 如果需要认证，包裹 AuthGuard
+      elementToRender = innerElement;
+
+      // 3. 如果需要认证，包裹 AuthGuard (最外层)
       if (route.meta?.requiresAuth) {
         elementToRender = <AuthGuard>{elementToRender}</AuthGuard>;
       }
@@ -61,7 +95,7 @@ function processRoutes(routes: AppRouteObject[]): any[] {
     }
 
     if (newRoute.children) {
-      newRoute.children = processRoutes(newRoute.children);
+      newRoute.children = processRoutes(newRoute.children, fullPath);
     }
 
     return newRoute;
@@ -84,3 +118,6 @@ if (layoutRoute && layoutRoute.children) {
 const finalRoutes = processRoutes(coreRoutes);
 
 export const router = createHashRouter(finalRoutes);
+
+// 显式导出 router 作为默认导出，以兼容某些导入方式
+export default router;

@@ -20,11 +20,12 @@ export function useAppOutletContext() {
 
   // 如果 context 为 null，返回一个默认值，避免子组件报错
   if (!context) {
-    console.warn('useAppOutletContext: context is null, returning default value');
+    // console.warn('useAppOutletContext: context is null, returning default value');
+    // Return a safe default object to prevent destructuring errors
     return {
-      t: null,
-      handleNavClick: () => { },
-      onSignIn: () => { }
+      t: {}, // Return empty object instead of null to allow safe property access (e.g. t.header)
+      handleNavClick: () => { console.warn('handleNavClick called but context missing'); },
+      onSignIn: () => { console.warn('onSignIn called but context missing'); }
     };
   }
 

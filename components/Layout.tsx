@@ -9,19 +9,14 @@ import ConfirmDialog from './ConfirmDialog';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
-import { useCacheStore } from '../stores/cacheStore';
 
 import MobileSidebar from './MobileSidebar';
 
-import { KeepAliveProvider } from './KeepAlive';
+import { AliveScope, useAliveController } from './KeepAlive';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
-  // 从 localStorage 初始化语言，如果没有则默认为 'zh'
-  const [lang, setLang] = useState<Language>(() => {
-    const savedLang = localStorage.getItem('language') as Language;
-    return savedLang === 'en' || savedLang === 'zh' ? savedLang : 'zh';
-  });
+  const [lang, setLang] = useState<Language>('zh');
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
@@ -29,12 +24,6 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
-
-  // 当语言切换时，同步更新 localStorage
-  const handleLangChange = (newLang: Language) => {
-    setLang(newLang);
-    localStorage.setItem('language', newLang);
-  };
 
   // Theme handling
   useEffect(() => {
@@ -90,7 +79,8 @@ const Layout: React.FC = () => {
   };
 
   const { view: currentView, tool: activeTool } = getCurrentViewAndTool();
-  const { removeCachedComponent } = useCacheStore();
+
+  const { drop } = useAliveController();
 
   // Update Tabs History and Cache
   useEffect(() => {
@@ -145,14 +135,21 @@ const Layout: React.FC = () => {
 
     // 当标签页关闭时，从缓存中移除对应的组件
     // 根据 view 和 tool 生成缓存 key
+    // 必须与 router/index.tsx 中生成的 fullPath 保持一致
     let cacheKey = '/';
     if (targetTab.view === 'create') {
-      // 适配新的路由结构生成 key
       cacheKey = targetTab.activeTool ? `/create/${targetTab.activeTool}` : '/create';
     } else {
       cacheKey = targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
     }
-    removeCachedComponent(cacheKey);
+    
+    // 确保没有双斜杠 (除根路径外)
+    if (cacheKey !== '/' && cacheKey.endsWith('/')) {
+        cacheKey = cacheKey.slice(0, -1);
+    }
+    
+    // Use react-activation controller to drop the cache
+    drop(cacheKey);
 
     // If closing active tab, navigate to last available
     const isActive = targetTab.view === currentView && 
@@ -172,15 +169,15 @@ const Layout: React.FC = () => {
   // 确保 t 不为空，如果为空则使用默认语言
   // 这在某些极端情况下（如路由跳转过快或 context 丢失）能防止崩溃
   const safeT = t || translations['zh'];
-
+  
   return (
-    <KeepAliveProvider>
+    <AliveScope>
       <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
-        <Header
-          isDark={isDark}
-          toggleTheme={() => setIsDark(!isDark)}
-          lang={lang}
-          setLang={setLang}
+        <Header 
+          isDark={isDark} 
+          toggleTheme={() => setIsDark(!isDark)} 
+          lang={lang} 
+          setLang={setLang} 
           onSignIn={() => setIsAuthModalOpen(true)}
           onOpenNotification={() => setIsNotificationOpen(true)}
           onNavClick={handleNavClick}
@@ -190,16 +187,16 @@ const Layout: React.FC = () => {
           visitedViews={visitedViews}
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
-          t={safeT.header}
+          t={safeT.header} 
           onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           isMobileMenuOpen={isMobileMenuOpen}
         />
-
+        
         <main className="flex-1">
           <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
         </main>
-
-        <MobileSidebar
+        
+        <MobileSidebar 
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           sideMenuMap={safeT.createPage.sideMenu}
@@ -216,15 +213,15 @@ const Layout: React.FC = () => {
           }}
         />
 
-        <AuthModal
-          isOpen={isAuthModalOpen}
-          onClose={() => setIsAuthModalOpen(false)}
+        <AuthModal 
+          isOpen={isAuthModalOpen}  
+          onClose={() => setIsAuthModalOpen(false)} 
           onLoginSuccess={() => fetchUserInfo()}
           lang={lang}
           t={safeT.auth}
         />
 
-      <AuthModal
+      <AuthModal 
         isOpen={isAuthModalOpen}  
         onClose={() => setIsAuthModalOpen(false)} 
         onLoginSuccess={() => {
@@ -256,8 +253,8 @@ const Layout: React.FC = () => {
         isOpen={isNotificationOpen} 
         onClose={() => setIsNotificationOpen(false)} 
       />
-    </div>
-    </KeepAliveProvider>
+      </div>
+    </AliveScope>
   );
 };
 
