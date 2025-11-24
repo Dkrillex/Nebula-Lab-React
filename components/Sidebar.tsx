@@ -302,9 +302,12 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                 >
                   <X size={14} />
                 </button>
-                <div className="flex items-center gap-3 mb-2 text-indigo-500">
-                  <Sparkles size={16} />
-                  <span className="text-xs font-bold uppercase tracking-wider">NebulaLab全新版本</span>
+                <div className="flex items-start gap-3 mb-2 text-indigo-500">
+                  <Sparkles size={16} className="mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold uppercase tracking-wider">NebulaLab</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">全新版本上线!!</span>
+                  </div>
                 </div>
                 {/* 新增个logo */}
                 <div className="flex justify-center">
