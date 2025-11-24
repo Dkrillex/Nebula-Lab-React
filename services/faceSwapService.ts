@@ -135,6 +135,110 @@ export const videoProcessService = {
   },
 };
 
+// 视频掩码绘制相关接口
+export interface ImageMaskDrawingSubmitParams {
+  videoProcessTaskId: string; // 视频处理任务ID
+  inputInfo: {
+    index: number; // 帧索引
+    modifyPoints: number[][]; // 修改区域坐标点 [[x, y], ...]
+    protectPoints: number[][]; // 保护区域坐标点 [[x, y], ...]
+  };
+  noticeUrl?: string; // 回调通知URL（选填）
+}
+
+export interface ImageMaskDrawingQueryParams {
+  taskId: string;
+  needCloudFrontUrl?: boolean;
+}
+
+export interface ImageMaskDrawingQueryResult {
+  result: {
+    taskId: string;
+    status: 'success' | 'failed' | 'processing' | 'pending';
+    mask?: string; // base64 编码的遮罩图片（修改区域，红色）
+    protectMask?: string; // base64 编码的遮罩图片（保护区域，绿色）
+    costCredit?: number;
+  };
+}
+
+export interface VideoMaskDrawingSubmitParams {
+  videoProcessTaskId: string; // 视频处理任务ID
+  inputInfos: Array<{
+    index: string; // 帧索引（字符串格式）
+    modifyPoints: number[][]; // 修改区域坐标点 [[x, y], ...]
+    protectPoints: number[][]; // 保护区域坐标点 [[x, y], ...]
+  }>;
+  noticeUrl?: string; // 回调通知URL（选填）
+}
+
+export interface VideoMaskDrawingQueryParams {
+  taskId: string;
+  needCloudFrontUrl?: boolean;
+}
+
+export interface VideoMaskDrawingQueryResult {
+  result: {
+    taskId: string;
+    status: 'success' | 'failed' | 'processing' | 'pending';
+    maskVideoPath?: string;
+    protectMaskVideoPath?: string;
+    trackingVideoPath?: string; // 跟踪视频路径
+    costCredit?: number;
+  };
+}
+
+/**
+ * 图像掩码绘制服务（单帧）
+ */
+export const imageMaskDrawingService = {
+  /**
+   * 提交图像掩码绘制任务（单帧）
+   * @param params 图像掩码绘制参数
+   * @returns 任务ID
+   */
+  submit: async (params: ImageMaskDrawingSubmitParams) => {
+    return request.post<{ result: { taskId: string } }>('/tp/v1/ImageMaskDrawingSubmit', params);
+  },
+
+  /**
+   * 查询图像掩码绘制任务
+   * @param params 查询参数
+   * @returns 任务状态和结果
+   */
+  query: async (params: ImageMaskDrawingQueryParams): Promise<ImageMaskDrawingQueryResult> => {
+    const { taskId, needCloudFrontUrl = true } = params;
+    return request.get<ImageMaskDrawingQueryResult>('/tp/v1/ImageMaskDrawingQuery', {
+      params: { taskId, needCloudFrontUrl },
+    });
+  },
+};
+
+/**
+ * 视频掩码绘制服务（多帧）
+ */
+export const videoMaskDrawingService = {
+  /**
+   * 提交视频掩码绘制任务（多帧）
+   * @param params 视频掩码绘制参数
+   * @returns 任务ID
+   */
+  submit: async (params: VideoMaskDrawingSubmitParams) => {
+    return request.post<{ result: { taskId: string } }>('/tp/v1/VideoMaskDrawingSubmit', params);
+  },
+
+  /**
+   * 查询视频掩码绘制任务
+   * @param params 查询参数
+   * @returns 任务状态和结果
+   */
+  query: async (params: VideoMaskDrawingQueryParams): Promise<VideoMaskDrawingQueryResult> => {
+    const { taskId, needCloudFrontUrl = true } = params;
+    return request.get<VideoMaskDrawingQueryResult>('/tp/v1/VideoMaskDrawingQuery', {
+      params: { taskId, needCloudFrontUrl },
+    });
+  },
+};
+
 /**
  * 视频角色交换服务
  */
