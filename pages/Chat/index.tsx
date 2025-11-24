@@ -18,7 +18,8 @@ import { uploadService } from '../../services/uploadService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { ChatRecord } from '../../types';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 import CodeBlock from './components/CodeBlock';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
@@ -57,9 +58,13 @@ interface ExtendedChatMessage extends ChatMessage {
 
 type Mode = 'chat' | 'image' | 'video';
 
-const ChatPage: React.FC = () => {
+interface ChatPageProps {
+  t?: any;
+}
+
+const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
-  const t = rawT.chatPage;
+  const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();

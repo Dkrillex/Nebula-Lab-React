@@ -5,7 +5,22 @@ import { textToImageService, TextToImageItem } from '../../../services/textToIma
 import { uploadService } from '../../../services/uploadService';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
+import { useAuthStore } from '../../../stores/authStore';
 import toast from 'react-hot-toast';
+
+const SvgPointsIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 1024 1024"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+  >
+    <path d="M913.7 430.7c2.9-2.9 7.5-7.4-3.9-21.7L722.6 159.7H302.8l-187 248.9c-11.6 14.6-7 19.2-4.3 21.9l401.2 410.4 401-410.2zM595.5 667.2c-7.7 0-14-6.3-14-14s6.3-14 14-14 14 6.3 14 14c0 7.8-6.3 14-14 14zM746 502.8c6.6 6.6 6.6 17.2 0 23.7L645.2 627.3c-3.3 3.3-7.6 4.9-11.9 4.9-4.3 0-8.6-1.6-11.9-4.9-6.6-6.6-6.6-17.2 0-23.7l100.7-100.7c6.7-6.7 17.3-6.7 23.9-0.1zM346 358.1c-6.7-6.5-6.8-17.1-0.4-23.7 6.4-6.7 17.1-6.8 23.7-0.4l149.6 145 151.5-146.8c6.7-6.5 17.3-6.3 23.7 0.4 6.5 6.7 6.3 17.3-0.4 23.7L535.2 509.9c-0.8 1.8-1.8 3.5-3.3 5-3.3 3.4-7.7 5.1-12.1 5.1-4.2 0-8.4-1.6-11.7-4.7L346 358.1z" fill="#006be6" />
+    <path d="M936.4 388.4l-192-255.6c-3.2-4.2-8.1-6.7-13.4-6.7H294.4c-5.3 0-10.3 2.5-13.4 6.7L89.3 388.1c-27.1 34.1-10 57.7-1.6 66.1l413 422.5c3.2 3.2 7.5 5.1 12 5.1s8.8-1.8 12-5.1l412.8-422.4c8.7-8.5 25.7-32.1-1.1-65.9z m-820.5 20.2l187-248.9h419.8L909.9 409c11.3 14.3 6.8 18.8 3.9 21.7l-401 410.2-401.2-410.4c-2.8-2.7-7.3-7.3 4.3-21.9z" fill="#ffffff" className="selected" />
+    <path d="M532 514.9c1.4-1.5 2.5-3.2 3.3-5l158.6-153.7c6.7-6.5 6.8-17.1 0.4-23.7-6.5-6.7-17.1-6.8-23.7-0.4L519 478.9 369.4 334c-6.7-6.4-17.3-6.3-23.7 0.4-6.5 6.7-6.3 17.3 0.4 23.7l162.2 157.2c3.3 3.2 7.5 4.7 11.7 4.7 4.3 0 8.7-1.7 12-5.1zM621.5 627.3c3.3 3.3 7.6 4.9 11.9 4.9 4.3 0 8.6-1.6 11.9-4.9L746 526.5c6.6-6.6 6.6-17.2 0-23.7-6.6-6.6-17.2-6.6-23.7 0L621.5 603.5c-6.6 6.6-6.6 17.2 0 23.8z" fill="#ffffff" className="selected" />
+  </svg>
+);
 
 interface TextToImagePageProps {
   t: {
@@ -14,6 +29,7 @@ interface TextToImagePageProps {
     inputLabel: string;
     inputPlaceholder: string;
     aiPolish: string;
+    aiPolishThinking: string;
     settingsTitle: string;
     aspectRatio: string;
     generateConfig: string;
@@ -89,6 +105,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getData, setData } = useVideoGenerationStore();
+  const { token } = useAuthStore();
   const [mode, setMode] = useState<'text' | 'image'>('text');
   const [selectedRatio, setSelectedRatio] = useState('2048x2048');
   const [selectedSize, setSelectedSize] = useState('2048x2048');
@@ -140,17 +157,21 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   }, [selectedRatio]);
 
   const handlePolishText = async () => {
+    if (!token) {
+      toast.error('Please login first');
+      return;
+    }
     if (!prompt) return;
     
     setIsPolishing(true);
     try {
-      const res = await textToImageService.polishText({
+      const data = await textToImageService.polishText({
         text: prompt,
         type: mode === 'image' ? 'image_to_image' : 'text_to_image'
       });
       
-      if (res.data) {
-        setPrompt(res.data);
+      if (data) {
+        setPrompt(data);
         toast.success(t.tips.polishSuccess);
       }
     } catch (error) {
@@ -219,6 +240,10 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   };
 
   const handleGenerate = async () => {
+    if (!token) {
+      toast.error('Please login first');
+      return;
+    }
     if (!prompt || isGenerating) return;
     if (mode === 'image' && !referenceImage) return;
 
@@ -439,11 +464,11 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
               <h3 className="font-bold text-foreground">{t.inputLabel}</h3>
               <button 
                 onClick={handlePolishText}
-                disabled={isPolishing || !prompt}
-                className="flex items-center gap-1 text-xs bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-1 rounded border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-200 transition-colors disabled:opacity-50"
+                disabled={isPolishing || !prompt || isGenerating}
+                className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
               >
                 {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                {t.aiPolish}
+                {isPolishing ? t.aiPolishThinking : t.aiPolish}
               </button>
             </div>
             <div className="relative">
@@ -496,8 +521,8 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                 </>
               ) : (
                 <>
-                  <Wand2 size={18} />
-                  {t.generate}
+                  <SvgPointsIcon className="w-5 h-5" />
+                  1 {t.generate}
                 </>
               )}
             </button>

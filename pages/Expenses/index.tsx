@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 import { RefreshCw, Wallet, Receipt, Clock, ArrowRightLeft, Download, Search, X, Maximize2, Settings, Upload } from 'lucide-react';
 import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount, TeamLog, TeamLogsQuery } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
@@ -8,32 +9,13 @@ import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 
 interface ExpensesPageProps {
-  t: {
-    title: string;
-    subtitle: string;
-    balanceLabel: string;
-    convertPoints: string;
-    buttons: {
-      points: string;
-      balance: string;
-      freeMember: string;
-      refresh: string;
-    };
-    recordsTitle: string;
-    refreshData: string;
-    record: {
-      type: string;
-      duration: string;
-      input: string;
-      output: string;
-      consumption: string;
-    }
-  };
+  t?: any;
 }
 
-const ExpensesPage: React.FC = () => {
-  const { t: rootT } = useOutletContext<{ t: any }>();
-  const t = rootT?.expensesPage as ExpensesPageProps['t'];
+const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
+  const { t: rootT } = useAppOutletContext();
+  // 添加空值保护，防止页面崩溃
+  const t = props.t || rootT?.expensesPage || translations['zh'].expensesPage;
   
   const { user } = useAuthStore();
   // 模式切换：'balance' 余额模式，'points' 积分模式，'logos' 日志/账单模式

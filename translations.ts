@@ -230,11 +230,17 @@ interface Translation {
           pro: string;
           best: string;
         };
+        tips: {
+          lite: string;
+          pro: string;
+          best: string;
+        };
       };
       duration: {
         label: string;
         units: string;
       };
+      generatingCount: string;
       negativePrompt: {
         label: string;
         placeholder: string;
@@ -754,6 +760,7 @@ export const translations: Record<string, Translation> = {
         inputLabel: 'Text Description',
         inputPlaceholder: 'Describe the image you want to generate, e.g., A cute little cat in a sunlit garden...',
         aiPolish: 'AI Polish',
+        aiPolishThinking: 'Thinking...',
         settingsTitle: 'Generation Settings',
         aspectRatio: 'Image Size',
         generateConfig: 'Config',
@@ -849,12 +856,18 @@ export const translations: Record<string, Translation> = {
             lite: 'Lite',
             pro: 'Pro',
             best: 'Best'
+          },
+          tips: {
+            lite: '480P, Faster generation speed',
+            pro: '1080P, Improved body movement and physical realism',
+            best: 'Best AI video with top-tier motion and physical realism'
           }
         },
         duration: {
           label: 'Video Duration',
           units: 's'
         },
+        generatingCount: 'Generating Count:',
         negativePrompt: {
           label: 'Negative Prompt (Optional)',
           placeholder: 'List content you do not want to see in the video. Example: animation, blur, distortion...'
@@ -1423,6 +1436,7 @@ export const translations: Record<string, Translation> = {
         inputLabel: '文字描述',
         inputPlaceholder: '描述您想要生成的图片，例如：一只可爱的小猫坐在阳光下的花园里，周围开满了五颜六色的花朵，画风唯美，光线柔和...',
         aiPolish: 'AI润色',
+        aiPolishThinking: '正在思考..',
         settingsTitle: '生成设置',
         aspectRatio: '图片尺寸',
         generateConfig: '生成配置',
@@ -1518,12 +1532,18 @@ export const translations: Record<string, Translation> = {
             lite: 'Lite',
             pro: 'Pro',
             best: 'Best'
+          },
+          tips: {
+            lite: '480P，生成速度更快',
+            pro: '1080P，改进的身体动作和物理真实感',
+            best: '最佳AI视频，具有顶级动作和物理真实感'
           }
         },
         duration: {
           label: '视频时长',
           units: '秒'
         },
+        generatingCount: '生成数量:',
         negativePrompt: {
           label: '负面提示词（可选）',
           placeholder: '列出您不想在视频中看到的内容类型。示例：动画、模糊、扭曲、变形、低质量、拼贴、颗粒、微标、抽象、插图、计算机生成、扭曲......'

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useOutletContext, Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import CachedOutlet from './CachedOutlet';
+// import CachedOutlet from './CachedOutlet';
 import { translations } from '../translations';
 
 interface DashboardLayoutProps {
@@ -38,8 +38,11 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onSignIn: propOnSignI
       />
       
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0">
-        <CachedOutlet context={outletContext} />
+      <main 
+        id="dashboard-main-scroll"
+        className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0"
+      >
+        <Outlet context={outletContext} />
       </main>
     </div>
   );
