@@ -114,7 +114,7 @@ export interface ApiTalkQuery {
   [key: string]: any;
 }
 
-export type Language = 'en' | 'zh';
+export type Language = 'en' | 'zh' | 'id';
 
 export type View = 'home' | 'create' | 'keys' | 'chat' | 'models' | 'expenses' | 'pricing' | 'assets';
 

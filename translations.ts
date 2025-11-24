@@ -67,6 +67,7 @@ interface Translation {
     upload: string;
     sideMenu: {
       home: string;
+      createHome: string;
       modelCenter: string;
       creationCenter: string;
       personalCenter: string;
@@ -2289,6 +2290,776 @@ export const translations: Record<string, Translation> = {
         china: '中国大陆',
         japan: '日本',
         indonesia: '印度尼西亚'
+      }
+    }
+  },
+  id: {
+    header: {
+      searchPlaceholder: 'Cari model...',
+      signIn: 'Masuk',
+      nav: [
+        { label: 'Pusat Model', href: '/models' },
+        { label: 'Pusat Kreatif', href: '/create' },
+        { label: 'Pusat Pribadi', href: '/profile' },
+      ],
+      profile: 'Profil',
+      notifications: 'Notifikasi',
+    },
+    hero: {
+      status: 'Semua sistem beroperasi',
+      titlePrefix: 'Antarmuka Terpadu',
+      titleSuffix: 'untuk LLM',
+      description: 'Akses model terbaik dari OpenAI, Anthropic, Google, Meta, dan lainnya melalui satu API standar. Harga terendah, latensi terbaik.',
+      getStarted: 'Mulai',
+      viewPricing: 'Lihat Harga'
+    },
+    modelList: {
+      explore: 'Jelajahi Model',
+      searchPlaceholder: 'Filter berdasarkan nama, penyedia, atau tag...',
+      headers: {
+        model: 'Model',
+        context: 'Konteks',
+        inputCost: 'Biaya Input',
+        outputCost: 'Biaya Output'
+      },
+      noResults: 'Tidak ada model yang cocok',
+      free: 'GRATIS',
+      new: 'BARU'
+    },
+    modelSquare: {
+      title: 'Plaza Model',
+      totalModels: 'model',
+      filterSearch: 'Filter Pencarian',
+      filters: {
+        searchPlaceholder: 'Cari jalur atau nama model',
+        nameLabel: 'Nama Model',
+        vendorLabel: 'Seri/Vendor',
+        capabilityLabel: 'Tag Kemampuan',
+        billingLabel: 'Jenis Penagihan',
+        displayLabel: 'Pengaturan Tampilan',
+        all: 'Semua',
+        reset: 'Reset',
+        hideFilters: 'Sembunyikan Filter',
+      },
+      display: {
+        currency: 'Mata Uang',
+        unit: 'Unit',
+        amount: 'Jumlah',
+      },
+      card: {
+        new: 'Baru',
+        perMillion: '1M token',
+        perSecond: 'detik',
+        actions: {
+          calculate: 'Hitung',
+          chat: 'Chat',
+        }
+      }
+    },
+    createPage: {
+      greeting: 'Hai! Apa yang ingin Anda',
+      greetingSuffix: 'buat hari ini?',
+      inputPlaceholder: 'Jelaskan gambar yang ingin Anda hasilkan...',
+      send: 'Hasilkan',
+      upload: 'Unggah',
+      sideMenu: {
+        home: 'Beranda',
+        modelCenter: 'Pusat Model',
+        creationCenter: 'Pusat Kreatif',
+        personalCenter: 'Pusat Pribadi',
+        aiExperience: 'Pengalaman AI',
+        modelSquare: 'Plaza Model',
+        apiKeys: 'Kunci API',
+        apiDocs: 'Dokumen API',
+        viralVideo: 'Video Viral',
+        digitalHuman: 'Manusia Digital',
+        imgToVideo: 'Gambar ke Video',
+        textToImage: 'Teks ke Gambar',
+        styleTransfer: 'Transfer Gaya',
+        voiceClone: 'Kloning Suara',
+        workshop: 'Workshop',
+        faceSwap: 'Tukar Wajah AI',
+        ttsTool: 'Teks ke Ucapan',
+        glbViewer: 'Model 3D',
+        imageTranslation: 'Terjemahan Gambar',
+        videoTranslation: 'Terjemahan Video',
+        assets: 'Aset',
+        pricing: 'Harga',
+        expenses: 'Pengeluaran Saya',
+        profile: 'Profil',
+      },
+      shortcuts: {
+        video: 'Video Viral AI',
+        videoDesc: 'Buat skrip & video',
+        avatar: 'Avatar Produk',
+        avatarDesc: 'Manusia digital untuk produk',
+        transform: 'Transfer Gaya',
+        transformDesc: 'Ubah gaya objek',
+        sketch: 'Sketsa ke Gambar',
+        sketchDesc: 'Ubah sketsa menjadi seni',
+        inpainting: 'Inpainting AI',
+        inpaintingDesc: 'Hapus atau ganti objek',
+        talkingPhoto: 'Foto Berbicara',
+        talkingPhotoDesc: 'Buat foto berbicara'
+      },
+      tabs: ['Semua', 'Karakter', 'Hewan', 'Anime', 'Kreatif', 'Makanan', 'Pemandangan', 'Produk'],
+      authModal: {
+        loginTitle: 'Selamat Datang Kembali',
+        tabPassword: 'Kata Sandi',
+        tabPhone: 'Telepon',
+        accountLabel: 'Akun',
+        accountPlaceholder: 'Masukkan akun Anda',
+        passwordLabel: 'Kata Sandi',
+        passwordPlaceholder: 'Masukkan kata sandi Anda',
+        phoneLabel: 'Nomor Telepon',
+        phonePlaceholder: 'Masukkan nomor telepon Anda',
+        codeLabel: 'Kode Verifikasi',
+        codePlaceholder: 'Masukkan kode verifikasi',
+        sendCode: 'Kirim Kode',
+        codeSent: 'Kode Terkirim',
+        signIn: 'Masuk',
+        agreePolicy: 'Saya setuju dengan',
+        privacyPolicy: 'Kebijakan Privasi',
+        terms: 'Ketentuan Layanan',
+      },
+      textToImage: {
+        title: 'Pembuatan Gambar AI',
+        subtitle: 'Hasilkan gambar indah dari deskripsi teks',
+        inputLabel: 'Deskripsi Teks',
+        inputPlaceholder: 'Jelaskan gambar yang ingin Anda hasilkan, misalnya: Kucing kecil yang lucu di taman yang diterangi matahari...',
+        aiPolish: 'Poles AI',
+        aiPolishThinking: 'Berpikir...',
+        settingsTitle: 'Pengaturan Pembuatan',
+        aspectRatio: 'Ukuran Gambar',
+        generateConfig: 'Konfigurasi',
+        generate: 'Hasilkan',
+        resultTitle: 'Hasil Pembuatan',
+        emptyState: 'Masukkan deskripsi untuk memulai perjalanan seni AI Anda',
+        ratios: {
+          square: 'Persegi',
+          landscape43: 'Lanskap',
+          portrait34: 'Potret',
+          widescreen: 'Layar Lebar',
+          mobile: 'Mobile',
+          photo: 'Foto'
+        },
+        tabs: {
+          textToImage: 'Teks ke Gambar',
+          imageToImage: 'Gambar ke Gambar'
+        },
+        imageToImage: {
+          uploadTitle: 'Unggah Gambar Referensi',
+          uploadDesc: 'Klik atau seret untuk mengunggah gambar',
+          uploadHint: 'Mendukung format JPG, PNG, maks 10MB'
+        },
+        actions: {
+          clearAll: 'Hapus Semua',
+          downloadAll: 'Unduh Semua',
+          imageToVideo: 'Gambar ke Video',
+          addToMaterials: 'Tambahkan ke Materi',
+          viewFullSize: 'Lihat Ukuran Penuh',
+          download: 'Unduh'
+        },
+        tips: {
+          polishSuccess: 'Teks berhasil dipoles',
+          polishFailed: 'Pemolesan teks gagal',
+          imageSizeLimit: 'Ukuran gambar tidak boleh melebihi 10MB',
+          imageRatioLimit: 'Rasio aspek gambar harus antara 1:3 dan 3:1',
+          uploadSuccess: 'Gambar berhasil diunggah',
+          uploadFailed: 'Pengunggahan gagal',
+          generateSuccess: 'Berhasil menghasilkan gambar',
+          generateEmpty: 'API mengembalikan sukses tetapi tidak ada data gambar yang ditemukan',
+          generateFailed: 'Pembuatan gagal',
+          downloadStarted: 'Unduhan dimulai',
+          downloadFailed: 'Unduhan gagal',
+          selectImageTip: 'Silakan pilih gambar terlebih dahulu',
+          addToMaterialsSuccess: 'Ditambahkan ke materi',
+          generating: 'Menghasilkan...'
+        }
+      },
+      viralVideo: {
+        title: 'Impor beberapa gambar, hasilkan video pemasaran produk',
+        tabs: {
+          upload: 'Unggah Aset Produk',
+          link: 'Masukkan Tautan Produk'
+        },
+        uploadArea: {
+          title: 'Silakan unggah 4-10 aset produk',
+          desc: 'Ukuran gambar 20KB-15MB, resolusi >400*400, <8192*8192',
+          limitation: 'Sementara hanya mendukung materi produk kategori pakaian/sepatu SKU yang sama (gambar model memerlukan hak potret), kategori lain akan segera hadir',
+          selectFromPortfolio: 'Pilih dari Portofolio',
+          uploadLocal: 'Unggah dari Lokal'
+        },
+        process: {
+          uploadImages: 'Unggah Gambar Produk',
+          generateVideo: 'Hasilkan Video Siaran',
+          makeSame: 'Buat yang Sama dengan Satu Klik'
+        },
+        examples: 'Contoh Terbaik'
+      },
+      imgToVideo: {
+        title: 'Gambar ke Video',
+        subtitle: 'Unggah gambar dan jelaskan teks untuk membuat AI menghasilkan karya video indah untuk Anda',
+        tabs: {
+          traditional: 'Mode Tradisional',
+          startEnd: 'Bingkai Awal/Akhir',
+          advanced: 'Mode Lanjutan'
+        },
+        upload: {
+          label: 'Unggah Gambar',
+          button: 'Unggah Gambar',
+          desc: 'Mendukung format JPG, PNG'
+        },
+        trySample: 'Coba Contoh',
+        generationSettings: 'Pengaturan Pembuatan',
+        prompt: {
+          label: 'Prompt',
+          placeholder: 'Silakan jelaskan konten video yang ingin Anda hasilkan',
+          polish: 'Poles AI',
+          maxLength: 1500
+        },
+        quality: {
+          label: 'Pilihan Kualitas',
+          options: {
+            lite: 'Lite',
+            pro: 'Pro',
+            best: 'Terbaik'
+          },
+          tips: {
+            lite: '480P, Kecepatan pembuatan lebih cepat',
+            pro: '1080P, Peningkatan gerakan tubuh dan realisme fisik',
+            best: 'Video AI terbaik dengan gerakan dan realisme fisik tingkat atas'
+          }
+        },
+        duration: {
+          label: 'Durasi Video',
+          units: 's'
+        },
+        generatingCount: 'Jumlah Pembuatan:',
+        negativePrompt: {
+          label: 'Prompt Negatif (Opsional)',
+          placeholder: 'Daftar konten yang tidak ingin Anda lihat dalam video. Contoh: animasi, blur, distorsi...'
+        },
+        generate: '4 Kredit',
+        actions: {
+          clearAll: 'Hapus Semua',
+          downloadAll: 'Unduh Semua'
+        },
+        result: {
+          label: 'Hasil Pembuatan',
+          emptyState: 'Unggah gambar dan masukkan teks deskripsi untuk memulai perjalanan pembuatan video AI Anda'
+        }
+      },
+      digitalHuman: {
+        title: 'Pembuatan Video Manusia Digital',
+        subtitle: 'Unggah video dan konten audio manusia digital Anda untuk membuat AI menghasilkan karya video manusia digital profesional untuk Anda',
+        tabs: {
+          video: 'Video Manusia Digital',
+          product: 'Manusia Digital Produk',
+          singing: 'Manusia Digital Bernyanyi'
+        },
+        leftPanel: {
+          myDigitalHuman: 'Manusia Digital Saya',
+          uploadTitle: 'Unggah Video Manusia Digital',
+          uploadFormat: '(mp4, mov, webm)',
+          uploadDesc: 'Perlu video manusia digital menghadap ke depan, durasi 4s~3menit',
+          personalTemplate: 'Template Pribadi',
+          publicTemplate: 'Template Publik',
+          customUpload: 'Unggah Kustom'
+        },
+        rightPanel: {
+          modeSelection: 'Pilihan Mode',
+          mode1: 'Manusia Digital 1',
+          mode1_intro: {
+            p1: 'Manusia digital berbasis gambar hanya menghasilkan gerakan kepala.',
+            p2: 'Manusia digital berbasis video hanya memodifikasi gerakan bibir dalam video yang ada.',
+            p3: 'Waktu pembuatan lebih cepat.'
+          },
+          mode2: 'Manusia Digital 2',
+          mode2_intro: {
+            p1: 'Gerakan bibir, ekspresi wajah, gerakan tangan, dan gerakan tubuh sesuai dengan konten ucapan, membuat video terlihat lebih alami dan realistis.',
+            p2: 'Waktu pembuatan lebih lama.',
+            p3: 'Durasi teks yang disarankan untuk dubbing AI adalah 15 detik untuk hasil terbaik; maks 28 detik.'
+          },
+          scriptContent: 'Konten Skrip',
+          textToSpeech: 'Teks ke Ucapan',
+          importAudio: 'Impor Audio',
+          textPlaceholder: 'Masukkan teks untuk dubbing AI di sini, misalnya: Selamat datang di showcase produk kami, izinkan saya memperkenalkan fitur terbaru kami secara detail...',
+          textLimit: 8000,
+          voiceType: 'Jenis Suara',
+          aiVoice: 'Suara Dubbing AI',
+          publicVoice: 'Suara Publik',
+          selectVoice: 'Pilih Suara',
+          aiSubtitle: 'Subtitle yang Dihasilkan AI',
+          selectSubtitleStyle: 'Pilih Gaya Subtitle',
+          previewPlaceholder: 'Silakan masukkan teks.',
+          buttonTip: {
+            text: 'Silakan masukkan teks.',
+            audio: 'Silakan pilih file audio.',
+            default: '1 Poin = 30s atau 400 karakter'
+          },
+          diamondCoin: 'Poin',
+          tryExample: 'Coba Contoh',
+          generate: 'Hasilkan setelah pengaturan'
+        },
+        voiceModal: {
+          title: 'Pilih Suara',
+          tabs: {
+            public: 'Suara Publik',
+            custom: 'Suara Saya'
+          },
+          filters: {
+            language: 'Bahasa',
+            gender: 'Jenis Kelamin',
+            age: 'Usia',
+            style: 'Gaya'
+          },
+          filterOptions: {
+            allLanguages: 'Semua Bahasa',
+            allGenders: 'Semua Jenis Kelamin',
+            male: 'Pria',
+            female: 'Wanita',
+            young: 'Muda',
+            middleAge: 'Paruh Baya',
+            old: 'Tua',
+            ugc: 'UGC',
+            ads: 'Iklan'
+          }
+        }
+      },
+      productAvatar: {
+        leftPanel: {
+          title: 'Pilih Template Avatar',
+          uploadDiy: 'Unggah Kustom',
+          picker: 'Pilih'
+        },
+        rightPanel: {
+          templatePreview: 'Pratinjau Avatar',
+          pickerTemplate: 'Silakan pilih template avatar',
+          uploadMyFace: 'Unggah Wajah',
+          productConfig: 'Konfigurasi Produk',
+          uploadProductImg: 'Unggah Gambar Produk',
+          productImg: 'Gambar Produk',
+          productSize: 'Ukuran Produk',
+          aiTips: 'Prompt Campuran AI',
+          aiTipsPlaceholder: 'Beritahu AI cara mencampur produk dengan model avatar...',
+          aiTextPlaceholder: 'Ganti item di gambar 1 dengan item di gambar 2. Pertahankan komposisi dan posisi orang di gambar 1 tidak berubah, dan sesuaikan gerakan agar sesuai dengan ukuran dan penampilan item baru. Item harus sama persis dengan di gambar 2.',
+          trySample: 'Coba Contoh',
+          startWorking: 'Mulai Menghasilkan',
+          replacementSuccess: 'Penggantian Berhasil',
+          uploadAvatar: 'Silakan pilih atau unggah avatar',
+          autoShow: 'Otomatis'
+        },
+        sliderMarks: {
+          tiny: 'Sangat Kecil',
+          small: 'Kecil',
+          medium: 'Sedang',
+          large: 'Besar',
+          xLarge: 'Sangat Besar',
+          xxLarge: 'Sangat Besar'
+        }
+      },
+      styleTransfer: {
+        title: 'Transfer Gaya',
+        subtitle: 'Ubah gaya objek di berbagai adegan',
+        modes: {
+          standard: {
+            title: 'Mode Standar',
+            desc: 'Gunakan template untuk transfer gaya'
+          },
+          creative: {
+            title: 'Mode Kreatif',
+            desc: 'Gunakan prompt untuk transformasi kreatif'
+          },
+          clothing: {
+            title: 'Mode Pakaian',
+            desc: 'Coba pakaian virtual'
+          }
+        },
+        standard: {
+          productTitle: 'Gambar Produk',
+          productDesc: 'Unggah gambar produk yang ingin Anda ubah',
+          uploadProduct: 'Unggah Gambar Produk',
+          areaTitle: 'Area Template',
+          areaDesc: 'Unggah gambar template atau pilih dari template',
+          uploadTemplate: 'Unggah Gambar Template',
+          selectTemplate: 'Pilih Template',
+          support: 'JPG, PNG, WEBP'
+        },
+        clothing: {
+          garmentTitle: 'Gambar Pakaian',
+          garmentDesc: 'Unggah gambar pakaian',
+          uploadGarment: 'Unggah Pakaian',
+          modelTitle: 'Gambar Model',
+          uploadModel: 'Unggah Model',
+          types: {
+            top: 'Atasan',
+            bottom: 'Bawahan',
+            full: 'Seluruh Tubuh'
+          }
+        },
+        creative: {
+          productTitle: 'Gambar Produk',
+          promptTitle: 'Prompt',
+          addRef: 'Tambahkan Referensi',
+          tryExample: 'Coba Contoh',
+          aiPolish: 'Poles AI',
+          promptPlaceholder: 'Jelaskan adegan tempat Anda ingin menempatkan produk, misalnya: Tempatkan produk di lingkungan kantor modern dengan latar belakang yang bersih dan profesional...',
+          uploadProduct: 'Unggah Gambar Produk',
+          support: 'JPG, PNG, WEBP'
+        },
+        common: {
+          generate: 'Hasilkan',
+          resultTitle: 'Hasil Pembuatan',
+          resultPlaceholder: 'Unggah gambar dan masukkan prompt untuk memulai perjalanan transfer gaya Anda'
+        }
+      },
+      voiceClone: {
+        title1: 'Kloning Suara',
+        title2: 'Sintesis Suara',
+        desc1: 'Unggah atau rekam klip audio, AI akan mengkloning suara manusia digital yang sangat mirip dengan Anda',
+        desc2: 'Pilih suara favorit Anda, masukkan teks, dan hasilkan ucapan berkualitas tinggi dengan satu klik',
+        attribute: 'Atribut Data',
+        audioParameters: 'Konfigurasi Parameter Audio',
+        audioName: 'Nama Audio',
+        audioNamePlaceholder: 'Beri nama audio Anda',
+        speakingSpeed: 'Kontrol Kecepatan Berbicara',
+        audioText: 'Teks Audio',
+        audioTextPlaceholder: 'Silakan masukkan konten teks untuk disintesis...',
+        fileStatus: 'Status File',
+        audioStatus: 'Status Suara',
+        audioUploaded: 'Suara Dipilih',
+        audioInfo: 'Informasi Audio',
+        timbreInfo: 'Informasi Suara',
+        fileName: 'Nama File',
+        fileSize: 'Ukuran File',
+        fileFormat: 'Format',
+        audioName2: 'Nama Suara',
+        sex: 'Jenis Kelamin',
+        male: 'Pria',
+        female: 'Wanita',
+        style: 'Gaya',
+        getAudio: 'Akuisisi Audio',
+        getTimbre: 'Pilihan Suara',
+        uploadOrOnline: 'Unggah File atau Rekaman Online',
+        selectVoice: 'Pilih Suara yang Ada',
+        uploadFile: 'Unggah File',
+        onlineRecording: 'Rekaman Online',
+        uploadAudio: 'Seret atau klik untuk mengunggah file audio',
+        supportAudioType: 'Mendukung format MP3, WAV, ukuran file tidak melebihi 50MB',
+        startRecording: 'Mulai Rekaman',
+        stopRecording: 'Hentikan Rekaman',
+        uploadRecording: 'Unggah Rekaman',
+        previewRecording: 'Pratinjau Rekaman',
+        clear: 'Hapus',
+        commonVoice: 'Suara Publik',
+        privateVoice: 'Suara Pribadi',
+        allSex: 'Semua Jenis Kelamin',
+        allStyle: 'Semua Gaya',
+        UGC: 'Dibuat Pengguna',
+        Advertisement: 'Iklan',
+        voiceLoading: 'Memuat daftar suara...',
+        previousPage: 'Halaman Sebelumnya',
+        nextPage: 'Halaman Berikutnya',
+        page: 'Halaman',
+        total: 'Total',
+        syntheticEffect: 'Efek Sintesis',
+        previewRes: 'Pratinjau dan Kelola Hasil',
+        operationProcess: 'Proses Operasi',
+        syntheticText: 'Teks Sintesis',
+        ready: 'Siap',
+        inPreparation: 'Mempersiapkan...',
+        taskRes: 'Hasil Tugas',
+        taskStatus: 'Status Tugas',
+        outputAudio: 'Audio Output',
+        downloadAudio: 'Unduh Audio',
+        clearReset: 'Hapus Reset',
+        startCloning: 'Mulai Kloning',
+        startSynthesis: 'Mulai Sintesis',
+        inProcessing: 'Memproses...',
+        recordingCompleted: 'Rekaman selesai, silakan klik unggah',
+        recording: 'Rekaman_',
+        uploadSuccess: 'File berhasil diunggah',
+        uploadFail: 'Pengunggahan file gagal',
+        micPermission: 'Meminta izin mikrofon...',
+        micPermissionFail: 'Tidak dapat mengakses mikrofon, silakan periksa pengaturan izin',
+        recording2: 'Merekam...',
+        recordingFail: 'Rekaman gagal',
+        audioFirst: 'Silakan rekam audio terlebih dahulu',
+        recordUploadSuccess: 'Rekaman berhasil diunggah',
+        recordUploadFail: 'Pengunggahan rekaman gagal',
+        recordPrepare: 'Persiapkan Rekaman',
+        msgConfirm: 'Silakan pastikan semua informasi yang diperlukan telah diisi',
+        messionPushFail: 'Pengiriman tugas gagal',
+        taskSuccess: 'Tugas selesai',
+        durationInvalid: 'Durasi video tidak valid, perlu 10s~5 menit, silakan unggah ulang',
+        queryFail: 'Gagal meminta status tugas',
+        trialListening: 'Dengarkan Percobaan',
+        emptyState: 'Konfigurasi parameter dan mulai pembuatan, hasil akan ditampilkan di sini',
+        resultTitle: 'Hasil Pembuatan',
+        addToLibrary: 'Tambahkan ke Perpustakaan Materi',
+        addedToLibrary: 'Ditambahkan ke Perpustakaan Materi',
+        addToLibraryFail: 'Gagal menambahkan ke Perpustakaan Materi',
+        createAudioFile: 'File Audio yang Dihasilkan',
+        audioReadFail: 'Tidak dapat membaca data audio',
+        fileReadFail: 'Pembacaan file gagal',
+        transWAV: 'Mengonversi ke format WAV...',
+        transWAVSuccess: 'Konversi format WAV selesai',
+        transWAVFail: 'Konversi format audio gagal, akan menggunakan format asli',
+        downloadAll: 'Unduh Semua'
+      },
+      workshop: {
+        title: 'Workshop Kreatif',
+        description: 'Jelajahi alat AI kreatif',
+        allTools: 'Semua Alat',
+        image: 'Gambar',
+        video: 'Video',
+        audio: 'Audio',
+        others: 'Lainnya',
+        tools: {
+          translation: {
+            title: 'Tukar Wajah AI',
+            description: 'Gunakan teknologi AI untuk penggantian wajah',
+            emoji: '🧍'
+          },
+          tts: {
+            title: 'Teks ke Ucapan',
+            description: 'Ubah teks menjadi ucapan alami',
+            emoji: '🎤'
+          },
+          glbViewer: {
+            title: 'Penampil Model 3D',
+            description: 'Lihat dan manipulasi model 3D',
+            emoji: '🤖'
+          },
+          customPrompt: {
+            title: 'Prompt Kustom',
+            description: 'Hasilkan gambar dengan prompt kustom',
+            emoji: '✍️'
+          },
+          imageTranslation: {
+            title: 'Terjemahan Gambar',
+            description: 'Ubah gambar menjadi gaya berbeda',
+            emoji: '🧍'
+          },
+          aiTemplate: {
+            title: 'Template AI',
+            description: 'Hasilkan konten dengan cepat menggunakan template AI',
+            emoji: '🖼️'
+          }
+        }
+      }
+    },
+    chatPage: {
+      settingsTitle: 'Pengaturan Dialog',
+      selectModel: 'Pilih Model',
+      paramsTitle: 'Parameter',
+      temperature: 'Suhu',
+      temperatureDesc: 'Kontrol keacakan: lebih tinggi lebih kreatif.',
+      presencePenalty: 'Topik Baru',
+      presencePenaltyDesc: 'Dorong topik baru: lebih tinggi menghukum pengulangan.',
+      shortcutsTitle: 'Pintasan',
+      actions: {
+        clear: 'Hapus Chat',
+        save: 'Simpan Chat',
+        new: 'Chat Baru',
+        refresh: 'Segarkan Rekaman'
+      },
+      historyTitle: 'Riwayat',
+      noHistory: 'Belum ada rekaman',
+      mainTitle: 'Area Dialog',
+      statusReady: 'Siap',
+      inputPlaceholder: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
+      send: 'Kirim',
+      welcomeMessage: 'Hai! Saya adalah asisten AI Anda. Bagaimana saya bisa membantu Anda hari ini?',
+      footerTip: 'Penafian: Konten dihasilkan oleh AI. Akurasi tidak dijamin.'
+    },
+    keysPage: {
+      title: 'Manajemen Kunci API',
+      createButton: 'Kunci API Baru',
+      labels: {
+        limit: 'Batas Total',
+        remaining: 'Tersisa',
+        used: 'Digunakan',
+        expires: 'Kedaluwarsa',
+        status: 'Status'
+      },
+      values: {
+        unlimited: 'Tidak Terbatas',
+        never: 'Tidak Pernah'
+      },
+      actions: {
+        disable: 'Nonaktifkan',
+        enable: 'Aktifkan',
+        delete: 'Hapus',
+        edit: 'Edit'
+      },
+      status: {
+        active: 'Aktif',
+        disabled: 'Dinonaktifkan'
+      }
+    },
+    expensesPage: {
+      title: 'Pusat Kredit/Saldo',
+      subtitle: 'Lihat dan kelola saldo kredit Anda, pahami penggunaan kredit',
+      balanceLabel: 'Saldo',
+      convertPoints: 'Poin yang Dapat Dikonversi',
+      buttons: {
+        points: 'Poin',
+        balance: 'Saldo',
+        freeMember: 'Anggota Gratis',
+        refresh: 'Segarkan',
+      },
+      recordsTitle: 'Catatan Penggunaan',
+      refreshData: 'Segarkan Data',
+      record: {
+        type: 'Jenis',
+        duration: 'Waktu',
+        input: 'Input',
+        output: 'Output',
+        consumption: 'Konsumsi'
+      }
+    },
+    pricingPage: {
+      title: 'Daftar Harga',
+      subtitle: 'Pilih paket layanan kreatif AI yang paling sesuai untuk Anda dan mulai perjalanan pembuatan konten cerdas Anda',
+      paymentCycle: 'Pilihan Siklus Pembayaran',
+      questions: 'Pertanyaan tentang isi ulang? Klik di sini',
+      paymentMethod: 'Metode Pembayaran:',
+      wechatPay: 'WeChat Pay',
+      invoice: 'Terbitkan Faktur:',
+      invoiceLabel: '',
+      starter: {
+        title: 'Starter',
+        features: [
+          '¥ 1.72 / 1 Kredit',
+          'Integrasi AI yang fleksibel',
+          'Large Model API+ siap pakai',
+          'Kemampuan multi-modal, mencakup berbagai skenario',
+          'Pratinjau video tidak terbatas',
+          '500+ manusia digital dan suara',
+          'Pelestarian aset digital tidak terbatas',
+          'Foto berbicara panjang video maks 180s',
+          'Tanpa Watermark',
+          'Kecepatan rendering lebih cepat'
+        ]
+      },
+      business: {
+        title: 'Business',
+        features: [
+          '¥ 1.59 / 1 Kredit',
+          'Integrasi AI yang fleksibel, Saluran Prioritas',
+          'Large Model API+ siap pakai',
+          'Kemampuan multi-modal, mencakup berbagai skenario',
+          'Pratinjau video tidak terbatas',
+          '500+ manusia digital dan suara',
+          'Pelestarian aset digital tidak terbatas',
+          'Foto berbicara panjang video maks 1800s',
+          'Tanpa Watermark',
+          'Kecepatan rendering prioritas tertinggi'
+        ]
+      },
+      enterprise: {
+        title: 'Enterprise',
+        slogan: "Mari berbicara!",
+        features: [
+          'Kursi tim kustom',
+          'Batas kredit kustom',
+          'Manusia digital kustom',
+          'Suara AI kustom',
+          'Fungsi kustom',
+          'Pengembangan fitur yang disesuaikan'
+        ]
+      },
+      labels: {
+        credits: 'Kredit Tersedia:',
+        quantity: 'Jumlah Pembelian',
+        custom: 'Kustom',
+        buy: 'Beli Sekarang',
+        contact: 'Hubungi Kami'
+      }
+    },
+    assetsPage: {
+      title: 'Manajemen Aset AI',
+      subtitle: 'Kelola aset video dan gambar Anda. Pratinjau, edit, dan operasi batch.',
+      filterSearch: 'Filter Pencarian',
+      searchName: 'Nama Aset',
+      namePlaceholder: 'Cari nama',
+      searchType: 'Jenis Aset',
+      chooseType: 'Pilih jenis',
+      searchTag: 'Tag Aset',
+      tagPlaceholder: 'Cari tag',
+      searchDesc: 'Deskripsi',
+      descPlaceholder: 'Cari deskripsi',
+      search: 'Cari',
+      reset: 'Reset',
+      newFolder: 'Folder Baru',
+      upload: 'Unggah',
+      move: 'Pindahkan',
+      delete: 'Hapus',
+      selectAll: 'Pilih Semua',
+      totalFolders: 'Folder',
+      totalFiles: 'File',
+      searchInResult: 'Cari dalam hasil',
+    },
+    profilePage: {
+      title: 'Pusat Pribadi',
+      subtitle: 'Kelola informasi akun dan pengaturan keamanan Anda',
+      basicInfo: 'Informasi Dasar',
+      accountSecurity: 'Keamanan Akun',
+      avatar: 'Avatar',
+      uploadAvatar: 'Ubah Avatar',
+      labels: {
+        nickname: 'Nama Panggilan',
+        phone: 'Nomor Telepon',
+        email: 'Email',
+        gender: 'Jenis Kelamin',
+        createTime: 'Waktu Pendaftaran',
+        role: 'Peran',
+        dept: 'Departemen',
+        password: 'Kata Sandi'
+      },
+      placeholders: {
+        nickname: 'Masukkan nama panggilan Anda',
+        phone: 'Masukkan nomor telepon Anda',
+        email: 'Masukkan email Anda'
+      },
+      gender: {
+        male: 'Pria',
+        female: 'Wanita',
+        unknown: 'Tidak Diketahui'
+      },
+      buttons: {
+        save: 'Simpan Perubahan',
+        reset: 'Reset',
+        changePassword: 'Ubah Kata Sandi'
+      }
+    },
+    footer: {
+      privacy: 'Privasi',
+      terms: 'Ketentuan',
+      twitter: 'Twitter',
+      discord: 'Discord'
+    },
+    auth: {
+      loginTitle: 'Selamat Datang Kembali',
+      tabPassword: 'Kata Sandi',
+      tabPhone: 'Telepon',
+      accountLabel: 'Email atau Nama Pengguna',
+      accountPlaceholder: 'Masukkan email Anda',
+      passwordLabel: 'Kata Sandi',
+      passwordPlaceholder: 'Masukkan kata sandi Anda',
+      phoneLabel: 'Nomor Telepon',
+      phonePlaceholder: 'Masukkan nomor telepon',
+      codeLabel: 'Kode Verifikasi',
+      codePlaceholder: 'Kode 4 digit',
+      sendCode: 'Kirim Kode',
+      codeSent: 'Terkirim!',
+      signIn: 'Masuk',
+      countries: {
+        china: 'China',
+        japan: 'Jepang',
+        indonesia: 'Indonesia'
       }
     }
   }

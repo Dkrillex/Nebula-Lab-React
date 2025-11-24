@@ -48,7 +48,14 @@ const Header: React.FC<HeaderProps> = ({
   const [canScrollRight, setCanScrollRight] = useState(false);
   
   const toggleLang = () => {
-    setLang(lang === 'en' ? 'zh' : 'en');
+    // 循环切换：zh -> en -> id -> zh
+    if (lang === 'zh') {
+      setLang('en');
+    } else if (lang === 'en') {
+      setLang('id');
+    } else {
+      setLang('zh');
+    }
   };
 
   const handleNavClick = (e: React.MouseEvent, href: string) => {
