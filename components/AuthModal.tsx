@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Smartphone, Lock, Mail, KeyRound, Loader2, Globe } from 'lucide-react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/authService';
+import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
 interface AuthModalProps {
@@ -33,11 +35,15 @@ interface AuthModalProps {
 
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, lang = 'zh', t }) => {
   const { login, phoneLogin, loading } = useAuthStore();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<'password' | 'phone'>('password');
   const [isClosing, setIsClosing] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [sendingCode, setSendingCode] = useState(false);
   const [agreePolicy, setAgreePolicy] = useState(false);
+  const [showFirstLoginDialog, setShowFirstLoginDialog] = useState(false);
+  const [firstLoginPassword, setFirstLoginPassword] = useState('');
 
   // 根据语言排序国家代码选项（参考 Vue3 实现）
   const countryCodeOptions = useMemo(() => {
@@ -187,18 +193,45 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       return;
     }
 
+    // 获取URL参数中的channelId和teamId
+    const channelId = searchParams.get('channelId') || undefined;
+    const teamId = searchParams.get('teamId') || undefined;
+
+    // 如果存在这些参数，在登录时传递
+    if (channelId) {
+      console.log('手机号登录：检测到邀请参数 channelId:', channelId);
+    }
+    if (teamId) {
+      console.log('手机号登录：检测到邀请参数 teamId:', teamId);
+    }
+
     try {
-      await phoneLogin({
+      const firstLoginInfo = await phoneLogin({
         phonenumber: phone,
         smsCode: code,
         countryCode: countryCode,
+        channelId: channelId,
+        teamId: teamId,
       });
+      
+      // 注意：URL 参数清除已在 authStore.phoneLogin 中处理，这里不需要重复清除
       
       if (onLoginSuccess) onLoginSuccess();
       handleClose();
+      
+      // 检查是否首次登录，延迟显示提示对话框以确保登录对话框先关闭
+      if (firstLoginInfo?.isFirstLogin && firstLoginInfo?.defaultPassword) {
+        console.log('首次登录，准备显示提示对话框，默认密码:', firstLoginInfo.defaultPassword);
+        setFirstLoginPassword(firstLoginInfo.defaultPassword);
+        // 延迟显示，确保登录对话框先关闭
+        setTimeout(() => {
+          console.log('显示首次登录提示对话框');
+          setShowFirstLoginDialog(true);
+        }, 300); // 等待登录对话框关闭动画完成
+      }
     } catch (err: any) {
       console.error('手机号登录失败:', err);
-      toast.error(err?.response?.data?.msg || err?.message || '登录失败，请检查验证码是否正确');
+      // 后端已经处理了错误提示，前端不再显示
     }
   };
 
@@ -207,14 +240,45 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
 
     try {
       if (mode === 'password') {
-        await login({ username, password });
+        // 获取URL参数中的channelId和teamId
+        const channelId = searchParams.get('channelId') || undefined;
+        const teamId = searchParams.get('teamId') || undefined;
+
+        // 如果存在这些参数，在登录时传递
+        if (channelId) {
+          console.log('账号密码登录：检测到邀请参数 channelId:', channelId);
+        }
+        if (teamId) {
+          console.log('账号密码登录：检测到邀请参数 teamId:', teamId);
+        }
+
+        const firstLoginInfo = await login({ 
+          username, 
+          password,
+          channelId: channelId,
+          teamId: teamId,
+        });
         if (onLoginSuccess) onLoginSuccess();
         handleClose();
+        
+        // 注意：URL 参数清除已在 authStore.login 中处理，这里不需要重复清除
+        
+        // 检查是否首次登录，延迟显示提示对话框以确保登录对话框先关闭
+        if (firstLoginInfo?.isFirstLogin && firstLoginInfo?.defaultPassword) {
+          console.log('首次登录，准备显示提示对话框，默认密码:', firstLoginInfo.defaultPassword);
+          setFirstLoginPassword(firstLoginInfo.defaultPassword);
+          // 延迟显示，确保登录对话框先关闭
+          setTimeout(() => {
+            console.log('显示首次登录提示对话框');
+            setShowFirstLoginDialog(true);
+          }, 300); // 等待登录对话框关闭动画完成
+        }
       } else if (mode === 'phone') {
         await handlePhoneLogin();
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.msg || err?.message || '操作失败，请重试');
+      // 后端已经处理了错误提示，前端不再显示
+      console.error('登录失败:', err);
     }
   };
 
@@ -235,9 +299,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
     toast(content, { duration: 6000 });
   };
 
-  if (!isOpen) return null;
+  // 处理首次登录提示
+  const handleFirstLoginModify = () => {
+    setShowFirstLoginDialog(false);
+    navigate('/profile?tab=security');
+  };
+
+  const handleFirstLoginLater = () => {
+    setShowFirstLoginDialog(false);
+  };
+
+  // 即使 AuthModal 关闭，如果首次登录对话框需要显示，也要渲染
+  if (!isOpen && !showFirstLoginDialog) return null;
 
   return (
+    <>
+    {isOpen && (
     <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
       {/* Backdrop */}
       <div 
@@ -412,6 +489,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         </div>
       </div>
     </div>
+    )}
+    
+    {/* 首次登录提示对话框 - 独立渲染，不依赖于 AuthModal 的 isOpen 状态 */}
+    <ConfirmDialog
+      isOpen={showFirstLoginDialog}
+      title="首次登录提醒"
+      message={`您的账号已自动注册成功！\n默认密码为：${firstLoginPassword}\n\n为了保障账号安全，建议您立即修改密码。`}
+      confirmText="立即修改"
+      cancelText="稍后修改"
+      onConfirm={handleFirstLoginModify}
+      onCancel={handleFirstLoginLater}
+      type="info"
+    />
+    </>
   );
 };
 

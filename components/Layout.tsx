@@ -5,7 +5,8 @@ import Header from './Header';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationModal from './NotificationModal';
-// import CachedOutlet from './CachedOutlet';
+import ConfirmDialog from './ConfirmDialog';
+import CachedOutlet from './CachedOutlet';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
@@ -24,7 +25,7 @@ const Layout: React.FC = () => {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchUserInfo, isAuthenticated } = useAuthStore();
+  const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
 
   // Theme handling
   useEffect(() => {
@@ -37,11 +38,15 @@ const Layout: React.FC = () => {
   }, [isDark]);
 
   // Auth handling
+  // 注意：登录成功后，login/phoneLogin 方法中已经调用了 fetchUserInfo()
+  // 这里只在用户已经登录但还没有用户信息时调用（比如页面刷新后）
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !user && !loading) {
+      // 只在用户已登录但没有用户信息且不在加载中时调用
+      // 避免在登录过程中重复调用 fetchUserInfo
       fetchUserInfo();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user, loading, fetchUserInfo]);
 
   const t = translations[lang];
 
@@ -210,11 +215,39 @@ const Layout: React.FC = () => {
           t={safeT.auth}
         />
 
-        <NotificationModal 
-          isOpen={isNotificationOpen} 
-          onClose={() => setIsNotificationOpen(false)} 
-        />
-      </div>
+      <AuthModal 
+        isOpen={isAuthModalOpen}  
+        onClose={() => setIsAuthModalOpen(false)} 
+        onLoginSuccess={() => {
+          // fetchUserInfo will be called automatically by useEffect when isAuthenticated changes
+          // No need to call it here to avoid duplicate calls
+        }}
+        lang={lang}
+        t={t.auth}
+      />
+
+      {/* 首次登录提示对话框 - 在 Layout 层级显示，确保即使 AuthModal 关闭也能显示 */}
+      <ConfirmDialog
+        isOpen={!!firstLoginInfo}
+        title="首次登录提醒"
+        message={firstLoginInfo ? `您的账号已自动注册成功！\n默认密码为：${firstLoginInfo.defaultPassword}\n\n为了保障账号安全，建议您立即修改密码。` : ''}
+        confirmText="立即修改"
+        cancelText="稍后修改"
+        onConfirm={() => {
+          clearFirstLoginInfo();
+          navigate('/profile?tab=security');
+        }}
+        onCancel={() => {
+          clearFirstLoginInfo();
+        }}
+        type="info"
+      />
+
+      <NotificationModal 
+        isOpen={isNotificationOpen} 
+        onClose={() => setIsNotificationOpen(false)} 
+      />
+    </div>
     </KeepAliveProvider>
   );
 };

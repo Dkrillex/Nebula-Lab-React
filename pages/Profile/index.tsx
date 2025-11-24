@@ -38,6 +38,7 @@ const ProfilePage: React.FC = () => {
 
   // 基本设置表单相关状态
   const [profileForm, setProfileForm] = useState({
+    userName: '',
     nickName: '',
     email: '',
     sex: '0',
@@ -89,6 +90,7 @@ const ProfilePage: React.FC = () => {
         setProfile(data);
         // 初始化表单数据
         setProfileForm({
+          userName: data.user.userName || '',
           nickName: data.user.nickName || '',
           email: data.user.email || '',
           sex: data.user.sex || '0',
@@ -198,12 +200,30 @@ const ProfilePage: React.FC = () => {
       return;
     }
 
+    // 验证账号名称格式（如果填写了）
+    // 2到30个字符，中文字符、字母、数字或下划线，且必须以非数字开头
+    if (profileForm.userName) {
+      if (profileForm.userName.length < 2 || profileForm.userName.length > 30) {
+        toast.error('账号名称长度必须在2-30个字符之间');
+        return;
+      }
+      if (!/^[^\d]/.test(profileForm.userName)) {
+        toast.error('账号名称必须以非数字开头');
+        return;
+      }
+      if (!/^[^\d][\u4e00-\u9fa5a-zA-Z0-9_]*$/.test(profileForm.userName)) {
+        toast.error('账号名称只能包含中文字符、字母、数字或下划线');
+        return;
+      }
+    }
+
     if (!profile) return;
 
     try {
       setProfileFormLoading(true);
       await profileService.updateProfile({
         userId: profile.user.userId,
+        userName: profileForm.userName,
         nickName: profileForm.nickName,
         email: profileForm.email,
         sex: profileForm.sex,
@@ -223,6 +243,7 @@ const ProfilePage: React.FC = () => {
   const handleCancelEdit = () => {
     if (profile) {
       setProfileForm({
+        userName: profile.user.userName || '',
         nickName: profile.user.nickName || '',
         email: profile.user.email || '',
         sex: profile.user.sex || '0',
@@ -370,12 +391,25 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* 信息表单 */}
-                <div className="flex-1 space-y-4 w-full">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex-1 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {/* 账号名称（只读） */}
                     <div>
-                      <label className="block text-sm font-medium text-muted mb-1">账号名称</label>
-                      <div className="text-foreground">{profile.user.userName}</div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        账号名称
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="userName"
+                          value={profileForm.userName}
+                          onChange={handleProfileFormChange}
+                          placeholder="请输入账号名称（2-30个字符，必须以非数字开头）"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        />
+                      ) : (
+                        <div className="text-foreground">{profile.user.userName || '-'}</div>
+                      )}
                     </div>
 
                     {/* 昵称（可编辑） */}
