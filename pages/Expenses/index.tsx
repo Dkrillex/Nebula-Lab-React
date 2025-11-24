@@ -494,66 +494,47 @@ const ExpensesPage: React.FC = () => {
     <div className="min-h-screen pb-12 font-sans bg-white">
       <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
         
-        {/* Page Header - 按照图片布局 */}
-        <div className="flex items-start justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-black mb-1">积分/余额管理中心</h1>
-            <p className="text-sm text-gray-600">
-              {currentMode === 'balance' ? '当前余额' : '积分概览'}
-            </p>
-          </div>
-          {/* 右上角切换按钮 */}
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => handleModeChange('balance')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                currentMode === 'balance'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              余额
-            </button>
-            <button
-              onClick={() => handleModeChange('points')}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                currentMode === 'points'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              积分
-            </button>
-          </div>
-        </div>
-
         {/* Balance and Quick Actions - 左右布局 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          {/* 左侧：余额/积分信息框 */}
+          {/* 左侧：余额/积分信息框 - 始终显示余额相关内容 */}
           <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
-            {currentMode === 'balance' ? (
-              <>
-                <div className="text-sm text-gray-600 mb-2">可用余额 (CNY)</div>
-                <div className="text-4xl font-bold text-blue-600 mb-3">
-                  ¥{quotaLoading ? '...' : formatPoints(balance)}
-                </div>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
-                  <span>可兑换积分:</span>
-                  <span className="font-semibold text-gray-700">{formatPoints(points)}</span>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="text-sm text-gray-600 mb-2">总积分(Points)</div>
-                <div className="text-4xl font-bold text-blue-600">
-                  {quotaLoading ? '...' : formatPoints(points)} pts
-                </div>
-              </>
-            )}
+            <>
+              <div className="text-sm text-gray-600 mb-2">可用余额 (CNY)</div>
+              <div className="text-4xl font-bold text-blue-600 mb-3">
+                ¥{quotaLoading ? '...' : formatPoints(balance)}
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <span>可兑换积分:</span>
+                <span className="font-semibold text-gray-700">{formatPoints(points)}</span>
+              </div>
+            </>
           </div>
 
           {/* 右侧：快捷操作框 */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center">
+          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center relative">
+            {/* 余额和积分切换按钮 - 右上角 */}
+            <div className="absolute top-4 right-4 flex items-center gap-2">
+              <button
+                onClick={() => handleModeChange('balance')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  currentMode === 'balance'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                余额
+              </button>
+              <button
+                onClick={() => handleModeChange('points')}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  currentMode === 'points'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+              >
+                积分
+              </button>
+            </div>
             <div className="text-sm text-gray-600 mb-4">快捷操作</div>
             <button
               onClick={handleRefresh}
@@ -1025,7 +1006,7 @@ const ExpenseListItem: React.FC<{
       
       {/* 扣费金额 - 红色 */}
       <div className="text-sm font-medium text-red-600 whitespace-nowrap self-center">
-        -{record.cost.toFixed(4)}
+        ￥ -{record.cost.toFixed(4)}
       </div>
     </div>
   );
@@ -1049,6 +1030,7 @@ const ScoreListItem: React.FC<{
     8: { text: '语音处理', icon: '🎤' },
     9: { text: 'AI助手', icon: '🤖' },
     10: { text: '智能分析', icon: '🤖' },
+    11: { text: 'AI视频换脸', icon: '🤖' },
     15: { text: 'AI创作实验室', icon: '🤖' },
   };
   
