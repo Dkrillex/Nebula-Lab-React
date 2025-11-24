@@ -530,27 +530,29 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleInviteNewUser = async () => {
     if (!currentTeam) return;
+    // 新用户和老用户使用同一个链接
     const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      toast.success('新用户邀请链接已复制到剪贴板');
+      toast.success('邀请链接已复制到剪贴板');
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast(`新用户邀请链接：${inviteUrl}`, { duration: 5000 });
+      toast(`邀请链接：${inviteUrl}`, { duration: 5000 });
     }
   };
 
   const handleInviteOldUser = async () => {
     if (!currentTeam) return;
-    const loginUrl = `https://ai-nebula.com/auth/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    // 新用户和老用户使用同一个链接
+    const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     
     try {
-      await navigator.clipboard.writeText(loginUrl);
-      toast.success('老用户邀请链接已复制到剪贴板');
+      await navigator.clipboard.writeText(inviteUrl);
+      toast.success('邀请链接已复制到剪贴板');
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast(`老用户邀请链接：${loginUrl}`, { duration: 5000 });
+      toast(`邀请链接：${inviteUrl}`, { duration: 5000 });
     }
   };
 

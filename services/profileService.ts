@@ -49,6 +49,7 @@ export interface ChangePasswordParams {
 
 export interface UpdateProfileParams {
   userId: string;
+  userName?: string;
   nickName?: string;
   email?: string;
   sex?: string;

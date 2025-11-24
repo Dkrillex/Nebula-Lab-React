@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Smartphone, Lock, Mail, KeyRound, Loader2, Globe } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/authService';
 import ConfirmDialog from './ConfirmDialog';
@@ -36,6 +36,7 @@ interface AuthModalProps {
 const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, lang = 'zh', t }) => {
   const { login, phoneLogin, loading } = useAuthStore();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<'password' | 'phone'>('password');
   const [isClosing, setIsClosing] = useState(false);
   const [countdown, setCountdown] = useState(0);
@@ -192,12 +193,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       return;
     }
 
+    // 获取URL参数中的channelId和teamId
+    const channelId = searchParams.get('channelId') || undefined;
+    const teamId = searchParams.get('teamId') || undefined;
+
+    // 如果存在这些参数，在登录时传递
+    if (channelId) {
+      console.log('手机号登录：检测到邀请参数 channelId:', channelId);
+    }
+    if (teamId) {
+      console.log('手机号登录：检测到邀请参数 teamId:', teamId);
+    }
+
     try {
       const firstLoginInfo = await phoneLogin({
         phonenumber: phone,
         smsCode: code,
         countryCode: countryCode,
+        channelId: channelId,
+        teamId: teamId,
       });
+      
+      // 注意：URL 参数清除已在 authStore.phoneLogin 中处理，这里不需要重复清除
       
       if (onLoginSuccess) onLoginSuccess();
       handleClose();
@@ -214,7 +231,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       }
     } catch (err: any) {
       console.error('手机号登录失败:', err);
-      toast.error(err?.response?.data?.msg || err?.message || '登录失败，请检查验证码是否正确');
+      // 后端已经处理了错误提示，前端不再显示
     }
   };
 
@@ -223,9 +240,28 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
 
     try {
       if (mode === 'password') {
-        const firstLoginInfo = await login({ username, password });
+        // 获取URL参数中的channelId和teamId
+        const channelId = searchParams.get('channelId') || undefined;
+        const teamId = searchParams.get('teamId') || undefined;
+
+        // 如果存在这些参数，在登录时传递
+        if (channelId) {
+          console.log('账号密码登录：检测到邀请参数 channelId:', channelId);
+        }
+        if (teamId) {
+          console.log('账号密码登录：检测到邀请参数 teamId:', teamId);
+        }
+
+        const firstLoginInfo = await login({ 
+          username, 
+          password,
+          channelId: channelId,
+          teamId: teamId,
+        });
         if (onLoginSuccess) onLoginSuccess();
         handleClose();
+        
+        // 注意：URL 参数清除已在 authStore.login 中处理，这里不需要重复清除
         
         // 检查是否首次登录，延迟显示提示对话框以确保登录对话框先关闭
         if (firstLoginInfo?.isFirstLogin && firstLoginInfo?.defaultPassword) {
@@ -241,7 +277,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         await handlePhoneLogin();
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.msg || err?.message || '操作失败，请重试');
+      // 后端已经处理了错误提示，前端不再显示
+      console.error('登录失败:', err);
     }
   };
 

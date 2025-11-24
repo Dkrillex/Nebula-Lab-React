@@ -8,7 +8,7 @@ export const authService = {
    * Login (Standard Ruoyi)
    * Endpoint: /login
    */
-  login: (data: { username?: string; password?: string; code?: string; uuid?: string }) => {
+  login: (data: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string }) => {
     const loginData = {
       ...data,
       clientId: CLIENT_ID,
@@ -60,7 +60,7 @@ export const authService = {
    * Phone Login (SMS Code)
    * Endpoint: /auth/login
    */
-  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string }) => {
+  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string; channelId?: string; teamId?: string }) => {
     const loginData = {
       ...data,
       clientId: CLIENT_ID,
@@ -89,6 +89,8 @@ export const authService = {
     registerSystem?: string;
     invitedCode?: string;
     countryCode?: string;
+    channelId?: string;
+    teamId?: string;
   }) => {
     const registerData = {
       ...data,
@@ -104,5 +106,18 @@ export const authService = {
       registerData,
       { isToken: false, encrypt: false }
     );
+  },
+
+  /**
+   * 处理邀请链接（老用户通过邀请链接加入企业和团队）
+   * @param channelId 渠道ID
+   * @param teamId 团队ID
+   * @returns void
+   */
+  handleInviteJoin: (channelId?: string, teamId?: string) => {
+    return request.post<void>('/auth/invite/join', {
+      channelId,
+      teamId,
+    });
   },
 };

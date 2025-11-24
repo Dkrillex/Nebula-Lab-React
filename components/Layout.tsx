@@ -23,7 +23,7 @@ const Layout: React.FC = () => {
   
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo } = useAuthStore();
+  const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
 
   // Theme handling
   useEffect(() => {
@@ -36,11 +36,15 @@ const Layout: React.FC = () => {
   }, [isDark]);
 
   // Auth handling
+  // 注意：登录成功后，login/phoneLogin 方法中已经调用了 fetchUserInfo()
+  // 这里只在用户已经登录但还没有用户信息时调用（比如页面刷新后）
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !user && !loading) {
+      // 只在用户已登录但没有用户信息且不在加载中时调用
+      // 避免在登录过程中重复调用 fetchUserInfo
       fetchUserInfo();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user, loading, fetchUserInfo]);
 
   const t = translations[lang];
 
