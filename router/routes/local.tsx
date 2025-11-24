@@ -1,11 +1,13 @@
 import React from 'react';
 import { AppRouteObject } from '../AuthGuard';
 import DashboardLayout from '../../components/DashboardLayout';
-import { RouteWrapper } from '../../pages/Create/RouteWrapper';
+import { RouteWrapper } from '../../components/RouteWrapper';
+
+import CreateHome from '../../pages/Create/CreateHome';
 
 // 懒加载组件
 const CreateLayout = React.lazy(() => import('../../pages/Create'));
-const CreateHome = React.lazy(() => import('../../pages/Create/CreateHome'));
+// const CreateHome = React.lazy(() => import('../../pages/Create/CreateHome'));
 const AssetsPage = React.lazy(() => import('../../pages/Assets'));
 const ChatPage = React.lazy(() => import('../../pages/Chat'));
 const KeysPage = React.lazy(() => import('../../pages/Keys'));
@@ -41,7 +43,7 @@ export const localRoutes: AppRouteObject[] = [
     children: [
       {
         path: 'create',
-        element: <CreateLayout />,
+        element: <RouteWrapper component={CreateLayout} translationKey="createPage" />,
         meta: {
           title: 'Create',
           icon: 'magic',
@@ -51,7 +53,7 @@ export const localRoutes: AppRouteObject[] = [
         children: [
           {
             index: true,
-            element: <CreateHome />,
+            element: <RouteWrapper component={CreateHome} translationKey="createPage" />,
             meta: {
               title: 'Create Dashboard',
               keepAlive: true
@@ -59,17 +61,17 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'textToImage',
-            element: <RouteWrapper component={TextToImagePage} translationKey="textToImage" />,
+            element: <RouteWrapper component={TextToImagePage} translationKey="createPage.textToImage" />,
             meta: { title: 'Text to Image', keepAlive: true }
           },
           {
             path: 'viralVideo',
-            element: <RouteWrapper component={ViralVideoPage} translationKey="viralVideo" />,
+            element: <RouteWrapper component={ViralVideoPage} translationKey="createPage.viralVideo" />,
             meta: { title: 'Viral Video', keepAlive: true }
           },
           {
             path: 'imgToVideo',
-            element: <RouteWrapper component={ImageToVideoPage} translationKey="imgToVideo" />,
+            element: <RouteWrapper component={ImageToVideoPage} translationKey="createPage.imgToVideo" />,
             meta: { title: 'Image to Video', keepAlive: true }
           },
           {
@@ -85,12 +87,12 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'styleTransfer',
-            element: <RouteWrapper component={StyleTransferPage} translationKey="styleTransfer" />,
+            element: <RouteWrapper component={StyleTransferPage} translationKey="createPage.styleTransfer" />,
             meta: { title: 'Style Transfer', keepAlive: true }
           },
           {
             path: 'voiceClone',
-            element: <RouteWrapper component={VoiceClone} />,
+            element: <RouteWrapper component={VoiceClone} translationKey="createPage.voiceClone" />,
             meta: { title: 'Voice Clone', keepAlive: true }
           },
           {
@@ -100,17 +102,17 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'glbViewer',
-            element: <RouteWrapper component={GlbViewerPage} />,
+            element: <RouteWrapper component={GlbViewerPage} translationKey="createPage.glbViewer" />,
             meta: { title: 'GLB Viewer', keepAlive: true }
           },
           {
             path: 'aiFaceSwap',
-            element: <RouteWrapper component={AiFaceSwapPage} />,
+            element: <RouteWrapper component={AiFaceSwapPage} translationKey="createPage.faceSwap" />,
             meta: { title: 'Face Swap', keepAlive: true }
           },
           {
             path: 'tts',
-            element: <RouteWrapper component={TtsPage} />,
+            element: <RouteWrapper component={TtsPage} translationKey="createPage.ttsTool" />,
             meta: { title: 'TTS', keepAlive: true }
           },
           {
@@ -120,7 +122,7 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'imageTranslation',
-            element: <RouteWrapper component={AIFaceSwappingPage} />,
+            element: <RouteWrapper component={AIFaceSwappingPage} translationKey="createPage.imageTranslation" />,
             meta: { title: 'Image Translation', keepAlive: true }
           },
           {
@@ -130,14 +132,14 @@ export const localRoutes: AppRouteObject[] = [
           },
           {
             path: 'workshop',
-            element: <RouteWrapper component={WorkshopPage} translationKey="workshop" />,
+            element: <RouteWrapper component={WorkshopPage} translationKey="createPage.workshop" />,
             meta: { title: 'Workshop', keepAlive: true }
           }
         ]
       },
       {
         path: 'assets',
-        element: <AssetsPage />,
+        element: <RouteWrapper component={AssetsPage} translationKey="assetsPage" />,
         meta: {
           title: 'Assets',
           icon: 'folder',
@@ -147,7 +149,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'chat',
-        element: <ChatPage />,
+        element: <RouteWrapper component={ChatPage} translationKey="chatPage" />,
         meta: {
           title: 'Chat',
           icon: 'message',
@@ -157,7 +159,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'keys',
-        element: <KeysPage />,
+        element: <RouteWrapper component={KeysPage} translationKey="keysPage" />,
         meta: {
           title: 'Keys',
           icon: 'key',
@@ -167,7 +169,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'models',
-        element: <ModelSquarePage />,
+        element: <RouteWrapper component={ModelSquarePage} translationKey="modelSquare" />,
         meta: {
           title: 'Models',
           icon: 'grid',
@@ -177,7 +179,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'expenses',
-        element: <ExpensesPage />,
+        element: <RouteWrapper component={ExpensesPage} translationKey="expensesPage" />,
         meta: {
           title: 'Expenses',
           icon: 'dollar-sign',
@@ -187,7 +189,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'pricing',
-        element: <PricingPage />,
+        element: <RouteWrapper component={PricingPage} translationKey="pricingPage" />,
         meta: {
           title: 'Pricing',
           icon: 'credit-card',
@@ -197,7 +199,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'price-list',
-        element: <PriceListPage />,
+        element: <RouteWrapper component={PriceListPage} translationKey="priceListPage" />,
         meta: {
           title: 'Price List',
           icon: 'list',
@@ -217,7 +219,7 @@ export const localRoutes: AppRouteObject[] = [
       },
       {
         path: 'profile',
-        element: <ProfilePage />,
+        element: <RouteWrapper component={ProfilePage} translationKey="profilePage" />,
         meta: {
           title: 'Profile',
           icon: 'user',

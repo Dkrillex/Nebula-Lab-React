@@ -153,14 +153,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: fileToUpload.size, uploadUrl });
 
         // 2. PUT file to uploadUrl
-        // 使用代理上传(开发环境)
-        let finalUploadUrl = uploadUrl;
-        if (import.meta.env.DEV) {
-          finalUploadUrl = uploadUrl.replace('https://aigc.s3-accelerate.amazonaws.com', '/s3-upload');
-        }
-        
-        console.log('开始上传文件到:', finalUploadUrl);
-        const uploadRes = await fetch(finalUploadUrl, {
+        console.log('开始上传文件到:', uploadUrl);
+        const uploadRes = await fetch(uploadUrl, {
             method: 'PUT',
             body: fileToUpload,
             headers: {

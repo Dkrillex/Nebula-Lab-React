@@ -1,9 +1,10 @@
 import React, { Suspense } from 'react';
-import { createHashRouter, useOutletContext } from 'react-router-dom';
-import { KeepAlive } from 'react-activation';
+import { createHashRouter } from 'react-router-dom';
+import KeepAliveWrapper from '../components/KeepAlive';
 import { coreRoutes } from './routes/core';
 import { localRoutes } from './routes/local';
 import { AppRouteObject, AuthGuard } from './AuthGuard';
+import { AppContext, useAppOutletContext } from './context';
 
 // 加载指示器
 const LoadingFallback = () => (
@@ -27,32 +28,36 @@ function processRoutes(routes: AppRouteObject[]): any[] {
       
       // 构建要渲染的元素
       let elementToRender = route.element;
+
+      // 1. 处理 KeepAlive 和 Suspense 的顺序
+      // 关键修改：
+      // 正确的顺序应该是: KeepAlive (外) -> Suspense (内) -> LazyComponent
+      // 这样 KeepAlive 可以稳定地保持住 Suspense 的容器，即使内部正在加载。
+      // 如果 Suspense 在 KeepAlive 外部，当组件被缓存再恢复时，可能会因为 Suspense 的重新挂载机制
+      // 导致 KeepAlive 的 Portal 目标丢失或时序错乱，从而产生白屏。
       
-      // 如果需要认证，包裹 AuthGuard
-      if (route.meta?.requiresAuth) {
-        elementToRender = <AuthGuard>{elementToRender}</AuthGuard>;
-      }
-      
-      // 暂时禁用 KeepAlive 包裹，避免在路由配置阶段创建导致的问题
-      // TODO: 需要在组件渲染时处理缓存，而不是在路由配置时
-      // if (route.meta?.keepAlive) {
-      //   const cacheKey = route.path 
-      //     ? (route.path === '/' ? 'home' : route.path.replace(/^\//, ''))
-      //     : (route.index ? 'index' : `route-${Math.random().toString(36).substr(2, 9)}`);
-      //   
-      //   // 使用 key 确保组件实例唯一性，配合 react-activation
-      //   elementToRender = (
-      //     <KeepAlive id={cacheKey} name={cacheKey} saveScrollPosition="screen">
-      //       {elementToRender}
-      //     </KeepAlive>
-      //   );
-      // }
-      
-      newRoute.element = (
+      // 我们先包裹 Suspense，确保组件自身的懒加载被捕获
+      elementToRender = (
         <Suspense fallback={<LoadingFallback />}>
           {elementToRender}
         </Suspense>
       );
+      
+      // 然后再包裹 KeepAlive，将整个 Suspense + Component 作为一个单元进行缓存
+      if (route.meta?.keepAlive) {
+        elementToRender = (
+          <KeepAliveWrapper keepAlive={true}>
+            {elementToRender}
+          </KeepAliveWrapper>
+        );
+      }
+
+      // 3. 如果需要认证，包裹 AuthGuard
+      if (route.meta?.requiresAuth) {
+        elementToRender = <AuthGuard>{elementToRender}</AuthGuard>;
+      }
+      
+      newRoute.element = elementToRender;
     }
 
     if (newRoute.children) {
@@ -79,24 +84,3 @@ if (layoutRoute && layoutRoute.children) {
 const finalRoutes = processRoutes(coreRoutes);
 
 export const router = createHashRouter(finalRoutes);
-
-// 为了保持组件中使用的 useOutletContext 类型提示，这里导出一个 hook
-export function useAppOutletContext() {
-  const context = useOutletContext<{
-    t: any;
-    handleNavClick: (href: string) => void;
-    onSignIn: () => void;
-  }>();
-  
-  // 如果 context 为 null，返回一个默认值，避免子组件报错
-  if (!context) {
-    console.warn('useAppOutletContext: context is null, returning default value');
-    return {
-      t: null,
-      handleNavClick: () => {},
-      onSignIn: () => {}
-    };
-  }
-  
-  return context;
-}

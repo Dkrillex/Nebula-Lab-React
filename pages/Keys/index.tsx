@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
@@ -7,11 +8,13 @@ import TokenForm from './components/TokenForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import toast from 'react-hot-toast';
 
-interface KeysPageProps {}
+interface KeysPageProps {
+  t?: any;
+}
 
-const KeysPage: React.FC<KeysPageProps> = () => {
-  const outletContext = useOutletContext<{ t: any }>();
-  const t = outletContext?.t?.keysPage;
+const KeysPage: React.FC<KeysPageProps> = (props) => {
+  const { t: rawT } = useAppOutletContext();
+  const t = props.t || rawT?.keysPage || translations['zh'].keysPage;
 
   const { user } = useAuthStore();
   const [tokens, setTokens] = useState<TokenVO[]>([]);

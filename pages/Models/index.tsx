@@ -1,42 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppOutletContext } from '@/router';
+import { useAppOutletContext } from '@/router/context';
 import { modelService } from '@/services/modelService.ts';
 import { AIModel } from '@/types.ts';
 import toast from 'react-hot-toast';
 
 interface ModelSquarePageProps {
-  t: {
-    title: string;
-    totalModels: string;
-    filterSearch: string;
-    filters: {
-      searchPlaceholder: string;
-      nameLabel: string;
-      vendorLabel: string;
-      capabilityLabel: string;
-      billingLabel: string;
-      endpointLabel?: string;
-      displayLabel: string;
-      all: string;
-      reset: string;
-      hideFilters: string;
-    };
-    display: {
-      currency: string;
-      unit: string;
-    };
-    card: {
-      new: string;
-      perMillion: string;
-      perSecond: string;
-      actions: {
-        calculate: string;
-        chat: string;
-      };
-    };
-  };
+  t?: any;
 }
 
 interface FilterOption {
@@ -78,9 +49,11 @@ const FilterDropdown = ({ label, options, value, onChange }: {
   </div>
 );
 
-const ModelSquarePage: React.FC = () => {
+const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
   const { t: rootT } = useAppOutletContext();
-  const t = rootT.modelSquare as ModelSquarePageProps['t'];
+  // 防止 rootT 或 rootT.modelSquare 为空导致崩溃
+  const t = props.t || rootT?.modelSquare || translations['zh'].modelSquare;
+  
   const navigate = useNavigate();
   const [models, setModels] = useState<AIModel[]>([]);
   const [loading, setLoading] = useState(true);
