@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw } from 'lucide-react';
+import { Copy, Eye, EyeOff, Trash2, Edit2, Plus, RefreshCw, Power, PowerOff } from 'lucide-react';
 import { keyService, TokenVO } from '../../services/keyService';
 import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
@@ -745,8 +745,10 @@ const KeysPage: React.FC<KeysPageProps> = () => {
                               >
                                 {toggleStatusLoading === token.id ? (
                                   <RefreshCw size={16} className="animate-spin" />
+                                ) : isActive ? (
+                                  <PowerOff size={16} />
                                 ) : (
-                                  <EyeOff size={16} />
+                                  <Power size={16} />
                                 )}
                               </button>
                               <button
