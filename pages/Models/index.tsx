@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAppOutletContext } from '@/router';
+import { useAppOutletContext } from '@/router/context';
 import { modelService } from '@/services/modelService.ts';
 import { AIModel } from '@/types.ts';
 import toast from 'react-hot-toast';

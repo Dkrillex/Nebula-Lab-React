@@ -4,6 +4,7 @@ import KeepAliveWrapper from '../components/KeepAlive';
 import { coreRoutes } from './routes/core';
 import { localRoutes } from './routes/local';
 import { AppRouteObject, AuthGuard } from './AuthGuard';
+import { AppContext, useAppOutletContext } from './context';
 
 // 加载指示器
 const LoadingFallback = () => (
