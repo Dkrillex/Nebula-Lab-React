@@ -28,10 +28,16 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
 
   // Determine active menu item based on URL
   const getActiveId = () => {
-    const path = location.pathname.substring(1);
-    if (path === 'create') {
-      const tool = searchParams.get('tool');
-      // Map tool to menu ID
+    const path = location.pathname;
+    
+    // Handle /create routes
+    if (path.startsWith('/create')) {
+      // split path: /create/viralVideo -> ['', 'create', 'viralVideo']
+      const parts = path.split('/').filter(Boolean);
+      const tool = parts[1]; // undefined if just /create
+      
+      if (!tool || tool === 'home') return 'home';
+      
       if (tool === 'viralVideo') return 'viralVideo';
       if (tool === 'digitalHuman') return 'digitalHuman';
       if (tool === 'imgToVideo') return 'imgToVideo';
@@ -39,19 +45,32 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       if (tool === 'styleTransfer') return 'styleTransfer';
       if (tool === 'voiceClone') return 'voiceClone';
       if (tool === 'workshop') return 'workshop';
-      if (['faceSwap', 'aiFaceSwap', 'aIFacSwapping', 'ttsTool', 'tts', 'glbViewer', '3dModel', 'imageTranslation', 'videoTranslation', 'useTool', 'templateUi'].includes(tool || '')) return 'workshop';
-      // Default to home if no tool or tool is 'home'
+      
+      // Workshop items mapping
+      if (['faceSwap', 'aiFaceSwap', 'aIFacSwapping', 'ttsTool', 'tts', 'glbViewer', '3dModel', 'imageTranslation', 'videoTranslation', 'useTool', 'templateUi'].includes(tool)) {
+        return 'workshop';
+      }
+      
+      // Check search params for legacy support or deep links
+      const paramTool = searchParams.get('tool');
+      if (paramTool) {
+         if (paramTool === 'viralVideo') return 'viralVideo';
+         // ... other checks if needed, but path takes precedence now
+      }
+
       return 'home';
     }
-    // Map paths to IDs
-    if (path === 'chat') return 'aiExperience';
-    if (path === 'models') return 'modelSquare';
-    if (path === 'keys') return 'apiKeys';
-    if (path === 'expenses') return 'expenses';
-    if (path === 'pricing') return 'pricing';
-    if (path === 'assets') return 'assets';
-    if (path === 'profile') return 'profile';
-    if (path === '') return 'home';
+
+    // Map other paths to IDs
+    const cleanPath = path.substring(1);
+    if (cleanPath === 'chat') return 'aiExperience';
+    if (cleanPath === 'models') return 'modelSquare';
+    if (cleanPath === 'keys') return 'apiKeys';
+    if (cleanPath === 'expenses') return 'expenses';
+    if (cleanPath === 'pricing') return 'pricing';
+    if (cleanPath === 'assets') return 'assets';
+    if (cleanPath === 'profile') return 'profile';
+    if (cleanPath === '') return 'home';
     return '';
   };
 
@@ -81,7 +100,12 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       
       navigate(item.path);
     } else if (item.tool) {
-      navigate(`/create?tool=${item.tool}`);
+      // Updated navigation logic for new routes
+      if (item.tool === 'workshop') {
+         navigate('/create/workshop');
+      } else {
+         navigate(`/create/${item.tool}`);
+      }
     }
   };
 

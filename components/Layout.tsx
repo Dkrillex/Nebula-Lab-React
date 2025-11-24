@@ -47,11 +47,22 @@ const Layout: React.FC = () => {
   const getCurrentViewAndTool = (): { view: View, tool?: string } => {
     const path = location.pathname.substring(1) || 'home';
     const params = new URLSearchParams(location.search);
-    const tool = params.get('tool') || undefined;
-
+    
     // Map URL path to View type
     let view: View = 'home';
-    if (path === 'create') view = 'create';
+    let tool = params.get('tool') || undefined;
+
+    // Handle new route structure for create
+    if (path === 'create' || path.startsWith('create/')) {
+      view = 'create';
+      if (path.startsWith('create/')) {
+        // Extract tool from path: create/viralVideo -> viralVideo
+        const parts = path.split('/');
+        if (parts.length > 1) {
+          tool = parts[1];
+        }
+      }
+    }
     else if (path === 'keys') view = 'keys';
     else if (path === 'chat') view = 'chat';
     else if (path === 'models') view = 'models';
@@ -97,8 +108,14 @@ const Layout: React.FC = () => {
   };
 
   const handleTabClick = (tab: TabItem) => {
+    if (tab.view === 'create' && tab.activeTool) {
+      navigate(`/create/${tab.activeTool}`);
+      return;
+    }
+
     let path = tab.view === 'home' ? '/' : `/${tab.view}`;
-    if (tab.activeTool) {
+    // Legacy support for query params if any other views use them
+    if (tab.activeTool && tab.view !== 'create') {
       path += `?tool=${tab.activeTool}`;
     }
     navigate(path);
@@ -112,9 +129,13 @@ const Layout: React.FC = () => {
 
     // 当标签页关闭时，从缓存中移除对应的组件
     // 根据 view 和 tool 生成缓存 key
-    const cacheKey = targetTab.view === 'create' && targetTab.activeTool
-      ? `/create?tool=${targetTab.activeTool}`
-      : targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
+    let cacheKey = '/';
+    if (targetTab.view === 'create') {
+      // 适配新的路由结构生成 key
+      cacheKey = targetTab.activeTool ? `/create/${targetTab.activeTool}` : '/create';
+    } else {
+      cacheKey = targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
+    }
     removeCachedComponent(cacheKey);
 
     // If closing active tab, navigate to last available
