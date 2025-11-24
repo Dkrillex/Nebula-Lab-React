@@ -21,13 +21,15 @@ import { ChatRecord } from '../../types';
 import { useAppOutletContext } from '../../router';
 import CodeBlock from './components/CodeBlock';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import TooltipIcon from './components/TooltipIcon';
 import {
   getImageSizes,
   getVideoRatios,
   getVideoResolutions,
   ModelCapabilities,
   IMAGE_TO_VIDEO_MODES,
-  VIDEO_RATIOS
+  VIDEO_RATIOS,
+  getImageUploadRestrictions
 } from './modelConstants';
 
 // 扩展消息类型，支持图片和视频
@@ -102,7 +104,13 @@ const ChatPage: React.FC = () => {
   const [qwenNegativePrompt, setQwenNegativePrompt] = useState('');
   const [qwenPromptExtend, setQwenPromptExtend] = useState(true);
   const [qwenImageSize, setQwenImageSize] = useState('1328*1328');
+  const [qwenImageWatermark, setQwenImageWatermark] = useState(false);
+  
+  // qwen-image-edit 专用参数
   const [qwenImageEditN, setQwenImageEditN] = useState(1);
+  const [qwenImageEditNegativePrompt, setQwenImageEditNegativePrompt] = useState('');
+  const [qwenImageEditWatermark, setQwenImageEditWatermark] = useState(false);
+  const [qwenImageEditSeed, setQwenImageEditSeed] = useState<number | undefined>(undefined);
   
   // GPT模型专用参数
   const [gptImageQuality, setGptImageQuality] = useState<'low' | 'medium' | 'high'>('medium');
@@ -430,24 +438,103 @@ const ChatPage: React.FC = () => {
     if (currentMode === 'image') {
       // 重置图片尺寸为模型默认值
       const sizes = getImageSizes(selectedModel);
-      if (sizes.length > 0 && !sizes.some(s => s.id === imageSize)) {
-        setImageSize(sizes[0].id);
+      if (sizes.length > 0) {
+        if (selectedModel === 'qwen-image-plus') {
+          // qwen-image-plus 使用专用尺寸
+          if (!sizes.some(s => s.id === qwenImageSize)) {
+            setQwenImageSize('1328*1328');
+          }
+        } else {
+          // 其他模型使用通用尺寸
+          if (!sizes.some(s => s.id === imageSize)) {
+            setImageSize(sizes[0].id);
+          }
+        }
       }
 
-      // Qwen-image-plus 使用专用尺寸
-      if (selectedModel === 'qwen-image-plus') {
-        setQwenImageSize('1328*1328');
+      // 重置生成数量为默认值
+      setImageN(1);
+      setGptImageN(1);
+      setQwenImageEditN(1);
+
+      // 重置引导系数（有默认值的模型保持默认值，不支持的模型重置为默认值）
+      if (selectedModel === 'doubao-seedream-3-0-t2i-250415' || 
+          selectedModel === 'doubao-seededit-3-0-i2i-250628') {
+        // 这些模型支持引导系数但不显示，保持默认值
+        setGuidanceScale(2.5);
+      } else if (!ModelCapabilities.supportsGuidanceScale(selectedModel)) {
+        // 不支持的模型重置为默认值
+        setGuidanceScale(2.5);
       }
 
-      // 重置不支持的功能相关配置
-      if (!ModelCapabilities.supportsGuidanceScale(selectedModel)) {
-        setGuidanceScale(2.5); // 重置为默认值
+      // 重置随机种子
+      if (selectedModel === 'doubao-seedream-3-0-t2i-250415' || 
+          selectedModel === 'doubao-seededit-3-0-i2i-250628') {
+        // 这些模型支持随机种子但不显示，清空
+        setSeed(undefined);
+      } else if (!ModelCapabilities.supportsSeed(selectedModel)) {
+        setSeed(undefined);
       }
+
+      // 重置组图功能
       if (!ModelCapabilities.supportsSequentialImageGeneration(selectedModel)) {
         setSequentialImageGeneration(false);
+        setSequentialImageGenerationOptions({
+          max_images: 4,
+          layout: 'grid',
+        });
+      } else {
+        // doubao-seedream-4-0-250828 重置组图配置
+        setSequentialImageGenerationOptions({
+          max_images: 4,
+          layout: 'grid',
+        });
       }
-      if (!ModelCapabilities.supportsNegativePrompt(selectedModel)) {
+
+      // 重置提示词优化模式
+      if (!ModelCapabilities.supportsOptimizePromptOptions(selectedModel)) {
+        setOptimizePromptOptionsMode('standard');
+      }
+
+      // 重置 Qwen 相关配置
+      if (selectedModel !== 'qwen-image-plus' && selectedModel !== 'qwen-image-edit-plus' && selectedModel !== 'qwen-image-edit-plus-2025-10-30') {
         setQwenNegativePrompt('');
+        setQwenPromptExtend(true);
+        setQwenImageWatermark(false);
+        setQwenImageEditNegativePrompt('');
+        setQwenImageEditWatermark(false);
+        setQwenImageEditSeed(undefined);
+      } else if (selectedModel === 'qwen-image-plus') {
+        // qwen-image-plus 重置
+        setQwenImageEditN(1);
+        setQwenImageEditNegativePrompt('');
+        setQwenImageEditWatermark(false);
+        setQwenImageEditSeed(undefined);
+      } else if (selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') {
+        // qwen-image-edit 重置
+        setQwenNegativePrompt('');
+        setQwenPromptExtend(true);
+        setQwenImageWatermark(false);
+      }
+
+      // 重置 GPT 相关配置
+      if (!selectedModel.startsWith('gpt-image-')) {
+        setGptImageQuality('medium');
+        setGptImageInputFidelity('low');
+        setGptImageN(1);
+      }
+
+      // 重置水印（豆包模型）
+      if (!selectedModel.startsWith('doubao-') && !selectedModel.includes('seedance')) {
+        setWatermark(false);
+      }
+
+      // 重置创意度（仅 Gemini 模型保持，其他模型重置）
+      if (selectedModel !== 'gemini-2.5-flash-image-preview' && 
+          selectedModel !== 'gemini-2.5-flash-image' && 
+          selectedModel !== 'gemini-3-pro-image-preview') {
+        // 非 Gemini 模型重置创意度为默认值（但对话模式可能使用，所以不重置）
+        // 这里只重置图片模式下的创意度
       }
     }
 
@@ -459,21 +546,88 @@ const ChatPage: React.FC = () => {
         setVideoDuration(durationOptions[0] || 5);
       }
 
-      // Wan2.5 模型重置专用配置
-      if (selectedModel.includes('wan2.5')) {
-        if (selectedModel === 'wan2.5-t2v-preview') {
-          setWan25AspectRatio('16:9');
+      // sora-2 只支持 4/8/12 秒
+      if (selectedModel === 'sora-2') {
+        const soraDurations = [4, 8, 12];
+        if (!soraDurations.includes(videoDuration)) {
+          // 找到最接近的时长
+          const closest = soraDurations.reduce((prev, curr) =>
+            Math.abs(curr - videoDuration) < Math.abs(prev - videoDuration) ? curr : prev
+          );
+          setVideoDuration(closest);
         }
-        setWan25Resolution('720p');
-        setWan25Seed(undefined);
+        // 重置比例（不支持 adaptive）
+        if (videoAspectRatio === 'adaptive') {
+          setVideoAspectRatio('16:9');
+        }
+        // 重置图生模式为首帧
+        if (imageGenerationMode !== 'first_frame') {
+          setImageGenerationMode('first_frame');
+        }
       }
 
-      // Veo 模型只支持特定时长
-      if (selectedModel.toLowerCase().includes('veo')) {
+      // doubao-seedance-1-0-lite-i2v-250428 支持所有三种图生模式
+      if (selectedModel === 'doubao-seedance-1-0-lite-i2v-250428') {
+        // 参考图模式限制
+        if (imageGenerationMode === 'reference') {
+          if (videoResolution === '1080p') {
+            setVideoResolution('720p');
+          }
+          if (videoAspectRatio === 'adaptive') {
+            setVideoAspectRatio('16:9');
+          }
+          setCameraFixed(false);
+        }
+      }
+
+      // doubao-seedance-1-0-lite-t2v-250428 只支持文生视频
+      if (selectedModel === 'doubao-seedance-1-0-lite-t2v-250428') {
+        setImageGenerationMode('first_frame');
+        if (videoAspectRatio === 'adaptive') {
+          setVideoAspectRatio('16:9');
+        }
+        // 清空上传的图片
+        if (uploadedImages.length > 0) {
+          setUploadedImages([]);
+        }
+      }
+
+      // doubao-seedance-1-0-pro-250528 只支持首帧模式
+      if (selectedModel === 'doubao-seedance-1-0-pro-250528') {
+        if (imageGenerationMode !== 'first_frame') {
+          setImageGenerationMode('first_frame');
+        }
+      }
+
+      // veo-3.1-fast-generate-preview 支持首帧和首尾帧
+      if (selectedModel.toLowerCase().includes('veo-3.1') || selectedModel.toLowerCase().includes('veo_3.1')) {
+        // 如果当前是 reference 模式，切换到首帧
+        if (imageGenerationMode === 'reference') {
+          setImageGenerationMode('first_frame');
+        }
+      } else if (selectedModel.toLowerCase().includes('veo')) {
+        // Veo 3.0 只支持首帧模式
+        if (imageGenerationMode !== 'first_frame') {
+          setImageGenerationMode('first_frame');
+        }
         const veoDurations = [4, 6, 8];
         if (!veoDurations.includes(videoDuration)) {
           setVideoDuration(6); // Veo默认6秒
         }
+      }
+
+      // Wan2.5 模型重置专用配置
+      if (selectedModel.includes('wan2.5')) {
+        if (selectedModel === 'wan2.5-t2v-preview') {
+          setWan25AspectRatio('16:9');
+          // 清空上传的图片
+          if (uploadedImages.length > 0) {
+            setUploadedImages([]);
+          }
+        }
+        setWan25Resolution('720p');
+        setWan25Seed(undefined);
+        setVideoDuration(5);
       }
     }
   }, [selectedModel, currentMode]);
@@ -1008,7 +1162,11 @@ const ChatPage: React.FC = () => {
         if (settings.qwenNegativePrompt !== undefined) setQwenNegativePrompt(settings.qwenNegativePrompt);
         if (settings.qwenPromptExtend !== undefined) setQwenPromptExtend(settings.qwenPromptExtend);
         if (settings.qwenImageSize) setQwenImageSize(settings.qwenImageSize);
+        if (settings.qwenImageWatermark !== undefined) setQwenImageWatermark(settings.qwenImageWatermark);
         if (settings.qwenImageEditN !== undefined) setQwenImageEditN(settings.qwenImageEditN);
+        if (settings.qwenImageEditNegativePrompt !== undefined) setQwenImageEditNegativePrompt(settings.qwenImageEditNegativePrompt);
+        if (settings.qwenImageEditWatermark !== undefined) setQwenImageEditWatermark(settings.qwenImageEditWatermark);
+        if (settings.qwenImageEditSeed !== undefined) setQwenImageEditSeed(settings.qwenImageEditSeed);
         if (settings.gptImageQuality) setGptImageQuality(settings.gptImageQuality);
         if (settings.gptImageInputFidelity) setGptImageInputFidelity(settings.gptImageInputFidelity);
         if (settings.gptImageN !== undefined) setGptImageN(settings.gptImageN);
@@ -1739,7 +1897,11 @@ const ChatPage: React.FC = () => {
             qwenNegativePrompt,
             qwenPromptExtend,
             qwenImageSize,
+            qwenImageWatermark,
             qwenImageEditN,
+            qwenImageEditNegativePrompt,
+            qwenImageEditWatermark,
+            qwenImageEditSeed,
             gptImageQuality,
             gptImageInputFidelity,
             gptImageN,
@@ -1865,22 +2027,208 @@ const ChatPage: React.FC = () => {
   };
 
   // 处理图片上传
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // 验证图片文件
+  const validateImageFile = async (
+    file: File,
+    restrictions: ReturnType<typeof getImageUploadRestrictions>
+  ): Promise<{ valid: boolean; error?: string }> => {
+    // 验证文件格式
+    const fileType = file.type.toLowerCase();
+    const normalizedType = fileType.replace(/^image\//, '');
+    const allowedTypes = restrictions.allowedFormats.map(f => f.replace(/^image\//, '').toLowerCase());
+    
+    if (!allowedTypes.includes(normalizedType) && !restrictions.allowedFormats.includes(fileType)) {
+      const formatList = restrictions.allowedFormats
+        .map(f => f.replace('image/', '').toUpperCase())
+        .join('、');
+      return {
+        valid: false,
+        error: `图片格式不支持。仅支持：${formatList}`,
+      };
+    }
+
+    // 验证文件大小
+    const maxSizeBytes = restrictions.maxFileSize * 1024 * 1024;
+    if (file.size > maxSizeBytes) {
+      return {
+        valid: false,
+        error: `文件大小超过限制。最大允许：${restrictions.maxFileSize}MB`,
+      };
+    }
+
+    // 验证图片尺寸
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const img = new Image();
+        img.onload = () => {
+          const width = img.width;
+          const height = img.height;
+
+          // 检查最小/最大尺寸
+          if (restrictions.minImageSize && (width < restrictions.minImageSize || height < restrictions.minImageSize)) {
+            resolve({
+              valid: false,
+              error: `图片分辨率不符合要求：宽高需至少 ${restrictions.minImageSize} 像素`,
+            });
+            return;
+          }
+
+          if (restrictions.maxImageSize && (width > restrictions.maxImageSize || height > restrictions.maxImageSize)) {
+            resolve({
+              valid: false,
+              error: `图片分辨率不符合要求：宽高需不超过 ${restrictions.maxImageSize} 像素`,
+            });
+            return;
+          }
+
+          // 检查必须匹配的尺寸（如 sora-2）
+          if (restrictions.requiredDimensions && restrictions.requiredDimensions.length > 0) {
+            const matches = restrictions.requiredDimensions.some(
+              dim => dim.width === width && dim.height === height
+            );
+            if (!matches) {
+              const dimsList = restrictions.requiredDimensions
+                .map(d => `${d.width}×${d.height}`)
+                .join(' 或 ');
+              resolve({
+                valid: false,
+                error: `图片尺寸必须完全匹配输出尺寸：${dimsList}`,
+              });
+              return;
+            }
+          }
+
+          resolve({ valid: true });
+        };
+        img.onerror = () => {
+          resolve({
+            valid: false,
+            error: '图片加载失败，请检查文件是否损坏',
+          });
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.onerror = () => {
+        resolve({
+          valid: false,
+          error: '文件读取失败',
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach((file: File) => {
-      if (file.type.startsWith('image/')) {
+    // 获取当前模式的限制规则
+    const restrictions = getImageUploadRestrictions(
+      selectedModel,
+      currentMode as 'image' | 'video',
+      videoAspectRatio,
+      videoResolution
+    );
+
+    // 视频模式：根据图生模式限制图片数量
+    if (currentMode === 'video') {
+      const maxImages = ModelCapabilities.getMaxImagesForImageMode(imageGenerationMode);
+      const currentCount = uploadedImages.length;
+      
+      if (currentCount >= maxImages) {
+        toast.error(`当前模式最多支持上传 ${maxImages} 张图片`);
+        e.target.value = '';
+        return;
+      }
+
+      // 计算还能上传多少张
+      const remainingSlots = maxImages - currentCount;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      
+      if (files.length > remainingSlots) {
+        toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
+      }
+
+      // 验证并处理每个文件
+      for (const file of filesToProcess as File[]) {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`文件 ${file.name} 不是图片格式`);
+          continue;
+        }
+
+        const validation = await validateImageFile(file, restrictions);
+        if (!validation.valid) {
+          toast.error(validation.error || '图片验证失败');
+          continue;
+        }
+
         const reader = new FileReader();
         reader.onload = (event: ProgressEvent<FileReader>) => {
           const base64 = event.target?.result as string;
           if (base64) {
-            setUploadedImages(prev => [...prev, base64]);
+            setUploadedImages(prev => {
+              const newImages = [...prev, base64];
+              if (newImages.length > maxImages) {
+                return prev;
+              }
+              return newImages;
+            });
           }
         };
         reader.readAsDataURL(file);
       }
-    });
+    } else if (currentMode === 'image') {
+      // 图片模式：根据模型限制图片数量
+      const maxImages = ModelCapabilities.getMaxImagesForImageModel(selectedModel);
+      const currentCount = uploadedImages.length;
+      
+      if (currentCount >= maxImages) {
+        toast.error(`当前模型最多支持上传 ${maxImages} 张图片`);
+        e.target.value = '';
+        return;
+      }
+
+      // 计算还能上传多少张
+      const remainingSlots = maxImages - currentCount;
+      const filesToProcess = Array.from(files).slice(0, remainingSlots) as File[];
+      
+      if (files.length > remainingSlots) {
+        toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
+      }
+
+      // 验证并处理每个文件
+      for (const file of filesToProcess) {
+        if (!file.type.startsWith('image/')) {
+          toast.error(`文件 ${file.name} 不是图片格式`);
+          continue;
+        }
+
+        const validation = await validateImageFile(file, restrictions);
+        if (!validation.valid) {
+          toast.error(validation.error || '图片验证失败');
+          continue;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+          const base64 = event.target?.result as string;
+          if (base64) {
+            setUploadedImages(prev => {
+              const newImages = [...prev, base64];
+              if (newImages.length > maxImages) {
+                return prev;
+              }
+              return newImages;
+            });
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+    }
+    
+    // 清空文件选择，以便可以再次选择相同文件
+    e.target.value = '';
   };
 
   // 移除上传的图片
@@ -2228,7 +2576,7 @@ const ChatPage: React.FC = () => {
             size: qwenImageSize,
             negative_prompt: qwenNegativePrompt,
             prompt_extend: qwenPromptExtend,
-            watermark: watermark,
+            watermark: qwenImageWatermark,
           }
         };
       }
@@ -2238,11 +2586,11 @@ const ChatPage: React.FC = () => {
         // qwen-image-edit 使用不同的格式
         (requestData as any).parameters = {
           n: qwenImageEditN,
-          negative_prompt: qwenNegativePrompt || '',
-          watermark: watermark,
+          negative_prompt: qwenImageEditNegativePrompt || '',
+          watermark: qwenImageEditWatermark,
         };
-        if (seed !== undefined) {
-          (requestData as any).parameters.seed = seed;
+        if (qwenImageEditSeed !== undefined) {
+          (requestData as any).parameters.seed = qwenImageEditSeed;
         }
       }
 
@@ -2351,9 +2699,9 @@ const ChatPage: React.FC = () => {
 
       // Sora-2 模型
       if (selectedModel === 'sora-2') {
-      const [width, height] = videoAspectRatio === '16:9' 
-        ? videoResolution === '720p' ? [1280, 720] : [1920, 1080]
-        : videoResolution === '720p' ? [720, 1280] : [1080, 1920];
+        const [width, height] = videoAspectRatio === '16:9' 
+          ? videoResolution === '720p' ? [1280, 720] : [1920, 1080]
+          : videoResolution === '720p' ? [720, 1280] : [1080, 1920];
 
         requestData.width = width;
         requestData.height = height;
@@ -2361,6 +2709,51 @@ const ChatPage: React.FC = () => {
         
         if (images && images.length > 0) {
           requestData.input_reference = images[0];
+        }
+      }
+      // doubao-seedance 系列模型
+      else if (selectedModel.includes('doubao-seedance') || selectedModel.includes('seedance')) {
+        const isT2V = selectedModel === 'doubao-seedance-1-0-lite-t2v-250428';
+        const isI2V = selectedModel === 'doubao-seedance-1-0-lite-i2v-250428';
+        const isPro = selectedModel === 'doubao-seedance-1-0-pro-250528';
+        
+        // 计算视频尺寸
+        const [width, height] = videoAspectRatio === '16:9' 
+          ? videoResolution === '480p' ? [832, 480]
+          : videoResolution === '720p' ? [1280, 720] : [1920, 1080]
+          : videoAspectRatio === '9:16'
+          ? videoResolution === '480p' ? [480, 832]
+          : videoResolution === '720p' ? [720, 1280] : [1080, 1920]
+          : videoAspectRatio === '1:1'
+          ? videoResolution === '480p' ? [624, 624]
+          : videoResolution === '720p' ? [960, 960] : [1440, 1440]
+          : videoAspectRatio === '4:3'
+          ? videoResolution === '480p' ? [640, 480]
+          : videoResolution === '720p' ? [960, 720] : [1440, 1080]
+          : videoAspectRatio === '3:4'
+          ? videoResolution === '480p' ? [480, 640]
+          : videoResolution === '720p' ? [720, 960] : [1080, 1440]
+          : [1280, 720]; // 默认值
+
+        requestData.width = width;
+        requestData.height = height;
+        requestData.seconds = videoDuration;
+        requestData.resolution = videoResolution;
+        requestData.aspectRatio = videoAspectRatio;
+        requestData.duration = videoDuration;
+        requestData.watermark = watermark;
+        
+        // t2v 模型不支持图片
+        if (!isT2V && images && images.length > 0) {
+          if (imageGenerationMode === 'first_last_frame' && images.length >= 2) {
+            requestData.image = images[0];
+            requestData.lastFrame = images[1];
+          } else {
+            requestData.image = images[0];
+            if (imageGenerationMode === 'reference') {
+              requestData.reference_image = images[0];
+            }
+          }
         }
       }
       // Veo 模型
@@ -2849,8 +3242,14 @@ const ChatPage: React.FC = () => {
                 <div className="space-y-2">
                   <label className="text-sm font-medium">图片尺寸</label>
                   <select
-                    value={imageSize}
-                    onChange={(e) => setImageSize(e.target.value)}
+                    value={selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize}
+                    onChange={(e) => {
+                      if (selectedModel === 'qwen-image-plus') {
+                        setQwenImageSize(e.target.value);
+                      } else {
+                        setImageSize(e.target.value);
+                      }
+                    }}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {getImageSizes(selectedModel).map((size) => (
@@ -2861,22 +3260,50 @@ const ChatPage: React.FC = () => {
                   </select>
                 </div>
 
-                {/* 图片质量 (仅部分模型支持) */}
-                {selectedModel.startsWith('gpt-image') && (
+                {/* 创意度 (仅 Gemini 模型) */}
+                {(selectedModel === 'gemini-2.5-flash-image-preview' || 
+                  selectedModel === 'gemini-2.5-flash-image' || 
+                  selectedModel === 'gemini-3-pro-image-preview') && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">图片质量</label>
-                  <select
-                    value={imageQuality}
-                    onChange={(e) => setImageQuality(e.target.value as 'standard' | 'hd')}
-                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  >
-                    <option value="standard">标准</option>
-                    <option value="hd">高清</option>
-                  </select>
+                  <div className="flex justify-between items-center text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-medium">创意度</span>
+                      <TooltipIcon
+                        title="调整创意度"
+                        content={
+                          <div>
+                            <div>0: 输出更精准稳定、少随机创意，适合事实问答</div>
+                            <div>2: 表达更多元灵活、富惊喜感，适合脑洞创作</div>
+                          </div>
+                        }
+                        size={16}
+                      />
+                    </div>
+                    <span className="text-primary">{temperature}</span>
+                  </div>
+                  <input 
+                    type="range" min="0" max="2" step="0.1" 
+                    value={temperature}
+                    onChange={(e) => setTemperature(parseFloat(e.target.value))}
+                    className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
+                  />
+                  <div className="flex justify-between text-xs text-muted">
+                    <span>精准稳定</span>
+                    <span>灵活创意</span>
+                  </div>
                 </div>
                 )}
 
-                {/* 生成数量 */}
+                {/* 生成数量 - 排除特定模型 */}
+                {!ModelCapabilities.supportsGptImageQuality(selectedModel) && 
+                 !ModelCapabilities.supportsQwenImageEditN(selectedModel) &&
+                 selectedModel !== 'qwen-image-plus' &&
+                 selectedModel !== 'doubao-seedream-4-0-250828' &&
+                 selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
+                 selectedModel !== 'doubao-seedream-3-0-t2i-250415' &&
+                 selectedModel !== 'gemini-2.5-flash-image-preview' &&
+                 selectedModel !== 'gemini-2.5-flash-image' &&
+                 selectedModel !== 'gemini-3-pro-image-preview' && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium">生成数量 ({imageN})</label>
                   <input 
@@ -2886,9 +3313,12 @@ const ChatPage: React.FC = () => {
                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                 </div>
+                )}
 
-                {/* 随机种子 (部分模型不支持) */}
-                {ModelCapabilities.supportsSeed(selectedModel) && (
+                {/* 随机种子 - 排除特定模型 */}
+                {ModelCapabilities.supportsSeed(selectedModel) &&
+                 selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
+                 selectedModel !== 'doubao-seedream-3-0-t2i-250415' && (
                   <div className="space-y-2">
                     <label className="text-sm font-medium">随机种子 (可选)</label>
                     <input
@@ -2901,11 +3331,27 @@ const ChatPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* 引导系数 (doubao-seedream-3.0 和 doubao-seededit-3.0) */}
-                {ModelCapabilities.supportsGuidanceScale(selectedModel) && (
+                {/* 引导系数 - 排除特定模型 */}
+                {ModelCapabilities.supportsGuidanceScale(selectedModel) &&
+                 selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
+                 selectedModel !== 'doubao-seedream-3-0-t2i-250415' && (
                 <div className="space-y-2">
-                  <div className="flex justify-between text-sm">
-                      <span className="font-medium">引导系数 (Guidance Scale)</span>
+                  <div className="flex justify-between items-center text-sm">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium">引导系数 (Guidance Scale)</span>
+                        <TooltipIcon
+                          title="引导比例系数说明"
+                          content={
+                            <div>
+                              • 控制生成图像与提示词的匹配程度<br />
+                              • 数值越高，越严格遵循提示词<br />
+                              • 数值越低，AI创意发挥更自由<br />
+                              • 建议范围：1.0 - 10.0，默认2.5
+                            </div>
+                          }
+                          size={16}
+                        />
+                      </div>
                       <span className="text-primary">{guidanceScale}</span>
                   </div>
                   <input 
@@ -2922,7 +3368,39 @@ const ChatPage: React.FC = () => {
                 {ModelCapabilities.supportsSequentialImageGeneration(selectedModel) && (
                 <div className="space-y-3 border-t border-border pt-3">
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">组图功能</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-sm font-medium">组图功能</label>
+                      <TooltipIcon
+                        title="多图生成功能说明"
+                        content={
+                          <div>
+                            <div className="mb-2">
+                              <strong>一、启用多图生成模式</strong>
+                              <br />
+                              当开启多图生成功能时，支持基于文本或参考图片生成一组内容关联的图片，具体场景包括：
+                              <br />
+                              1. <strong>文生多图</strong>：仅通过文本提示词，生成一组内容关联的图片，最多可生成4张；
+                              <br />
+                              2. <strong>单图生多图</strong>：上传1张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，最多可生成4张；
+                              <br />
+                              3. <strong>多图生多图</strong>：上传2-7张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，且「参考图片总数+生成图片数」不超过11张。
+                            </div>
+                            <div>
+                              <strong>二、关闭多图生成模式（默认单图生成）</strong>
+                              <br />
+                              当关闭多图生成功能时，仅支持基于文本或参考图片生成单张图片，具体场景包括：
+                              <br />
+                              1. <strong>文生单图</strong>：仅通过文本提示词，生成1张符合描述的图片；
+                              <br />
+                              2. <strong>单图生单图</strong>：上传1张参考图片+补充文本提示词，生成1张与参考图内容关联的图片；
+                              <br />
+                              3. <strong>多图生单图</strong>：上传2-7张参考图片+补充文本提示词，生成1张融合参考图核心元素的图片。
+                            </div>
+                          </div>
+                        }
+                        size={14}
+                      />
+                    </div>
                     <input
                       type="checkbox"
                       checked={sequentialImageGeneration}
@@ -2935,7 +3413,7 @@ const ChatPage: React.FC = () => {
                       <div className="space-y-2">
                         <label className="text-sm font-medium">生成图像数量 ({sequentialImageGenerationOptions.max_images})</label>
                         <input 
-                          type="range" min="1" max="15" step="1" 
+                          type="range" min="1" max="4" step="1" 
                           value={sequentialImageGenerationOptions.max_images}
                           onChange={(e) => setSequentialImageGenerationOptions({
                             ...sequentialImageGenerationOptions,
@@ -2943,23 +3421,22 @@ const ChatPage: React.FC = () => {
                           })}
                           className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                         />
+                        <p className="text-xs text-muted">最多可生成4张图片，实际数量受文本提示词影响</p>
                       </div>
                       <div className="space-y-2">
-                        <label className="text-sm font-medium">布局方式</label>
-                        <select
-                          value={sequentialImageGenerationOptions.layout}
-                          onChange={(e) => setSequentialImageGenerationOptions({
-                            ...sequentialImageGenerationOptions,
-                            layout: e.target.value as 'grid' | 'sequence'
-                          })}
-                          className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                        >
-                          <option value="grid">网格布局</option>
-                          <option value="sequence">序列布局</option>
-                        </select>
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-sm font-medium">提示词优化模式</label>
+                        <div className="flex items-center gap-1.5">
+                          <label className="text-sm font-medium">提示词优化模式</label>
+                          <TooltipIcon
+                            title="提示词优化模式"
+                            content={
+                              <div>
+                                <div><strong>标准模式</strong>：质量更高但耗时较长</div>
+                                <div><strong>快速模式</strong>：耗时更短但质量一般</div>
+                              </div>
+                            }
+                            size={14}
+                          />
+                        </div>
                         <select
                           value={optimizePromptOptionsMode}
                           onChange={(e) => setOptimizePromptOptionsMode(e.target.value as 'standard' | 'fast')}
@@ -2977,7 +3454,23 @@ const ChatPage: React.FC = () => {
                 {/* GPT图片质量 (GPT模型) */}
                 {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">图片质量</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-sm font-medium">图片质量</label>
+                    <TooltipIcon
+                      title="图像质量"
+                      content={
+                        <div>
+                          <div className="mb-2"><strong>标准</strong>：标准画质</div>
+                          <div className="mb-2"><strong>高清</strong>：高清画质</div>
+                          <div className="mb-2"><strong>超清</strong>：超清画质</div>
+                          <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500">
+                            💡 质量越高，输出图片的分辨率和细节越好，费用也越高
+                          </div>
+                        </div>
+                      }
+                      size={16}
+                    />
+                  </div>
                   <select
                     value={gptImageQuality}
                     onChange={(e) => setGptImageQuality(e.target.value as 'low' | 'medium' | 'high')}
@@ -2993,7 +3486,28 @@ const ChatPage: React.FC = () => {
                 {/* GPT图片输入保真度 (GPT模型，仅图生图) */}
                 {ModelCapabilities.supportsGptImageInputFidelity(selectedModel) && uploadedImages.length > 0 && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">细节保留</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-sm font-medium">细节保留</label>
+                    <TooltipIcon
+                      title="细节保留说明"
+                      content={
+                        <div>
+                          <div className="mb-2">
+                            <strong>Low：创意优先</strong>
+                            <div className="ml-4 text-gray-500 text-xs">允许大幅修改原图，适合风格转换、艺术创作</div>
+                          </div>
+                          <div className="mb-2">
+                            <strong>High：细节优先</strong>
+                            <div className="ml-4 text-gray-500 text-xs">最大保留原图细节，保留人脸、品牌标识等关键元素</div>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-gray-200 text-orange-500 text-xs">
+                            ⚠️ 费用说明：选择"High"会显著增加Token消耗，适合需要保留人脸特征或品牌标识的场景
+                          </div>
+                        </div>
+                      }
+                      size={16}
+                    />
+                  </div>
                   <select
                     value={gptImageInputFidelity}
                     onChange={(e) => setGptImageInputFidelity(e.target.value as 'low' | 'high')}
@@ -3021,7 +3535,19 @@ const ChatPage: React.FC = () => {
                 {/* Qwen提示词扩展 (qwen-image-plus) */}
                 {ModelCapabilities.supportsQwenPromptExtend(selectedModel) && (
                 <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">提示词扩展</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-sm font-medium">提示词扩展</label>
+                    <TooltipIcon
+                      title="提示词扩展"
+                      content={
+                        <div>
+                          <p>开启后，系统会自动扩展和优化您的提示词，使生成的图片更加丰富和精准。</p>
+                          <p><strong>建议：</strong>对于简短的提示词，建议开启此功能以获得更好的效果。</p>
+                        </div>
+                      }
+                      size={14}
+                    />
+                  </div>
                   <input
                     type="checkbox"
                     checked={qwenPromptExtend}
@@ -3034,7 +3560,18 @@ const ChatPage: React.FC = () => {
                 {/* Qwen编辑生成数量 (qwen-image-edit) */}
                 {ModelCapabilities.supportsQwenImageEditN(selectedModel) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">输出图像数量 ({qwenImageEditN})</label>
+                  <div className="flex items-center gap-1.5">
+                    <label className="text-sm font-medium">输出图像数量 ({qwenImageEditN})</label>
+                    <TooltipIcon
+                      title="生成数量"
+                      content={
+                        <div>
+                          最多可生成6张图片，实际数量受图片内容和编辑复杂度影响
+                        </div>
+                      }
+                      size={16}
+                    />
+                  </div>
                   <input 
                     type="range" min="1" max="6" step="1" 
                     value={qwenImageEditN}
@@ -3044,8 +3581,8 @@ const ChatPage: React.FC = () => {
                 </div>
                 )}
 
-                {/* 水印设置 */}
-                {ModelCapabilities.supportsWatermark(selectedModel) && (
+                {/* 水印设置 - 豆包模型 */}
+                {ModelCapabilities.supportsWatermark(selectedModel) && !selectedModel.startsWith('qwen-image') && (
                   <div className="flex items-center justify-between">
                     <label className="text-sm font-medium">添加水印</label>
                     <input
@@ -3057,15 +3594,114 @@ const ChatPage: React.FC = () => {
                   </div>
                 )}
 
-                {/* 负面提示词 (Qwen模型) */}
-                {ModelCapabilities.supportsNegativePrompt(selectedModel) && (
+                {/* qwen-image-plus 水印设置 */}
+                {selectedModel === 'qwen-image-plus' && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">添加水印</label>
+                    <input
+                      type="checkbox"
+                      checked={qwenImageWatermark}
+                      onChange={(e) => setQwenImageWatermark(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
+                    />
+                  </div>
+                )}
+
+                {/* 负面提示词 (qwen-image-plus) */}
+                {selectedModel === 'qwen-image-plus' && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">负面提示词</label>
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-sm font-medium">负面提示词（可选）</label>
+                      <TooltipIcon
+                        title="负面提示词"
+                        content={
+                          <div>
+                            <p>描述您不希望在图片中出现的内容、风格或元素。</p>
+                            <p>例如：模糊、低质量、文字、水印等</p>
+                          </div>
+                        }
+                        size={16}
+                      />
+                    </div>
                     <textarea
                       value={qwenNegativePrompt}
                       onChange={(e) => setQwenNegativePrompt(e.target.value)}
-                      placeholder="不想生成的元素..."
+                      placeholder="描述您不希望在图片中出现的内容、风格或元素..."
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
+                      maxLength={500}
+                    />
+                  </div>
+                )}
+
+                {/* qwen-image-edit 负面提示词 */}
+                {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-sm font-medium">负面提示词（可选）</label>
+                      <TooltipIcon
+                        title="负面提示词（可选）"
+                        content={
+                          <div>
+                            <p>描述您不希望在编辑后的图片中出现的内容、风格或元素。</p>
+                            <p><strong>常用示例：</strong></p>
+                            <ul className="list-disc list-inside ml-2 mt-1">
+                              <li>人物编辑：扭曲、变形、多余的肢体、错误的比例</li>
+                              <li>风格迁移：过度渲染、失真、色彩不匹配</li>
+                              <li>物体编辑：不自然、违和感、接缝明显</li>
+                            </ul>
+                          </div>
+                        }
+                        size={16}
+                      />
+                    </div>
+                    <textarea
+                      value={qwenImageEditNegativePrompt}
+                      onChange={(e) => setQwenImageEditNegativePrompt(e.target.value)}
+                      placeholder="描述您不希望在编辑后的图片中出现的内容、风格或元素..."
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
+                      maxLength={500}
+                    />
+                  </div>
+                )}
+
+                {/* qwen-image-edit 随机种子 */}
+                {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-1.5">
+                      <label className="text-sm font-medium">随机种子（可选）</label>
+                      <TooltipIcon
+                        title="随机种子（可选）"
+                        content={
+                          <div>
+                            <p>使用相同的种子、相同的输入和参数，可以获得相似的生成结果。</p>
+                            <p><strong>取值范围：</strong>0 - 2147483647</p>
+                            <p><strong>建议：</strong>留空则每次随机生成</p>
+                          </div>
+                        }
+                        size={16}
+                      />
+                    </div>
+                    <input
+                      type="number"
+                      min="0"
+                      max="2147483647"
+                      placeholder="留空则每次随机生成"
+                      value={qwenImageEditSeed || ''}
+                      onChange={(e) => setQwenImageEditSeed(e.target.value ? parseInt(e.target.value) : undefined)}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* qwen-image-edit 水印设置 */}
+                {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">添加水印</label>
+                    <input
+                      type="checkbox"
+                      checked={qwenImageEditWatermark}
+                      onChange={(e) => setQwenImageEditWatermark(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
                     />
                   </div>
                 )}
@@ -3075,16 +3711,43 @@ const ChatPage: React.FC = () => {
             {/* 视频生成参数 */}
             {currentMode === 'video' && (
               <>
-                {/* 图生视频模式选择 (仅在有图片且支持时显示) */}
-                {uploadedImages.length > 0 && ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
+                {/* 图生视频模式选择 (如果模型支持图片上传则显示) */}
+                {ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
                 <div className="space-y-2">
                     <label className="text-sm font-medium">生成模式</label>
                   <select
                       value={imageGenerationMode}
-                      onChange={(e) => setImageGenerationMode(e.target.value)}
+                      onChange={(e) => {
+                        const newMode = e.target.value;
+                        setImageGenerationMode(newMode);
+                        // 参考图模式限制
+                        if (newMode === 'reference') {
+                          if (videoResolution === '1080p') {
+                            setVideoResolution('720p');
+                          }
+                          if (videoAspectRatio === 'adaptive') {
+                            setVideoAspectRatio('16:9');
+                          }
+                          setCameraFixed(false);
+                          // 参考图模式只支持一张图片
+                          if (uploadedImages.length > 1) {
+                            setUploadedImages([uploadedImages[0]]);
+                            toast('参考图模式只支持一张图片，已自动保留第一张', { icon: 'ℹ️' });
+                          }
+                        }
+                        // 如果切换到首帧模式，且当前有多张图片，只保留第一张
+                        else if (newMode === 'first_frame' && uploadedImages.length > 1) {
+                          setUploadedImages([uploadedImages[0]]);
+                          toast('首帧模式只支持一张图片，已自动保留第一张', { icon: 'ℹ️' });
+                        }
+                        // 如果切换到首尾帧模式，且当前只有一张图片，提示用户需要两张
+                        else if (newMode === 'first_last_frame' && uploadedImages.length === 1) {
+                          toast('首尾帧生成模式需要上传两张图片', { icon: 'ℹ️' });
+                        }
+                      }}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                      {IMAGE_TO_VIDEO_MODES.map((mode) => (
+                      {ModelCapabilities.getAvailableImageToVideoModes(selectedModel).map((mode) => (
                         <option key={mode.id} value={mode.id}>{mode.name}</option>
                       ))}
                   </select>
@@ -3108,7 +3771,7 @@ const ChatPage: React.FC = () => {
                     }}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    {getVideoResolutions(selectedModel).map((res) => (
+                    {getVideoResolutions(selectedModel, imageGenerationMode).map((res) => (
                       <option key={res.id} value={res.id}>{res.name}</option>
                     ))}
                   </select>
@@ -3136,7 +3799,7 @@ const ChatPage: React.FC = () => {
                         <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
                             ) : null;
                           })
-                        : getVideoRatios(selectedModel).map((ratio) => (
+                        : getVideoRatios(selectedModel, undefined, imageGenerationMode).map((ratio) => (
                             <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
                           ))
                       }
@@ -3253,6 +3916,19 @@ const ChatPage: React.FC = () => {
                       value={wan25Seed || ''}
                       onChange={(e) => setWan25Seed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    />
+                  </div>
+                )}
+
+                {/* 水印设置 (视频模式) */}
+                {ModelCapabilities.supportsWatermark(selectedModel) && (
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium">添加水印</label>
+                    <input
+                      type="checkbox"
+                      checked={watermark}
+                      onChange={(e) => setWatermark(e.target.checked)}
+                      className="rounded border-border text-primary focus:ring-primary"
                     />
                   </div>
                 )}
@@ -3483,8 +4159,22 @@ const ChatPage: React.FC = () => {
                   }}
                 />
                 
-                {/* 图片上传按钮 */}
-                   {(currentMode === 'image' || currentMode === 'video') && (
+                {/* 图片上传按钮 - 只有支持图片上传的模型才显示 */}
+                   {currentMode === 'image' && ModelCapabilities.supportsImageUpload(selectedModel, 'image') && (
+                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                       <input
+                         type="file"
+                         accept="image/*"
+                         multiple
+                         onChange={handleImageUpload}
+                         className="hidden"
+                      disabled={isLoading || !selectedModel}
+                       />
+                    <ImageIcon size={16} />
+                     </label>
+                   )}
+                   {/* 视频模式：只有支持图片上传的模型才显示上传按钮 */}
+                   {currentMode === 'video' && ModelCapabilities.supportsImageUpload(selectedModel, 'video') && (
                   <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                        <input
                          type="file"
@@ -3819,30 +4509,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         <div className="relative">
                           {/* 先尝试使用video标签，如果失败则使用iframe */}
                           <VideoPlayer url={video.url} />
-                          {/* 操作按钮 */}
-                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                navigator.clipboard.writeText(video.url);
-                                toast.success('视频链接已复制');
-                              }}
-                              className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded backdrop-blur-sm transition-colors"
-                              title="复制链接"
-                            >
-                              <Copy size={14} />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onPreview?.('video', video.url);
-                              }}
-                              className="p-1.5 bg-black/60 hover:bg-black/80 text-white rounded backdrop-blur-sm transition-colors"
-                              title="预览"
-                            >
-                              <Maximize2 size={14} />
-                            </button>
-                          </div>
                         </div>
                       ) : video.status === 'failed' ? (
                         <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">

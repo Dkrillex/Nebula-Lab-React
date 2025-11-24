@@ -98,12 +98,22 @@ export const getImageSizes = (model: string) => {
 };
 
 // 获取视频比例选项
-export const getVideoRatios = (model: string, mode?: string) => {
+export const getVideoRatios = (model: string, mode?: string, imageGenerationMode?: string) => {
   const isVeo = model.toLowerCase().includes('veo');
   const isSora = model === 'sora-2';
   
   if (isVeo || isSora) {
     return VIDEO_RATIOS.filter(r => r.id === '16:9' || r.id === '9:16');
+  }
+  
+  // doubao-seedance-1-0-lite-t2v-250428 不支持 adaptive
+  if (model === 'doubao-seedance-1-0-lite-t2v-250428') {
+    return VIDEO_RATIOS.filter(r => r.id !== 'adaptive');
+  }
+  
+  // 参考图模式不支持 adaptive
+  if (imageGenerationMode === 'reference') {
+    return VIDEO_RATIOS.filter(r => r.id !== 'adaptive');
   }
   
   // Wan2.5 models have fixed ratios usually or handled differently, but for now return all or restricted
@@ -116,12 +126,20 @@ export const getVideoRatios = (model: string, mode?: string) => {
 };
 
 // 获取视频分辨率选项
-export const getVideoResolutions = (model: string) => {
+export const getVideoResolutions = (model: string, imageGenerationMode?: string) => {
   const isVeo = model.toLowerCase().includes('veo');
   if (isVeo) {
     return VIDEO_RESOLUTIONS.filter(r => r.id === '720p' || r.id === '1080p');
   }
   if (model.includes('wan2.5')) {
+    return VIDEO_RESOLUTIONS;
+  }
+  // doubao-seedance 系列支持所有分辨率
+  if (model.includes('doubao-seedance') || model.includes('seedance')) {
+    // 参考图模式不支持1080p
+    if (imageGenerationMode === 'reference') {
+      return VIDEO_RESOLUTIONS.filter(r => r.id !== '1080p');
+    }
     return VIDEO_RESOLUTIONS;
   }
   // Default
@@ -205,6 +223,10 @@ export const ModelCapabilities = {
 
   // 获取视频时长选项（根据模型）
   getVideoDurationOptions: (model: string) => {
+    // sora-2 只支持 4/8/12 秒
+    if (model === 'sora-2') {
+      return [4, 8, 12];
+    }
     // Veo 模型支持 4/6/8 秒
     if (model.toLowerCase().includes('veo')) {
       return [4, 6, 8];
@@ -221,6 +243,16 @@ export const ModelCapabilities = {
   supportsVideoDuration: (model: string, duration: number) => {
     const options = ModelCapabilities.getVideoDurationOptions(model);
     return options.includes(duration);
+  },
+
+  // 获取格式显示文本
+  getFormatDisplayText: (model: string, mode?: 'image' | 'video') => {
+    return getFormatDisplayText(model, mode || 'image');
+  },
+
+  // 获取最大文件大小
+  getMaxFileSize: (model: string, mode?: 'image' | 'video') => {
+    return getMaxFileSizeText(model, mode || 'image');
   },
 
   // 获取当前模型允许的图片格式
@@ -247,38 +279,6 @@ export const ModelCapabilities = {
     return ['jpeg', 'jpg', 'png', 'gif', 'webp'];
   },
 
-  // 获取当前模型的最大文件大小限制（MB）
-  getMaxFileSize: (model: string): number => {
-    // doubao 模型限制为 10MB
-    if (model === 'doubao-seedream-4-0-250828' || model === 'doubao-seededit-3-0-i2i-250628') {
-      return 10;
-    }
-    // gemini 模型限制为 7MB
-    if (model === 'gemini-2.5-flash-image-preview' || 
-        model === 'gemini-2.5-flash-image' || 
-        model === 'gemini-3-pro-image-preview') {
-      return 7;
-    }
-    // qwen-image-plus 是纯文生图，不需要文件大小限制
-    if (model === 'qwen-image-plus') {
-      return 0;
-    }
-    // qwen-image-edit 系列限制为 10MB
-    if (model === 'qwen-image-edit-plus' || model === 'qwen-image-edit-plus-2025-10-30') {
-      return 10;
-    }
-    // 其他模型默认限制
-    return 10;
-  },
-
-  // 获取文件格式显示文本
-  getFormatDisplayText: (model: string): string => {
-    const formats = ModelCapabilities.getAllowedImageFormats(model);
-    if (formats.length === 0) return '';
-    // 去重并大写
-    const uniqueFormats = [...new Set(formats.map(f => f.toUpperCase()))];
-    return uniqueFormats.join(', ');
-  },
 
   // 获取 wan2.5 t2v 模型的 size 参数（根据分辨率和宽高比）
   getWan25T2VSize: (resolution: string, aspectRatio: string): string => {
@@ -327,5 +327,179 @@ export const ModelCapabilities = {
 
     return aspectRatioMap[resolution.toLowerCase()] || ['16:9', '9:16', '1:1'];
   },
+
+  // 获取可用的图生视频模式（根据模型）
+  getAvailableImageToVideoModes: (model: string) => {
+    // veo-3.1-fast-generate-preview 支持首帧和首尾帧
+    if (model.toLowerCase().includes('veo-3.1') || model.toLowerCase().includes('veo_3.1')) {
+      return IMAGE_TO_VIDEO_MODES.filter(m => m.id === 'first_frame' || m.id === 'first_last_frame');
+    }
+    
+    // doubao-seedance-1-0-lite-i2v-250428 支持所有三种模式
+    if (model === 'doubao-seedance-1-0-lite-i2v-250428') {
+      return IMAGE_TO_VIDEO_MODES;
+    }
+    
+    // doubao-seedance-1-0-pro-250528 只支持首帧模式
+    if (model === 'doubao-seedance-1-0-pro-250528') {
+      return IMAGE_TO_VIDEO_MODES.filter(m => m.id === 'first_frame');
+    }
+    
+    // Veo 3.0 只支持首帧模式
+    if (model.toLowerCase().includes('veo')) {
+      return IMAGE_TO_VIDEO_MODES.filter(m => m.id === 'first_frame');
+    }
+    
+    // 其他模型默认支持首帧模式
+    return IMAGE_TO_VIDEO_MODES.filter(m => m.id === 'first_frame');
+  },
+
+  // 获取图生视频模式的最大图片数量
+  getMaxImagesForImageMode: (imageMode: string): number => {
+    const mode = IMAGE_TO_VIDEO_MODES.find(m => m.id === imageMode);
+    if (imageMode === 'first_last_frame') {
+      return 2;
+    }
+    return 1;
+  },
+
+  // 获取图片生成模式的最大图片数量（根据模型）
+  getMaxImagesForImageModel: (model: string): number => {
+    // doubao-seededit-3-0-i2i-250628 图生图模型只支持单张图片
+    if (model === 'doubao-seededit-3-0-i2i-250628') {
+      return 1;
+    }
+    // gpt-image-* 支持最多10张图片
+    if (model.startsWith('gpt-image-')) {
+      return 10;
+    }
+    // 其他支持图片的模型默认支持5张图片
+    return 5;
+  },
+};
+
+// 图片上传限制规则
+export interface ImageUploadRestrictions {
+  allowedFormats: string[]; // 允许的MIME类型，如 ['image/jpeg', 'image/png']
+  maxFileSize: number; // 最大文件大小（MB）
+  maxImageSize?: number; // 最大图片尺寸（像素），如 6000
+  minImageSize?: number; // 最小图片尺寸（像素），如 360
+  requiredDimensions?: Array<{ width: number; height: number }>; // 必须匹配的尺寸，如 sora-2 的 720x1280 或 1280x720
+}
+
+// 获取图片上传限制
+export const getImageUploadRestrictions = (
+  model: string,
+  mode: 'image' | 'video',
+  videoRatio?: string,
+  videoResolution?: string
+): ImageUploadRestrictions => {
+  // 视频模式限制
+  if (mode === 'video') {
+    // sora-2 严格限制
+    if (model === 'sora-2') {
+      // 根据选择的宽高比确定必须匹配的尺寸
+      let requiredDimensions: Array<{ width: number; height: number }> = [];
+      if (videoRatio === '9:16') {
+        requiredDimensions = [{ width: 720, height: 1280 }];
+      } else if (videoRatio === '16:9') {
+        requiredDimensions = [{ width: 1280, height: 720 }];
+      } else {
+        // 默认支持两种尺寸
+        requiredDimensions = [
+          { width: 720, height: 1280 }, // 9:16 竖屏
+          { width: 1280, height: 720 }, // 16:9 横屏
+        ];
+      }
+      
+      return {
+        allowedFormats: ['image/jpeg', 'image/png', 'image/webp'],
+        maxFileSize: 10,
+        requiredDimensions,
+      };
+    }
+    
+    // wan2.5-i2v-preview
+    if (model === 'wan2.5-i2v-preview') {
+      return {
+        allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/webp'],
+        maxFileSize: 10,
+        minImageSize: 360,
+        maxImageSize: 2000,
+      };
+    }
+    
+    // 其他视频模型默认限制
+    return {
+      allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+      maxFileSize: 10,
+    };
+  }
+  
+  // 图片模式限制
+  // doubao 模型限制为 JPEG 和 PNG
+  if (
+    model === 'doubao-seedream-4-0-250828' ||
+    model === 'doubao-seededit-3-0-i2i-250628'
+  ) {
+    return {
+      allowedFormats: ['image/jpeg', 'image/jpg', 'image/png'],
+      maxFileSize: 10,
+      maxImageSize: 6000,
+    };
+  }
+  
+  // gemini 模型支持 PNG、JPEG、WEBP
+  if (
+    model === 'gemini-2.5-flash-image-preview' ||
+    model === 'gemini-2.5-flash-image' ||
+    model === 'gemini-3-pro-image-preview'
+  ) {
+    return {
+      allowedFormats: ['image/png', 'image/jpeg', 'image/jpg', 'image/webp'],
+      maxFileSize: 7,
+    };
+  }
+  
+  // qwen-image-edit 系列支持：JPG、JPEG、PNG、BMP、TIFF、WEBP
+  if (model === 'qwen-image-edit-plus' || model === 'qwen-image-edit-plus-2025-10-30') {
+    return {
+      allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/tiff', 'image/webp'],
+      maxFileSize: 10,
+      minImageSize: 384,
+      maxImageSize: 3072,
+    };
+  }
+  
+  // gpt-image 系列
+  if (model.startsWith('gpt-image-')) {
+    return {
+      allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+      maxFileSize: 10,
+    };
+  }
+  
+  // 其他模型默认限制
+  return {
+    allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'],
+    maxFileSize: 10,
+  };
+};
+
+// 获取格式显示文本
+export const getFormatDisplayText = (model: string, mode: 'image' | 'video' = 'image'): string => {
+  const restrictions = getImageUploadRestrictions(model, mode);
+  if (restrictions.allowedFormats.length === 0) {
+    return '不支持图片上传';
+  }
+  return restrictions.allowedFormats
+    .map(f => f.replace('image/', '').toUpperCase())
+    .join('/');
+};
+
+// 获取最大文件大小显示文本
+export const getMaxFileSizeText = (model: string, mode: 'image' | 'video' = 'image'): number => {
+  const restrictions = getImageUploadRestrictions(model, mode);
+  return restrictions.maxFileSize;
 };
 
