@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Trash2, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
-import { imageToVideoService, I2VTaskResult, MultiModelI2VParams } from '../../../services/imageToVideoService';
+import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
 import { textToImageService } from '../../../services/textToImageService';
 import { uploadService } from '../../../services/uploadService';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
@@ -11,67 +11,19 @@ import { AdsAssetsVO } from '../../../services/assetsService';
 
 import demoProduct from '../../../assets/demo/1111.png';
 
-// Model Interfaces
-interface ModelItem {
-  id: string;
-  name: string;
-  icon: string;
-  score: number;
-  duration: string;
-  description?: string;
-}
-
-const MODELS: ModelItem[] = [
-  {
-    id: 'seedance-1-0-lite',
-    name: 'Seedance 1.0 Lite',
-    icon: '/assets/images/icons/jpg/seedance1.png', // Placeholder path, adjust if needed
-    score: 5,
-    duration: '1 min max',
-  },
-  {
-    id: 'seedance-1-0-pro',
-    name: 'Seedance 1.0 Pro',
-    icon: '/assets/images/icons/jpg/seedance1.png',
-    score: 10,
-    duration: '1 min max',
-  },
-  {
-    id: 'seaweed',
-    name: 'Seaweed alpha',
-    icon: '/assets/images/icons/jpg/seedance1.png',
-    score: 10,
-    duration: '1 min max',
-  },
-  {
-    id: 'wan2.1-14b',
-    name: 'Wan2.1-14b',
-    icon: '/assets/images/icons/jpg/wan.png',
-    score: 10,
-    duration: '1 min max',
-  },
-  {
-    id: 'im',
-    name: 'Jimeng Video 3.0 Pro',
-    icon: '/assets/images/icons/jpg/dreamian.png',
-    score: 8,
-    duration: '1 min max',
-  },
-  {
-    id: 'veo3',
-    name: 'Google Veo3',
-    icon: '/assets/images/icons/jpg/google.png',
-    score: 20,
-    duration: '1 min max',
-  },
-  {
-    id: 'veo2',
-    name: 'Google Veo2',
-    icon: '/assets/images/icons/jpg/google.png',
-    score: 15,
-    duration: '1 min max',
-  },
-];
+// Model Interfaces (commented out - Advanced Mode not open to public yet)
+// interface ModelItem {
+//   id: string;
+//   name: string;
+//   icon: string;
+//   score: number;
+//   duration: string;
+//   description?: string;
+// }
+//
+// const MODELS: ModelItem[] = [
+//   ...
+// ];
 
 interface ImageToVideoPageProps {
   t: {
@@ -133,7 +85,7 @@ interface UploadedImage {
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const { getData } = useVideoGenerationStore();
-  const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd' | 'multiModel'>('traditional');
+  const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
   
   // --- Common Inputs ---
   const [prompt, setPrompt] = useState('');
@@ -149,11 +101,11 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [duration, setDuration] = useState<number>(5);
   const [generatingCount, setGeneratingCount] = useState<number>(1);
 
-  // --- Advanced (MultiModel) Inputs ---
-  const [advancedImages, setAdvancedImages] = useState<UploadedImage[]>([]);
-  const [advancedModelId, setAdvancedModelId] = useState<string>('seedance-1-0-lite');
-  const [advancedDuration, setAdvancedDuration] = useState<string>('5');
-  const [uploadingAdvanced, setUploadingAdvanced] = useState(false);
+  // --- Advanced (MultiModel) Inputs --- (commented out - Advanced Mode not open to public yet)
+  // const [advancedImages, setAdvancedImages] = useState<UploadedImage[]>([]);
+  // const [advancedModelId, setAdvancedModelId] = useState<string>('seedance-1-0-lite');
+  // const [advancedDuration, setAdvancedDuration] = useState<string>('5');
+  // const [uploadingAdvanced, setUploadingAdvanced] = useState(false);
   
   // --- Generation State ---
   const [isGenerating, setIsGenerating] = useState(false);
@@ -168,7 +120,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   // --- Refs ---
   const startFileInputRef = useRef<HTMLInputElement>(null);
   const endFileInputRef = useRef<HTMLInputElement>(null);
-  const advancedFileInputRef = useRef<HTMLInputElement>(null);
+  // const advancedFileInputRef = useRef<HTMLInputElement>(null); // Advanced Mode not open to public yet
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -189,12 +141,12 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
               fileName: 'reference_image.png',
               fileUrl: data.images[0]
             });
-            // Advanced mode import
-            setAdvancedImages([{
-              fileId: `temp_${Date.now()}`,
-              fileName: 'reference_image.png',
-              fileUrl: data.images[0]
-            }]);
+            // Advanced mode import (commented out - Advanced Mode not open to public yet)
+            // setAdvancedImages([{
+            //   fileId: `temp_${Date.now()}`,
+            //   fileName: 'reference_image.png',
+            //   fileUrl: data.images[0]
+            // }]);
           }
         }
       } catch (error) {
@@ -213,13 +165,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
   // --- Score Calculation ---
   const calculatedScore = useMemo(() => {
-    if (activeTab === 'multiModel') {
-      const model = MODELS.find(m => m.id === advancedModelId);
-      if (!model) return 0;
-      const dur = parseInt(advancedDuration);
-      const multiplier = dur === 5 ? 1 : 2; 
-      return model.score * multiplier;
-    } else if (activeTab === 'startEnd') {
+    if (activeTab === 'startEnd') {
        return duration === 5 ? 4 : 5;
     } else {
       let base = 0;
@@ -242,7 +188,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       }
       return base * generatingCount;
     }
-  }, [activeTab, quality, duration, generatingCount, advancedModelId, advancedDuration]);
+  }, [activeTab, quality, duration, generatingCount]);
 
   // --- Helpers ---
   // Try Sample Task
@@ -284,54 +230,48 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end' | 'advanced') => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    if (type === 'advanced') {
-      setUploadingAdvanced(true);
-    } else if (type === 'start') {
+    if (type === 'start') {
       setUploadingStart(true);
     } else {
       setUploadingEnd(true);
     }
 
     try {
-      const fileList = type === 'advanced' ? Array.from(files) : [files[0]];
-      
-      for (const file of fileList) {
-        const res: any = await uploadService.uploadFile(file);
-        // request client usually unwraps the response to return 'data' directly
-        // But we handle both cases just to be safe
-        const data = (res && res.code === 200 && res.data) ? res.data : res;
+      const file = files[0];
+      const res: any = await uploadService.uploadFile(file);
+      // request client usually unwraps the response to return 'data' directly
+      // But we handle both cases just to be safe
+      const data = (res && res.code === 200 && res.data) ? res.data : res;
 
-        if (data && (data.url || data.ossId || data.id)) {
-          const newImage: UploadedImage = {
-            fileId: data.ossId || data.id,
-            fileName: data.fileName || data.originalName || file.name,
-            fileUrl: data.url || URL.createObjectURL(file),
-            file: file
-          };
+      if (data && (data.url || data.ossId || data.id)) {
+        const newImage: UploadedImage = {
+          fileId: data.ossId || data.id,
+          fileName: data.fileName || data.originalName || file.name,
+          fileUrl: data.url || URL.createObjectURL(file),
+          file: file
+        };
 
-          if (type === 'start') setStartImage(newImage);
-          else if (type === 'end') setEndImage(newImage);
-          else if (type === 'advanced') setAdvancedImages(prev => [...prev, newImage]);
-        }
+        if (type === 'start') setStartImage(newImage);
+        else if (type === 'end') setEndImage(newImage);
       }
     } catch (error) {
       console.error('Upload failed:', error);
       toast.error('Upload failed');
     } finally {
-      if (type === 'advanced') setUploadingAdvanced(false);
-      else if (type === 'start') setUploadingStart(false);
+      if (type === 'start') setUploadingStart(false);
       else setUploadingEnd(false);
       if (e.target) e.target.value = '';
     }
   };
 
-  const removeAdvancedImage = (index: number) => {
-    setAdvancedImages(prev => prev.filter((_, i) => i !== index));
-  };
+  // Advanced Mode functions (commented out - Advanced Mode not open to public yet)
+  // const removeAdvancedImage = (index: number) => {
+  //   setAdvancedImages(prev => prev.filter((_, i) => i !== index));
+  // };
 
   const handleTextPolish = async () => {
     const textToPolish = prompt;
@@ -356,7 +296,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   };
 
   // --- Polling ---
-  const startPolling = (taskId: string, mode: 'traditional' | 'startEnd' | 'multiModel', extraArgs?: any) => {
+  const startPolling = (taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
     if (pollingInterval.current) clearInterval(pollingInterval.current);
     
     let pollCount = 0;
@@ -373,10 +313,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         let res;
         if (mode === 'traditional') {
            res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
-        } else if (mode === 'startEnd') {
-           res = await imageToVideoService.queryStartEnd(taskId);
         } else {
-           res = await imageToVideoService.queryMultiModel(taskId, extraArgs?.modelId);
+           res = await imageToVideoService.queryStartEnd(taskId);
         }
         // Handle different response structures
         const responseData = res.data || (res as any).result || res;
@@ -452,12 +390,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       toast.error('Please upload both start and end images');
       return;
     }
-    if (activeTab === 'multiModel') {
-       if (advancedImages.length === 0) {
-         toast.error('Please upload at least one image');
-         return;
-       }
-    }
 
     setIsGenerating(true);
     setProgress(0);
@@ -524,27 +456,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          if ((res as any).code === 200 || responseData.id || responseData.taskId) {
             taskId = responseData.taskId || responseData.id || '';
             startPolling(taskId, 'startEnd');
-         } else {
-            throw new Error((res as any).msg || 'Submission failed');
-         }
-
-      } else {
-         const params: MultiModelI2VParams = {
-           prompt,
-           modelId: advancedModelId,
-           duration: advancedDuration,
-           score: calculatedScore,
-           imageFileId: advancedImages.map(img => img.fileId).filter(Boolean),
-           imageFileUrl: advancedImages.map(img => img.fileUrl).filter(Boolean),
-           negativePrompt
-         };
-         
-         const res = await imageToVideoService.submitMultiModel(params);
-         
-         const responseData = (res as any).data || res;
-         if ((res as any).code === 200 || responseData.id || responseData.taskId || responseData.task_id) {
-            taskId = responseData.taskId || responseData.id || responseData.task_id || '';
-            startPolling(taskId, 'multiModel', { modelId: advancedModelId });
          } else {
             throw new Error((res as any).msg || 'Submission failed');
          }
@@ -643,16 +554,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             >
               {t.tabs.startEnd}
             </button>
-            <button
-              onClick={() => setActiveTab('multiModel')}
-              className={`flex-1 py-2 rounded-md text-sm font-medium transition-all ${
-                activeTab === 'multiModel' 
-                  ? 'bg-indigo-600 text-white shadow-sm' 
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-              }`}
-            >
-              {t.tabs.advanced}
-            </button>
+            {/* Advanced Mode tab hidden - not open to public yet */}
           </div>
 
           {/* --- Traditional & StartEnd Content --- */}
@@ -720,63 +622,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
           )}
 
           {/* --- Advanced Content --- */}
-          {activeTab === 'multiModel' && (
-             <>
-               {/* Model Selector */}
-               <div className="mb-6">
-                  <h3 className="text-sm font-bold mb-3 text-gray-900 dark:text-white">Model</h3>
-                  <select 
-                     value={advancedModelId}
-                     onChange={(e) => setAdvancedModelId(e.target.value)}
-                     className="w-full p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm"
-                  >
-                     {MODELS.map(m => (
-                        <option key={m.id} value={m.id}>{m.name} - {m.score} pts</option>
-                     ))}
-                  </select>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                     {MODELS.find(m => m.id === advancedModelId)?.duration}
-                  </p>
-               </div>
-
-               {/* Multi Upload */}
-               <div className="mb-6">
-                  <h3 className="text-sm font-bold mb-3 text-foreground">{t.upload.label}</h3>
-                  <input type="file" ref={advancedFileInputRef} onChange={(e) => handleUpload(e, 'advanced')} className="hidden" accept="image/*" multiple />
-                  
-                  {advancedImages.length === 0 ? (
-                     <div 
-                        onClick={() => !uploadingAdvanced && advancedFileInputRef.current?.click()}
-                        className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                           uploadingAdvanced ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                        }`}
-                     >
-                        {uploadingAdvanced ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
-                        <span className="text-xs text-muted text-center px-2 mt-1">Upload Image</span>
-                     </div>
-                  ) : (
-                     <div className="grid grid-cols-3 gap-2">
-                        {advancedImages.map((img, idx) => (
-                           <div key={img.fileId || idx} className="relative aspect-square rounded-lg overflow-hidden border border-indigo-500 group bg-black/5">
-                              <img src={img.fileUrl} className="w-full h-full object-contain" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                 <button onClick={() => removeAdvancedImage(idx)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
-                                    <Trash2 size={14} />
-                                 </button>
-                              </div>
-                           </div>
-                        ))}
-                        <div 
-                           onClick={() => !uploadingAdvanced && advancedFileInputRef.current?.click()}
-                           className={`aspect-square rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-700 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors`}
-                        >
-                           {uploadingAdvanced ? <Loader2 className="animate-spin text-indigo-600 w-5 h-5" /> : <Plus className="w-6 h-6 text-slate-400" />}
-                        </div>
-                     </div>
-                  )}
-               </div>
-             </>
-          )}
+          {/* Advanced Mode hidden - not open to public yet */}
 
           {/* --- Common Settings --- */}
           <div className="mb-6">
@@ -890,29 +736,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
              </div>
           )}
 
-          {activeTab === 'multiModel' && (
-             <div className="space-y-6 mb-8">
-                <div>
-                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.duration.label}</label>
-                   <div className="flex gap-2">
-                      {/* Logic from Vue: if Veo2 -> 5, 8. Else -> 5, 10. */}
-                      {(advancedModelId === 'veo2' ? ['5', '8'] : ['5', '10']).map((d) => (
-                         <button
-                            key={d}
-                            onClick={() => setAdvancedDuration(d)}
-                            className={`px-4 py-2 rounded-md text-xs border transition-all ${
-                               advancedDuration === d 
-                                 ? 'border-indigo-500 bg-indigo-50 text-indigo-600 font-bold dark:bg-indigo-900/30 dark:text-indigo-400' 
-                                 : 'border-border hover:border-indigo-300 text-gray-600'
-                            }`}
-                         >
-                            {d}s
-                         </button>
-                      ))}
-                   </div>
-                </div>
-             </div>
-          )}
+          {/* Advanced Mode duration settings hidden - not open to public yet */}
 
           {/* Negative Prompt */}
           <div className="mb-8">
