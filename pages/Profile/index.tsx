@@ -132,22 +132,22 @@ const ProfilePage: React.FC = () => {
 
     // 验证
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.warning('请填写所有密码字段');
+      toast.error('请填写所有密码字段');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast.warning('新密码长度至少为6位');
+      toast.error('新密码长度至少为6位');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.warning('两次输入的新密码不一致');
+      toast.error('两次输入的新密码不一致');
       return;
     }
 
     if (passwordForm.oldPassword === passwordForm.newPassword) {
-      toast.warning('新密码不能与旧密码相同');
+      toast.error('新密码不能与旧密码相同');
       return;
     }
 

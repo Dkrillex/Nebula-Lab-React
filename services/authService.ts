@@ -33,10 +33,10 @@ export const authService = {
 
   /**
    * Logout
-   * Endpoint: /logout
+   * Endpoint: /auth/logout
    */
   logout: () => {
-    return request.post('/logout', {});
+    return request.post('/auth/logout', {});
   },
 
   /**

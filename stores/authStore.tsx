@@ -2,17 +2,25 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { authService } from '../services/authService';
 import { UserInfo, LoginResponse, UserInfoResp } from '../types';
+import toast from 'react-hot-toast';
+
+interface FirstLoginInfo {
+  isFirstLogin: boolean;
+  defaultPassword: string;
+}
 
 interface AuthState {
   user: UserInfo | null;
   token: string | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (params: { username?: string; password?: string; code?: string; uuid?: string }) => Promise<void>;
-  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string }) => Promise<void>;
+  firstLoginInfo: FirstLoginInfo | null; // 首次登录信息，用于全局显示提示
+  login: (params: { username?: string; password?: string; code?: string; uuid?: string }) => Promise<FirstLoginInfo | null>;
+  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string }) => Promise<FirstLoginInfo | null>;
   logout: () => Promise<void>;
-  fetchUserInfo: () => Promise<void>;
+  fetchUserInfo: () => Promise<UserInfo | null>;
   setUserInfo: (userInfo: UserInfo | null) => void;
+  clearFirstLoginInfo: () => void; // 清除首次登录信息
 }
 
 // localStorage keys
@@ -41,6 +49,7 @@ export const useAuthStore = create<AuthState>()(
       token: localStorage.getItem(STORAGE_KEYS.TOKEN),
   loading: false,
       isAuthenticated: !!localStorage.getItem(STORAGE_KEYS.TOKEN),
+      firstLoginInfo: null,
 
   login: async (params) => {
     set({ loading: true });
@@ -55,13 +64,32 @@ export const useAuthStore = create<AuthState>()(
         console.log('Token saved:', access_token.substring(0, 20) + '...');
         
         // Fetch user info immediately after login
-        await get().fetchUserInfo();
+        const userInfo = await get().fetchUserInfo();
         
-        // Handle first login prompt if needed
+        // Store and return first login info if applicable
         if (is_first_login && default_password) {
-          console.warn('首次登录，默认密码:', default_password);
-          // You can add a modal or notification here to prompt user to change password
+          console.log('首次登录，默认密码:', default_password);
+          const firstLoginInfo = {
+            isFirstLogin: true,
+            defaultPassword: default_password,
+          };
+          set({ firstLoginInfo });
+          // 首次登录不显示"欢迎回来"，而是显示首次登录提示对话框
+          return firstLoginInfo;
         }
+        
+        // 非首次登录才显示"欢迎回来"
+        if (userInfo?.realName) {
+          toast.success(`登录成功，欢迎回来：${userInfo.realName}`, {
+            duration: 3000,
+          });
+        } else {
+          toast.success('登录成功', {
+            duration: 3000,
+          });
+        }
+        
+        return null;
       } else {
         console.error('Login response structure:', loginData);
         throw new Error('登录响应格式错误，缺少 access_token');
@@ -82,13 +110,38 @@ export const useAuthStore = create<AuthState>()(
       console.log('Phone login response:', loginData);
       
       if (loginData?.access_token) {
-        const { access_token } = loginData;
+        const { access_token, is_first_login, default_password } = loginData;
         localStorage.setItem(STORAGE_KEYS.TOKEN, access_token);
         set({ token: access_token, isAuthenticated: true });
         console.log('Token saved:', access_token.substring(0, 20) + '...');
         
         // Fetch user info immediately after login
-        await get().fetchUserInfo();
+        const userInfo = await get().fetchUserInfo();
+        
+        // Store and return first login info if applicable
+        if (is_first_login && default_password) {
+          console.log('首次登录，默认密码:', default_password);
+          const firstLoginInfo = {
+            isFirstLogin: true,
+            defaultPassword: default_password,
+          };
+          set({ firstLoginInfo });
+          // 首次登录不显示"欢迎回来"，而是显示首次登录提示对话框
+          return firstLoginInfo;
+        }
+        
+        // 非首次登录才显示"欢迎回来"
+        if (userInfo?.realName) {
+          toast.success(`登录成功，欢迎回来：${userInfo.realName}`, {
+            duration: 3000,
+          });
+        } else {
+          toast.success('登录成功', {
+            duration: 3000,
+          });
+        }
+        
+        return null;
       } else {
         console.error('Phone login response structure:', loginData);
         throw new Error('登录响应格式错误，缺少 access_token');
@@ -102,7 +155,7 @@ export const useAuthStore = create<AuthState>()(
     const token = get().token;
     if (!token) {
       console.warn('No token available, cannot fetch user info');
-      return;
+      return null;
     }
 
     try {
@@ -147,10 +200,13 @@ export const useAuthStore = create<AuthState>()(
         username: userInfo.username,
         realName: userInfo.realName,
       });
+      
+      return userInfo;
     } catch (error) {
       console.error("Failed to fetch user info", error);
       // If token is invalid/expired, logout
       get().logout();
+      return null;
     }
   },
 
@@ -174,8 +230,12 @@ export const useAuthStore = create<AuthState>()(
     // Clear all auth data
     localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-    set({ token: null, user: null, isAuthenticated: false });
+    set({ token: null, user: null, isAuthenticated: false, firstLoginInfo: null });
     window.location.href = '/'; // Force redirect/reload to clear state completely
+  },
+
+  clearFirstLoginInfo: () => {
+    set({ firstLoginInfo: null });
   },
     }),
     {
