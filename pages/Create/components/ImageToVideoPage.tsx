@@ -73,6 +73,8 @@ const MODELS: ModelItem[] = [
   },
 ];
 
+const TRADITIONAL_DURATIONS = [3, 5, 8, 10, 12];
+
 interface ImageToVideoPageProps {
   t: {
     title: string;
@@ -102,11 +104,17 @@ interface ImageToVideoPageProps {
         pro: string;
         best: string;
       };
+      tips: {
+        lite: string;
+        pro: string;
+        best: string;
+      };
     };
     duration: {
       label: string;
       units: string;
     };
+    generatingCount: string;
     negativePrompt: {
       label: string;
       placeholder: string;
@@ -135,6 +143,12 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const { getData } = useVideoGenerationStore();
   const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd' | 'multiModel'>('traditional');
   
+  const qualityOptions = [
+    { label: 'lite', display: t.quality.options.lite, tips: t.quality.tips.lite },
+    { label: 'plus', display: t.quality.options.pro, tips: t.quality.tips.pro },
+    { label: 'best', display: t.quality.options.best, tips: t.quality.tips.best }
+  ];
+
   // --- Common Inputs ---
   const [prompt, setPrompt] = useState('');
   const [negativePrompt, setNegativePrompt] = useState('');
@@ -211,6 +225,25 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     };
   }, []);
 
+  // Validate Duration on Tab/Model Change
+  useEffect(() => {
+    if (activeTab === 'startEnd') {
+      if (![5, 10].includes(duration)) {
+        setDuration(5);
+      }
+    }
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'multiModel') {
+      const isVeo2 = advancedModelId === 'veo2';
+      const validDurations = isVeo2 ? ['5', '8'] : ['5', '10'];
+      if (!validDurations.includes(advancedDuration)) {
+        setAdvancedDuration('5');
+      }
+    }
+  }, [advancedModelId, activeTab]);
+
   // --- Score Calculation ---
   const calculatedScore = useMemo(() => {
     if (activeTab === 'multiModel') {
@@ -224,21 +257,27 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     } else {
       let base = 0;
       if (quality === 'best') {
-        base = duration === 5 ? 10 : (duration === 10 ? 20 : 5);
+        // Vue logic: 5s->10, 10s->20, 12s->5
+        if (duration === 5) base = 10;
+        else if (duration === 10) base = 20;
+        else if (duration === 12) base = 5;
+        else base = 10; 
       } else if (quality === 'lite') {
         if(duration === 3) base = 2;
-        if(duration === 5) base = 3;
-        if(duration === 8) base = 3.5;
-        if(duration === 10) base = 4;
-        if(duration === 12) base = 5;
-      } else if (quality === 'plus') {
+        else if(duration === 5) base = 3;
+        else if(duration === 8) base = 3.5;
+        else if(duration === 10) base = 4;
+        else if(duration === 12) base = 5;
+      } else if (quality === 'plus') { // UI: Pro
         if(duration === 3) base = 3;
-        if(duration === 5) base = 5;
-        if(duration === 8) base = 8;
-        if(duration === 10) base = 10;
-        if(duration === 12) base = 12;
-      } else if (quality === 'pro') {
-         base = 5;
+        else if(duration === 5) base = 5;
+        else if(duration === 8) base = 8;
+        else if(duration === 10) base = 10;
+        else if(duration === 12) base = 12;
+      } else if (quality === 'pro') { // Legacy/Hidden
+         if (duration === 5) base = 4;
+         else if (duration === 10) base = 5;
+         else if (duration === 12) base = 5;
       }
       return base * generatingCount;
     }
@@ -339,17 +378,20 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     
     setIsPolishing(true);
     try {
-      const res = await textToImageService.polishText({
+      const polishedText = await textToImageService.polishText({
         text: textToPolish,
         type: 'image_to_video'
       });
-      if (res.data) {
-        setPrompt(res.data);
-        toast.success('Text polished successfully');
+
+      if (polishedText && typeof polishedText === 'string') {
+        setPrompt(polishedText);
+        toast.success(t.prompt.polish + ' ' + t.result.label); // Or use dedicated success message
+      } else {
+        throw new Error('No polished text returned');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Polishing failed:', error);
-      toast.error('Failed to polish text');
+      toast.error(error.message || 'Failed to polish text');
     } finally {
       setIsPolishing(false);
     }
@@ -781,15 +823,18 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
           {/* --- Common Settings --- */}
           <div className="mb-6">
              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
-                <button 
-                   onClick={handleTextPolish} 
-                   disabled={isPolishing || !prompt}
-                   className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 font-medium"
-                >
-                   {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                   {t.prompt.polish}
-                </button>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
+                  <button 
+                     onClick={handleTextPolish} 
+                     disabled={isPolishing || !prompt}
+                     className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-700 disabled:opacity-50 font-medium"
+                  >
+                     {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                     {t.prompt.polish}
+                  </button>
+                </div>
+                <span className="text-[10px] text-gray-400">{prompt.length}/{t.prompt.maxLength}</span>
              </div>
              <textarea
                value={prompt}
@@ -804,30 +849,40 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
           {activeTab === 'traditional' && (
              <div className="space-y-6 mb-8">
                 {/* Quality */}
-                <div>
-                   <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.quality.label}</label>
-                   <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
-                      {['lite', 'plus', 'pro', 'best'].map((q) => (
-                         <button
-                            key={q}
-                            onClick={() => setQuality(q as any)}
-                            className={`flex-1 py-1.5 text-xs font-medium rounded-md capitalize transition-all ${
-                               quality === q 
+               <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.quality.label}</label>
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-lg">
+                     {qualityOptions.map((q) => (
+                        <button
+                           key={q.label}
+                           onClick={() => {
+                              setQuality(q.label as any);
+                              // Auto-switch duration if Best
+                              if (q.label === 'best' && ![5, 10].includes(duration)) {
+                                setDuration(5);
+                              }
+                           }}
+                           className={`flex-1 py-1.5 text-xs font-medium rounded-md capitalize transition-all group relative ${
+                               quality === q.label 
                                  ? 'bg-white dark:bg-gray-700 shadow-sm text-indigo-600 dark:text-indigo-400' 
                                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
                             }`}
                          >
-                            {q}
+                            {q.display}
+                            {/* Custom Tooltip on Hover */}
+                            <span className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-2 py-1 text-[10px] text-white bg-black/80 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
+                              {q.tips}
+                            </span>
                          </button>
                       ))}
                    </div>
                 </div>
                 
-                {/* Generating Count (Only for Pro/Best) */}
-                {(quality === 'pro' || quality === 'best') && (
+                {/* Generating Count (Only for Best) */}
+                {(quality === 'best') && (
                    <div>
                       <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">
-                         Generating Count: {generatingCount}
+                         {t.generatingCount} {generatingCount}
                       </label>
                       <input 
                          type="range" 
@@ -848,10 +903,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                 <div>
                    <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.duration.label}</label>
                    <div className="flex flex-wrap gap-2">
-                      {[3, 5, 8, 10, 12].map((d) => (
+                      {TRADITIONAL_DURATIONS.map((d) => (
                          <button
                             key={d}
-                            onClick={() => setDuration(d)}
+                            onClick={() => {
+                               setDuration(d);
+                               // Auto-switch quality if Best and duration not supported
+                               if (quality === 'best' && ![5, 10].includes(d)) {
+                                 setQuality('lite');
+                               }
+                            }}
                             disabled={quality === 'best' && ![5, 10].includes(d)}
                             className={`px-3 py-1.5 rounded-md text-xs border transition-all ${
                                duration === d 

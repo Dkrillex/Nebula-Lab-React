@@ -1,34 +1,32 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useActivate, useUnactivate } from 'react-activation';
 import { 
-  Image, Video, Wand2, Eraser, Upload, ArrowRight, Sparkles, 
-  PenTool, Star, User, Clock, 
-  Layers, Users, 
-  Loader2, Heart, X
+  ArrowRight, Sparkles, Loader2, X, Upload
 } from 'lucide-react';
 
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
 import AuthModal from '../../components/AuthModal';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 
 const CreateHome: React.FC = () => {
   const { t: rawT, handleNavClick } = useAppOutletContext();
-  // 兼容处理：如果 t 不存在（可能直接渲染而非通过 Outlet），则需要处理
-  // 但由于我们强制在 router 中使用了 OutletContext，这里假设 t 存在
-  const t = rawT.createPage;
+  
+  // 安全获取 translations，即使 rawT 为空也能提供默认文本
+  const safeT = rawT?.createPage || translations['zh'].createPage;
+  const t = safeT; // 简写
 
-  const [searchParams, setSearchParams] = useSearchParams();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { setData } = useVideoGenerationStore();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
-  // 为了兼容 onNavigate 属性（如果子组件需要），我们可以传递 handleNavClick
-  const onNavigate = handleNavClick;
-
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(true);
@@ -46,79 +44,105 @@ const CreateHome: React.FC = () => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const masonryRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  
+  // 滚动位置保存
+  const scrollTopRef = useRef<number>(0);
 
   // Creative Types Data
   const creativeTypes = [
     {
       id: 1,
-      title: t.shortcuts.video, 
+      title: t.shortcuts?.video || 'Video', 
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/k-pop.png',
-      description: t.shortcuts.videoDesc,
+      description: t.shortcuts?.videoDesc || 'Create video from image/text',
       toolId: 'viralVideo',
       type: 'image',
     },
     { 
       id: 3,
-      title: t.shortcuts.talkingPhoto,
+      title: t.shortcuts?.talkingPhoto || 'Talking Photo',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/talking-pictures.png',
-      description: t.shortcuts.talkingPhotoDesc,
+      description: t.shortcuts?.talkingPhotoDesc || 'Make photo speak',
       toolId: 'digitalHuman',
       type: 'image',
     },
     {
       id: 4,
-      title: t.shortcuts.avatar,
+      title: t.shortcuts?.avatar || 'Avatar',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/product-digital-person.png',
-      description: t.shortcuts.avatarDesc,
+      description: t.shortcuts?.avatarDesc || 'Digital human avatar',
       toolId: 'digitalHuman',
       type: 'image',
     },
     {
       id: 5,
-      title: t.shortcuts.transform,
+      title: t.shortcuts?.transform || 'Transform',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/all-things-migrate-img.png',
-      description: t.shortcuts.transformDesc,
+      description: t.shortcuts?.transformDesc || 'Style transfer',
       toolId: 'styleTransfer', 
       type: 'image',
     },
     {
       id: 6,
-      title: t.shortcuts.sketch,
+      title: t.shortcuts?.sketch || 'Sketch',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
-      description: t.shortcuts.sketchDesc,
+      description: t.shortcuts?.sketchDesc || 'Text to image',
       toolId: 'textToImage',
       type: 'image',
     },
     {
       id: 8,
-      title: t.sideMenu.voiceClone,
-      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/text2image.png', // Placeholder or real icon
-      description: t.sideMenu.voiceClone,
+      title: t.sideMenu?.voiceClone || 'Voice Clone',
+      icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/text2image.png', 
+      description: t.sideMenu?.voiceClone || 'Clone voice',
       toolId: 'voiceClone',
       type: 'audio',
     },
-    // 后面看看多语言是不是要删掉inpainting
-    // { 
-    //   id: 7,
-    //   title: t.shortcuts.inpainting,
-    //   icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/productAnyEdit.png',
-    //   description: t.shortcuts.inpaintingDesc,
-    //   toolId: 'textToImage', // Fallback or new tool
-    //   type: 'image',
-    // },
   ];
 
   // Categories
+  // 使用可选链防止 t.tabs 未定义
+  const tabs = t.tabs || ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'];
   const categories = [
-    { id: '', name: t.tabs[0] || 'All' },
-    { id: '人物', name: t.tabs[1] || 'Characters' },
-    { id: '宠物', name: t.tabs[2] || 'Animals' },
-    { id: '动漫', name: t.tabs[3] || 'Anime' },
-    { id: '创意', name: t.tabs[4] || 'Creative' },
-    { id: '食物', name: t.tabs[5] || 'Food' },
-    { id: '风景', name: t.tabs[6] || 'Scenery' },
-    { id: '产品', name: t.tabs[7] || 'Product' },
+    { id: '', name: tabs[0] || 'All' },
+    { id: '人物', name: tabs[1] || 'Characters' },
+    { id: '宠物', name: tabs[2] || 'Animals' },
+    { id: '动漫', name: tabs[3] || 'Anime' },
+    { id: '创意', name: tabs[4] || 'Creative' },
+    { id: '食物', name: tabs[5] || 'Food' },
+    { id: '风景', name: tabs[6] || 'Scenery' },
+    { id: '产品', name: tabs[7] || 'Product' },
   ];
+
+  // KeepAlive 激活时逻辑
+  useActivate(() => {
+    console.log('CreateHome activated (restored from cache)');
+    
+    // 1. 恢复滚动位置
+    const scrollContainer = document.getElementById('dashboard-main-scroll');
+    if (scrollContainer && scrollTopRef.current > 0) {
+      // 稍微延迟以确保 DOM 渲染完成
+      setTimeout(() => {
+        scrollContainer.scrollTop = scrollTopRef.current;
+      }, 0);
+    }
+
+    // 2. 重新检查无限滚动观察器
+    if (labTemplateData.length > 0 && hasMore) {
+      setupInfiniteScroll();
+    }
+  });
+
+  // KeepAlive 缓存（离开）时逻辑
+  useUnactivate(() => {
+    console.log('CreateHome unactivated (caching)');
+    
+    // 保存滚动位置
+    const scrollContainer = document.getElementById('dashboard-main-scroll');
+    if (scrollContainer) {
+      scrollTopRef.current = scrollContainer.scrollTop;
+    }
+  });
 
   // 加载模板数据
   const loadTemplates = useCallback(async () => {
@@ -144,42 +168,23 @@ const CreateHome: React.FC = () => {
            isLike: item.isLike ?? false
          }));
          
-         console.log('📋 处理后的模板数据:', processedRows.length, '条，当前页码:', currentParams.pageNum, '总数:', total);
-        
-        // 更新数据
-        setLabTemplateData(prev => {
-          const updatedData = currentParams.pageNum === 1
-            ? processedRows
-            : [...prev, ...processedRows];
-          
-          console.log('📋 更新模板数据:', {
-            isFirstPage: currentParams.pageNum === 1,
-            newRows: processedRows.length,
-            prevCount: prev.length,
-            updatedCount: updatedData.length
-          });
-          
-          // 判断是否还有更多数据
-          if (total > 0) {
-            const hasMoreData = updatedData.length < total;
-            setHasMore(hasMoreData);
-            console.log('📋 使用 total 判断:', {
-              loaded: updatedData.length,
-              total,
-              hasMore: hasMoreData
-            });
-          } else {
-            const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
-            setHasMore(hasMoreData);
-            console.log('📋 使用返回数据量判断:', {
-              returned: processedRows.length,
-              pageSize: currentParams.pageSize,
-              hasMore: hasMoreData
-            });
-          }
-          
-          return updatedData;
-        });
+         // 更新数据
+         setLabTemplateData(prev => {
+           const updatedData = currentParams.pageNum === 1
+             ? processedRows
+             : [...prev, ...processedRows];
+           
+           // 判断是否还有更多数据
+           if (total > 0) {
+             const hasMoreData = updatedData.length < total;
+             setHasMore(hasMoreData);
+           } else {
+             const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
+             setHasMore(hasMoreData);
+           }
+           
+           return updatedData;
+         });
       }
       else if (res.code === 200) {
         const newRows = Array.isArray(res.rows) ? res.rows : [];
@@ -189,38 +194,19 @@ const CreateHome: React.FC = () => {
           isLike: item.isLike ?? false
         }));
         
-        console.log('📋 处理后的模板数据:', processedRows.length, '条，当前页码:', currentParams.pageNum, '总数:', total);
-        
         // 更新数据
         setLabTemplateData(prev => {
           const updatedData = currentParams.pageNum === 1
             ? processedRows
             : [...prev, ...processedRows];
           
-          console.log('📋 更新模板数据:', {
-            isFirstPage: currentParams.pageNum === 1,
-            newRows: processedRows.length,
-            prevCount: prev.length,
-            updatedCount: updatedData.length
-          });
-          
           // 判断是否还有更多数据
           if (total > 0) {
             const hasMoreData = updatedData.length < total;
             setHasMore(hasMoreData);
-            console.log('📋 使用 total 判断:', {
-              loaded: updatedData.length,
-              total,
-              hasMore: hasMoreData
-            });
           } else {
             const hasMoreData = processedRows.length >= (currentParams.pageSize || 30);
             setHasMore(hasMoreData);
-            console.log('📋 使用返回数据量判断:', {
-              returned: processedRows.length,
-              pageSize: currentParams.pageSize,
-              hasMore: hasMoreData
-            });
           }
           
           return updatedData;
@@ -261,7 +247,8 @@ const CreateHome: React.FC = () => {
       },
       { 
         threshold: 0, 
-        rootMargin: '300px 0px' // 提前300px加载，确保用户滚动时能及时加载
+        rootMargin: '300px 0px', // 提前300px加载，确保用户滚动时能及时加载
+        root: document.getElementById('dashboard-main-scroll') // 显式指定滚动容器
       }
     );
 
@@ -272,7 +259,8 @@ const CreateHome: React.FC = () => {
 
   // 当 pageNum 或 templateName 变化时加载数据
   useEffect(() => {
-    // CreateHome 始终加载模板
+    // 如果已有数据且参数未变（通常发生在 KeepAlive 恢复时），不要重新加载
+    // 但这里 pageNum 变化肯定是需要加载的
     loadTemplates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.pageNum, templateName]); 
@@ -306,6 +294,11 @@ const CreateHome: React.FC = () => {
     setParams(prev => ({ ...prev, pageNum: 1, pageSize: 30 }));
     setHasMore(true);
     setLabTemplateData([]);
+    // 重置滚动位置
+    const scrollContainer = document.getElementById('dashboard-main-scroll');
+    if (scrollContainer) scrollContainer.scrollTop = 0;
+    scrollTopRef.current = 0;
+    
     // 清理观察器
     if (observerRef.current) {
       observerRef.current.disconnect();
@@ -440,25 +433,25 @@ const CreateHome: React.FC = () => {
             {/* Hero Greeting */}
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-                {t.greeting} <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent inline-flex items-center gap-2">{t.greetingSuffix} <Sparkles className="inline-block w-6 h-6 text-yellow-400" /></span>
+                {t.greeting || 'Welcome'} <span className="bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 bg-clip-text text-transparent inline-flex items-center gap-2">{t.greetingSuffix || 'Creator'} <Sparkles className="inline-block w-6 h-6 text-yellow-400" /></span>
               </h1>
 
               {/* Input Box */}
               <div className="max-w-3xl mx-auto relative mb-12">
                 <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
                   <textarea 
-                    placeholder={t.inputPlaceholder}
+                    placeholder={t.inputPlaceholder || 'Describe your imagination...'}
                     className="w-full h-28 resize-none bg-transparent p-5 text-base focus:outline-none text-foreground placeholder-muted/60"
                   />
                   <div className="flex items-center justify-between px-4 py-3 bg-background/50 border-t border-border/50">
                     <div className="flex items-center gap-2">
                       <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors">
                         <Upload size={16} />
-                        {t.upload}
+                        {t.upload || 'Upload'}
                       </button>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs text-muted hidden sm:inline">Enter {t.send} · Shift + Enter New Line</span>
+                      <span className="text-xs text-muted hidden sm:inline">Enter {t.send || 'Send'} · Shift + Enter New Line</span>
                       <button className="h-9 w-9 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-all shadow-md shadow-primary/20">
                         <ArrowRight size={18} />
                       </button>

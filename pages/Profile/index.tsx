@@ -5,12 +5,15 @@ import { useAuthStore } from '../../stores/authStore';
 import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users } from 'lucide-react';
 import EnterprisePage from '../Enterprise';
 import ChannelManagement from './components/ChannelManagement';
-import { useAppOutletContext } from '../../router';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
   const { t: rawT } = useAppOutletContext();
-  const t = rawT.profilePage;
+  // 安全获取 translations，提供默认值，避免 white screen
+  const t = (rawT?.profilePage || translations['zh'].profilePage) as typeof translations['zh']['profilePage'];
+  
   const { user, fetchUserInfo } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -132,22 +135,22 @@ const ProfilePage: React.FC = () => {
 
     // 验证
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.warning('请填写所有密码字段');
+      toast.error('请填写所有密码字段');
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast.warning('新密码长度至少为6位');
+      toast.error('新密码长度至少为6位');
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.warning('两次输入的新密码不一致');
+      toast.error('两次输入的新密码不一致');
       return;
     }
 
     if (passwordForm.oldPassword === passwordForm.newPassword) {
-      toast.warning('新密码不能与旧密码相同');
+      toast.error('新密码不能与旧密码相同');
       return;
     }
 
@@ -229,14 +232,6 @@ const ProfilePage: React.FC = () => {
     setIsEditing(false);
   };
 
-  if (loading && !profile) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="animate-spin text-indigo-600" size={32} />
-      </div>
-    );
-  }
-
   const handleTabChange = (tab: 'basic' | 'security' | 'enterprise') => {
     setActiveTab(tab);
     const params = new URLSearchParams(location.search);
@@ -265,7 +260,7 @@ const ProfilePage: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8 max-w-7xl min-h-[500px]">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-2">个人中心</h1>
         <p className="text-muted">管理您的个人信息和账户设置</p>
@@ -317,13 +312,30 @@ const ProfilePage: React.FC = () => {
       </div>
 
       {/* Basic Info Tab */}
-      {activeTab === 'basic' && profile && (
+      {activeTab === 'basic' && (
         <div className="max-w-4xl">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-6 min-h-[200px] relative">
+            {/* 即使没有数据也渲染结构，加载时覆盖 Loading */}
+            {loading && !profile && (
+               <div className="flex items-center justify-center absolute inset-0 bg-white/50 dark:bg-gray-800/50 z-10">
+                 <Loader2 className="animate-spin text-indigo-600" size={32} />
+               </div>
+            )}
+            
+            {/* 错误状态或空状态 */}
+            {!loading && !profile && (
+              <div className="flex flex-col items-center justify-center h-48 text-muted">
+                <p>无法加载个人信息</p>
+                <button onClick={loadProfile} className="mt-2 text-indigo-600 hover:underline">重试</button>
+              </div>
+            )}
+
+            {/* 数据存在或正在加载（如果是重新加载）时显示内容 */}
+            {profile && (
             <form onSubmit={handleProfileSubmit}>
-              <div className="flex items-start gap-8">
+              <div className="flex flex-col md:flex-row items-start gap-8">
                 {/* 头像部分 */}
-                <div className="flex-shrink-0">
+                <div className="flex-shrink-0 self-center md:self-start">
                   <div className="relative group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
                     <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-50 dark:border-indigo-900/30 relative">
                       {profile.user.avatar ? (
@@ -358,8 +370,8 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 {/* 信息表单 */}
-                <div className="flex-1 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="flex-1 space-y-4 w-full">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* 账号名称（只读） */}
                     <div>
                       <label className="block text-sm font-medium text-muted mb-1">账号名称</label>
@@ -517,6 +529,7 @@ const ProfilePage: React.FC = () => {
                 </div>
               </div>
             </form>
+            )}
           </div>
         </div>
       )}

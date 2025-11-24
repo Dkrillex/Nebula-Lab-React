@@ -1,17 +1,19 @@
 
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationModal from './NotificationModal';
-import CachedOutlet from './CachedOutlet';
+// import CachedOutlet from './CachedOutlet';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
 import { useCacheStore } from '../stores/cacheStore';
 
 import MobileSidebar from './MobileSidebar';
+
+import { KeepAliveProvider } from './KeepAlive';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
@@ -153,72 +155,67 @@ const Layout: React.FC = () => {
   };
 
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-  // Props to pass down to Outlet context if needed, 
-  // but standard prop passing is usually done via routes.
-  // Here we clone the element logic in Router, or use Context.
-  // For simplicity in this refactor, we render standard components.
-
+  // 确保 t 不为空，如果为空则使用默认语言
+  // 这在某些极端情况下（如路由跳转过快或 context 丢失）能防止崩溃
+  const safeT = t || translations['zh'];
+  
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
-      <Header 
-        isDark={isDark} 
-        toggleTheme={() => setIsDark(!isDark)} 
-        lang={lang} 
-        setLang={setLang} 
-        onSignIn={() => setIsAuthModalOpen(true)}
-        onOpenNotification={() => setIsNotificationOpen(true)}
-        onNavClick={handleNavClick}
-        currentView={currentView}
-        activeTool={activeTool}
-        sideMenuMap={t.createPage.sideMenu}
-        visitedViews={visitedViews}
-        onTabClick={handleTabClick}
-        onTabClose={handleTabClose}
-        t={t.header} 
-        onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        isMobileMenuOpen={isMobileMenuOpen}
-      />
-      
-      <main className="flex-1">
-        <CachedOutlet context={{ t, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
-      </main>
+    <KeepAliveProvider>
+      <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
+        <Header 
+          isDark={isDark} 
+          toggleTheme={() => setIsDark(!isDark)} 
+          lang={lang} 
+          setLang={setLang} 
+          onSignIn={() => setIsAuthModalOpen(true)}
+          onOpenNotification={() => setIsNotificationOpen(true)}
+          onNavClick={handleNavClick}
+          currentView={currentView}
+          activeTool={activeTool}
+          sideMenuMap={safeT.createPage.sideMenu}
+          visitedViews={visitedViews}
+          onTabClick={handleTabClick}
+          onTabClose={handleTabClose}
+          t={safeT.header} 
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          isMobileMenuOpen={isMobileMenuOpen}
+        />
+        
+        <main className="flex-1">
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
+        </main>
+        
+        <MobileSidebar 
+          isOpen={isMobileMenuOpen}
+          onClose={() => setIsMobileMenuOpen(false)}
+          sideMenuMap={safeT.createPage.sideMenu}
+          t={safeT.header}
+          isAuthenticated={isAuthenticated}
+          user={useAuthStore.getState().user}
+          onSignIn={() => {
+            setIsMobileMenuOpen(false);
+            setIsAuthModalOpen(true);
+          }}
+          logout={() => {
+             useAuthStore.getState().logout();
+             setIsMobileMenuOpen(false);
+          }}
+        />
 
-      {/* Conditional Footer rendering based on route can be handled here or CSS */}
-      {/* {currentView !== 'chat' && currentView !== 'models' && currentView !== 'expenses' && currentView !== 'pricing' && currentView !== 'assets' && (
-        <Footer t={t.footer} />
-      )} */}
-      
-      <MobileSidebar 
-        isOpen={isMobileMenuOpen}
-        onClose={() => setIsMobileMenuOpen(false)}
-        sideMenuMap={t.createPage.sideMenu}
-        t={t.header}
-        isAuthenticated={isAuthenticated}
-        user={useAuthStore.getState().user}
-        onSignIn={() => {
-          setIsMobileMenuOpen(false);
-          setIsAuthModalOpen(true);
-        }}
-        logout={() => {
-           useAuthStore.getState().logout();
-           setIsMobileMenuOpen(false);
-        }}
-      />
+        <AuthModal 
+          isOpen={isAuthModalOpen}  
+          onClose={() => setIsAuthModalOpen(false)} 
+          onLoginSuccess={() => fetchUserInfo()}
+          lang={lang}
+          t={safeT.auth}
+        />
 
-      <AuthModal 
-        isOpen={isAuthModalOpen}  
-        onClose={() => setIsAuthModalOpen(false)} 
-        onLoginSuccess={() => fetchUserInfo()}
-        lang={lang}
-        t={t.auth}
-      />
-
-      <NotificationModal 
-        isOpen={isNotificationOpen} 
-        onClose={() => setIsNotificationOpen(false)} 
-      />
-    </div>
+        <NotificationModal 
+          isOpen={isNotificationOpen} 
+          onClose={() => setIsNotificationOpen(false)} 
+        />
+      </div>
+    </KeepAliveProvider>
   );
 };
 
