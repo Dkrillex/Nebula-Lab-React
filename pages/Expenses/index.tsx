@@ -956,6 +956,8 @@ const ExpenseListItem: React.FC<{
 }> = ({ record, t }) => {
   const isConsumption = record.type === 'consumption';
   const totalTokens = record.totalTokens || 0;
+  const promptTokens = record.promptTokens || 0;
+  const completionTokens = record.completionTokens || 0;
   
   return (
     <div className="flex items-start gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -966,24 +968,44 @@ const ExpenseListItem: React.FC<{
         </svg>
       </div>
       
-      {/* 服务/模型名和时间戳+时长 */}
+      {/* 服务/模型名和详细信息 */}
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-800 mb-1.5">{record.modelName}</div>
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
           <div className="flex items-center gap-1.5">
             <Clock size={12} className="text-gray-400" />
             <span>{record.timestamp}</span>
           </div>
-          {/* 时长 */}
-          <div className="px-2 py-0.5 text-gray-700">
-            {record.duration}
+        </div>
+        {/* 类型、用时、输入token、输出token - 一行显示 */}
+        <div className="flex items-center gap-4 text-xs">
+          {/* 类型 */}
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">类型:</span>
+            <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+              isConsumption 
+                ? 'bg-red-50 text-red-700 border border-red-200' 
+                : 'bg-green-50 text-green-700 border border-green-200'
+            }`}>
+              {isConsumption ? '消费' : '充值'}
+            </span>
+          </div>
+          {/* 用时 */}
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">用时:</span>
+            <span className="text-gray-800 font-medium">{record.duration}</span>
+          </div>
+          {/* 输入token */}
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">输入token:</span>
+            <span className="text-gray-800 font-medium">{promptTokens.toLocaleString()}</span>
+          </div>
+          {/* 输出token */}
+          <div className="flex items-center gap-1">
+            <span className="text-gray-500">输出token:</span>
+            <span className="text-gray-800 font-medium">{completionTokens.toLocaleString()}</span>
           </div>
         </div>
-      </div>
-      
-      {/* Tokens - 灰色边框框，带背景 */}
-      <div className="px-3 py-1 border border-gray-300 bg-gray-50 rounded text-sm text-gray-700 whitespace-nowrap self-center">
-        {totalTokens.toLocaleString()} tokens
       </div>
       
       {/* 扣费金额 - 红色 */}
