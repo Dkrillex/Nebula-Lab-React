@@ -72,4 +72,16 @@ export const uploadService = {
       timeout: 60000 // 60秒超时，Base64上传可能需要更长时间
     });
   },
+
+  /**
+   * 删除OSS存储资源
+   * Endpoint: DELETE /resource/oss/{ids}
+   * @param ids OSS资源ID，可以是单个ID或逗号分隔的多个ID
+   * @returns void
+   */
+  deleteOssResource: (ids: string | number | string[]) => {
+    // 如果是数组，转换为逗号分隔的字符串
+    const idsParam = Array.isArray(ids) ? ids.join(',') : String(ids);
+    return request.delete<void>(`/resource/oss/${idsParam}`);
+  },
 };

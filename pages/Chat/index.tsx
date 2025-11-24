@@ -37,6 +37,8 @@ interface ExtendedChatMessage extends ChatMessage {
     url: string;
     prompt?: string;
     timestamp: number;
+    ossId?: string; // OSS资源ID，用于删除时清理资源
+    b64_json?: string; // Base64数据（如果有）
   }>;
   generatedVideos?: Array<{
     id: string;
@@ -45,6 +47,7 @@ interface ExtendedChatMessage extends ChatMessage {
     prompt?: string;
     timestamp: number;
     status?: string; // 'processing' | 'succeeded' | 'failed'
+    ossId?: string; // OSS资源ID，用于删除时清理资源
   }>;
   isHtml?: boolean; // 是否包含HTML内容
   action?: 'goFixPrice'; // 可选的后续动作（如余额不足时跳转定价列表）
@@ -1128,27 +1131,93 @@ const ChatPage: React.FC = () => {
       message: '确定要删除这条对话记录吗？',
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-    try {
-      const res = await chatService.deleteChatRecord(recordId);
+        try {
+          // 先获取记录详情，提取 ossId
+          let ossIds: string[] = [];
+          try {
+            const recordInfo = await chatService.getChatRecordInfo(recordId);
+            const apiJson = (recordInfo as any)?.data?.apiJson || (recordInfo as any)?.apiJson;
+            if (apiJson) {
+              const apiJsonObj = typeof apiJson === 'string' ? JSON.parse(apiJson) : apiJson;
+
+              // 提取 chatMessages 中 assistant 消息里的 generatedImages.ossId 和 generatedVideos.ossId
+              if (apiJsonObj.chatMessages && Array.isArray(apiJsonObj.chatMessages)) {
+                apiJsonObj.chatMessages.forEach((msg: any) => {
+                  if (msg.type === 'assistant' || msg.role === 'assistant') {
+                    // 提取图片的 ossId
+                    if (msg.generatedImages && Array.isArray(msg.generatedImages)) {
+                      msg.generatedImages.forEach((img: any) => {
+                        if (img.ossId) {
+                          ossIds.push(img.ossId);
+                        }
+                      });
+                    }
+                    // 提取视频的 ossId
+                    if (msg.generatedVideos && Array.isArray(msg.generatedVideos)) {
+                      msg.generatedVideos.forEach((video: any) => {
+                        if (video.ossId) {
+                          ossIds.push(video.ossId);
+                        }
+                      });
+                    }
+                  }
+                });
+              }
+
+              // 提取 apiJson 根节点 generatedImages 中的 ossId
+              if (apiJsonObj.generatedImages && Array.isArray(apiJsonObj.generatedImages)) {
+                apiJsonObj.generatedImages.forEach((img: any) => {
+                  if (img.ossId) {
+                    ossIds.push(img.ossId);
+                  }
+                });
+              }
+
+              // 提取 apiJson 根节点 generatedVideos 中的 ossId
+              if (apiJsonObj.generatedVideos && Array.isArray(apiJsonObj.generatedVideos)) {
+                apiJsonObj.generatedVideos.forEach((video: any) => {
+                  if (video.ossId) {
+                    ossIds.push(video.ossId);
+                  }
+                });
+              }
+            }
+          } catch (error) {
+            console.warn('⚠️ 获取对话记录详情失败，跳过 OSS 资源删除:', error);
+          }
+
+          // 删除 OSS 资源
+          if (ossIds.length > 0) {
+            const uniqueOssIds = [...new Set(ossIds)];
+            try {
+              await uploadService.deleteOssResource(uniqueOssIds);
+              console.log('✅ OSS 资源已删除:', uniqueOssIds);
+            } catch (error) {
+              console.warn('⚠️ 删除 OSS 资源失败，继续删除对话记录:', error);
+            }
+          }
+
+          // 删除对话记录
+          await chatService.deleteChatRecord(recordId);
           // request.delete 已经转换了响应，成功时不会抛出异常
           // 如果删除成功，刷新记录列表
-        // 如果删除的是当前选中的记录，清空消息
-        if (selectedRecordId === recordId) {
-          setMessages([{
-            id: 'welcome',
-            role: 'assistant',
-            content: t.welcomeMessage,
-            timestamp: Date.now()
-          }]);
-          setSelectedRecordId(null);
-        }
-        // 重新获取记录列表
+          // 如果删除的是当前选中的记录，清空消息
+          if (selectedRecordId === recordId) {
+            setMessages([{
+              id: 'welcome',
+              role: 'assistant',
+              content: t.welcomeMessage,
+              timestamp: Date.now()
+            }]);
+            setSelectedRecordId(null);
+          }
+          // 重新获取记录列表
           await refreshRecords();
           toast.success('对话记录已删除');
-    } catch (error) {
+        } catch (error) {
           toast.error('删除对话记录失败');
-      console.error('❌ 删除对话记录失败:', error);
-    }
+          console.error('❌ 删除对话记录失败:', error);
+        }
       },
     });
   };
@@ -1367,6 +1436,230 @@ const ChatPage: React.FC = () => {
   };
 
   // 保存对话记录
+  // 检测图片类型：'base64' | 'url' | 'oss' | 'no-image'
+  const detectImageType = (img: { url?: string; b64_json?: string }): 'base64' | 'url' | 'oss' | 'no-image' => {
+    const url = img.url || '';
+    const b64 = img.b64_json || '';
+
+    // 检查是否已有 ossId，说明已经是 OSS 链接
+    if ((img as any).ossId) {
+      return 'oss';
+    }
+
+    // 检查是否是 OSS 链接（包含 nebula-ads.oss 域名）
+    if (url && (url.includes('nebula-ads.oss') || url.includes('oss-'))) {
+      return 'oss';
+    }
+
+    // 检查是否是 base64（优先检查 b64_json 字段）
+    if (b64 && b64.trim() !== '') {
+      return 'base64';
+    }
+
+    // 检查是否是 data URL 格式的 base64（url 字段中包含 base64）
+    if (url && url.startsWith('data:image/')) {
+      return 'base64';
+    }
+
+    // 检查是否是第三方 URL（http/https）
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      return 'url';
+    }
+
+    // 没有图片数据（url 为空且 b64_json 也为空）
+    if (!url || url.trim() === '') {
+      if (!b64 || b64.trim() === '') {
+        return 'no-image';
+      }
+    }
+
+    // 默认返回 url（可能是相对路径或其他格式）
+    return 'url';
+  };
+
+  // 检测视频类型：'url' | 'oss' | 'no-video'
+  const detectVideoType = (video: { url?: string }): 'url' | 'oss' | 'no-video' => {
+    const url = video.url || '';
+
+    // 检查是否已有 ossId，说明已经是 OSS 链接
+    if ((video as any).ossId) {
+      return 'oss';
+    }
+
+    // 检查是否是 OSS 链接（包含 nebula-ads.oss 域名）
+    if (url.includes('nebula-ads.oss') || url.includes('oss-')) {
+      return 'oss';
+    }
+
+    // 检查是否是第三方 URL（http/https）
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return 'url';
+    }
+
+    // 没有视频数据
+    if (!url) {
+      return 'no-video';
+    }
+
+    return 'url';
+  };
+
+  // 处理图片：将 base64 和第三方链接转换为 OSS 链接
+  const processImageToOSS = async (img: { url?: string; b64_json?: string; [key: string]: any }): Promise<{ url: string; ossId: string } | null> => {
+    const imageType = detectImageType(img);
+
+    if (imageType === 'oss' || imageType === 'no-image') {
+      // 已经是 OSS 链接或没有图片，直接返回
+      return img.ossId ? { url: img.url || '', ossId: img.ossId } : null;
+    }
+
+    try {
+      let uploadResult;
+
+      if (imageType === 'base64') {
+        // 处理 base64
+        let base64Content: string;
+        let extensionType = 'png';
+
+        if (img.b64_json) {
+          // 使用 b64_json 字段
+          base64Content = `data:image/png;base64,${img.b64_json}`;
+        } else if (img.url && img.url.startsWith('data:image/')) {
+          // 完整的 Data URL 格式
+          base64Content = img.url;
+          const match = img.url.match(/data:image\/([^;]+)/);
+          if (match && match[1]) {
+            extensionType = match[1].toLowerCase();
+            if (extensionType === 'jpeg') {
+              extensionType = 'jpg';
+            }
+          }
+        } else {
+          // 纯 Base64 字符串
+          base64Content = `data:image/png;base64,${img.url}`;
+        }
+
+        const fileName = `generated_image_${Date.now()}.${extensionType}`;
+        uploadResult = await uploadService.uploadByBase64(base64Content, fileName, extensionType);
+      } else if (imageType === 'url') {
+        // 处理第三方 URL
+        const url = img.url || '';
+        // 从 URL 中提取扩展名
+        let extensionType = 'png';
+        const urlMatch = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+        if (urlMatch && urlMatch[1]) {
+          extensionType = urlMatch[1].toLowerCase();
+          if (extensionType === 'jpeg') {
+            extensionType = 'jpg';
+          }
+        }
+        uploadResult = await uploadService.uploadByImageUrl(url, extensionType);
+      }
+
+      if (uploadResult && uploadResult.url && uploadResult.ossId) {
+        return {
+          url: uploadResult.url,
+          ossId: uploadResult.ossId,
+        };
+      }
+    } catch (error) {
+      console.error('❌ 图片上传到 OSS 失败:', error);
+      // 上传失败时，返回 null，保持原始数据
+    }
+
+    return null;
+  };
+
+  // 处理视频：将第三方链接转换为 OSS 链接
+  const processVideoToOSS = async (video: { url?: string; [key: string]: any }): Promise<{ url: string; ossId: string } | null> => {
+    const videoType = detectVideoType(video);
+
+    if (videoType === 'oss' || videoType === 'no-video') {
+      // 已经是 OSS 链接或没有视频，直接返回
+      return video.ossId ? { url: video.url || '', ossId: video.ossId } : null;
+    }
+
+    try {
+      if (videoType === 'url') {
+        const url = video.url || '';
+        // 从 URL 中提取扩展名
+        let extensionType = 'mp4';
+        const urlMatch = url.match(/\.([a-zA-Z0-9]+)(?:\?|$)/);
+        if (urlMatch && urlMatch[1]) {
+          extensionType = urlMatch[1].toLowerCase();
+        }
+
+        const uploadResult = await uploadService.uploadByVideoUrl(url, extensionType);
+
+        if (uploadResult && uploadResult.url && uploadResult.ossId) {
+          return {
+            url: uploadResult.url,
+            ossId: uploadResult.ossId,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('❌ 视频上传到 OSS 失败:', error);
+      // 上传失败时，返回 null，保持原始数据
+    }
+
+    return null;
+  };
+
+  // 处理所有图片：批量转换为 OSS 链接
+  const processAllImages = async (images: Array<{ id: string; url?: string; b64_json?: string; prompt?: string; timestamp: number; [key: string]: any }>): Promise<Array<{ id: string; url: string; prompt?: string; timestamp: number; ossId?: string; b64_json?: string; [key: string]: any }>> => {
+    if (!images || images.length === 0) {
+      return images as Array<{ id: string; url: string; prompt?: string; timestamp: number; ossId?: string; b64_json?: string; [key: string]: any }>;
+    }
+
+    const processedImages = await Promise.all(
+      images.map(async (img) => {
+        const ossResult = await processImageToOSS(img);
+        if (ossResult) {
+          return {
+            ...img,
+            url: ossResult.url,
+            ossId: ossResult.ossId,
+          };
+        }
+        // 上传失败或已经是 OSS 链接，保持原样，但确保 url 存在
+        return {
+          ...img,
+          url: img.url || '',
+        };
+      })
+    );
+
+    return processedImages;
+  };
+
+  // 处理所有视频：批量转换为 OSS 链接
+  const processAllVideos = async (videos: Array<{ id: string; url?: string; taskId?: string; prompt?: string; timestamp: number; status?: string; [key: string]: any }>): Promise<Array<{ id: string; url: string; taskId?: string; prompt?: string; timestamp: number; status?: string; ossId?: string; [key: string]: any }>> => {
+    if (!videos || videos.length === 0) {
+      return videos as Array<{ id: string; url: string; taskId?: string; prompt?: string; timestamp: number; status?: string; ossId?: string; [key: string]: any }>;
+    }
+
+    const processedVideos = await Promise.all(
+      videos.map(async (video) => {
+        const ossResult = await processVideoToOSS(video);
+        if (ossResult) {
+          return {
+            ...video,
+            url: ossResult.url,
+            ossId: ossResult.ossId,
+          };
+        }
+        // 上传失败或已经是 OSS 链接，保持原样，但确保 url 存在
+        return {
+          ...video,
+          url: video.url || '',
+        };
+      })
+    );
+
+    return processedVideos;
+  };
+
   const handleSaveChat = async () => {
     // 过滤掉欢迎消息
     const validMessages = messages.filter(msg => msg.id !== 'welcome');
@@ -1378,13 +1671,38 @@ const ChatPage: React.FC = () => {
     // 调试：检查保存前的消息 role
     console.log('💾 保存前的消息列表:', validMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
 
-    const saveToast = toast.loading('正在保存...');
+    const saveToast = toast.loading('正在保存并处理图片/视频...');
     
     try {
+      // 处理图片和视频，转换为 OSS 链接
+      console.log('🔄 开始处理图片和视频，转换为 OSS 链接...');
+      const processedMessages = await Promise.all(
+        validMessages.map(async (msg) => {
+          const extendedMsg = msg as ExtendedChatMessage;
+          const processedMsg = { ...extendedMsg };
+
+          // 处理图片
+          if (extendedMsg.generatedImages && extendedMsg.generatedImages.length > 0) {
+            console.log(`📸 处理 ${extendedMsg.generatedImages.length} 张图片...`);
+            processedMsg.generatedImages = await processAllImages(extendedMsg.generatedImages);
+            console.log('✅ 图片处理完成');
+          }
+
+          // 处理视频
+          if (extendedMsg.generatedVideos && extendedMsg.generatedVideos.length > 0) {
+            console.log(`🎬 处理 ${extendedMsg.generatedVideos.length} 个视频...`);
+            processedMsg.generatedVideos = await processAllVideos(extendedMsg.generatedVideos);
+            console.log('✅ 视频处理完成');
+          }
+
+          return processedMsg;
+        })
+      );
+      console.log('✅ 所有图片和视频处理完成');
 
       let apiType = 'chat-completions';
       let chatData: any = {
-        messages: validMessages,
+        messages: processedMessages,
         settings: {
           model: selectedModel,
           temperature,
@@ -1396,11 +1714,15 @@ const ChatPage: React.FC = () => {
       // 根据模式构建不同的数据结构
       if (currentMode === 'image') {
         apiType = 'image-generates';
+        // 从处理后的消息中提取所有图片（已经转换为 OSS 链接）
+        const allProcessedImages = processedMessages
+          .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedImages)
+          .flatMap(msg => (msg as ExtendedChatMessage).generatedImages || []);
+        
+        console.log('📸 根节点 generatedImages 数量:', allProcessedImages.length);
         chatData = {
-          chatMessages: validMessages,
-          generatedImages: validMessages
-            .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedImages)
-            .flatMap(msg => (msg as ExtendedChatMessage).generatedImages || []),
+          chatMessages: processedMessages,
+          generatedImages: allProcessedImages, // 使用已处理的图片（OSS 链接）
           settings: {
             selectedModel: selectedModel,
             selectedSize: imageSize,
@@ -1426,11 +1748,15 @@ const ChatPage: React.FC = () => {
         };
       } else if (currentMode === 'video') {
         apiType = 'video-generates';
+        // 从处理后的消息中提取所有视频（已经转换为 OSS 链接）
+        const allProcessedVideos = processedMessages
+          .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedVideos)
+          .flatMap(msg => (msg as ExtendedChatMessage).generatedVideos || []);
+        
+        console.log('🎬 根节点 generatedVideos 数量:', allProcessedVideos.length);
         chatData = {
-          chatMessages: validMessages,
-          generatedVideos: validMessages
-            .filter(msg => msg.role === 'assistant' && (msg as ExtendedChatMessage).generatedVideos)
-            .flatMap(msg => (msg as ExtendedChatMessage).generatedVideos || []),
+          chatMessages: processedMessages,
+          generatedVideos: allProcessedVideos, // 使用已处理的视频（OSS 链接）
           settings: {
             selectedModel: selectedModel,
             videoDuration,
@@ -1451,7 +1777,7 @@ const ChatPage: React.FC = () => {
       }
 
       // 生成标题
-      const firstUserMessage = validMessages.find(msg => msg.role === 'user');
+      const firstUserMessage = processedMessages.find(msg => msg.role === 'user');
       const title = firstUserMessage?.content?.slice(0, 30) || 
         (currentMode === 'image' ? '新图片生成' : currentMode === 'video' ? '新视频生成' : '新对话');
 
