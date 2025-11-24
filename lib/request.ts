@@ -14,8 +14,10 @@ const ENABLE_ENCRYPT = import.meta.env.VITE_ENABLE_ENCRYPT !== 'false';
 // 默认语言（可以从 localStorage 或 store 获取）
 function getLanguage(): string {
   const lang = localStorage.getItem('language') || 'zh';
-  // 转换为后端格式：zh -> zh_CN, en -> en_US
-  return lang === 'zh' ? 'zh_CN' : 'en_US';
+  // 转换为后端格式：zh -> zh_CN, en -> en_US, id -> id_ID
+  if (lang === 'zh') return 'zh_CN';
+  if (lang === 'id') return 'id_ID';
+  return 'en_US';
 }
 
 interface RequestOptions extends RequestInit {
