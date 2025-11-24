@@ -40,6 +40,7 @@ function processRoutes(routes: AppRouteObject[]): any[] {
       //     ? (route.path === '/' ? 'home' : route.path.replace(/^\//, ''))
       //     : (route.index ? 'index' : `route-${Math.random().toString(36).substr(2, 9)}`);
       //   
+      //   // 使用 key 确保组件实例唯一性，配合 react-activation
       //   elementToRender = (
       //     <KeepAlive id={cacheKey} name={cacheKey} saveScrollPosition="screen">
       //       {elementToRender}
