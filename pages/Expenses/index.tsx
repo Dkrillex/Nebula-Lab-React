@@ -242,29 +242,45 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     }
   };
 
-  // 获取团队日志列表（日志/账单模式）
+  // 获取团队日志列表（日志/账单模式）- 借鉴 Nebula1 的传参方式
   const fetchTeamLogs = async (page: number = pagination.current, pageSize?: number) => {
     if (!selectedTeamId) return;
 
     try {
       setLoading(true);
       
-      // 转换时间范围为 Unix 时间戳（秒）
-      const startTime = dateRange[0] ? Math.floor(dateRange[0].getTime() / 1000) : undefined;
-      const endTime = dateRange[1] ? Math.floor(dateRange[1].getTime() / 1000) : undefined;
+      // 转换时间范围为 Unix 时间戳（秒）- 与 Nebula1 保持一致
+      const getTimestamp = (dateValue: Date | null): number | undefined => {
+        if (!dateValue) return undefined;
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) {
+          console.error('无效的时间值:', dateValue);
+          return undefined;
+        }
+        return Math.floor(date.getTime() / 1000);
+      };
+      
+      const startTime = getTimestamp(dateRange[0]);
+      const endTime = getTimestamp(dateRange[1]);
       
       const currentPageSize = pageSize || pagination.pageSize;
       
+      // 借鉴 Nebula1 的传参方式
       const params: TeamLogsQuery = {
         pageNum: page,
         pageSize: currentPageSize,
+        // teamIds: 单选值，转换为字符串（与 Nebula1 保持一致）
         teamIds: String(selectedTeamId),
+        // userIds: 多选数组，用逗号连接（与 Nebula1 保持一致）
         userIds: selectedUserIds.length > 0 ? selectedUserIds.join(',') : undefined,
+        // types: 多选数组，用逗号连接（与 Nebula1 保持一致）
         types: selectedTypes.length > 0 ? selectedTypes.join(',') : undefined,
+        // startTime/endTime: Unix 时间戳（秒）
         startTime,
         endTime,
       };
 
+      console.log('查询日志参数（借鉴 Nebula1）:', params);
       const res = await expenseService.getTeamLogs(params);
       
       if (res.rows) {
@@ -284,7 +300,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     }
   };
 
-  // 导出团队日志
+  // 导出团队日志 - 借鉴 Nebula1 的传参方式
   const handleExportLogs = async () => {
     if (!selectedTeamId) {
       alert('请先选择团队');
@@ -292,16 +308,34 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     }
 
     try {
-      const startTime = dateRange[0] ? Math.floor(dateRange[0].getTime() / 1000) : undefined;
-      const endTime = dateRange[1] ? Math.floor(dateRange[1].getTime() / 1000) : undefined;
+      // 转换时间范围为 Unix 时间戳（秒）- 与 Nebula1 保持一致
+      const getTimestamp = (dateValue: Date | null): number | undefined => {
+        if (!dateValue) return undefined;
+        const date = new Date(dateValue);
+        if (isNaN(date.getTime())) {
+          console.error('无效的时间值:', dateValue);
+          return undefined;
+        }
+        return Math.floor(date.getTime() / 1000);
+      };
       
+      const startTime = getTimestamp(dateRange[0]);
+      const endTime = getTimestamp(dateRange[1]);
+      
+      // 借鉴 Nebula1 的传参方式（与查询接口保持一致）
       const params: TeamLogsQuery = {
+        // teamIds: 单选值，转换为字符串
         teamIds: String(selectedTeamId),
+        // userIds: 多选数组，用逗号连接
         userIds: selectedUserIds.length > 0 ? selectedUserIds.join(',') : undefined,
+        // types: 多选数组，用逗号连接
         types: selectedTypes.length > 0 ? selectedTypes.join(',') : undefined,
+        // startTime/endTime: Unix 时间戳（秒）
         startTime,
         endTime,
       };
+      
+      console.log('导出日志参数（借鉴 Nebula1）:', params);
 
       const blob = await expenseService.exportTeamLogs(params);
       
@@ -494,8 +528,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
           {/* 右侧：快捷操作框 */}
           <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center relative">
-            {/* 余额和积分切换按钮 - 右上角 */}
-            <div className="absolute top-4 right-4 flex items-center gap-2">
+            {/* 余额、积分和日志/账单切换按钮 - 右上角 */}
+            <div className="absolute top-4 right-4 flex items-center gap-2 flex-wrap justify-end">
               <button
                 onClick={() => handleModeChange('balance')}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
@@ -516,6 +550,18 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
               >
                 积分
               </button>
+              {isShowTeamLogos && (
+                <button
+                  onClick={() => handleModeChange('logos')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    currentMode === 'logos'
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  }`}
+                >
+                  日志/账单
+                </button>
+              )}
             </div>
             <div className="text-sm text-gray-600 mb-4">快捷操作</div>
             <button
@@ -524,11 +570,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
               className={`w-full max-w-xs px-6 py-3 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
                 currentMode === 'points'
                   ? 'bg-purple-600 hover:bg-purple-700'
+                  : currentMode === 'logos'
+                  ? 'bg-indigo-600 hover:bg-indigo-700'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
               <RefreshCw size={18} className={loading || quotaLoading ? 'animate-spin' : ''} />
-              {currentMode === 'points' ? '刷新积分' : '刷新余额'}
+              {currentMode === 'points' ? '刷新积分' : currentMode === 'logos' ? '刷新日志' : '刷新余额'}
             </button>
             <p className="text-xs text-gray-500 mt-3">数据同步可能存在延迟</p>
           </div>
