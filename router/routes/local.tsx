@@ -203,7 +203,6 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Pricing',
           icon: 'credit-card',
-          requiresAuth: true,
           keepAlive: true
         }
       },

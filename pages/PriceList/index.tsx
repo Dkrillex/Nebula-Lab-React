@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { Trash2, Edit2, Plus, RefreshCw, Download, Search, X } from 'lucide-react';
-import { pricingService, PriceListVO, PriceListQuery, PriceListForm } from '../../services/pricingService';
+import { pricingService, PriceListVO, PriceListQuery } from '../../services/pricingService';
 import { systemTypeService, SystemTypeVO } from '../../services/systemTypeService';
 import { productTypeService, ProductTypeVO } from '../../services/productTypeService';
 import PriceListForm from './components/PriceListForm';

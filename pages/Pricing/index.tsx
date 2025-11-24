@@ -9,12 +9,14 @@ import BaseModal from '../../components/BaseModal';
 import InvoiceForm, { InvoiceFormRef } from '../../components/InvoiceForm';
 import { UserInvoiceForm } from '../../services/invoiceService';
 import toast from 'react-hot-toast';
+import { translations } from '../../translations';
 
 interface PricingPageProps {}
 
 const PricingPage: React.FC<PricingPageProps> = () => {
   const outletContext = useOutletContext<{ t: any }>();
-  const t = outletContext?.t?.pricingPage;
+  const defaultPricingT = translations['zh'].pricingPage;
+  const t = outletContext?.t?.pricingPage || defaultPricingT;
   const { user } = useAuthStore();
 
   // Hooks must be called unconditionally at the top level
