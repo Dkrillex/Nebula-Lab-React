@@ -21,6 +21,7 @@ interface AddMaterialModalProps {
   initialData?: Partial<AdsAssetsVO>; // Pre-fill data for editing
   isEdit?: boolean; // Whether this is an edit operation
   disableAssetTypeSelection?: boolean; // If true, only show the selected asset type and disable selection (for generated materials)
+  isImportMode?: boolean; // If true, this is import mode from generated materials (disable all editing except name/tag/desc)
 }
 
 const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
@@ -31,7 +32,8 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   initialFolderId,
   initialData,
   isEdit = false,
-  disableAssetTypeSelection = false
+  disableAssetTypeSelection = false,
+  isImportMode = false
 }) => {
   const { user } = useAuthStore();
   const { dictCache, setDict, getDict } = useDictStore();
@@ -141,7 +143,15 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       });
       
       // Initialize storage location based on initial data or default
-      if (initialData?.isShare === 1) {
+      // 导入模式下固定为个人文件
+      if (isImportMode) {
+        setStorageLocation('personal');
+        setSelectedTeamId('');
+        setSelectedPersonalFolderId(null);
+        setSelectedPersonalFolderName('根目录');
+        setSelectedFolderId(null);
+        setSelectedFolderName('');
+      } else if (initialData?.isShare === 1) {
         setStorageLocation('shared');
         setSelectedTeamId((initialData as any)?.teamId || '');
         // If we have folder info in initialData (e.g. edit mode), set it
@@ -170,7 +180,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
          // logic handled in render to hide selector
       }
     }
-  }, [isOpen, initialIsFolder, initialFolderId, initialData]);
+  }, [isOpen, initialIsFolder, initialFolderId, initialData, isImportMode]);
 
   const handleUploadComplete = (file: UploadedFile) => {
     setFormData(prev => ({
@@ -470,7 +480,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                 uploadType="oss" 
                 initialUrl={formData.assetUrl}
                 className="h-36"
-                disabled={isEdit}
+                disabled={isEdit || isImportMode} // 导入模式下禁用上传
               />
             </div>
           )}
@@ -521,7 +531,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           </div>
 
           {/* Private Model Checkbox */}
-          {!isFolderMode && [2, 3, 8, 9, 10].includes(formData.assetType as number) && (
+          {!isFolderMode && !isImportMode && [2, 3, 8, 9, 10].includes(formData.assetType as number) && (
             <div className="flex items-center gap-2">
                <input
                   type="checkbox"
@@ -537,8 +547,8 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Storage Location (Conditional) */}
-          {/* Only show if not editing AND not inside a folder already */}
-          {!isEdit && !initialFolderId && !isFolderMode && user?.team && user.team.length > 0 && (
+          {/* Only show if not editing AND not inside a folder already AND not in import mode */}
+          {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && user?.team && user.team.length > 0 && (
              <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   存储位置
@@ -582,7 +592,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Personal Folder Selection */}
-           {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'personal' || storageLocation === 'both') && (
+           {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'personal' || storageLocation === 'both') && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  {storageLocation === 'both' ? '个人文件夹' : '存储文件夹'}
@@ -609,7 +619,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Team Selection */}
-          {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'shared' || storageLocation === 'both') && user?.team && (
+          {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'shared' || storageLocation === 'both') && user?.team && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  选择团队 <span className="text-red-500">*</span>
@@ -632,7 +642,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           )}
 
           {/* Shared Folder Selection */}
-          {!isEdit && !initialFolderId && !isFolderMode && (storageLocation === 'shared' || storageLocation === 'both') && selectedTeamId && (
+          {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'shared' || storageLocation === 'both') && selectedTeamId && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                  {storageLocation === 'both' ? '共享文件夹' : '存储文件夹'} <span className="text-red-500">*</span>

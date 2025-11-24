@@ -6,6 +6,7 @@ import { generateAesKey, encryptWithAes, encryptBase64, decryptBase64, decryptWi
 import { encrypt as rsaEncrypt, decrypt as rsaDecrypt } from '../utils/jsencrypt';
 import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
+import React from 'react';
 
 // 全局加密开关（可以通过环境变量配置，默认启用）
 // 如果环境变量明确设置为 'false' 则禁用，否则启用
@@ -54,6 +55,149 @@ export class ApiError extends Error {
 // Flags for state management
 let isLogoutProcessing = false;
 
+/**
+ * Show success message based on mode
+ */
+function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none') {
+  if (mode === 'none' || !mode) {
+    return;
+  }
+  
+  if (mode === 'modal') {
+    // Use toast.custom to create a modal-like appearance
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? 'animate-enter' : 'animate-leave'
+        } max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+      >
+        <div className="flex-1 w-0 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-6 w-6 text-green-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                操作成功
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {message}
+              </p>
+            </div>
+            <div className="ml-4 flex-shrink-0 flex">
+              <button
+                className="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                onClick={() => toast.dismiss(t.id)}
+              >
+                <span className="sr-only">关闭</span>
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ), {
+      duration: 3000,
+    });
+  } else {
+    toast.success(message || '操作成功');
+  }
+}
+
+/**
+ * Show error message based on mode
+ */
+function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') {
+  if (mode === 'none') {
+    return;
+  }
+  
+  if (mode === 'modal') {
+    // Use toast.custom to create a modal-like appearance
+    toast.custom((t) => (
+      <div
+        className={`${
+          t.visible ? 'animate-enter' : 'animate-leave'
+        } max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+      >
+        <div className="flex-1 w-0 p-4">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <svg
+                className="h-6 w-6 text-red-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div className="ml-3 w-0 flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                错误提示
+              </p>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {message}
+              </p>
+            </div>
+            <div className="ml-4 flex-shrink-0 flex">
+              <button
+                className="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
+                onClick={() => toast.dismiss(t.id)}
+              >
+                <span className="sr-only">关闭</span>
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    ), {
+      duration: 5000,
+    });
+  } else {
+    // Default to 'message' mode
+    toast.error(message);
+  }
+}
+
 function getToken(): string | null {
   const store = useAuthStore.getState();
   return store.token || localStorage.getItem('token');
@@ -91,6 +235,7 @@ function createRequestClient(
     const params = options.params;
     const customHeaders = options.headers || {};
     const errorMessageMode = options.errorMessageMode ?? 'message';
+    const successMessageMode = options.successMessageMode ?? 'none';
     const isTransform = options.isTransformResponse ?? isTransformResponse;
     const isReturnNativeResponse = options.isReturnNativeResponse ?? false;
     const responseType = options.responseType ?? 'json';
@@ -291,7 +436,21 @@ function createRequestClient(
 
       // Business Logic Error Handling
       if (code === 200 || code === '200') {
-        // Success
+        // Success - Handle success message based on successMessageMode
+        let successMsg = msg;
+        
+        // 如果后端返回了msg且不为空，使用后端的msg；否则使用默认成功消息
+        if (!successMsg || successMsg.trim() === '') {
+          successMsg = '操作成功';
+        }
+        
+        // 根据successMessageMode显示成功消息
+        // 注意：这里使用_skipErrorDisplay来控制是否显示，但实际上应该用单独的标志
+        // 为了保持与旧系统一致，这里也使用_skipErrorDisplay
+        if (!_skipErrorDisplay) {
+          showSuccessMessage(successMsg, successMessageMode);
+        }
+        
         // Handle TopView style result structure
         if (resData.result !== undefined) {
           return resData.result;
@@ -312,6 +471,13 @@ function createRequestClient(
 
       // Error handling
       if (code === 401) {
+        const authErrorMsg = '无效的会话，或者会话已过期，请重新登录。';
+        
+        // 显示401错误消息
+        if (!_skipErrorDisplay) {
+          showErrorMessage(authErrorMsg, errorMessageMode);
+        }
+        
         if (!isLogoutProcessing) {
           // isLogoutProcessing = true;
           // const userStore = useAuthStore.getState();
@@ -327,26 +493,26 @@ function createRequestClient(
           //   isLogoutProcessing = false;
           // }, 1000);
         }
-        throw new ApiError('无效的会话，或者会话已过期，请重新登录。', 401);
+        throw new ApiError(authErrorMsg, 401);
       }
 
       // Handle other error codes
       const errorMsg = msg || '未知错误';
 
-      // Show error based on mode
+      // Show error based on mode (统一使用showErrorMessage函数)
       if (!_skipErrorDisplay) {
-        if (errorMessageMode === 'modal') {
-          toast.error(`错误: ${errorMsg}`);
-        } else if (errorMessageMode === 'message') {
-          console.error(`[API] ${errorMsg}`);
-          toast.error(errorMsg);
-        }
+        showErrorMessage(errorMsg, errorMessageMode);
       }
 
       throw new ApiError(errorMsg, code);
 
     } catch (error: any) {
       if (id) clearTimeout(id);
+
+      // 如果是ApiError且已经处理过消息，直接抛出
+      if (error instanceof ApiError) {
+        throw error;
+      }
 
       if (error._skipErrorHint || _skipErrorDisplay) {
         throw error;
@@ -361,6 +527,11 @@ function createRequestClient(
         message = '系统接口' + message.substr(message.length - 3) + '异常';
       } else if (error.name === 'AbortError') {
         message = '请求超时';
+      }
+
+      // 对于网络错误等，也根据errorMessageMode显示
+      if (!_skipErrorDisplay) {
+        showErrorMessage(message, errorMessageMode);
       }
 
       console.error('Request Error:', message);

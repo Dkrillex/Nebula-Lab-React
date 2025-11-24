@@ -935,7 +935,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     type: 'product' | 'template' | 'garment' | 'model' | 'reference',
     label: string,
     inputRef?: React.RefObject<HTMLInputElement>, // Optional now
-    customClass?: string
+    customClass?: string,
+    disabled?: boolean // 新增：是否禁用上传
   ) => {
     // 创意模式的产品图和参考图只支持 PNG, JPG, JPEG
     // 其他情况支持 PNG, JPG, JPEG, WEBP
@@ -963,6 +964,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         immediate={false}
         accept={acceptTypes}
         className={customClass || "h-full min-h-[200px] w-full"}
+        disabled={disabled} // 传递禁用状态
       >
           <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
@@ -1287,7 +1289,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         <div className="flex-1 min-h-[150px] border-2 border-dashed border-slate-200 dark:border-border rounded-xl overflow-hidden relative bg-slate-50 dark:bg-surface/50 hover:bg-slate-100 dark:hover:bg-surface transition-colors">
                            {referenceImage ? (
                              <div className="w-full h-full relative group">
-                               <img src={referenceImage.fileUrl} alt="Reference" className="w-full h-full object-cover" />
+                               <img 
+                                 src={referenceImage.fileUrl} 
+                                 alt="Reference" 
+                                 className="w-full h-full object-cover" 
+                                 crossOrigin="anonymous"
+                                 referrerPolicy="no-referrer"
+                                 onError={(e) => {
+                                   const img = e.currentTarget;
+                                   if (img.crossOrigin !== null) {
+                                     img.crossOrigin = null;
+                                     img.referrerPolicy = 'no-referrer';
+                                   }
+                                 }}
+                               />
                                {/* Overlay for re-upload or clear */}
                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                   <button 
@@ -1437,7 +1452,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                           <div className="relative w-full aspect-square">
                             {garmentImages[0] ? (
                               <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
-                                <img src={garmentImages[0].fileUrl} alt="上衣" className="w-full h-full object-contain" />
+                                <img 
+                                  src={garmentImages[0].fileUrl} 
+                                  alt="上衣" 
+                                  className="w-full h-full object-contain" 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    const img = e.currentTarget;
+                                    if (img.crossOrigin !== null) {
+                                      img.crossOrigin = null;
+                                      img.referrerPolicy = 'no-referrer';
+                                    }
+                                  }}
+                                />
                                 <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
                                   上衣
                                 </div>
@@ -1485,7 +1513,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                           <div className="relative w-full aspect-square">
                             {garmentImages[1] ? (
                               <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
-                                <img src={garmentImages[1].fileUrl} alt="下衣" className="w-full h-full object-contain" />
+                                <img 
+                                  src={garmentImages[1].fileUrl} 
+                                  alt="下衣" 
+                                  className="w-full h-full object-contain" 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    const img = e.currentTarget;
+                                    if (img.crossOrigin !== null) {
+                                      img.crossOrigin = null;
+                                      img.referrerPolicy = 'no-referrer';
+                                    }
+                                  }}
+                                />
                                 <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
                                   下衣
                                 </div>
@@ -1534,7 +1575,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         garmentImages.length > 0 ? (
                           <div className="flex flex-col gap-3">
                             <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
-                              <img src={garmentImages[0].fileUrl} alt="Garment" className="w-full h-full object-contain" />
+                              <img 
+                                src={garmentImages[0].fileUrl} 
+                                alt="Garment" 
+                                className="w-full h-full object-contain" 
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (img.crossOrigin !== null) {
+                                    img.crossOrigin = null;
+                                    img.referrerPolicy = 'no-referrer';
+                                  }
+                                }}
+                              />
                               <button
                                 onClick={() => setGarmentImages([])}
                                 className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
@@ -1579,7 +1633,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         productImage,
                         'product',
                         t.standard.uploadProduct,
-                        productInputRef
+                        productInputRef,
+                        undefined,
+                        isGenerating && selectedMode === 'standard' // 标准模式生成时禁用
                       )
                     )}
                  </div>
@@ -1626,15 +1682,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         brushSize={templateBrushSize}
                         className="w-full h-full"
                       />
-                      <button
-                        onClick={() => {
-                          setTemplateImage(null);
-                          setSelectedTemplate(null);
-                        }}
-                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-20"
-                      >
-                        <X size={14} />
-                      </button>
+                      {!isGenerating && (
+                        <button
+                          onClick={() => {
+                            setTemplateImage(null);
+                            setSelectedTemplate(null);
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-20"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
                     </div>
 
                     {/* Template Brush Controls */}
@@ -1673,7 +1731,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                   <div className="flex-1 min-h-[300px]">
                     {selectedMode === 'clothing' && modelImage ? (
                       <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
-                        <img src={modelImage.fileUrl} alt="Model" className="w-full h-full object-contain" />
+                        <img 
+                          src={modelImage.fileUrl} 
+                          alt="Model" 
+                          className="w-full h-full object-contain" 
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (img.crossOrigin !== null) {
+                              img.crossOrigin = null;
+                              img.referrerPolicy = 'no-referrer';
+                            }
+                          }}
+                        />
                         <button
                           onClick={() => setModelImage(null)}
                           className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
@@ -1686,7 +1757,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         selectedMode === 'clothing' ? modelImage : templateImage,
                         selectedMode === 'clothing' ? 'model' : 'template',
                         selectedMode === 'clothing' ? t.clothing.uploadModel : TEXTS.standard.templateUpload,
-                        selectedMode === 'clothing' ? modelInputRef : templateInputRef
+                        selectedMode === 'clothing' ? modelInputRef : templateInputRef,
+                        undefined,
+                        isGenerating && selectedMode === 'standard' // 标准模式生成时禁用
                       )
                     )}
                   </div>
@@ -1696,7 +1769,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                   <div className="mt-auto pt-4 space-y-2">
                     <button 
                       onClick={() => setShowTemplateModal(true)}
-                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors"
+                      disabled={isGenerating}
+                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {t.standard.selectTemplate}
                     </button>
@@ -1715,7 +1789,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         setSelectedTemplate(null);
                         if (templateInputRef.current) templateInputRef.current.value = '';
                       }}
-                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors"
+                      disabled={isGenerating}
+                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       重新上传
                     </button>
@@ -1765,7 +1840,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                <div className="grid grid-cols-1 gap-4">
                  {generatedImages.map((img) => (
                    <div key={img.key} className="relative group border-2 border-slate-200 dark:border-border rounded-xl overflow-hidden">
-                     <img src={img.url} alt="Generated" className="w-full h-auto object-contain" />
+                     <img 
+                       src={img.url} 
+                       alt="Generated" 
+                       className="w-full h-auto object-contain" 
+                       crossOrigin="anonymous"
+                       referrerPolicy="no-referrer"
+                       onError={(e) => {
+                         const img = e.currentTarget;
+                         if (img.crossOrigin !== null) {
+                           img.crossOrigin = null;
+                           img.referrerPolicy = 'no-referrer';
+                         }
+                       }}
+                     />
                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                        <a
                          href={img.url}
@@ -1824,6 +1912,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         onSuccess={() => setShowAddMaterialModal(false)}
         initialData={addMaterialData}
         disableAssetTypeSelection={true}
+        isImportMode={true}
       />
     </div>
   );

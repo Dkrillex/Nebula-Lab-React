@@ -1024,10 +1024,18 @@ const AssetCard: React.FC<AssetCardProps> = ({
   const getFileType = () => {
     if (isFolder) return 'folder';
     switch (asset.assetType) {
-      case 1: return 'image';
-      case 2: return 'video';
-      case 3: return 'audio';
-      default: return 'file';
+      case 6: // 万物迁移
+      case 7: // AI生图
+      case 13: // AI图片生成
+        return 'image';
+      case 8: // 声音克隆
+        return 'audio';
+      case 4: // 图生视频
+      case 5: // 原创视频
+      case 14: // AI视频生成
+        return 'video';
+      default: 
+        return 'video'; // 默认视频类型
     }
   };
 
@@ -1082,30 +1090,17 @@ const AssetCard: React.FC<AssetCardProps> = ({
           {showMenu && (
             <div className="absolute right-0 mt-1 w-40 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-border py-1 z-20">
               {!isFolder && (
-                <>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onPreview();
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
-                  >
-                    <Eye size={14} />
-                    预览
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDownload();
-                      setShowMenu(false);
-                    }}
-                    className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
-                  >
-                    <Download size={14} />
-                    下载
-                  </button>
-                </>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDownload();
+                    setShowMenu(false);
+                  }}
+                  className="w-full px-4 py-2 text-sm text-left hover:bg-surface flex items-center gap-2"
+                >
+                  <Download size={14} />
+                  下载
+                </button>
               )}
               {canEdit && (
                 <>
@@ -1146,7 +1141,14 @@ const AssetCard: React.FC<AssetCardProps> = ({
        )}
 
        {/* Thumbnail / Icon - 上方缩略图 */}
-       <div className="flex-shrink-0 w-full aspect-video flex items-center justify-center bg-surface/30 rounded-lg overflow-hidden mb-2">
+       <div 
+         className="flex-shrink-0 w-full aspect-video flex items-center justify-center bg-surface/30 rounded-lg overflow-hidden mb-2"
+         onClick={!isFolder ? (e) => {
+           e.stopPropagation();
+           onPreview();
+         } : undefined}
+         style={!isFolder ? { cursor: 'pointer' } : undefined}
+       >
           {isFolder ? (
              <div className="relative w-full h-full">
             <div className="w-full h-full bg-orange-200 dark:bg-orange-900/30 rounded-lg shadow-sm relative z-10 flex items-center justify-center">
@@ -1158,9 +1160,18 @@ const AssetCard: React.FC<AssetCardProps> = ({
             src={thumbnailUrl} 
             alt={asset.assetName || 'Asset'} 
             className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
             onError={(e) => {
               const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
+              // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+              if (target.crossOrigin !== null) {
+                target.crossOrigin = null;
+                target.referrerPolicy = 'no-referrer';
+              } else {
+                // 如果还是失败，隐藏图片
+                target.style.display = 'none';
+              }
             }}
           />
              ) : (
@@ -1168,7 +1179,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
             {fileType === 'audio' && <FileAudio size={40} />}
             {fileType === 'video' && <Film size={40} />}
             {fileType === 'image' && <ImageIcon size={40} />}
-            {fileType === 'file' && <Folder size={40} />}
+            {fileType === 'folder' && <Folder size={40} />}
                </div>
           )}
        </div>
@@ -1234,46 +1245,103 @@ const PreviewModal: React.FC<PreviewModalProps> = ({ asset, onClose, onDownload 
     };
   }, []);
 
-  const isVideo = ![6, 7].includes(asset.assetType || 0);
+  // 判断文件类型
+  // assetType 6, 7, 13: 图片类型
+  // assetType 8: 音频类型
+  // assetType 4, 5, 14: 视频类型
+  // 默认: 视频类型
+  const isImage = asset.assetType === 6 || asset.assetType === 7 || asset.assetType === 13;
+  const isAudio = asset.assetType === 8;
+  const isVideo = asset.assetType === 4 || asset.assetType === 5 || asset.assetType === 14 || (!isImage && !isAudio);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-3xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800">
-          <h2 className="text-lg font-semibold">素材预览</h2>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      {isVideo ? (
+        <div 
+          className="relative flex items-center justify-center max-w-[90vw] max-h-[80vh] mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 关闭按钮 */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+            title="关闭"
+          >
             <X size={20} />
           </button>
+          <video 
+            ref={videoRef} 
+            src={asset.assetUrl} 
+            controls 
+            autoPlay 
+            className="max-w-full max-h-[80vh] w-auto h-auto object-contain rounded-lg"
+            crossOrigin="anonymous"
+            referrerPolicy="no-referrer"
+            preload="metadata"
+            onError={(e) => {
+              // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+              const video = e.currentTarget;
+              if (video.crossOrigin !== null) {
+                video.crossOrigin = null;
+                video.referrerPolicy = 'no-referrer';
+              }
+            }}
+          />
         </div>
-        <div className="p-6">
-          {isVideo ? (
-            <video ref={videoRef} src={asset.assetUrl} controls autoPlay className="w-full rounded-lg" />
-          ) : (
-            <img src={asset.assetUrl} alt={asset.assetName || ''} className="w-full rounded-lg" />
-          )}
-          <div className="mt-4">
-            <h3 className="font-semibold text-lg mb-2">{asset.assetName}</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-muted">类型：</span>
-                <span>{asset.assetType}</span>
-              </div>
-              <div>
-                <span className="text-muted">创建时间：</span>
-                <span>{formatDateTime(asset.createTime)}</span>
-              </div>
-            </div>
-            <button
-              onClick={onDownload}
-              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 flex items-center gap-2"
-            >
-              <Download size={16} />
-              下载
-            </button>
+      ) : isAudio ? (
+        <div 
+          className="relative max-w-md w-full mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 关闭按钮 */}
+          <button
+            onClick={onClose}
+            className="absolute -top-10 right-0 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+            title="关闭"
+          >
+            <X size={20} />
+          </button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl">
+            <h3 className="text-base font-semibold mb-3 text-center truncate">{asset.assetName || '音频文件'}</h3>
+            <audio 
+              ref={videoRef as any}
+              src={asset.assetUrl} 
+              controls
+              crossOrigin="anonymous"
+              onError={(e) => {
+                const audio = e.currentTarget;
+                if (audio.crossOrigin !== null) {
+                  audio.crossOrigin = null;
+                }
+              }} 
+              autoPlay 
+              className="w-full"
+            />
           </div>
         </div>
-      </div>
+      ) : (
+        <div 
+          className="relative max-w-5xl max-h-[85vh] w-full mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* 关闭按钮 */}
+          <button
+            onClick={onClose}
+            className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
+            title="关闭"
+          >
+            <X size={20} />
+          </button>
+          <img 
+            src={asset.assetUrl} 
+            alt={asset.assetName || '预览图片'} 
+            className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+          />
+        </div>
+      )}
     </div>
   );
 };

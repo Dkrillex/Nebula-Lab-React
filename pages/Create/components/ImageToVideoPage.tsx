@@ -952,7 +952,20 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                     {vid.coverUrl ? (
                        <img src={vid.coverUrl} className="w-full h-full object-cover" />
                     ) : (
-                       <video src={vid.videoUrl} className="w-full h-full object-cover" muted />
+                       <video 
+                         src={vid.videoUrl} 
+                         className="w-full h-full object-cover" 
+                         muted 
+                         crossOrigin="anonymous"
+                         referrerPolicy="no-referrer"
+                         onError={(e) => {
+                           const video = e.currentTarget;
+                           if (video.crossOrigin !== null) {
+                             video.crossOrigin = null;
+                             video.referrerPolicy = 'no-referrer';
+                           }
+                         }}
+                       />
                     )}
                     <div className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">
                        {vid.status}
@@ -971,6 +984,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
            toast.success('Saved to materials');
         }}
         initialData={materialData}
+        disableAssetTypeSelection={true}
+        isImportMode={true}
       />
 
       {/* Full Screen Preview Modal */}

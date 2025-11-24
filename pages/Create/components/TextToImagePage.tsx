@@ -663,6 +663,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
           assetDesc: prompt || 'AI生图',
         }}
         disableAssetTypeSelection={true}
+        isImportMode={true}
       />
 
       {/* Full Screen Preview Modal */}

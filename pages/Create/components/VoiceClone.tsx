@@ -1245,6 +1245,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         }}
         initialData={addMaterialData}
         disableAssetTypeSelection={true}
+        isImportMode={true}
       />
     </div>
   );

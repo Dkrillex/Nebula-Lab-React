@@ -722,6 +722,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               assetType: 13 // Product Digital Human
           }}
           disableAssetTypeSelection={true}
+          isImportMode={true}
+          disableAssetTypeSelection={true}
        />
     </div>
   );

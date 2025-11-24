@@ -27,6 +27,16 @@ const ImagePreviewModal: React.FC<ImagePreviewModalProps> = ({ imageUrl, onClose
           alt="Preview"
           className="max-h-[90vh] max-w-full object-contain"
           onClick={(e) => e.stopPropagation()}
+          crossOrigin="anonymous"
+          referrerPolicy="no-referrer"
+          onError={(e) => {
+            // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+            const img = e.currentTarget;
+            if (img.crossOrigin !== null) {
+              img.crossOrigin = null;
+              img.referrerPolicy = 'no-referrer';
+            }
+          }}
         />
       </div>
     </div>

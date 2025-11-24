@@ -182,6 +182,16 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                 className="w-full rounded-lg object-contain max-h-[700px]"
                 onClick={handlePreview}
                 style={{ cursor: 'pointer' }}
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+                  const img = e.currentTarget;
+                  if (img.crossOrigin !== null) {
+                    img.crossOrigin = null;
+                    img.referrerPolicy = 'no-referrer';
+                  }
+                }}
               />
               <div className="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity bg-black/20 rounded-lg">
                 <button
@@ -225,6 +235,15 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   src={originalImageUrl}
                   alt="Original"
                   className="max-h-full max-w-full object-contain"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    if (img.crossOrigin !== null) {
+                      img.crossOrigin = null;
+                      img.referrerPolicy = 'no-referrer';
+                    }
+                  }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
                   原图
@@ -235,6 +254,15 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   src={imageUrl}
                   alt="Generated"
                   className="max-h-full max-w-full object-contain"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    if (img.crossOrigin !== null) {
+                      img.crossOrigin = null;
+                      img.referrerPolicy = 'no-referrer';
+                    }
+                  }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
                   结果
@@ -331,6 +359,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
           assetType: 6, // 图片类型
         }}
         disableAssetTypeSelection={true}
+        isImportMode={true}
       />
     </>
   );
