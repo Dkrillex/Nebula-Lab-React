@@ -403,7 +403,20 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
             <div className="relative">
                 <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100">
                     {selectedAvatar.previewVideoUrl ? (
-                        <video src={selectedAvatar.previewVideoUrl} className="w-full h-full object-cover" controls />
+                        <video 
+                          src={selectedAvatar.previewVideoUrl} 
+                          className="w-full h-full object-cover" 
+                          controls 
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const video = e.currentTarget;
+                            if (video.crossOrigin !== null) {
+                              video.crossOrigin = null;
+                              video.referrerPolicy = 'no-referrer';
+                            }
+                          }}
+                        />
                     ) : (
                         <img src={selectedAvatar.thumbnailUrl || selectedAvatar.coverUrl} alt={selectedAvatar.aiavatarName} className="w-full h-full object-cover" />
                     )}
@@ -417,7 +430,20 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
             </div>
         ) : uploadedVideo ? (
             <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] max-h-[570px] mx-auto bg-gray-100">
-                 <video src={uploadedVideo.url || uploadedVideo.fileUrl} className="w-full h-full object-cover" controls />
+                 <video 
+                   src={uploadedVideo.url || uploadedVideo.fileUrl} 
+                   className="w-full h-full object-cover" 
+                   controls 
+                   crossOrigin="anonymous"
+                   referrerPolicy="no-referrer"
+                   onError={(e) => {
+                     const video = e.currentTarget;
+                     if (video.crossOrigin !== null) {
+                       video.crossOrigin = null;
+                       video.referrerPolicy = 'no-referrer';
+                     }
+                   }}
+                 />
                  <button onClick={() => setUploadedVideo(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
                     <X size={16} className="text-gray-600" />
                 </button>
@@ -708,7 +734,19 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                              previewVideoUrl === video.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
                            }`}
                          >
-                           <video src={video.url} className="w-full h-full object-cover pointer-events-none" />
+                           <video 
+                             src={video.url} 
+                             className="w-full h-full object-cover pointer-events-none" 
+                             crossOrigin="anonymous"
+                             referrerPolicy="no-referrer"
+                             onError={(e) => {
+                               const video = e.currentTarget;
+                               if (video.crossOrigin !== null) {
+                                 video.crossOrigin = null;
+                                 video.referrerPolicy = 'no-referrer';
+                               }
+                             }}
+                           />
                            {video.addState && (
                              <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
                                 <Check size={8} className="text-white" />
@@ -794,6 +832,8 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
               assetUrl: previewVideoUrl || '',
               assetType: 4 // Video
           }}
+          disableAssetTypeSelection={true}
+          isImportMode={true}
           disableAssetTypeSelection={true}
        />
     </div>

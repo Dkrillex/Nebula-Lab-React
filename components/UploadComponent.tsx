@@ -229,15 +229,56 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       {showPreview && previewUrl ? (
         <>
             {accept.startsWith('video') ? (
-                <video src={previewUrl} className="w-full h-full object-contain rounded-xl" controls />
+                <video 
+                  src={previewUrl} 
+                  className="w-full h-full object-contain rounded-xl" 
+                  controls 
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  preload="metadata"
+                  onError={(e) => {
+                    // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+                    const video = e.currentTarget;
+                    if (video.crossOrigin !== null) {
+                      video.crossOrigin = null;
+                      video.referrerPolicy = 'no-referrer';
+                    }
+                  }}
+                />
             ) : accept.startsWith('audio') ? (
                 <div className="flex flex-col items-center justify-center w-full h-full p-4">
                     <FileIcon size={32} className="text-indigo-500 mb-2" />
                     <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
-                    <audio src={previewUrl} className="w-full mt-2 h-8" controls />
+                    <audio 
+                      src={previewUrl} 
+                      className="w-full mt-2 h-8" 
+                      controls 
+                      crossOrigin="anonymous"
+                      onError={(e) => {
+                        // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+                        const audio = e.currentTarget;
+                        if (audio.crossOrigin !== null) {
+                          audio.crossOrigin = null;
+                        }
+                      }}
+                    />
                 </div>
             ) : (
-                <img src={previewUrl} className="w-full h-full object-contain rounded-xl p-2" alt="preview" />
+                <img 
+                  src={previewUrl} 
+                  className="w-full h-full object-contain rounded-xl p-2" 
+                  alt="preview" 
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+                    const img = e.currentTarget;
+                    if (img.crossOrigin !== null) {
+                      img.crossOrigin = null;
+                      img.referrerPolicy = 'no-referrer';
+                    }
+                  }}
+                />
             )}
             {!disabled && (
               <button 

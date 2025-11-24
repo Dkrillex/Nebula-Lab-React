@@ -382,6 +382,7 @@ const TtsPage: React.FC = () => {
         onSuccess={handleImportSuccess}
         initialData={pendingMaterialData}
         disableAssetTypeSelection={true}
+        isImportMode={true}
       />
     </div>
   );

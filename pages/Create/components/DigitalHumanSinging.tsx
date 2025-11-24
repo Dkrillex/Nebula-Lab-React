@@ -457,7 +457,20 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                        </div>
 
                        <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-black aspect-video mb-8 group">
-                           <video src={resultVideoUrl} controls className="w-full h-full object-contain" />
+                           <video 
+                             src={resultVideoUrl} 
+                             controls 
+                             className="w-full h-full object-contain" 
+                             crossOrigin="anonymous"
+                             referrerPolicy="no-referrer"
+                             onError={(e) => {
+                               const video = e.currentTarget;
+                               if (video.crossOrigin !== null) {
+                                 video.crossOrigin = null;
+                                 video.referrerPolicy = 'no-referrer';
+                               }
+                             }}
+                           />
                            <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button 
                                 onClick={() => handleDownload(resultVideoUrl!)}
@@ -530,7 +543,19 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                              resultVideoUrl === video.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
                            }`}
                          >
-                           <video src={video.url} className="w-full h-full object-cover pointer-events-none" />
+                           <video 
+                             src={video.url} 
+                             className="w-full h-full object-cover pointer-events-none" 
+                             crossOrigin="anonymous"
+                             referrerPolicy="no-referrer"
+                             onError={(e) => {
+                               const video = e.currentTarget;
+                               if (video.crossOrigin !== null) {
+                                 video.crossOrigin = null;
+                                 video.referrerPolicy = 'no-referrer';
+                               }
+                             }}
+                           />
                            {video.addState && (
                              <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
                                 <Check size={8} className="text-white" />
@@ -562,6 +587,8 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
               assetUrl: resultVideoUrl || '',
               assetType: 4 // Video
           }}
+          disableAssetTypeSelection={true}
+          isImportMode={true}
           disableAssetTypeSelection={true}
        />
     </div>

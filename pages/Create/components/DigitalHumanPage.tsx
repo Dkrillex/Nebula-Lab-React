@@ -411,7 +411,23 @@ const AvatarModal: React.FC<{
                   >
                     <img src={avatar.thumbnailUrl || avatar.coverUrl} alt={avatar.aiavatarName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/assets/images/nullAvatar.png'; }} />
                     {previewStates[avatar.aiavatarId] && avatar.previewVideoUrl && (
-                      <video src={avatar.previewVideoUrl} className="absolute inset-0 w-full h-full object-cover" autoPlay loop muted playsInline />
+                      <video 
+                        src={avatar.previewVideoUrl} 
+                        className="absolute inset-0 w-full h-full object-cover" 
+                        autoPlay 
+                        loop 
+                        muted 
+                        playsInline 
+                        crossOrigin="anonymous"
+                        referrerPolicy="no-referrer"
+                        onError={(e) => {
+                          const video = e.currentTarget;
+                          if (video.crossOrigin !== null) {
+                            video.crossOrigin = null;
+                            video.referrerPolicy = 'no-referrer';
+                          }
+                        }}
+                      />
                     )}
                     {selected?.aiavatarId === avatar.aiavatarId && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">

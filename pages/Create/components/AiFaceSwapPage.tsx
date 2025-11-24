@@ -732,6 +732,7 @@ const AiFaceSwapPage: React.FC = () => {
           assetType: 15, // 借鉴 Nebula1：第二个参数 '15' 表示视频类型
         }}
         disableAssetTypeSelection={true} // 禁用素材类型选择，使用预设的类型
+        isImportMode={true}
       />
     </div>
   );
