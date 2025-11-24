@@ -47,6 +47,14 @@ export interface ChangePasswordParams {
   newPassword: string;
 }
 
+export interface UpdateProfileParams {
+  userId: string;
+  nickName?: string;
+  email?: string;
+  sex?: string;
+  phonenumber?: string;
+}
+
 export const profileService = {
   /**
    * Get user profile
@@ -54,6 +62,14 @@ export const profileService = {
    */
   getUserProfile: () => {
     return request.get<UserProfileData>('/system/user/profile');
+  },
+
+  /**
+   * Update user profile
+   * Endpoint: PUT /system/user/profile
+   */
+  updateProfile: (data: UpdateProfileParams) => {
+    return request.put('/system/user/profile', data);
   },
 
   /**

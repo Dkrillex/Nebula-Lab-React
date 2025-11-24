@@ -33,6 +33,16 @@ const ProfilePage: React.FC = () => {
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
 
+  // 基本设置表单相关状态
+  const [profileForm, setProfileForm] = useState({
+    nickName: '',
+    email: '',
+    sex: '0',
+    phonenumber: ''
+  });
+  const [profileFormLoading, setProfileFormLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // 从URL参数获取当前标签页
@@ -74,6 +84,13 @@ const ProfilePage: React.FC = () => {
       const data = await profileService.getUserProfile();
       if (data) {
         setProfile(data);
+        // 初始化表单数据
+        setProfileForm({
+          nickName: data.user.nickName || '',
+          email: data.user.email || '',
+          sex: data.user.sex || '0',
+          phonenumber: data.user.phonenumber || ''
+        });
       }
     } catch (error) {
       console.error('Failed to load profile:', error);
@@ -151,6 +168,65 @@ const ProfilePage: React.FC = () => {
     } finally {
       setPasswordLoading(false);
     }
+  };
+
+  const handleProfileFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setProfileForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSexChange = (value: string) => {
+    setProfileForm(prev => ({ ...prev, sex: value }));
+  };
+
+  const handleProfileSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 验证邮箱格式
+    if (profileForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileForm.email)) {
+      toast.error('请输入正确的邮箱格式');
+      return;
+    }
+
+    // 验证手机号格式（如果填写了）
+    // 支持国际号码：6-15位数字（与注册/登录页面保持一致）
+    if (profileForm.phonenumber && !/^\d{6,15}$/.test(profileForm.phonenumber)) {
+      toast.error('请输入正确的手机号码（6-15位数字）');
+      return;
+    }
+
+    if (!profile) return;
+
+    try {
+      setProfileFormLoading(true);
+      await profileService.updateProfile({
+        userId: profile.user.userId,
+        nickName: profileForm.nickName,
+        email: profileForm.email,
+        sex: profileForm.sex,
+        phonenumber: profileForm.phonenumber
+      });
+      toast.success('信息更新成功');
+      setIsEditing(false);
+      await fetchUserInfo();
+      await loadProfile();
+    } catch (error: any) {
+      toast.error(error.message || '信息更新失败');
+    } finally {
+      setProfileFormLoading(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (profile) {
+      setProfileForm({
+        nickName: profile.user.nickName || '',
+        email: profile.user.email || '',
+        sex: profile.user.sex || '0',
+        phonenumber: profile.user.phonenumber || ''
+      });
+    }
+    setIsEditing(false);
   };
 
   if (loading && !profile) {
@@ -244,77 +320,203 @@ const ProfilePage: React.FC = () => {
       {activeTab === 'basic' && profile && (
         <div className="max-w-4xl">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-6">
-            <div className="flex items-start gap-8">
-              {/* 头像部分 */}
-              <div className="flex-shrink-0">
-                <div className="relative group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
-                  <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-50 dark:border-indigo-900/30 relative">
-                    {profile.user.avatar ? (
-                      <img 
-                        src={profile.user.avatar} 
-                        alt="Avatar" 
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500">
-                        <User size={40} />
+            <form onSubmit={handleProfileSubmit}>
+              <div className="flex items-start gap-8">
+                {/* 头像部分 */}
+                <div className="flex-shrink-0">
+                  <div className="relative group cursor-pointer" onClick={() => !uploading && fileInputRef.current?.click()}>
+                    <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-indigo-50 dark:border-indigo-900/30 relative">
+                      {profile.user.avatar ? (
+                        <img 
+                          src={profile.user.avatar} 
+                          alt="Avatar" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-500">
+                          <User size={40} />
+                        </div>
+                      )}
+                      {uploading && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <Loader2 className="animate-spin text-white" size={24} />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
+                        <Upload size={16} className="mr-1" />
+                        更换头像
                       </div>
-                    )}
-                    {uploading && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Loader2 className="animate-spin text-white" size={24} />
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
-                      <Upload size={16} className="mr-1" />
-                      更换头像
+                    </div>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef}
+                      onChange={handleAvatarUpload} 
+                      className="hidden" 
+                      accept="image/*"
+                    />
+                  </div>
+                </div>
+
+                {/* 信息表单 */}
+                <div className="flex-1 space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* 账号名称（只读） */}
+                    <div>
+                      <label className="block text-sm font-medium text-muted mb-1">账号名称</label>
+                      <div className="text-foreground">{profile.user.userName}</div>
+                    </div>
+
+                    {/* 昵称（可编辑） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        账号昵称 <span className="text-red-500">*</span>
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          name="nickName"
+                          value={profileForm.nickName}
+                          onChange={handleProfileFormChange}
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                          required
+                        />
+                      ) : (
+                        <div className="text-foreground">{profile.user.nickName || '-'}</div>
+                      )}
+                    </div>
+
+                    {/* 邮箱（可编辑） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        <Mail className="inline mr-1" size={14} />
+                        邮箱
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="email"
+                          name="email"
+                          value={profileForm.email}
+                          onChange={handleProfileFormChange}
+                          placeholder="请输入邮箱"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        />
+                      ) : (
+                        <div className="text-foreground">{profile.user.email || '-'}</div>
+                      )}
+                    </div>
+
+                    {/* 手机号（可编辑） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        <Phone className="inline mr-1" size={14} />
+                        手机号
+                      </label>
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          name="phonenumber"
+                          value={profileForm.phonenumber}
+                          onChange={handleProfileFormChange}
+                          placeholder="请输入手机号"
+                          className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
+                        />
+                      ) : (
+                        <div className="text-foreground">{profile.user.phonenumber || '未绑定'}</div>
+                      )}
+                    </div>
+
+                    {/* 性别（可编辑） */}
+                    <div>
+                      <label className="block text-sm font-medium text-foreground mb-1">
+                        性别
+                      </label>
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleSexChange('0')}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              profileForm.sex === '0'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            男
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSexChange('1')}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              profileForm.sex === '1'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            女
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleSexChange('2')}
+                            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                              profileForm.sex === '2'
+                                ? 'bg-indigo-600 text-white'
+                                : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
+                            }`}
+                          >
+                            未知
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="text-foreground">
+                          {profile.user.sex === '0' ? '男' : profile.user.sex === '1' ? '女' : '未知'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 注册时间（只读） */}
+                    <div>
+                      <label className="block text-sm font-medium text-muted mb-1">
+                        <Calendar className="inline mr-1" size={14} />
+                        注册时间
+                      </label>
+                      <div className="text-foreground">{profile.user.createTime}</div>
                     </div>
                   </div>
-                  <input 
-                    type="file" 
-                    ref={fileInputRef}
-                    onChange={handleAvatarUpload} 
-                    className="hidden" 
-                    accept="image/*"
-                  />
-                </div>
-              </div>
 
-              {/* 信息列表 */}
-              <div className="flex-1 space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">账号名称</label>
-                    <div className="text-foreground">{profile.user.userName}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">账号昵称</label>
-                    <div className="text-foreground">{profile.user.nickName}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">
-                      <Mail className="inline mr-1" size={14} />
-                      邮箱
-                    </label>
-                    <div className="text-foreground">{profile.user.email || '-'}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">
-                      <Phone className="inline mr-1" size={14} />
-                      手机号
-                    </label>
-                    <div className="text-foreground">{profile.user.phonenumber || '未绑定'}</div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-muted mb-1">
-                      <Calendar className="inline mr-1" size={14} />
-                      注册时间
-                    </label>
-                    <div className="text-foreground">{profile.user.createTime}</div>
+                  {/* 操作按钮 */}
+                  <div className="flex justify-end gap-3 pt-4 border-t border-border">
+                    {isEditing ? (
+                      <>
+                        <button
+                          type="button"
+                          onClick={handleCancelEdit}
+                          disabled={profileFormLoading}
+                          className="px-6 py-2 border border-border rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                        >
+                          取消
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={profileFormLoading}
+                          className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                        >
+                          {profileFormLoading && <Loader2 className="animate-spin" size={16} />}
+                          保存
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setIsEditing(true)}
+                        className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+                      >
+                        编辑
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
