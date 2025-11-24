@@ -8,12 +8,28 @@
 // export default AiFaceSwapPage;
 import React, { useState } from 'react';
 import { Wand2, Sparkles, Edit3 } from 'lucide-react';
+import toast from 'react-hot-toast';
 import UploadComponent from '../../../components/UploadComponent';
 import { faceSwapService, videoProcessService } from '../../../services/faceSwapService';
 import { UploadedFile } from '../../../services/avatarService';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 import VideoEditingModal, { VideoMarker } from './VideoEditingModal';
+import AddMaterialModal from '../../../components/AddMaterialModal';
+
+// 积分图标组件 - 借鉴 Nebula1
+const SvgPointsIcon = ({ className }: { className?: string }) => (
+  <svg
+    className={className}
+    viewBox="0 0 1024 1024"
+    version="1.1"
+    xmlns="http://www.w3.org/2000/svg"
+    fill="currentColor"
+  >
+    <path d="M913.7 430.7c2.9-2.9 7.5-7.4-3.9-21.7L722.6 159.7H302.8l-187 248.9c-11.6 14.6-7 19.2-4.3 21.9l401.2 410.4 401-410.2zM595.5 667.2c-7.7 0-14-6.3-14-14s6.3-14 14-14 14 6.3 14 14c0 7.8-6.3 14-14 14zM746 502.8c6.6 6.6 6.6 17.2 0 23.7L645.2 627.3c-3.3 3.3-7.6 4.9-11.9 4.9-4.3 0-8.6-1.6-11.9-4.9-6.6-6.6-6.6-17.2 0-23.7l100.7-100.7c6.7-6.7 17.3-6.7 23.9-0.1zM346 358.1c-6.7-6.5-6.8-17.1-0.4-23.7 6.4-6.7 17.1-6.8 23.7-0.4l149.6 145 151.5-146.8c6.7-6.5 17.3-6.3 23.7 0.4 6.5 6.7 6.3 17.3-0.4 23.7L535.2 509.9c-0.8 1.8-1.8 3.5-3.3 5-3.3 3.4-7.7 5.1-12.1 5.1-4.2 0-8.4-1.6-11.7-4.7L346 358.1z" fill="currentColor" />
+    <path d="M936.4 388.4l-192-255.6c-3.2-4.2-8.1-6.7-13.4-6.7H294.4c-5.3 0-10.3 2.5-13.4 6.7L89.3 388.1c-27.1 34.1-10 57.7-1.6 66.1l413 422.5c3.2 3.2 7.5 5.1 12 5.1s8.8-1.8 12-5.1l412.8-422.4c8.7-8.5 25.7-32.1-1.1-65.9z m-820.5 20.2l187-248.9h419.8L909.9 409c11.3 14.3 6.8 18.8 3.9 21.7l-401 410.2-401.2-410.4c-2.8-2.7-7.3-7.3 4.3-21.9z" fill="currentColor" />
+  </svg>
+);
 
 const AiFaceSwapPage: React.FC = () => {
   // 视频状态
@@ -21,6 +37,8 @@ const AiFaceSwapPage: React.FC = () => {
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [videoUploadedUrl, setVideoUploadedUrl] = useState<string | null>(null);
   const [videoProcessTaskId, setVideoProcessTaskId] = useState<string | null>(null); // 视频处理任务ID（用于后续视频掩码绘制）
+  const [videoMaskDrawingTaskId, setVideoMaskDrawingTaskId] = useState<string | null>(null); // 视频掩码绘制任务ID（从 videoMaskDrawingQuery 返回的 taskId，用于后续视频角色交换）
+  const [trackingVideoPath, setTrackingVideoPath] = useState<string | null>(null); // 跟踪视频路径（从 videoMaskDrawingQuery 返回的 trackingVideoPath）
   const [isVideoUploading, setIsVideoUploading] = useState(false);
   
   // 图片状态
@@ -36,9 +54,17 @@ const AiFaceSwapPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [generatedVideoUrl, setGeneratedVideoUrl] = useState<string | null>(null);
 
+  // 积分状态 - 借鉴 Nebula1
+  const points = 0.3; // 每秒/0.3积分
+  const [countPoints, setCountPoints] = useState<number>(0); // 计算后的积分
+
   // 视频编辑器状态
   const [isVideoEditorOpen, setIsVideoEditorOpen] = useState(false);
   const [videoMarkers, setVideoMarkers] = useState<VideoMarker[]>([]);
+
+  // 导入素材状态 - 借鉴 Nebula1
+  const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
+  const [importStatus, setImportStatus] = useState(false); // 是否已导入素材
 
   // 睡眠函数
   const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -124,22 +150,84 @@ const AiFaceSwapPage: React.FC = () => {
     }
   };
 
-  // 处理图片上传完成 - 保存 fileId
+  // 处理图片上传完成 - 借鉴 Nebula1：先上传获取 fileId，然后验证，最后使用本地URL预览
   const handleImageUploadComplete = async (file: UploadedFile) => {
     if (!file.fileId) {
       setError('图片上传失败，缺少文件ID');
       setIsImageUploading(false);
       return;
     }
+
+    setError(null);
+
+    // 借鉴 Nebula1：先保存 fileId
     setImageFileId(file.fileId);
+    console.log('图片的 fileId:', file.fileId);
+
+    // 借鉴 Nebula1：验证文件大小和分辨率（在上传完成后验证）
+    if (!imageFile) {
+      console.warn('imageFile 未设置，跳过验证');
+      setIsImageUploading(false);
+      return;
+    }
+
+    try {
+      // 验证文件大小：Base64不超过5MB（考虑Base64编码会增加约33%大小）
+      const maxSize = 5 * 1024 * 1024 * 0.75; // 实际文件大小限制约3.75MB，对应Base64后约5MB
+      if (imageFile.size > maxSize) {
+        setError('图片大小经Base64编码后不能超过5MB');
+        setIsImageUploading(false);
+        return;
+      }
+
+      // 验证分辨率
+      const imageInfo = await new Promise<{ height: number; width: number }>(
+        (resolve, reject) => {
+          const img = new Image();
+          img.addEventListener('load', () =>
+            resolve({ width: img.width, height: img.height }),
+          );
+          img.onerror = reject;
+          const localUrl = URL.createObjectURL(imageFile);
+          img.src = localUrl;
+        },
+      );
+
+      // 分辨率验证：最小128*128，最大4096*4096
+      const minResolution = 128;
+      const maxResolution = 4096;
+      if (imageInfo.width < minResolution || imageInfo.height < minResolution) {
+        setError('图片分辨率不能小于128*128');
+        setIsImageUploading(false);
+        return;
+      }
+      if (imageInfo.width > maxResolution || imageInfo.height > maxResolution) {
+        setError('图片分辨率不能大于4096*4096');
+        setIsImageUploading(false);
+        return;
+      }
+
+      // 借鉴 Nebula1：使用本地URL预览（URL.createObjectURL）
+      const localUrl = URL.createObjectURL(imageFile);
+      setImageUrl(localUrl);
+    } catch (err) {
+      console.error('图片验证失败:', err);
+      setError(err instanceof Error ? err.message : '图片验证失败');
+      setIsImageUploading(false);
+      return;
+    }
+
     setIsImageUploading(false);
     setError(null);
   };
 
-  // 处理图片开始上传
+  // 处理图片开始上传 - 借鉴 Nebula1：先设置文件，上传在 UploadComponent 中自动触发
   const handleImageFileSelectedWithUpload = async (file: File) => {
     setIsImageUploading(true);
-    await handleImageFileSelected(file);
+    setImageFile(file); // 先保存文件，供 handleImageUploadComplete 使用
+    setGeneratedVideoUrl(null);
+    setError(null);
+    // 借鉴 Nebula1：不在这里验证，验证在 handleImageUploadComplete 中进行
   };
 
   // 处理视频文件选择 - 借鉴 Nebula1 的逻辑（先设置文件，验证在提交任务后进行）
@@ -199,6 +287,9 @@ const AiFaceSwapPage: React.FC = () => {
         setError('视频时长不能超过60秒');
       }
 
+      // 借鉴 Nebula1：验证通过后计算积分
+      setCountPoints(Number((points * Math.ceil(duration)).toFixed(1)));
+
       // 验证分辨率（借鉴 Nebula1：不超过1080P：最长边≤1920，最短边≤1080）
       const { videoWidth: width, videoHeight: height } = videoElement;
       const maxLongSide = 1920;
@@ -249,55 +340,7 @@ const AiFaceSwapPage: React.FC = () => {
     }
   };
 
-  // 处理图片文件选择
-  const handleImageFileSelected = async (file: File) => {
-    setImageFile(file);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      const dataUrl = reader.result as string;
-      setImageUrl(dataUrl);
-      setGeneratedVideoUrl(null);
-      setError(null);
-    };
-    reader.readAsDataURL(file);
-
-    // 借鉴 Nebula1：验证图片
-    try {
-      // 验证文件大小
-      const maxSize = 5 * 1024 * 1024 * 0.75; // Base64编码后约5MB
-      if (file.size > maxSize) {
-        setError('图片大小经Base64编码后不能超过5MB');
-        return;
-      }
-
-      // 验证分辨率
-      const imageInfo = await new Promise<{ height: number; width: number }>(
-        (resolve, reject) => {
-          const img = new Image();
-          img.addEventListener('load', () =>
-            resolve({ width: img.width, height: img.height }),
-          );
-          img.onerror = reject;
-          const localUrl = URL.createObjectURL(file);
-          img.src = localUrl;
-        },
-      );
-
-      const minResolution = 128;
-      const maxResolution = 4096;
-      if (imageInfo.width < minResolution || imageInfo.height < minResolution) {
-        setError('图片分辨率不能小于128*128');
-        return;
-      }
-      if (imageInfo.width > maxResolution || imageInfo.height > maxResolution) {
-        setError('图片分辨率不能大于4096*4096');
-        return;
-      }
-    } catch (err) {
-      console.error('图片验证失败:', err);
-      setError(err instanceof Error ? err.message : '图片验证失败');
-    }
-  };
+  // 处理图片文件选择 - 已移除，逻辑合并到 handleImageFileSelectedWithUpload 和 handleImageUploadComplete
 
   // 清除视频
   const handleClearVideo = () => {
@@ -308,8 +351,11 @@ const AiFaceSwapPage: React.FC = () => {
     setVideoUrl(null);
     setVideoUploadedUrl(null);
     setVideoProcessTaskId(null);
+    setVideoMaskDrawingTaskId(null); // 清除视频掩码绘制任务ID
+    setTrackingVideoPath(null); // 清除跟踪视频路径
     setGeneratedVideoUrl(null);
     setError(null);
+    setCountPoints(0); // 清除积分
   };
 
   // 清除图片
@@ -323,8 +369,9 @@ const AiFaceSwapPage: React.FC = () => {
 
   // 生成换脸视频 - 使用新的 API 流程
   const handleGenerate = async () => {
-    if (!videoProcessTaskId) {
-      setError('请先上传并处理参考视频');
+    // 借鉴 Nebula1：使用 videoMaskDrawingTaskId 而不是 videoProcessTaskId
+    if (!videoMaskDrawingTaskId) {
+      setError('请先上传并处理参考视频，并完成视频掩码绘制');
       return;
     }
 
@@ -340,27 +387,12 @@ const AiFaceSwapPage: React.FC = () => {
     setGeneratedVideoUrl(null);
 
     try {
-      // 计算积分（借鉴 Nebula1：0.3 积分/秒，向上取整到完整秒数）
-      let score = 1; // 默认积分
-      if (videoFile) {
-        const videoElement = document.createElement('video');
-        videoElement.preload = 'metadata';
-        const localUrl = URL.createObjectURL(videoFile);
-        videoElement.src = localUrl;
-        await new Promise<void>((resolve) => {
-          videoElement.addEventListener('loadedmetadata', () => {
-            const duration = videoElement.duration;
-            // 借鉴 Nebula1：0.3 积分/秒，向上取整到完整秒数
-            score = Number((0.3 * Math.ceil(duration)).toFixed(1));
-            URL.revokeObjectURL(localUrl);
-            resolve();
-          });
-        });
-      }
+      // 借鉴 Nebula1：使用 countPoints 或默认值
+      const score = countPoints || 1;
 
-      // 调用视频换脸API（新版本）
+      // 调用视频换脸API（新版本）- 借鉴 Nebula1：使用 videoMaskDrawingTaskId
       const result = await faceSwapService.swapVideoFace({
-        videoMaskDrawingTaskId: videoProcessTaskId,
+        videoMaskDrawingTaskId: videoMaskDrawingTaskId,
         modelImageFileId: imageFileId,
         score: score,
         onProgress: (prog) => {
@@ -383,17 +415,17 @@ const AiFaceSwapPage: React.FC = () => {
     }
   };
 
-  // 检查是否可以生成
+  // 检查是否可以生成 - 借鉴 Nebula1：使用 videoMaskDrawingTaskId
   const isGenerateDisabled =
     isGenerating ||
     isVideoUploading ||
-    !videoProcessTaskId ||
+    !videoMaskDrawingTaskId ||
     !imageFileId;
 
   return (
-    <div className="h-full max-h-[calc(100vh-40px)] overflow-y-auto overflow-x-hidden p-6 bg-gray-100">
+    <div className="h-full p-6 bg-gray-100">
       {/* 页面头部 */}
-      <div className="mb-6 text-center">
+      {/* <div className="mb-6 text-center">
         <h1 
           className="mb-2 text-3xl font-bold"
           style={{
@@ -408,26 +440,29 @@ const AiFaceSwapPage: React.FC = () => {
         <p className="text-gray-600">
           上传视频和参考图片，让 AI 为您生成换脸视频
         </p>
-      </div>
+      </div> */}
 
       {/* 主内容区域 - 左右分栏布局 */}
-      <div className="flex gap-8 max-w-[1400px] mx-auto">
-        {/* 左侧控制面板 */}
-        <div className="w-[350px] p-6 bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl">
-          {/* 控制区域标题 */}
-          <div className="mb-4 text-center">
-            <h2 
-              className="text-2xl font-bold"
-              style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}
-            >
-              AI 视频换脸
-            </h2>
-          </div>
+      <div className="flex gap-8 w-full max-w-[1400px] mx-auto" style={{ height: '89vh' }}>
+         {/* 左侧控制面板 */}
+         <div className="w-[350px] bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl h-full flex flex-col overflow-hidden">
+           {/* 控制区域标题 */}
+           <div className="p-6 pb-4 text-center border-b border-gray-200 flex-shrink-0">
+             <h2 
+               className="text-2xl font-bold"
+               style={{
+                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                 WebkitBackgroundClip: 'text',
+                 WebkitTextFillColor: 'transparent',
+                 backgroundClip: 'text'
+               }}
+             >
+               AI 视频换脸
+             </h2>
+           </div>
+           
+           {/* 内容区域 - 可滚动 */}
+           <div className="flex-1 overflow-y-auto p-6">
 
           {/* 视频上传区域 */}
           <div className="mb-6">
@@ -437,7 +472,7 @@ const AiFaceSwapPage: React.FC = () => {
             <div className="min-h-[200px] relative">
               {isVideoUploading && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center z-20 rounded-xl backdrop-blur-[1px]">
-                  <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
+                  <div className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
                     <span className="text-sm font-medium text-gray-600 dark:text-gray-300">上传并处理视频中...</span>
                   </div>
@@ -456,9 +491,12 @@ const AiFaceSwapPage: React.FC = () => {
                   setError(err.message);
                   setIsVideoUploading(false);
                 }}
+                // 借鉴 Nebula1：如果有 trackingVideoPath 则显示它，否则显示 videoUploadedUrl，最后才显示本地 videoUrl
+                initialUrl={trackingVideoPath || videoUploadedUrl || videoUrl || ''}
                 className="min-h-[200px]"
+                disabled={isVideoUploading} // 上传中时禁用，隐藏关闭按钮
               >
-                {!videoUrl && (
+                {!videoUrl && !videoUploadedUrl && !trackingVideoPath && (
                   <div className="text-center p-6">
                     <div className="text-4xl mb-2">🎬</div>
                     <p className="text-gray-700 mb-2">点击或拖拽上传视频</p>
@@ -471,8 +509,8 @@ const AiFaceSwapPage: React.FC = () => {
                   </div>
                 )}
               </UploadComponent>
-              {/* 编辑按钮 */}
-              {videoUrl && videoUploadedUrl && (
+              {/* 编辑按钮 - 借鉴 Nebula1：只要有视频就可以编辑，上传中时不显示 */}
+              {(videoUrl || videoUploadedUrl || trackingVideoPath) && !isVideoUploading && (
                 <button
                   onClick={() => setIsVideoEditorOpen(true)}
                   className="absolute -top-5 -right-5 w-9 h-9 rounded-full bg-indigo-600 border-2 border-white text-white flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all hover:scale-110 z-10"
@@ -489,7 +527,7 @@ const AiFaceSwapPage: React.FC = () => {
             <h3 className="mb-4 text-lg font-semibold text-gray-800">
               上传参考图片
             </h3>
-            <div className="min-h-[200px]">
+            <div className="min-h-[200px] relative">
               {isImageUploading && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center z-20 rounded-xl backdrop-blur-[1px]">
                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
@@ -505,13 +543,14 @@ const AiFaceSwapPage: React.FC = () => {
                 onFileSelected={handleImageFileSelectedWithUpload}
                 onClear={handleClearImage}
                 showPreview={true}
-                immediate={false}
+                immediate={true} // 借鉴 Nebula1：选择文件后立即上传
                 maxSize={5}
                 onError={(err) => {
                   setError(err.message);
                   setIsImageUploading(false);
                 }}
                 className="min-h-[200px]"
+                disabled={isImageUploading} // 上传中时禁用，隐藏关闭按钮
               >
                 {!imageUrl && (
                   <div className="text-center p-6">
@@ -535,46 +574,50 @@ const AiFaceSwapPage: React.FC = () => {
             </div>
           )}
 
-          {/* 操作按钮区域 */}
-          <div className="p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-sm">
-            {/* 生成按钮 */}
-            <button
-              onClick={handleGenerate}
-              disabled={isGenerateDisabled}
-              className="w-full py-3 px-6 font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Sparkles className="h-5 w-5 animate-spin" />
-                  <span>生成中...</span>
-                </>
-              ) : (
-                <>
-                  <Wand2 className="h-5 w-5" />
-                  <span>生成换脸视频</span>
-                </>
-              )}
-            </button>
-            
-            {/* 清除按钮 */}
-            <button
-              className="w-full mt-3 py-2 px-4 font-medium rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
-              onClick={() => {
-                handleClearVideo();
-                handleClearImage();
-                setGeneratedVideoUrl(null);
-              }}
-            >
-              清除结果
-            </button>
-          </div>
-        </div>
+             {/* 操作按钮区域 */}
+             <div className="pt-4">
+               {/* 生成按钮 */}
+               <button
+                 onClick={handleGenerate}
+                 disabled={isGenerateDisabled}
+                 className="w-full py-3 px-6 font-semibold rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg shadow-blue-500/30 transition-all duration-200 hover:shadow-xl hover:shadow-blue-500/40 hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 flex items-center justify-center gap-2"
+               >
+                 {isGenerating ? (
+                   <>
+                     <Sparkles className="h-5 w-5 animate-spin" />
+                     <span>生成中...</span>
+                   </>
+                 ) : (
+                   <>
+                     {/* 借鉴 Nebula1：显示积分图标和数值 */}
+                     <SvgPointsIcon className="h-5 w-5 mr-1" />
+                     <span>{countPoints === 0 ? points : countPoints}</span>
+                     <span className="ml-2">生成换脸视频</span>
+                   </>
+                 )}
+               </button>
+               
+               {/* 清除按钮 */}
+               <button
+                 className="w-full mt-3 py-2 px-4 font-medium rounded-lg bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 transition-colors"
+                 onClick={() => {
+                   handleClearVideo();
+                   handleClearImage();
+                   setGeneratedVideoUrl(null);
+                   setImportStatus(false); // 清除导入状态
+                 }}
+               >
+                 清除结果
+               </button>
+             </div>
+           </div>
+         </div>
 
         {/* 右侧预览区域 */}
         <div className="flex-1">
           <div className="p-10 bg-gradient-to-br from-white/98 to-white/95 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/20">
             {/* 结果标题 */}
-            <div className="flex items-center justify-between mb-8 pb-6 border-b border-gray-200">
+            <div className="flex items-center justify-center mb-8 pb-6 border-b border-gray-200">
               <h3 
                 className="text-2xl font-bold"
                 style={{
@@ -632,7 +675,17 @@ const AiFaceSwapPage: React.FC = () => {
                   >
                     下载视频
                   </a>
-                  <button className="flex-1 py-3 px-4 font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+                  <button 
+                    onClick={() => {
+                      // 借鉴 Nebula1：如果已导入，显示提示
+                      if (importStatus) {
+                        toast.success('该视频已导入素材库');
+                        return;
+                      }
+                      setIsAddMaterialModalOpen(true);
+                    }}
+                    className="flex-1 py-3 px-4 font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
+                  >
                     导入素材
                   </button>
                 </div>
@@ -642,12 +695,12 @@ const AiFaceSwapPage: React.FC = () => {
         </div>
       </div>
 
-      {/* 视频编辑器模态框 - 借鉴 Nebula1：使用处理后的视频URL */}
+      {/* 视频编辑器模态框 - 借鉴 Nebula1：使用处理后的视频URL，如果有 trackingVideoPath 则使用它 */}
       {videoUploadedUrl && (
         <VideoEditingModal
           isOpen={isVideoEditorOpen}
           onClose={() => setIsVideoEditorOpen(false)}
-          videoUrl={videoUploadedUrl}
+          videoUrl={trackingVideoPath || videoUploadedUrl} // 借鉴 Nebula1：如果有 trackingVideoPath 则使用它
           videoProcessTaskId={videoProcessTaskId || undefined}
           onSave={(markers) => {
             setVideoMarkers(markers);
@@ -656,12 +709,30 @@ const AiFaceSwapPage: React.FC = () => {
           onVideoMaskSuccess={(data) => {
             // 借鉴 Nebula1：视频掩码绘制成功后，更新视频URL和任务ID
             console.log('视频掩码绘制成功:', data);
+            // 使用 trackingVideoPath 更新视频URL（借鉴 Nebula1：video.url = data.trackingVideoPath）
             setVideoUploadedUrl(data.trackingVideoPath);
-            setVideoProcessTaskId(data.taskId);
+            setTrackingVideoPath(data.trackingVideoPath);
+            // 保存 videoMaskDrawingTaskId（借鉴 Nebula1：queryTaskTaskId.value = data.taskId）
+            setVideoMaskDrawingTaskId(data.taskId);
             setIsVideoEditorOpen(false);
           }}
         />
       )}
+
+      {/* 导入素材模态框 - 借鉴 Nebula1 */}
+      <AddMaterialModal
+        isOpen={isAddMaterialModalOpen}
+        onClose={() => setIsAddMaterialModalOpen(false)}
+        onSuccess={() => {
+          setIsAddMaterialModalOpen(false);
+          setImportStatus(true); // 标记为已导入
+        }}
+        initialData={{
+          assetUrl: generatedVideoUrl || '', // 借鉴 Nebula1：assetUrl: videoData.value
+          assetType: 15, // 借鉴 Nebula1：第二个参数 '15' 表示视频类型
+        }}
+        disableAssetTypeSelection={true} // 禁用素材类型选择，使用预设的类型
+      />
     </div>
   );
 };

@@ -42,6 +42,8 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const timelineTrackRef = useRef<HTMLDivElement>(null);
+  // 使用 ref 保存预览结果，以便在确认按钮中立即访问
+  const previewResultRef = useRef<{ taskId: string; trackingVideoPath: string } | null>(null);
   
   // 视频状态
   const [duration, setDuration] = useState(0);
@@ -50,10 +52,17 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const [videoThumbnail, setVideoThumbnail] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
+  // 当前视频 URL（初始为 props 的 videoUrl，预览成功后更新为 trackingVideoPath）- 借鉴 Nebula1
+  const [currentVideoUrl, setCurrentVideoUrl] = useState<string>(videoUrl);
   
   // 标记模式状态
   const [markingMode, setMarkingMode] = useState<'modify' | 'protect'>('modify');
   const [previewAllLoading, setPreviewAllLoading] = useState(false);
+  const [previewAllDisabled, setPreviewAllDisabled] = useState(false);
+  // 保存预览成功后的结果
+  const [previewResult, setPreviewResult] = useState<{ taskId: string; trackingVideoPath: string } | null>(null);
+  // 全屏加载遮罩状态 - 借鉴 Nebula1
+  const [drawModalSpin, setDrawModalSpin] = useState(false);
   
   // 标记点状态
   const [markers, setMarkers] = useState<VideoMarker[]>([]);
@@ -92,7 +101,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 初始化视频
   const initVideo = useCallback(async () => {
-    if (!videoRef.current || !videoUrl) return;
+    if (!videoRef.current || !currentVideoUrl) return;
 
     try {
       setIsLoading(true);
@@ -181,7 +190,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     } finally {
       setIsLoading(false);
     }
-  }, [videoUrl]);
+  }, [currentVideoUrl]);
 
   // 初始化 canvas 尺寸
   const initCanvas = useCallback(() => {
@@ -200,6 +209,8 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   const handleVideoLoaded = useCallback(() => {
     if (videoRef.current) {
       setDuration(videoRef.current.duration);
+      // 重置加载状态
+      setIsLoading(false);
       // 初始化 canvas 尺寸
       setTimeout(() => {
         initCanvas();
@@ -292,9 +303,20 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   // 当模态框打开时初始化视频
   useEffect(() => {
     if (isOpen && videoUrl) {
+      // 重置视频 URL 为初始值
+      setCurrentVideoUrl(videoUrl);
+      // 重置预览结果
+      setPreviewResult(null);
+      previewResultRef.current = null;
+    }
+  }, [isOpen, videoUrl]);
+  
+  // 当 currentVideoUrl 变化时，重新初始化视频
+  useEffect(() => {
+    if (isOpen && currentVideoUrl) {
       initVideo();
     }
-  }, [isOpen, videoUrl, initVideo]);
+  }, [isOpen, currentVideoUrl, initVideo]);
 
   // 视频播放状态监听
   useEffect(() => {
@@ -554,6 +576,34 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     setMarkers([]);
     setSelectedMarkId(null);
     setHoveredMarkId(null);
+  }, []);
+
+  // 清除所有标记和遮罩层（不提交）- 借鉴 Nebula1
+  const clearAllMarksAndMasks = useCallback(async () => {
+    // 清除所有标记修改区域和标记保护区域的坐标
+    setMarkers([]);
+    setSelectedMarkId(null);
+    setHoveredMarkId(null);
+    setSubmittedMarkIds(new Set());
+    
+    // 清除所有红色遮罩层和绿色遮罩层的遮罩数据
+    setFrameMaskMap(new Map());
+    
+    // 清除预览结果
+    setPreviewResult(null);
+    previewResultRef.current = null;
+    
+    console.log('清除所有标记和遮罩数据');
+    
+    // 更新遮罩层显示（清除遮罩）- 通过 updateMaskForCurrentFrame 来更新
+    // 注意：这里不直接调用 renderMaskImages，而是通过 updateMaskForCurrentFrame
+    // 因为 renderMaskImages 在后面定义，会有依赖问题
+    if (maskCanvasRef.current) {
+      const ctx = maskCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+      }
+    }
   }, []);
 
   // 将画布坐标转换为视频原始尺寸坐标
@@ -994,8 +1044,8 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     };
   }, [initCanvas]);
 
-  // 预览所有已选区域 / 确认提交（提交视频掩码绘制任务）
-  const handlePreviewAll = useCallback(async () => {
+  // 预览所有已选区域（提交视频掩码绘制任务）- 借鉴 Nebula1：成功后不关闭模态框
+  const handlePreviewAll = useCallback(async (shouldEmitSuccess = false) => {
     // 如果没有标记，不处理
     if (markers.length === 0) {
       console.warn('没有标记数据');
@@ -1007,7 +1057,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       return;
     }
 
+    // 设置加载和禁用状态 - 借鉴 Nebula1
     setPreviewAllLoading(true);
+    setPreviewAllDisabled(true);
+    setDrawModalSpin(true);
+    setDrawModalSpin(true);
 
     try {
       // 按帧索引分组所有标记
@@ -1036,7 +1090,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       // 获取所有帧索引，按升序排序
       const frameIndices = Array.from(frameMap.keys()).sort((a, b) => a - b);
 
-      // 构建 inputInfos 数组（index 是字符串格式）
+      // 构建 inputInfos 数组（index 是字符串格式）- 借鉴 Nebula1
       const inputInfos: Array<{ index: string; modifyPoints: number[][]; protectPoints: number[][] }> = [];
 
       frameIndices.forEach((frameIndex) => {
@@ -1053,6 +1107,8 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       if (inputInfos.length === 0) {
         console.warn('没有有效的帧标记数据');
         setPreviewAllLoading(false);
+        setPreviewAllDisabled(false);
+        setDrawModalSpin(false);
         return;
       }
 
@@ -1084,16 +1140,29 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             const trackingVideoPath = queryResult.result.trackingVideoPath;
             console.log('视频掩码绘制任务成功，trackingVideoPath:', trackingVideoPath);
 
-            // 调用回调函数
-            if (onVideoMaskSuccess && trackingVideoPath) {
-              onVideoMaskSuccess({
-                taskId: queryResult.result.taskId,
-                trackingVideoPath: trackingVideoPath,
-              });
+            // 借鉴 Nebula1：预览成功后不关闭模态框，只清除标记和遮罩层
+            // 更新视频 URL 为 trackingVideoPath - 借鉴 Nebula1: videoUrl.value = result.trackingVideoPath
+            setCurrentVideoUrl(trackingVideoPath);
+            
+            // 保存预览结果，供确认按钮使用（同时保存到 state 和 ref）
+            const result = {
+              taskId: queryResult.result.taskId,
+              trackingVideoPath: trackingVideoPath,
+            };
+            setPreviewResult(result);
+            previewResultRef.current = result;
+
+            // 借鉴 Nebula1：如果 shouldEmitSuccess 为 true，触发子传父事件
+            // emit('videoMaskSuccess', { taskId, trackingVideoPath })
+            if (shouldEmitSuccess && onVideoMaskSuccess) {
+              onVideoMaskSuccess(result);
             }
 
-            // 清除所有标记
-            clearAllMarks();
+            // 清除所有标记和遮罩层
+            await clearAllMarksAndMasks();
+            
+            // 重新初始化视频以显示新的 trackingVideoPath
+            await initVideo();
 
             break;
           } else if (queryResult.result?.status === 'failed') {
@@ -1113,9 +1182,42 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       console.error('提交视频掩码绘制任务失败:', error);
       // 可以在这里显示错误提示
     } finally {
+      // 重置所有状态 - 借鉴 Nebula1
       setPreviewAllLoading(false);
+      setPreviewAllDisabled(false);
+      setDrawModalSpin(false);
     }
-  }, [markers, videoProcessTaskId, calculateFrameIndex, convertCanvasToVideoCoordinates, sleep, onVideoMaskSuccess, clearAllMarks]);
+  }, [markers, videoProcessTaskId, calculateFrameIndex, convertCanvasToVideoCoordinates, sleep, clearAllMarksAndMasks, onVideoMaskSuccess, initVideo]);
+
+  // 确认提交（调用预览功能后关闭模态框）- 借鉴 Nebula1
+  const handleConfirm = useCallback(async () => {
+    if (markers.length === 0) {
+      // 如果没有标记，直接关闭
+      onClose();
+      return;
+    }
+    
+    // 借鉴 Nebula1：如果已经有预览结果（trackingVideoPath 和 taskId），直接使用它们
+    if (previewResultRef.current) {
+      const result = previewResultRef.current;
+      console.log('使用已有的预览结果:', result);
+      
+      // 触发成功回调
+      if (onVideoMaskSuccess) {
+        onVideoMaskSuccess(result);
+      }
+      
+      // 关闭模态框
+      onClose();
+      return;
+    }
+    
+    // 如果没有预览结果，调用预览功能，传入 true 表示需要触发成功回调
+    await handlePreviewAll(true);
+    
+    // 关闭模态框
+    onClose();
+  }, [markers.length, handlePreviewAll, onClose, onVideoMaskSuccess]);
 
   if (!isOpen) {
     return null;
@@ -1123,6 +1225,12 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+      {/* 全屏加载遮罩 - 借鉴 Nebula1：只在预览任务进行时显示，不在视频加载时显示 */}
+      {drawModalSpin && !isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
+          <div className="text-white text-lg font-bold">正在生成绘制,请等待...</div>
+        </div>
+      )}
       <div className="bg-[#1a1a1a] rounded-lg shadow-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col">
         {/* 顶部导航栏 */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#2a2a2a] border-b border-[#3a3a3a]">
@@ -1167,7 +1275,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             )}
             <video
               ref={videoRef}
-              src={videoUrl}
+              src={currentVideoUrl}
               className="w-full h-full max-h-full object-contain rounded-lg"
               style={{ maxHeight: '100%' }}
               onLoadedMetadata={handleVideoLoaded}
@@ -1341,12 +1449,21 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             <span>清除</span>
           </button>
           <button
-            onClick={handlePreviewAll}
-            disabled={previewAllLoading}
+            onClick={() => handlePreviewAll(false)}
+            disabled={previewAllLoading || previewAllDisabled || markers.length === 0 || !videoProcessTaskId}
             className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Eye className="w-4.5 h-4.5" />
-            <span>预览所有已选区域</span>
+            {previewAllLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4.5 w-4.5 border-b-2 border-white"></div>
+                <span>处理中...</span>
+              </>
+            ) : (
+              <>
+                <Eye className="w-4.5 h-4.5" />
+                <span>预览所有已选区域</span>
+              </>
+            )}
           </button>
         </div>
 
@@ -1359,11 +1476,8 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             取消
           </button>
           <button
-            onClick={async () => {
-              await handlePreviewAll();
-              // 成功后会自动调用 onVideoMaskSuccess，由父组件处理关闭
-            }}
-            disabled={previewAllLoading || markers.length === 0 || !videoProcessTaskId}
+            onClick={handleConfirm}
+            disabled={previewAllLoading || previewAllDisabled || !videoProcessTaskId}
             className="px-8 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-md text-sm font-medium hover:from-[#5a67d8] hover:to-[#6b46c1] hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             {previewAllLoading ? '处理中...' : '确认'}
