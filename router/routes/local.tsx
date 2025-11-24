@@ -13,6 +13,7 @@ const ModelSquarePage = React.lazy(() => import('../../pages/Models'));
 const ExpensesPage = React.lazy(() => import('../../pages/Expenses'));
 const PricingPage = React.lazy(() => import('../../pages/Pricing'));
 const PriceListPage = React.lazy(() => import('../../pages/PriceList'));
+const RankPage = React.lazy(() => import('../../pages/Rank'));
 const ProfilePage = React.lazy(() => import('../../pages/Profile'));
 
 // Create Page Sub-components
@@ -200,6 +201,16 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Price List',
           icon: 'list',
+          requiresAuth: true,
+          keepAlive: true
+        }
+      },
+      {
+        path: 'rank',
+        element: <RankPage />,
+        meta: {
+          title: 'Leaderboard',
+          icon: 'trophy',
           requiresAuth: true,
           keepAlive: true
         }

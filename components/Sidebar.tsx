@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { 
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
-  UserCircle, Folder, CreditCard, DollarSign, 
+  UserCircle, Folder, CreditCard, DollarSign, Trophy,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink,
   RefreshCcw, MessageSquare, MonitorPlay, X
 } from 'lucide-react';
@@ -66,6 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     if (cleanPath === 'chat') return 'aiExperience';
     if (cleanPath === 'models') return 'modelSquare';
     if (cleanPath === 'keys') return 'apiKeys';
+    if (cleanPath === 'rank') return 'rank';
     if (cleanPath === 'expenses') return 'expenses';
     if (cleanPath === 'pricing') return 'pricing';
     if (cleanPath === 'assets') return 'assets';
@@ -120,6 +121,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
         { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
+        { id: 'rank', icon: Trophy, label: 'Leaderboard', path: '/rank' },
       ]
     },
     { 
@@ -332,16 +334,16 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                     <span className="text-xs font-bold uppercase tracking-wider">NebulaLab</span>
                     <span className="text-xs font-bold uppercase tracking-wider">全新版本上线!!</span>
                   </div>
-                </div>
-                {/* 新增个logo */}
+              </div>
+              {/* 新增个logo */}
                 <div className="flex justify-center">
                   <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20 animate-float" />
-                </div>
-                {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
-                {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
-                  Upgrade
-                </button> */}
-            </div>
+              </div>
+              {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
+              {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">
+                Upgrade
+              </button> */}
+          </div>
           )
         ) : (
           <div className="flex justify-center py-2">

@@ -52,6 +52,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/s3-upload/, ''),
       },
+      '/api/rank': {
+        target: 'https://artificialanalysis.ai/api/v2/data/llms/models',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/rank/, ''),
+      },
     },
   },
 });
