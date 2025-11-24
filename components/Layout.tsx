@@ -6,7 +6,6 @@ import Footer from './Footer';
 import AuthModal from './AuthModal';
 import NotificationModal from './NotificationModal';
 import ConfirmDialog from './ConfirmDialog';
-import CachedOutlet from './CachedOutlet';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
@@ -18,7 +17,11 @@ import { KeepAliveProvider } from './KeepAlive';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
-  const [lang, setLang] = useState<Language>('zh');
+  // 从 localStorage 初始化语言，如果没有则默认为 'zh'
+  const [lang, setLang] = useState<Language>(() => {
+    const savedLang = localStorage.getItem('language') as Language;
+    return savedLang === 'en' || savedLang === 'zh' ? savedLang : 'zh';
+  });
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
@@ -26,6 +29,12 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
+
+  // 当语言切换时，同步更新 localStorage
+  const handleLangChange = (newLang: Language) => {
+    setLang(newLang);
+    localStorage.setItem('language', newLang);
+  };
 
   // Theme handling
   useEffect(() => {
@@ -163,15 +172,15 @@ const Layout: React.FC = () => {
   // 确保 t 不为空，如果为空则使用默认语言
   // 这在某些极端情况下（如路由跳转过快或 context 丢失）能防止崩溃
   const safeT = t || translations['zh'];
-  
+
   return (
     <KeepAliveProvider>
       <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
-        <Header 
-          isDark={isDark} 
-          toggleTheme={() => setIsDark(!isDark)} 
-          lang={lang} 
-          setLang={setLang} 
+        <Header
+          isDark={isDark}
+          toggleTheme={() => setIsDark(!isDark)}
+          lang={lang}
+          setLang={setLang}
           onSignIn={() => setIsAuthModalOpen(true)}
           onOpenNotification={() => setIsNotificationOpen(true)}
           onNavClick={handleNavClick}
@@ -181,16 +190,16 @@ const Layout: React.FC = () => {
           visitedViews={visitedViews}
           onTabClick={handleTabClick}
           onTabClose={handleTabClose}
-          t={safeT.header} 
+          t={safeT.header}
           onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           isMobileMenuOpen={isMobileMenuOpen}
         />
-        
+
         <main className="flex-1">
           <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
         </main>
-        
-        <MobileSidebar 
+
+        <MobileSidebar
           isOpen={isMobileMenuOpen}
           onClose={() => setIsMobileMenuOpen(false)}
           sideMenuMap={safeT.createPage.sideMenu}
@@ -207,15 +216,15 @@ const Layout: React.FC = () => {
           }}
         />
 
-        <AuthModal 
-          isOpen={isAuthModalOpen}  
-          onClose={() => setIsAuthModalOpen(false)} 
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => setIsAuthModalOpen(false)}
           onLoginSuccess={() => fetchUserInfo()}
           lang={lang}
           t={safeT.auth}
         />
 
-      <AuthModal 
+      <AuthModal
         isOpen={isAuthModalOpen}  
         onClose={() => setIsAuthModalOpen(false)} 
         onLoginSuccess={() => {
