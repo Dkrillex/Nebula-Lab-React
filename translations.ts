@@ -419,6 +419,100 @@ interface Translation {
         resultPlaceholder: string;
       };
     };
+    voiceClone: {
+      title1: string;
+      title2: string;
+      desc1: string;
+      desc2: string;
+      attribute: string;
+      audioParameters: string;
+      audioName: string;
+      audioNamePlaceholder: string;
+      speakingSpeed: string;
+      audioText: string;
+      audioTextPlaceholder: string;
+      fileStatus: string;
+      audioStatus: string;
+      audioUploaded: string;
+      audioInfo: string;
+      timbreInfo: string;
+      fileName: string;
+      fileSize: string;
+      fileFormat: string;
+      audioName2: string;
+      sex: string;
+      male: string;
+      female: string;
+      style: string;
+      getAudio: string;
+      getTimbre: string;
+      uploadOrOnline: string;
+      selectVoice: string;
+      uploadFile: string;
+      onlineRecording: string;
+      uploadAudio: string;
+      supportAudioType: string;
+      startRecording: string;
+      stopRecording: string;
+      uploadRecording: string;
+      previewRecording: string;
+      clear: string;
+      commonVoice: string;
+      privateVoice: string;
+      allSex: string;
+      allStyle: string;
+      UGC: string;
+      Advertisement: string;
+      voiceLoading: string;
+      previousPage: string;
+      nextPage: string;
+      page: string;
+      total: string;
+      syntheticEffect: string;
+      previewRes: string;
+      operationProcess: string;
+      syntheticText: string;
+      ready: string;
+      inPreparation: string;
+      taskRes: string;
+      taskStatus: string;
+      outputAudio: string;
+      downloadAudio: string;
+      clearReset: string;
+      startCloning: string;
+      startSynthesis: string;
+      inProcessing: string;
+      recordingCompleted: string;
+      recording: string;
+      uploadSuccess: string;
+      uploadFail: string;
+      micPermission: string;
+      micPermissionFail: string;
+      recording2: string;
+      recordingFail: string;
+      audioFirst: string;
+      recordUploadSuccess: string;
+      recordUploadFail: string;
+      recordPrepare: string;
+      msgConfirm: string;
+      messionPushFail: string;
+      taskSuccess: string;
+      durationInvalid: string;
+      queryFail: string;
+      trialListening: string;
+      emptyState: string;
+      resultTitle: string;
+      addToLibrary: string;
+      addedToLibrary: string;
+      addToLibraryFail: string;
+      createAudioFile: string;
+      audioReadFail: string;
+      fileReadFail: string;
+      transWAV: string;
+      transWAVSuccess: string;
+      transWAVFail: string;
+      downloadAll: string;
+    };
     workshop: {
       title: string;
       description: string;
@@ -1045,6 +1139,100 @@ export const translations: Record<string, Translation> = {
           resultTitle: 'Generation Result',
           resultPlaceholder: 'Upload images and enter prompts to start your style transfer journey'
         }
+      },
+      voiceClone: {
+        title1: 'Voice Cloning',
+        title2: 'Voice Synthesis',
+        desc1: 'Upload or record an audio clip, AI will clone a digital human voice highly similar to yours',
+        desc2: 'Select your favorite voice, enter text, and generate high-quality speech with one click',
+        attribute: 'Data Attribute',
+        audioParameters: 'Configure Audio Parameters',
+        audioName: 'Audio Name',
+        audioNamePlaceholder: 'Give your audio a name',
+        speakingSpeed: 'Speaking Speed Control',
+        audioText: 'Audio Text',
+        audioTextPlaceholder: 'Please enter the text content to synthesize...',
+        fileStatus: 'File Status',
+        audioStatus: 'Voice Status',
+        audioUploaded: 'Voice Selected',
+        audioInfo: 'Audio Information',
+        timbreInfo: 'Voice Information',
+        fileName: 'File Name',
+        fileSize: 'File Size',
+        fileFormat: 'Format',
+        audioName2: 'Voice Name',
+        sex: 'Gender',
+        male: 'Male',
+        female: 'Female',
+        style: 'Style',
+        getAudio: 'Audio Acquisition',
+        getTimbre: 'Voice Selection',
+        uploadOrOnline: 'Upload File or Online Recording',
+        selectVoice: 'Select Existing Voice',
+        uploadFile: 'File Upload',
+        onlineRecording: 'Online Recording',
+        uploadAudio: 'Drag or click to upload audio file',
+        supportAudioType: 'Supports MP3, WAV formats, file size not exceeding 50MB',
+        startRecording: 'Start Recording',
+        stopRecording: 'Stop Recording',
+        uploadRecording: 'Upload Recording',
+        previewRecording: 'Recording Preview',
+        clear: 'Clear',
+        commonVoice: 'Public Voice',
+        privateVoice: 'Private Voice',
+        allSex: 'All Genders',
+        allStyle: 'All Styles',
+        UGC: 'User Generated',
+        Advertisement: 'Advertisement',
+        voiceLoading: 'Loading voice list...',
+        previousPage: 'Previous Page',
+        nextPage: 'Next Page',
+        page: 'Page',
+        total: 'Total',
+        syntheticEffect: 'Synthesis Effect',
+        previewRes: 'Preview and Manage Results',
+        operationProcess: 'Operation Process',
+        syntheticText: 'Synthesis Text',
+        ready: 'Ready',
+        inPreparation: 'Preparing...',
+        taskRes: 'Task Result',
+        taskStatus: 'Task Status',
+        outputAudio: 'Output Audio',
+        downloadAudio: 'Download Audio',
+        clearReset: 'Clear Reset',
+        startCloning: 'Start Cloning',
+        startSynthesis: 'Start Synthesis',
+        inProcessing: 'Processing...',
+        recordingCompleted: 'Recording completed, please click upload',
+        recording: 'Recording_',
+        uploadSuccess: 'File uploaded successfully',
+        uploadFail: 'File upload failed',
+        micPermission: 'Requesting microphone permission...',
+        micPermissionFail: 'Unable to access microphone, please check permission settings',
+        recording2: 'Recording...',
+        recordingFail: 'Recording failed',
+        audioFirst: 'Please record audio first',
+        recordUploadSuccess: 'Recording uploaded successfully',
+        recordUploadFail: 'Recording upload failed',
+        recordPrepare: 'Prepare Recording',
+        msgConfirm: 'Please ensure all required information is filled',
+        messionPushFail: 'Task submission failed',
+        taskSuccess: 'Task completed',
+        durationInvalid: 'Invalid video duration, needs 10s~5 minutes, please re-upload',
+        queryFail: 'Failed to query task status',
+        trialListening: 'Trial Listening',
+        emptyState: 'Configure parameters and start generation, results will be displayed here',
+        resultTitle: 'Generation Result',
+        addToLibrary: 'Add to Material Library',
+        addedToLibrary: 'Added to Material Library',
+        addToLibraryFail: 'Failed to add to Material Library',
+        createAudioFile: 'Generated Audio File',
+        audioReadFail: 'Unable to read audio data',
+        fileReadFail: 'File read failed',
+        transWAV: 'Converting to WAV format...',
+        transWAVSuccess: 'WAV format conversion completed',
+        transWAVFail: 'Audio format conversion failed, will use original format',
+        downloadAll: 'Download All'
       },
       workshop: {
         title: 'Creation Workshop',
@@ -1721,6 +1909,100 @@ export const translations: Record<string, Translation> = {
           resultTitle: '生成结果',
           resultPlaceholder: '上传图片并输入提示词，开始您的风格迁移之旅'
         }
+      },
+      voiceClone: {
+        title1: '声音克隆',
+        title2: '声音合成',
+        desc1: '上传或录制一段音频，AI 将克隆出与您声音高度相似的数字人声音',
+        desc2: '选择喜欢的音色，输入文本，一键生成高品质语音',
+        attribute: '数据属性',
+        audioParameters: '配置音频参数',
+        audioName: '音频名称',
+        audioNamePlaceholder: '给您的音频起个名字',
+        speakingSpeed: '语速控制',
+        audioText: '音频文本',
+        audioTextPlaceholder: '请输入要合成的文本内容...',
+        fileStatus: '文件状态',
+        audioStatus: '音色状态',
+        audioUploaded: '音色已选择',
+        audioInfo: '音频信息',
+        timbreInfo: '音色信息',
+        fileName: '文件名',
+        fileSize: '文件大小',
+        fileFormat: '格式',
+        audioName2: '音色名称',
+        sex: '性别',
+        male: '男性',
+        female: '女性',
+        style: '风格',
+        getAudio: '音频获取',
+        getTimbre: '音色选择',
+        uploadOrOnline: '上传文件或在线录音',
+        selectVoice: '选择现有音色',
+        uploadFile: '文件上传',
+        onlineRecording: '在线录音',
+        uploadAudio: '拖拽或点击上传音频文件',
+        supportAudioType: '支持 MP3、WAV 格式，文件大小不超过 50MB',
+        startRecording: '开始录音',
+        stopRecording: '停止录音',
+        uploadRecording: '上传录音',
+        previewRecording: '录音预览',
+        clear: '清除',
+        commonVoice: '公共音色',
+        privateVoice: '私有音色',
+        allSex: '全部性别',
+        allStyle: '全部风格',
+        UGC: '用户自制',
+        Advertisement: '广告',
+        voiceLoading: '加载音色列表...',
+        previousPage: '上一页',
+        nextPage: '下一页',
+        page: '第',
+        total: '共',
+        syntheticEffect: '合成效果',
+        previewRes: '预览和管理结果',
+        operationProcess: '操作流程',
+        syntheticText: '合成文本',
+        ready: '准备就绪',
+        inPreparation: '准备中...',
+        taskRes: '任务结果',
+        taskStatus: '任务状态',
+        outputAudio: '输出音频',
+        downloadAudio: '下载音频',
+        clearReset: '清空重置',
+        startCloning: '开始克隆',
+        startSynthesis: '开始合成',
+        inProcessing: '处理中...',
+        recordingCompleted: '录音完成，请点击上传',
+        recording: '录音_',
+        uploadSuccess: '文件上传成功',
+        uploadFail: '文件上传失败',
+        micPermission: '请求麦克风权限...',
+        micPermissionFail: '无法访问麦克风，请检查权限设置',
+        recording2: '正在录音...',
+        recordingFail: '录音失败',
+        audioFirst: '请先录制音频',
+        recordUploadSuccess: '录音上传成功',
+        recordUploadFail: '录音上传失败',
+        recordPrepare: '准备录音',
+        msgConfirm: '请确保已填写必要信息',
+        messionPushFail: '任务提交失败',
+        taskSuccess: '任务完成',
+        durationInvalid: '视频时长无效，需要10s~5分钟，请重新上传',
+        queryFail: '查询任务状态失败',
+        trialListening: '试听',
+        emptyState: '配置参数并开始生成，结果将显示在这里',
+        resultTitle: '生成结果',
+        addToLibrary: '添加到素材库',
+        addedToLibrary: '已添加到素材库',
+        addToLibraryFail: '添加到素材库失败',
+        createAudioFile: '生成的音频文件',
+        audioReadFail: '无法读取音频数据',
+        fileReadFail: '文件读取失败',
+        transWAV: '正在转换为 WAV 格式...',
+        transWAVSuccess: 'WAV 格式转换完成',
+        transWAVFail: '音频格式转换失败，将使用原始格式',
+        downloadAll: '批量下载'
       },
       workshop: {
         title: '创作工坊',
