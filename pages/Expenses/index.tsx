@@ -24,10 +24,18 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   // 余额相关状态
   const [quotaInfo, setQuotaInfo] = useState<UserQuotaInfo | null>(null);
   const [expenseLogs, setExpenseLogs] = useState<ExpenseLog[]>([]);
+  const [balanceDateRange, setBalanceDateRange] = useState<[Date | null, Date | null]>([
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7天前
+    new Date(), // 今天
+  ]);
   
   // 积分相关状态
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [scoreList, setScoreList] = useState<ScoreRecord[]>([]);
+  const [pointsDateRange, setPointsDateRange] = useState<[Date | null, Date | null]>([
+    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7天前
+    new Date(), // 今天
+  ]);
   
   // 日志/账单相关状态
   const [teamLogs, setTeamLogs] = useState<TeamLog[]>([]);
@@ -80,11 +88,21 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
     try {
       setLoading(true);
-      const res = await expenseService.getExpenseLogs({
+      const params: any = {
         pageNum: page,
         pageSize: pagination.pageSize,
         userId: user.nebulaApiId,
-      });
+      };
+      
+      // 添加日期范围参数
+      if (balanceDateRange[0]) {
+        params.startDate = balanceDateRange[0].toISOString().split('T')[0];
+      }
+      if (balanceDateRange[1]) {
+        params.endDate = balanceDateRange[1].toISOString().split('T')[0];
+      }
+      
+      const res = await expenseService.getExpenseLogs(params);
 
       if (res.rows) {
         const logs = res.rows || res.data || [];
@@ -129,11 +147,21 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
     try {
       setLoading(true);
-      const res = await expenseService.getScoreList({
+      const params: any = {
         createBy: user.userId,
         pageNum: page,
         pageSize: pagination.pageSize,
-      });
+      };
+      
+      // 添加日期范围参数（如果接口支持）
+      if (pointsDateRange[0]) {
+        params.startDate = pointsDateRange[0].toISOString().split('T')[0];
+      }
+      if (pointsDateRange[1]) {
+        params.endDate = pointsDateRange[1].toISOString().split('T')[0];
+      }
+      
+      const res = await expenseService.getScoreList(params);
 
       if (res.rows) {
         const scores = res.rows || res.data || [];
@@ -297,6 +325,146 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       console.error('获取团队日志失败:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // 导出余额记录
+  const handleExportBalance = async () => {
+    try {
+      // 获取所有数据（不分页）
+      const params: any = {
+        pageNum: 1,
+        pageSize: 10000, // 获取所有数据
+        userId: user?.nebulaApiId,
+      };
+      
+      if (balanceDateRange[0]) {
+        params.startDate = balanceDateRange[0].toISOString().split('T')[0];
+      }
+      if (balanceDateRange[1]) {
+        params.endDate = balanceDateRange[1].toISOString().split('T')[0];
+      }
+      
+      const res = await expenseService.getExpenseLogs(params);
+      const logs = res.rows || res.data || [];
+      
+      // 转换为 CSV 格式
+      const headers = ['时间', '服务/模型', '类型', '费用(¥)', '用时', '输入Token', '输出Token'];
+      const rows = logs.map((log: ExpenseLog) => {
+        const isConsumption = String(log.type) === '2';
+        const timeStr = log.createTime || (log.createdAt ? new Date(log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000).toLocaleString('zh-CN') : '-');
+        // type=1 是充值（正数），type=2 是扣费（负数）
+        const costValue = Number(log.quotaRmb || log.quota || 0);
+        const cost = isConsumption ? -Math.abs(costValue) : Math.abs(costValue);
+        return [
+          timeStr,
+          log.modelName || '未知服务',
+          isConsumption ? '消费' : '充值',
+          cost.toFixed(6),
+          log.useTime ? `${log.useTime}s` : '0s',
+          log.promptTokens || 0,
+          log.completionTokens || 0,
+        ];
+      });
+      
+      // 生成 CSV 内容
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // 添加 BOM 以支持中文
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `余额账单_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请稍后重试');
+    }
+  };
+
+  // 导出积分记录
+  const handleExportPoints = async () => {
+    try {
+      // 获取所有数据（不分页）
+      const params: any = {
+        pageNum: 1,
+        pageSize: 10000, // 获取所有数据
+        createBy: user?.userId,
+      };
+      
+      if (pointsDateRange[0]) {
+        params.startDate = pointsDateRange[0].toISOString().split('T')[0];
+      }
+      if (pointsDateRange[1]) {
+        params.endDate = pointsDateRange[1].toISOString().split('T')[0];
+      }
+      
+      const res = await expenseService.getScoreList(params);
+      const scores = res.rows || res.data || [];
+      
+      // 转换为 CSV 格式
+      const headers = ['时间', '服务类型', '积分', '状态', '任务ID'];
+      const rows = scores.map((score: ScoreRecord) => {
+        const scoreValue = Number(score.score) || 0;
+        const displayValue = -scoreValue; // 扣积分取反显示
+        const assetTypeMap: Record<number, string> = {
+          1: '视频生成',
+          2: 'AI对话',
+          3: '视频编辑',
+          4: '视频制作',
+          5: '视频录制',
+          6: '万物迁移',
+          7: '图像处理',
+          8: '语音处理',
+          9: 'AI助手',
+          10: '智能分析',
+          11: 'AI视频换脸',
+          15: 'AI创作实验室',
+        };
+        const typeText = assetTypeMap[score.assetType] || '未知服务';
+        const statusText = {
+          '1': '已完成',
+          '0': '进行中',
+          '-1': '失败',
+        }[String(score.status) || '0'] || '未知';
+        
+        return [
+          score.createTime || '-',
+          typeText,
+          displayValue,
+          statusText,
+          score.taskId || '-',
+        ];
+      });
+      
+      // 生成 CSV 内容
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+      ].join('\n');
+      
+      // 添加 BOM 以支持中文
+      const BOM = '\uFEFF';
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `积分账单_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('导出失败:', error);
+      alert('导出失败，请稍后重试');
     }
   };
 
@@ -480,7 +648,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
     const useTime = log.useTime ? `${log.useTime}s` : '0s';
     const isConsumption = String(log.type) === '2';
-    const cost = Number(log.quotaRmb || log.quota || 0);
+    // type=1 是充值（正数），type=2 是扣费（负数）
+    const costValue = Number(log.quotaRmb || log.quota || 0);
+    const cost = isConsumption ? -Math.abs(costValue) : Math.abs(costValue);
     
     return {
       id: log.id,
@@ -623,13 +793,100 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     </button>
                   </>
                 )}
-                {currentMode !== 'logos' && (
-                  <span className="text-sm text-gray-500">
-                    共 {pagination.total} 条记录
-                  </span>
+                {currentMode === 'balance' && (
+                  <>
+                    <button
+                      onClick={handleExportBalance}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="导出账单"
+                    >
+                      <Download size={16} />
+                      导出账单
+                    </button>
+                    <span className="text-sm text-gray-500">
+                      共 {pagination.total} 条记录
+                    </span>
+                  </>
+                )}
+                {currentMode === 'points' && (
+                  <>
+                    <button
+                      onClick={handleExportPoints}
+                      disabled={loading}
+                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title="导出账单"
+                    >
+                      <Download size={16} />
+                      导出账单
+                    </button>
+                    <span className="text-sm text-gray-500">
+                      共 {pagination.total} 条记录
+                    </span>
+                  </>
                 )}
               </div>
             </div>
+
+            {/* 余额/积分模式：日期选择器 */}
+            {(currentMode === 'balance' || currentMode === 'points') && (
+              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+                <div className="flex items-center gap-4">
+                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">时间范围：</label>
+                  <div className="flex items-center gap-2 flex-1">
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        type="date"
+                        value={currentMode === 'balance' 
+                          ? (balanceDateRange[0] ? balanceDateRange[0].toISOString().split('T')[0] : '')
+                          : (pointsDateRange[0] ? pointsDateRange[0].toISOString().split('T')[0] : '')
+                        }
+                        onChange={(e) => {
+                          if (currentMode === 'balance') {
+                            setBalanceDateRange([e.target.value ? new Date(e.target.value) : null, balanceDateRange[1]]);
+                          } else {
+                            setPointsDateRange([e.target.value ? new Date(e.target.value) : null, pointsDateRange[1]]);
+                          }
+                        }}
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <span className="text-gray-400 flex-shrink-0 px-1">至</span>
+                    <div className="relative flex-1 min-w-0">
+                      <input
+                        type="date"
+                        value={currentMode === 'balance'
+                          ? (balanceDateRange[1] ? balanceDateRange[1].toISOString().split('T')[0] : '')
+                          : (pointsDateRange[1] ? pointsDateRange[1].toISOString().split('T')[0] : '')
+                        }
+                        onChange={(e) => {
+                          if (currentMode === 'balance') {
+                            setBalanceDateRange([balanceDateRange[0], e.target.value ? new Date(e.target.value) : null]);
+                          } else {
+                            setPointsDateRange([pointsDateRange[0], e.target.value ? new Date(e.target.value) : null]);
+                          }
+                        }}
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (currentMode === 'balance') {
+                          fetchExpenseLogs(1);
+                        } else {
+                          fetchScoreList(1);
+                        }
+                      }}
+                      disabled={loading}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Search size={16} />
+                      查询
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* 日志/账单模式：筛选条件 - 按照 Nebula1 设计 */}
             {currentMode === 'logos' && (
@@ -1056,9 +1313,11 @@ const ExpenseListItem: React.FC<{
         </div>
       </div>
       
-      {/* 扣费金额 - 红色 */}
-      <div className="text-sm font-medium text-red-600 whitespace-nowrap self-center">
-        ￥ -{record.cost.toFixed(4)}
+      {/* 金额 - 充值显示绿色正数，扣费显示红色负数 */}
+      <div className={`text-sm font-medium whitespace-nowrap self-center ${
+        isConsumption ? 'text-red-600' : 'text-green-600'
+      }`}>
+        ￥ {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(4)}
       </div>
     </div>
   );
@@ -1070,7 +1329,9 @@ const ScoreListItem: React.FC<{
   t: ExpensesPageProps['t'];
 }> = ({ score, t }) => {
   const scoreValue = Number(score.score) || 0;
-  const isPositive = scoreValue > 0;
+  // score 是扣积分，所以取反显示
+  const displayValue = -scoreValue;
+  const isPositive = displayValue > 0;
   const assetTypeMap: Record<number, { text: string; icon: string }> = {
     1: { text: '视频生成', icon: '🎬' },
     2: { text: 'AI对话', icon: '🤖' },
@@ -1138,9 +1399,9 @@ const ScoreListItem: React.FC<{
       
       {/* 右侧：积分值和状态，右对齐 */}
       <div className="flex flex-col items-end gap-1">
-        {/* 积分值 - 绿色 */}
-        <div className="text-sm font-medium text-green-600">
-          {isPositive ? '+' : '-'}{Math.abs(scoreValue)}
+        {/* 积分值 - 扣积分显示为红色 */}
+        <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          {isPositive ? '+' : ''}{displayValue} 积分
         </div>
         {/* 状态 */}
         <div className={`text-xs ${statusInfo.class}`}>
@@ -1178,13 +1439,13 @@ const ExpenseRow: React.FC<{
           <span className="text-xl">🤖</span>
           <span className="font-semibold text-gray-800">{record.modelName}</span>
         </div>
-        {/* 金额 - 红色，浅粉色背景高亮 */}
+        {/* 金额 - 充值显示绿色正数，扣费显示红色负数 */}
         <div className={`inline-flex items-center px-3 py-1.5 rounded text-base font-bold font-mono ${
           isConsumption 
             ? 'text-red-600 bg-pink-50' 
             : 'text-green-600 bg-green-50'
         }`}>
-          ¥{isConsumption ? '-' : '+'}{record.cost.toFixed(6)}
+          ¥{record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
         </div>
       </div>
 
@@ -1240,7 +1501,9 @@ const ScoreCard: React.FC<{
   t: ExpensesPageProps['t'];
 }> = ({ score, t }) => {
   const scoreValue = Number(score.score) || 0;
-  const isPositive = scoreValue > 0;
+  // score 是扣积分，所以取反显示
+  const displayValue = -scoreValue;
+  const isPositive = displayValue > 0;
   const assetTypeMap: Record<number, { text: string; icon: string }> = {
     // 1: { text: '图片生成', icon: '🎨' },
     // 2: { text: '视频生成', icon: '🎬' },
@@ -1302,9 +1565,9 @@ const ScoreCard: React.FC<{
       {/* Middle Section - 积分值和状态 */}
       <div className="px-4 pb-4 border-b border-gray-100">
         <div className="flex items-center justify-between">
-          {/* 左侧：积分值 */}
-          <div className="text-base font-bold text-gray-800">
-            {isPositive ? '+' : '-'}{Math.abs(scoreValue)} 积分
+          {/* 左侧：积分值 - 扣积分显示为红色 */}
+          <div className={`text-base font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+            {isPositive ? '+' : ''}{displayValue} 积分
           </div>
           {/* 右侧：状态按钮 */}
           <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-medium ${
