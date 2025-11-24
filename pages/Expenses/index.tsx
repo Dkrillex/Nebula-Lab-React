@@ -437,14 +437,29 @@ const ExpensesPage: React.FC = () => {
         ? (log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000)
         : Date.now();
       const date = new Date(timestamp);
-      timeStr = date.toLocaleString('zh-CN', {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-      });
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const seconds = String(date.getSeconds()).padStart(2, '0');
+      timeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+    } else if (timeStr && timeStr !== '-') {
+      // 如果已有时间字符串，尝试格式化为统一格式
+      try {
+        const date = new Date(timeStr);
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          const seconds = String(date.getSeconds()).padStart(2, '0');
+          timeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        }
+      } catch {
+        // 如果解析失败，保持原样
+      }
     }
 
     const useTime = log.useTime ? `${log.useTime}s` : '0s';
