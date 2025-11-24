@@ -2609,23 +2609,23 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           // 处理流式数据块
           setMessages(prev => {
             const newMessages = [...prev];
-            const lastMsg = newMessages[newMessages.length - 1];
+            const lastIndex = newMessages.length - 1;
+            const lastMsg = newMessages[lastIndex];
             
             if (lastMsg && lastMsg.id === aiMessageId && lastMsg.role === 'assistant') {
-              // 更新思考内容
-              if (chunk.choices?.[0]?.delta?.reasoning_content) {
-                lastMsg.reasoning_content = (lastMsg.reasoning_content || '') + chunk.choices[0].delta.reasoning_content;
-              }
+              // 创建新对象而不是直接修改，确保React能正确检测到变化
+              const updatedMsg: ExtendedChatMessage = {
+                ...lastMsg,
+                reasoning_content: chunk.choices?.[0]?.delta?.reasoning_content
+                  ? (lastMsg.reasoning_content || '') + chunk.choices[0].delta.reasoning_content
+                  : lastMsg.reasoning_content,
+                content: chunk.choices?.[0]?.delta?.content
+                  ? (lastMsg.content || '') + chunk.choices[0].delta.content
+                  : lastMsg.content,
+                isStreaming: chunk.choices?.[0]?.finish_reason ? false : lastMsg.isStreaming,
+              };
               
-              // 更新回复内容（打字机效果）
-              if (chunk.choices?.[0]?.delta?.content) {
-                lastMsg.content = (lastMsg.content || '') + chunk.choices[0].delta.content;
-              }
-
-              // 检查是否完成
-              if (chunk.choices?.[0]?.finish_reason) {
-                lastMsg.isStreaming = false;
-              }
+              newMessages[lastIndex] = updatedMsg;
             }
             
             return newMessages;
