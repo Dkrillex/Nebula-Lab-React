@@ -753,8 +753,8 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
            selectedBilling !== 'pay-per-image';
   }, [selectedBilling]);
 
-  // 筛选面板内容组件 (props isMobile 用于控制样式)
-  const FilterContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  // 筛选面板内容渲染函数 (不是组件，避免重新挂载)
+  const renderFilterContent = (isMobile: boolean = false) => (
     <div className={`h-full flex flex-col ${isMobile ? 'p-4 bg-white dark:bg-zinc-900 mb-4 rounded-xl border border-zinc-100 dark:border-zinc-800 shadow-sm' : ''}`}>
       <div className="font-semibold mb-6 text-lg text-zinc-900 dark:text-zinc-100 flex items-center justify-between">
         {t.filterSearch}
@@ -862,7 +862,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
       {/* Desktop Sidebar Filter */}
       {showFilterPanel && (
         <aside className="w-72 bg-white dark:bg-zinc-900 border-r border-zinc-100 dark:border-zinc-800 p-5 flex-shrink-0 hidden lg:block h-[calc(100vh-64px)] sticky top-0 z-0">
-          <FilterContent />
+          {renderFilterContent(false)}
         </aside>
       )}
 
@@ -893,7 +893,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
           {/* Mobile/Tablet Inline Filter */}
           {showFilterPanel && (
             <div className="lg:hidden mb-6">
-              <FilterContent isMobile={true} />
+              {renderFilterContent(true)}
             </div>
           )}
 
