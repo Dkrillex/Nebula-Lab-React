@@ -585,7 +585,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
               assetTag: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
               assetDesc: `唱歌数字人_${new Date().toISOString().slice(0,10)}`,
               assetUrl: resultVideoUrl || '',
-              assetType: 4 // Video
+              assetType: 10 // Video
           }}
           disableAssetTypeSelection={true}
           isImportMode={true}

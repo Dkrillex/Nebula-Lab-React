@@ -869,7 +869,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
               assetTag: `数字人视频_${new Date().toISOString().slice(0,10)}`,
               assetDesc: `数字人视频_${new Date().toISOString().slice(0,10)}`,
               assetUrl: previewVideoUrl || '',
-              assetType: 4 // Video
+              assetType: 3 // Video
           }}
           disableAssetTypeSelection={true}
           isImportMode={true}

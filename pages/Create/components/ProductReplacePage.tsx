@@ -972,7 +972,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           assetTag: `产品数字人视频_${new Date().toISOString().slice(0, 10)}`,
           assetDesc: `产品数字人视频_${new Date().toISOString().slice(0, 10)}`,
           assetUrl: image2VideoResult?.previewVideoUrl || '',
-          assetType: 13,
+          assetType: 2,
         }}
         disableAssetTypeSelection={true}
         isImportMode={true}
