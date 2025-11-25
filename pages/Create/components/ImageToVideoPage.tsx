@@ -682,26 +682,26 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
           {/* --- Common Settings --- */}
           <div className="mb-6">
              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
-                  <button 
-                     onClick={handleTextPolish} 
-                     disabled={isPolishing || !prompt || isGenerating}
-                     className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
-                  >
-                     {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
-                     {t.prompt.polish}
-                  </button>
-                </div>
-                <span className="text-[10px] text-gray-400">{prompt.length}/{t.prompt.maxLength}</span>
+                <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
+                <button 
+                   onClick={handleTextPolish} 
+                   disabled={isPolishing || !prompt || isGenerating}
+                   className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
+                >
+                   {isPolishing ? <Loader2 size={12} className="animate-spin" /> : <Wand2 size={12} />}
+                   {t.prompt.polish}
+                </button>
              </div>
-             <textarea
-               value={prompt}
-               onChange={(e) => setPrompt(e.target.value)}
-               placeholder={t.prompt.placeholder}
-               maxLength={t.prompt.maxLength}
-               className="w-full h-28 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
-             />
+             <div className="relative">
+               <textarea
+                 value={prompt}
+                 onChange={(e) => setPrompt(e.target.value)}
+                 placeholder={t.prompt.placeholder}
+                 maxLength={t.prompt.maxLength}
+                 className="w-full h-28 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none pr-16"
+               />
+               <span className="absolute bottom-3 right-3 text-[10px] text-gray-400">{prompt.length}/{t.prompt.maxLength}</span>
+             </div>
           </div>
 
           {/* Specific Settings */}

@@ -338,15 +338,21 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const handlePolishText = async () => {
     if (!prompt.trim()) return;
     try {
-      const res = await textToImageService.polishText({
+      // requestClient已经解包了最外层，直接返回data部分（字符串）
+      const polishedText = await textToImageService.polishText({
         text: prompt,
         type: 'object_replacement'
       });
-      if (res.data) {
-        setPrompt(res.data);
+      
+      if (polishedText && typeof polishedText === 'string') {
+        setPrompt(polishedText);
+        toast.success('文本润色成功！');
+      } else {
+        toast.error('文本润色完成，但未返回润色结果');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Text polishing failed:', error);
+      toast.error(error.message || '文本润色失败');
     }
   };
 
@@ -1290,7 +1296,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 </button>
                                 <button 
                                    onClick={handlePolishText}
-                                   className="px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 text-xs font-medium flex items-center gap-1 border border-indigo-100 dark:border-indigo-800 hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-colors"
+                                   disabled={!prompt.trim()}
+                                   className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
                                  >
                                     <Wand2 size={12} />
                                     {t.creative.aiPolish}
