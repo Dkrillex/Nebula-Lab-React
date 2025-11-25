@@ -130,10 +130,14 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           res = await avatarService.queryImageReplaceTask(taskId);
         }
 
-        const resultData = (res as any).result || res;
+        // 修复数据提取逻辑：支持 res.data.result 和 res.result 两种结构
+        const resultData = (res as any)?.data?.result || (res as any)?.result || (res as any)?.data || res;
         const status = resultData?.taskStatus || resultData?.status;
 
-        if (status === 'running' || status === 'init') {
+        console.log(`[轮询 ${attempts + 1}/${maxAttempts}] 任务状态:`, status, '完整数据:', resultData);
+
+        // 支持更多状态值：running, init, processing, pending 等
+        if (status === 'running' || status === 'init' || status === 'processing' || status === 'pending' || status === 'in_queue') {
           // Update progress - ensure it doesn't exceed 99%
           setProgress(prev => {
             if (prev < 80) {
@@ -150,11 +154,17 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           if (attempts < maxAttempts) {
             loopTimerRef.current = setTimeout(check, interval);
           } else {
-            toast.error('任务超时');
+            console.error('轮询超时，已达到最大尝试次数:', maxAttempts);
+            toast.error('任务超时，请稍后重试');
             setPageLoading(false);
+            setTaskResult({
+              taskStatus: 'fail',
+              errorMsg: '任务超时，请稍后重试',
+            });
           }
-        } else if (status === 'success') {
+        } else if (status === 'success' || status === 'completed') {
           setProgress(100);
+          console.log('任务成功完成:', resultData);
           
           if (isV2) {
             // V2 result processing
@@ -199,21 +209,42 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           }
 
           setPageLoading(false);
-        } else {
+        } else if (status === 'fail' || status === 'failed' || status === 'error') {
+          console.error('任务失败:', resultData);
           setTaskResult({
             taskStatus: 'fail',
-            errorMsg: resultData.errorMsg || resultData.message || '任务失败',
+            errorMsg: resultData?.errorMsg || resultData?.message || resultData?.error || '任务失败',
           });
           setPageLoading(false);
+        } else {
+          // 未知状态，继续轮询但记录日志
+          console.warn('未知任务状态:', status, '继续轮询...');
+          attempts++;
+          if (attempts < maxAttempts) {
+            loopTimerRef.current = setTimeout(check, interval);
+          } else {
+            console.error('轮询超时，未知状态:', status);
+            toast.error('任务状态异常，请稍后重试');
+            setPageLoading(false);
+            setTaskResult({
+              taskStatus: 'fail',
+              errorMsg: `任务状态异常: ${status}`,
+            });
+          }
         }
       } catch (error) {
-        console.error(error);
+        console.error('轮询查询失败:', error);
         attempts++;
         if (attempts < maxAttempts) {
           loopTimerRef.current = setTimeout(check, interval);
         } else {
-          toast.error('查询任务状态失败');
+          console.error('轮询查询失败，已达到最大尝试次数');
+          toast.error('查询任务状态失败，请稍后重试');
           setPageLoading(false);
+          setTaskResult({
+            taskStatus: 'fail',
+            errorMsg: '查询任务状态失败',
+          });
         }
       }
     };
@@ -252,18 +283,23 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           res = await avatarService.queryImage2Video(videoTaskId);
         }
 
-        const resultData = (res as any).result || res;
+        // 修复数据提取逻辑：支持 res.data.result 和 res.result 两种结构
+        const resultData = (res as any)?.data?.result || (res as any)?.result || (res as any)?.data || res;
         const status = resultData?.taskStatus || resultData?.status;
 
-        if (status === 'running' || status === 'init') {
+        console.log(`[视频轮询 ${attempts + 1}/${maxAttempts}] 任务状态:`, status, '完整数据:', resultData);
+
+        // 支持更多状态值：running, init, processing, pending 等
+        if (status === 'running' || status === 'init' || status === 'processing' || status === 'pending' || status === 'in_queue') {
           attempts++;
           if (attempts < maxAttempts) {
             loopTimerRef.current = setTimeout(check, interval);
           } else {
-            toast.error('任务超时');
+            console.error('视频轮询超时，已达到最大尝试次数:', maxAttempts);
+            toast.error('任务超时，请稍后重试');
             setPageLoading(false);
           }
-        } else if (status === 'success') {
+        } else if (status === 'success' || status === 'completed') {
           setProgress(100);
           setPageLoading(false);
           
@@ -290,17 +326,30 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
             console.error('Failed to deduct points:', error);
             // Don't show error to user as video is already generated
           }
-        } else {
-          toast.error(resultData.errorMsg || t?.errors?.generateFailed || '视频生成失败');
+        } else if (status === 'fail' || status === 'failed' || status === 'error') {
+          console.error('视频生成失败:', resultData);
+          toast.error(resultData?.errorMsg || resultData?.message || resultData?.error || t?.errors?.generateFailed || '视频生成失败');
           setPageLoading(false);
+        } else {
+          // 未知状态，继续轮询但记录日志
+          console.warn('未知视频任务状态:', status, '继续轮询...');
+          attempts++;
+          if (attempts < maxAttempts) {
+            loopTimerRef.current = setTimeout(check, interval);
+          } else {
+            console.error('视频轮询超时，未知状态:', status);
+            toast.error('任务状态异常，请稍后重试');
+            setPageLoading(false);
+          }
         }
       } catch (error) {
-        console.error(error);
+        console.error('视频轮询查询失败:', error);
         attempts++;
         if (attempts < maxAttempts) {
           loopTimerRef.current = setTimeout(check, interval);
         } else {
-          toast.error('查询任务状态失败');
+          console.error('视频轮询查询失败，已达到最大尝试次数');
+          toast.error('查询任务状态失败，请稍后重试');
           setPageLoading(false);
         }
       }

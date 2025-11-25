@@ -6,6 +6,8 @@ import UploadComponent from '../../../components/UploadComponent';
 import { aiToolService } from '../../../services/aiToolService';
 import { UploadedFile } from '../../../services/avatarService';
 import MaskCanvas, { MaskCanvasRef } from './MaskCanvas';
+import UseToolResultDisplay from './UseToolResultDisplay';
+import ImagePreviewModal from './ImagePreviewModal';
 
 interface UseToolPageProps {
   // t?: any; 
@@ -26,6 +28,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
   const [generating, setGenerating] = useState(false);
   const [resultUrl, setResultUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   
   // Mask related state
   const [isMaskToolActive, setIsMaskToolActive] = useState(false);
@@ -352,32 +355,12 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     <p className="text-gray-500">正在施展魔法...</p>
                 </div>
             ) : resultUrl ? (
-                <div className="relative w-full h-full flex items-center justify-center group">
-                    <img 
-                        src={resultUrl} 
-                        alt="Generated Result" 
-                        className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                    />
-                    <div className="absolute bottom-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a 
-                            href={resultUrl} 
-                            download={`generated-${activeTool.key}.png`}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="p-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 transition-colors"
-                            title="下载"
-                        >
-                            <Download size={20} />
-                        </a>
-                        <button 
-                            onClick={() => setResultUrl(null)}
-                            className="p-2 bg-white text-gray-800 rounded-full shadow-lg hover:bg-gray-50 transition-colors"
-                            title="重新生成"
-                        >
-                            <RefreshCw size={20} />
-                        </button>
-                    </div>
-                </div>
+                <UseToolResultDisplay
+                    imageUrl={resultUrl}
+                    originalImageUrl={primaryImageBase64}
+                    onImageClick={(url) => setPreviewImageUrl(url)}
+                    onRegenerate={() => setResultUrl(null)}
+                />
             ) : (
                 <div className="text-center text-gray-400">
                     <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-20" />
@@ -386,6 +369,13 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
             )}
         </div>
       </div>
+
+      {/* 图片预览模态框 */}
+      <ImagePreviewModal
+        isOpen={!!previewImageUrl}
+        imageUrl={previewImageUrl}
+        onClose={() => setPreviewImageUrl(null)}
+      />
     </div>
   );
 };
