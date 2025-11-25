@@ -800,12 +800,13 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         />
 
         {/* Endpoint Type (Parameter Size) */}
-        <FilterDropdown 
+        {/* 端点类型不显示的 */}
+        {/* <FilterDropdown 
           label={t.filters.endpointLabel || '端点类型'} 
           options={endpointTypeOptions} 
           value={selectedEndpointType} 
           onChange={setSelectedEndpointType} 
-        />
+        /> */}
 
         {/* Display Settings */}
         <div className="space-y-3 pt-4 border-t border-zinc-100 dark:border-zinc-800">
@@ -822,7 +823,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
                   <option value="USD">USD</option>
                   <option value="CNY">CNY</option>
                 </select>
-                <ChevronDown size={14} className="text-zinc-400" />
+                {/* <ChevronDown size={14} className="text-zinc-400" /> */}
               </div>
             </div>
             {shouldShowTokenUnit && (
@@ -837,7 +838,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
                     <option value="M">M</option>
                     <option value="K">K</option>
                   </select>
-                  <ChevronDown size={14} className="text-zinc-400" />
+                  {/* <ChevronDown size={14} className="text-zinc-400" /> */}
                 </div>
               </div>
             )}
