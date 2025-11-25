@@ -573,6 +573,56 @@ interface Translation {
         };
       };
     };
+    uploadCustomAvatar: {
+      tips: {
+        page: {
+          title: string;
+          description: string;
+        };
+        form: {
+          title: string;
+          label: string;
+          uploadView: string;
+          uploadText: string;
+          uploadHint: string;
+          requirements: string[];
+        };
+        formLabel: string;
+        input: string;
+        primary: string;
+        primary1: string;
+        actionBtn: string;
+        statusCard: string;
+        generatingText: string;
+        generatingText1: string;
+        successIcon: string;
+        actionBtn2: string;
+        errorIcon: string;
+        errorContent: string;
+        secondary: string;
+        previewVideo: string;
+      };
+      script: {
+        errors: {
+          e1: string;
+          e2: string;
+          e3: string;
+          e4: string;
+          e5: string;
+          e6: string;
+          e7: string;
+          e8: string;
+          e9: string;
+        };
+        success: {
+          s1: string;
+          s2: string;
+          s3: string;
+          s4: string;
+          s5: string;
+        };
+      };
+    };
   };
   rankPage: {
     title: string;
@@ -1816,6 +1866,60 @@ export const translations: Record<string, Translation> = {
             emoji: '✍🏻'
           }
         }
+      },
+      uploadCustomAvatar: {
+        tips: {
+          page: {
+            title: 'Custom Digital Human Video Generation',
+            description: 'Upload your video file, AI will generate a professional custom digital human model for you'
+          },
+          form: {
+            title: 'Generation Configuration',
+            label: 'Video File',
+            uploadView: 'Upload Video File',
+            uploadText: 'Click or drag to upload video',
+            uploadHint: 'Supports MP4, MOV formats, max size 100MB',
+            requirements: [
+              'Resolution: 360p ~ 4K',
+              'Duration: 4s ~ 3min',
+              'Requires front-facing digital human video'
+            ]
+          },
+          formLabel: 'Digital Human Name',
+          input: 'Enter custom digital human name',
+          primary: 'Submitting...',
+          primary1: 'Start Generation',
+          actionBtn: 'Reset',
+          statusCard: 'Task Status',
+          generatingText: 'AI is generating your digital human model...',
+          generatingText1: 'Estimated training time 2-3 minutes',
+          successIcon: 'Generation Completed',
+          actionBtn2: 'Add to Assets',
+          errorIcon: 'Generation Failed',
+          errorContent: 'Unknown Error',
+          secondary: 'Please submit a task first',
+          previewVideo: 'Your browser does not support video playback'
+        },
+        script: {
+          errors: {
+            e1: 'Please enter digital human name',
+            e2: 'Name length between 2-20 characters',
+            e3: 'Please upload video file',
+            e4: 'Please enter valid score',
+            e5: 'Submission failed, please try again',
+            e6: 'Submission failed:',
+            e7: 'No face detected',
+            e8: 'Failed to query task progress',
+            e9: 'Query failed:'
+          },
+          success: {
+            s1: 'Video uploaded successfully',
+            s2: 'Task submitted successfully!',
+            s3: 'Task completed',
+            s4: 'Form reset',
+            s5: 'Successfully added to assets'
+          }
+        }
       }
     },
     rankPage: {
@@ -2248,7 +2352,7 @@ export const translations: Record<string, Translation> = {
         agreePolicy: '我已阅读并同意',
         privacyPolicy: '隐私政策',
         terms: '服务条款',
-        
+
       },
       textToImage: {
         title: 'AI生图',
@@ -3084,6 +3188,60 @@ export const translations: Record<string, Translation> = {
             title: '线稿绘画',
             description: '将您的照片简化为其基本线条，创建一个干净的草图。',
             emoji: '✍🏻'
+          }
+        }
+      },
+      uploadCustomAvatar: {
+        tips: {
+          page: {
+            title: '自定义数字人视频生成',
+            description: '上传您的视频文件，AI将为您生成专业的自定义数字人模型'
+          },
+          form: {
+            title: '生成配置',
+            label: '视频文件',
+            uploadView: '上传视频文件',
+            uploadText: '点击或拖拽上传视频',
+            uploadHint: '支持 MP4、MOV 格式，文件大小不超过100MB',
+            requirements: [
+              '分辨率：360p ~ 4K',
+              '时长：4秒 ~ 3分钟',
+              '需要正脸数字人视频'
+            ]
+          },
+          formLabel: '数字人名称',
+          input: '请输入自定义数字人名称',
+          primary: '提交中...',
+          primary1: '1 开始生成',
+          actionBtn: '重置表单',
+          statusCard: '任务状态',
+          generatingText: 'AI正在为您生成数字人模型...',
+          generatingText1: '训练时长预计2-3分钟',
+          successIcon: '生成完成',
+          actionBtn2: '加入素材库',
+          errorIcon: '生成失败',
+          errorContent: '未知错误',
+          secondary: '请先提交任务',
+          previewVideo: '您的浏览器不支持视频播放'
+        },
+        script: {
+          errors: {
+            e1: '请输入数字人名称',
+            e2: '名称长度在2-20个字符之间',
+            e3: '请上传视频文件',
+            e4: '请输入有效的消耗分数',
+            e5: '提交失败，请重试',
+            e6: '提交失败:',
+            e7: '未检测到人脸',
+            e8: '查询任务进度失败',
+            e9: '查询失败:'
+          },
+          success: {
+            s1: '视频上传成功',
+            s2: '任务提交成功！',
+            s3: '任务完成',
+            s4: '表单已重置',
+            s5: '已成功加入素材库'
           }
         }
       }
@@ -3989,6 +4147,60 @@ export const translations: Record<string, Translation> = {
             title: 'Template AI',
             description: 'Hasilkan konten dengan cepat menggunakan template AI',
             emoji: '🖼️'
+          }
+        }
+      },
+      uploadCustomAvatar: {
+        tips: {
+          page: {
+            title: 'Pembuatan Video Manusia Digital Kustom',
+            description: 'Unggah file video Anda, AI akan menghasilkan model manusia digital kustom profesional untuk Anda'
+          },
+          form: {
+            title: 'Konfigurasi Pembuatan',
+            label: 'File Video',
+            uploadView: 'Unggah File Video',
+            uploadText: 'Klik atau seret untuk mengunggah video',
+            uploadHint: 'Mendukung format MP4, MOV, ukuran maksimal 100MB',
+            requirements: [
+              'Resolusi: 360p ~ 4K',
+              'Durasi: 4s ~ 3min',
+              'Memerlukan video manusia digital menghadap depan'
+            ]
+          },
+          formLabel: 'Nama Manusia Digital',
+          input: 'Masukkan nama manusia digital kustom',
+          primary: 'Mengirimkan...',
+          primary1: 'Mulai Pembuatan',
+          actionBtn: 'Reset',
+          statusCard: 'Status Tugas',
+          generatingText: 'AI sedang membuat model manusia digital Anda...',
+          generatingText1: 'Estimasi waktu pelatihan 2-3 menit',
+          successIcon: 'Pembuatan Selesai',
+          actionBtn2: 'Tambahkan ke Aset',
+          errorIcon: 'Pembuatan Gagal',
+          errorContent: 'Kesalahan Tidak Diketahui',
+          secondary: 'Silakan kirim tugas terlebih dahulu',
+          previewVideo: 'Browser Anda tidak mendukung pemutaran video'
+        },
+        script: {
+          errors: {
+            e1: 'Silakan masukkan nama manusia digital',
+            e2: 'Panjang nama antara 2-20 karakter',
+            e3: 'Silakan unggah file video',
+            e4: 'Silakan masukkan skor yang valid',
+            e5: 'Pengiriman gagal, silakan coba lagi',
+            e6: 'Pengiriman gagal:',
+            e7: 'Wajah tidak terdeteksi',
+            e8: 'Gagal meminta kemajuan tugas',
+            e9: 'Permintaan gagal:'
+          },
+          success: {
+            s1: 'Video berhasil diunggah',
+            s2: 'Tugas berhasil dikirim!',
+            s3: 'Tugas selesai',
+            s4: 'Formulir direset',
+            s5: 'Berhasil ditambahkan ke aset'
           }
         }
       }

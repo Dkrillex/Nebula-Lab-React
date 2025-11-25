@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { useAuthStore } from '../../../stores/authStore';
@@ -40,6 +41,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   uploading,
   setErrorMessage
 }) => {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const [scriptMode, setScriptMode] = useState<'text' | 'audio'>('text');
   const [mode, setMode] = useState<'mode1' | 'mode2'>('mode1'); // mode1: Avatar 1, mode2: Avatar 2
@@ -488,14 +490,13 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                   {t.leftPanel.publicTemplate}
               </button>
           </div>
-          {/* TODO 晓彬明天记得处理一下 */}
-          {/* <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">上传数字人视频 (自定义)</label>
-              <input ref={fileInputRef} type="file" accept=".mp4,.mov,.webm" onChange={handleVideoFileChange} className="hidden" />
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition disabled:opacity-50">
-                  {uploading ? '上传中...' : t.leftPanel.customUpload}
+          
+          <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.leftPanel.customUpload}</label>
+              <button onClick={() => navigate('/create/uploadCustomAvatar')} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition">
+                  {t.leftPanel.customUpload}
               </button>
-          </div> */}
+          </div>
         </div>
       </div>
 
