@@ -75,7 +75,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       title: t.shortcuts?.avatar || 'Avatar',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/product-digital-person.png',
       description: t.shortcuts?.avatarDesc || 'Digital human avatar',
-      toolId: 'digitalHuman',
+      toolId: 'digitalHuman?tab=product',
       type: 'image',
     },
     {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { PenTool, Mic, X, Check, Loader, Play, AlertCircle, Palette } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
@@ -52,9 +53,28 @@ interface DigitalHumanPageProps {
 
 const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }) => {
   const { user } = useAuthStore();
-  const [activeTab, setActiveTab] = useState<'video' | 'product' | 'singing'>('video');
+  const [searchParams] = useSearchParams();
+  
+  // 从 URL 参数读取初始 Tab
+  const getInitialTab = (): 'video' | 'product' | 'singing' => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'product' || tabParam === 'video' || tabParam === 'singing') {
+      return tabParam;
+    }
+    return 'video';
+  };
+  
+  const [activeTab, setActiveTab] = useState<'video' | 'product' | 'singing'>(getInitialTab);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  
+  // 监听 URL 参数变化，切换 Tab
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'product' || tabParam === 'video' || tabParam === 'singing') {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
   
   // Video Tab Shared State
   const [avatarList, setAvatarList] = useState<AiAvatar[]>([]);
