@@ -88,12 +88,25 @@ export const aiToolService = {
         ? titleKey 
         : (titleKey?.title || titleKey?.key || 'image');
       
+      // 判断是否是自定义提示工具（customPrompt）或姿势参考工具（pose）
+      const isCustomPrompt = typeof titleKey === 'object' 
+        ? titleKey?.key === 'customPrompt'
+        : titleKey === 'customPrompt';
+      const isPose = typeof titleKey === 'object' 
+        ? titleKey?.key === 'pose'
+        : titleKey === 'pose';
+      
+      // 自定义提示和姿势参考工具：只上传主图像和参考图像，不上传蒙版图像
+      // 其他工具：如果有蒙版，则上传蒙版图像
+      const shouldUploadMask = maskBase64 && !isCustomPrompt && !isPose;
+      
       partsArr.push({
-        text: maskBase64
+        text: shouldUploadMask
           ? `Apply the following instruction only to the masked area of the image: "${fullPrompt}". Preserve the unmasked area.`
           : fullPrompt,
       });
 
+      // 1. 上传主图像
       if (base64ImageData) {
         const extensionType = getExtensionFromMimeType(mimeType);
         const res = await uploadService.uploadByBase64(
@@ -110,7 +123,8 @@ export const aiToolService = {
         }
       }
 
-      if (maskBase64) {
+      // 2. 上传蒙版图像（仅非自定义提示工具）
+      if (shouldUploadMask) {
         const extensionType = getExtensionFromMimeType(mimeType);
         const res = await uploadService.uploadByBase64(
           maskBase64,
@@ -126,6 +140,7 @@ export const aiToolService = {
         }
       }
 
+      // 3. 上传参考图像（可选）
       if (secondaryImage) {
         const extensionType = getExtensionFromMimeType(secondaryImage.mimeType);
         const res = await uploadService.uploadByBase64(
@@ -142,8 +157,9 @@ export const aiToolService = {
         }
       }
 
+      // 确保 prompt 字段也使用动态的 fullPrompt（与 text 中的内容一致）
       const requestData: AiTemplateRequest = {
-        prompt,
+        prompt: fullPrompt, // 使用 fullPrompt 而不是原始的 prompt 参数，确保与 text 内容一致
         watermark: false,
         sequential_image_generation: 'disabled',
         type: 'image',
