@@ -8,6 +8,7 @@ import ChannelManagement from './components/ChannelManagement';
 import InviteRecord from './components/InviteRecord';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
@@ -56,7 +57,9 @@ const ProfilePage: React.FC = () => {
 
   // 获取用户邀请码和构建邀请链接
   const inviteCode = user?.inviteCode;
-  const inviteUrl = inviteCode ? `https://ai-nebula.com/login?inviteCode=${inviteCode}` : '';
+  // 根据系统类型选择域名：模型中心用 openai-nebula.com，创作中心或两者都有用 ai-nebula.com
+  const inviteDomain = CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'openai-nebula.com' : 'ai-nebula.com';
+  const inviteUrl = inviteCode ? `https://${inviteDomain}/login?inviteCode=${inviteCode}` : '';
 
   // 复制邀请码
   const handleCopyCode = async () => {
