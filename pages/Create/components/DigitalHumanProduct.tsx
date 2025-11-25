@@ -9,20 +9,12 @@ import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
-import AddMaterialModal from '@/components/AddMaterialModal';
 
 interface DigitalHumanProductProps {
   t: any;
   handleFileUpload: (file: File, type: 'image') => Promise<any>; 
   uploading: boolean;
   setErrorMessage: (msg: string | null) => void;
-}
-
-interface GeneratedImage {
-  id: string;
-  url: string;
-  timestamp: number;
-  addState?: boolean;
 }
 
 const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
@@ -42,8 +34,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const cursorRef = useRef(0);
   const allAvatarsRef = useRef<ProductAvatar[]>([]);
   const loadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Add Material Modal
-  const [showMaterialModal, setShowMaterialModal] = useState(false);
   // Uploads
   const [productImage, setProductImage] = useState<{ fileId: string, url: string } | null>(null);
   const [userFaceImage, setUserFaceImage] = useState<{ fileId: string, url: string } | null>(null);
@@ -64,13 +54,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   
   // Result
   const [generating, setGenerating] = useState(false);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   const [loadingSample, setLoadingSample] = useState(false);
-  
-  // Progress
-  const [progress, setProgress] = useState(0);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Store and navigation
   const productAvatarStore = useProductAvatarStore();
@@ -197,22 +181,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     toast.error(msg);
   };
 
-  const startProgress = () => {
-    setProgress(0);
-    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    progressIntervalRef.current = setInterval(() => {
-        setProgress(prev => {
-            if (prev >= 95) return 95;
-            return prev + Math.floor(Math.random() * 2) + 1; 
-        });
-    }, 600);
-  };
-
-  const stopProgress = () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-      setProgress(100);
-  };
-
   // Handle mode change
   const changeActiveMode = (mode: 'normal' | 'highPrecision') => {
     setActiveMode(mode);
@@ -333,8 +301,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     
     try {
         setGenerating(true);
-        setPreviewImageUrl(null);
-        startProgress();
 
         let params: any;
         
@@ -383,71 +349,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         }
     } catch (error: any) {
         toast.error(error.message || 'Generation failed');
-        stopProgress();
         setGenerating(false);
     }
-  };
-
-  const pollTask = async (taskId: string) => {
-      const interval = 5000;
-      let attempts = 0;
-      const maxAttempts = 100;
-
-      const check = async () => {
-          try {
-              const { result: resultData } = await avatarService.queryImageReplaceTask(taskId);
-              const status = resultData?.taskStatus;
-              if (status === 'success') {
-                  stopProgress();
-                  setTimeout(() => {
-                      // Extract URL from productReplaceResult array if available
-                      let url = resultData.resultImageUrl || resultData.bgRemovedImagePath || '';
-                      if (!url && resultData.productReplaceResult && resultData.productReplaceResult.length > 0) {
-                          url = resultData.productReplaceResult[0].url;
-                      }
-                      setPreviewImageUrl(url); 
-                      
-                      // Add to history
-                      if (url) {
-                        setGeneratedImages(prev => {
-                            if (prev.some(img => img.id === taskId)) return prev;
-                            return [{
-                                id: taskId,
-                                url: url,
-                                timestamp: Date.now()
-                            }, ...prev];
-                        });
-                      }
-                      
-                      setGenerating(false);
-                  }, 500);
-              } else if (status === 'fail') {
-                  stopProgress();
-                  setTimeout(() => {
-                      toast.error(resultData.errorMsg || t?.tips?.generateFailed || 'Generation failed');
-                      setGenerating(false);
-                  }, 500);
-              } else {
-                  attempts++;
-                  if (attempts < maxAttempts) setTimeout(check, interval);
-                  else {
-                      toast.error(t?.errors?.taskTimeout || 'Task timed out');
-                      stopProgress();
-                      setGenerating(false);
-                  }
-              }
-          } catch (e) {
-              // On network error, retry but keep counting attempts
-              attempts++;
-              if (attempts < maxAttempts) setTimeout(check, interval);
-              else {
-                  toast.error(t?.errors?.queryFailed || 'Failed to query status');
-                  stopProgress();
-                  setGenerating(false);
-              }
-          }
-      };
-      check();
   };
 
   const handleTrySample = async () => {
@@ -500,50 +403,11 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     6: t?.sliderMarks?.xxLarge,
   };
   
-  const handleAddToMaterials = () => {
-    if (!previewImageUrl) return;
-    setShowMaterialModal(true);
-  };
-
-  const handleDownload = async (url: string) => {
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = `digital_product_${Date.now()}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-      toast.success(t?.tips?.downloadStarted || '开始下载...');
-    } catch (error) {
-      console.error('Download failed:', error);
-      window.open(url, '_blank');
-    }
-  };
-
-  const handleDownloadAll = async () => {
-    for (const img of generatedImages) {
-      await handleDownload(img.url);
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
-  };
-
-  const handleClearAll = () => {
-    setGeneratedImages([]);
-    setPreviewImageUrl(null);
-  };
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (removeBgTimerRef.current) {
         clearTimeout(removeBgTimerRef.current);
-      }
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
       }
     };
   }, []);
@@ -814,116 +678,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             </div>
           )}
 
-          {/* Results Area */}
-          {(generatedImages.length > 0 || generating) && (
-             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
-                <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-gray-800 dark:text-gray-200">{t?.rightPanel?.resultTitle || '生成结果'}</h3>
-                    <div className="flex gap-2">
-                        <button
-                             onClick={handleClearAll}
-                             disabled={generatedImages.length === 0}
-                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
-                               generatedImages.length === 0
-                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
-                                 : 'border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
-                             }`}
-                        >
-                           <Trash2 size={12} />
-                           {t?.actions?.clearAll || '清空'}
-                        </button>
-                        <button
-                             onClick={handleDownloadAll}
-                             disabled={generatedImages.length === 0}
-                             className={`px-3 py-1.5 border rounded-lg text-xs flex items-center gap-1 transition-colors ${
-                               generatedImages.length === 0
-                                 ? 'border-gray-200 dark:border-gray-600 text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed'
-                                 : 'border-indigo-200 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:border-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400'
-                             }`}
-                        >
-                           <Download size={12} /> {t?.actions?.downloadAll || '下载全部'}
-                        </button>
-                    </div>
-                </div>
-
-                {/* Main Preview */}
-                <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-50 dark:bg-slate-900/50 mb-6 relative overflow-hidden group">
-                    {generating ? (
-                         <div className="flex flex-col items-center gap-4 z-10 p-6 w-full max-w-md">
-                            <h3 className="font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
-                                <Loader className="animate-spin text-indigo-600" size={20} />
-                                {t?.rightPanel?.generating || "AI Generating"}
-                            </h3>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 overflow-hidden">
-                                <div 
-                                    className="bg-indigo-600 h-3 rounded-full transition-all duration-300 ease-out" 
-                                    style={{ width: `${progress}%` }}
-                                ></div>
-                            </div>
-                            <div className="flex justify-between items-center text-sm w-full">
-                                <span className="text-gray-500 dark:text-gray-400 animate-pulse">
-                                    {t?.rightPanel?.pleaseWait || "AI is analyzing..."}
-                                </span>
-                                <span className="font-bold text-indigo-600">{progress}%</span>
-                            </div>
-                         </div>
-                    ) : previewImageUrl ? (
-                        <div className="relative w-full h-full flex items-center justify-center bg-black/5 dark:bg-black/20">
-                             <img 
-                                src={previewImageUrl} 
-                                className="max-w-full max-h-full object-contain rounded-lg shadow-lg"
-                                alt="Generated Result"
-                             />
-                             <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button 
-                                  onClick={() => handleDownload(previewImageUrl!)}
-                                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
-                                  title={t?.actions?.download || '下载'}
-                                >
-                                  <Download size={18} />
-                                </button>
-                                <button 
-                                  onClick={handleAddToMaterials}
-                                  className="p-2 bg-black/50 hover:bg-black/70 text-white rounded-full backdrop-blur-sm transition-colors"
-                                  title={t?.actions?.addToMaterials || '加入素材库'}
-                                >
-                                  <Plus size={18} />
-                                </button>
-                             </div>
-                        </div>
-                    ) : (
-                         <div className="flex flex-col items-center text-slate-400">
-                             <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                                <ImageIcon size={40} className="text-slate-300 dark:text-slate-600" />
-                             </div>
-                             <p className="text-sm max-w-xs text-center">{t?.rightPanel?.previewPlaceholder || '生成结果将在这里显示'}</p>
-                         </div>
-                    )}
-                </div>
-
-                {/* History Thumbs */}
-                {generatedImages.length > 0 && (
-                     <div className="h-24 flex gap-3 overflow-x-auto pb-2 custom-scrollbar">
-                       {generatedImages.map((img) => (
-                         <div 
-                           key={img.id}
-                           onClick={() => setPreviewImageUrl(img.url)}
-                           className={`relative w-24 h-24 flex-shrink-0 rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black/5 ${
-                             previewImageUrl === img.url ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent hover:border-indigo-300'
-                           }`}
-                         >
-                           <img src={img.url} className="w-full h-full object-cover pointer-events-none" />
-                           {img.addState && (
-                             <div className="absolute top-1 right-1 bg-green-500 rounded-full p-0.5">
-                                <Check size={8} className="text-white" />
-                             </div>
-                           )}
-                         </div>
-                       ))}
-                     </div>
-                )}
-             </div>
-          )}
           </div>
 
           {/* Actions */}
@@ -946,24 +700,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               </div>
           </div>
       </div>
-      {/* Add Material Modal */}
-      <AddMaterialModal
-          isOpen={showMaterialModal}
-          onClose={() => setShowMaterialModal(false)}
-          onSuccess={() => {
-              toast.success('已添加到素材库');
-              setShowMaterialModal(false);
-          }}
-          initialData={{
-              assetName: `产品数字人_${new Date().toISOString().slice(0,10)}`,
-              assetTag: `产品数字人_${new Date().toISOString().slice(0,10)}`,
-              assetDesc: `产品数字人_${new Date().toISOString().slice(0,10)}`,
-              assetUrl: previewImageUrl || '',
-              assetType: 13 // Product Digital Human
-          }}
-          disableAssetTypeSelection={true}
-          isImportMode={true}
-       />
     </div>
   );
 };

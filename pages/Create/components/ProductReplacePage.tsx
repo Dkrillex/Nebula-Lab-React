@@ -133,14 +133,17 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
         const status = resultData?.taskStatus || resultData?.status;
 
         if (status === 'running' || status === 'init') {
-          // Update progress
-          if (progress < 80) {
-            const maxIncrement = Math.min(80 - progress, Math.floor(Math.random() * 20) + 1);
-            setProgress(prev => prev + maxIncrement);
-          } else if (progress < 90) {
-            const maxIncrement = Math.min(90 - progress, Math.floor(Math.random() * 10) + 1);
-            setProgress(prev => prev + maxIncrement);
-          }
+          // Update progress - ensure it doesn't exceed 99%
+          setProgress(prev => {
+            if (prev < 80) {
+              const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 20) + 1);
+              return Math.min(prev + maxIncrement, 80);
+            } else if (prev < 99) {
+              const maxIncrement = Math.min(99 - prev, Math.floor(Math.random() * 10) + 1);
+              return Math.min(prev + maxIncrement, 99);
+            }
+            return prev; // Don't exceed 99
+          });
 
           attempts++;
           if (attempts < maxAttempts) {
