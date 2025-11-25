@@ -33,30 +33,30 @@ export default defineConfig(({ mode, command }) => {
   // 预渲染配置 - 仅在生产构建时启用
   const prerenderPlugin = isProduction && isBuild
     ? Prerender({
-        routes: ['/', '/create'], // 需要预渲染的路由
-        renderer: new PuppeteerRenderer({
-          // 等待页面渲染完成的条件
-          renderAfterTime: 3000, // 等待 3 秒确保页面完全加载
-          // Puppeteer 启动选项
-          launchOptions: {
-            headless: true,
-            // 使用系统已安装的 Chrome（macOS 默认路径）
-            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-          },
-        }),
-        postProcess(renderedRoute) {
-          // 后处理：注入预渲染标记，便于调试
-          renderedRoute.html = renderedRoute.html.replace(
-            '</head>',
-            `<meta name="prerender-status" content="prerendered" />\n</head>`
-          );
-          // 移除可能导致问题的脚本状态
-          renderedRoute.html = renderedRoute.html.replace(
-            /<script type="application\/json" id="__PRERENDER_STATE__">.*?<\/script>/gs,
-            ''
-          );
+      routes: ['/', '/create'], // 需要预渲染的路由
+      renderer: new PuppeteerRenderer({
+        // 等待页面渲染完成的条件
+        renderAfterTime: 3000, // 等待 3 秒确保页面完全加载
+        // Puppeteer 启动选项
+        launchOptions: {
+          headless: true,
+          // 使用系统已安装的 Chrome（macOS 默认路径）
+          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
         },
-      })
+      }),
+      postProcess(renderedRoute) {
+        // 后处理：注入预渲染标记，便于调试
+        renderedRoute.html = renderedRoute.html.replace(
+          '</head>',
+          `<meta name="prerender-status" content="prerendered" />\n</head>`
+        );
+        // 移除可能导致问题的脚本状态
+        renderedRoute.html = renderedRoute.html.replace(
+          /<script type="application\/json" id="__PRERENDER_STATE__">.*?<\/script>/gs,
+          ''
+        );
+      },
+    })
     : null;
 
   return {
@@ -99,8 +99,8 @@ export default defineConfig(({ mode, command }) => {
       proxy: {
         '/dev-api': {
           // target: 'http://34.96.210.20:8080',
-          target: 'http://localhost:8080',
-          // target: 'https://ai-nebula.com/prod-api',
+          // target: 'http://localhost:8080',
+          target: 'https://ai-nebula.com/prod-api',
           // target: 'http://34.96.210.20:8080',
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/dev-api/, ''),

@@ -7,6 +7,7 @@ import DigitalHumanVideo from './DigitalHumanVideo';
 import DigitalHumanProduct from './DigitalHumanProduct';
 import DigitalHumanSinging from './DigitalHumanSinging';
 import toast from 'react-hot-toast';
+import nullAvatar from '@/assets/images/nullAvatar.png';
 
 interface DigitalHumanPageProps {
   t: {
@@ -432,15 +433,26 @@ const AvatarModal: React.FC<{
           ) : (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                {avatars.map(avatar => (
-                  <div
-                    key={avatar.aiavatarId}
-                    onMouseEnter={() => handleMouseEnter(avatar.aiavatarId)}
-                    onMouseLeave={() => handleMouseLeave(avatar.aiavatarId)}
-                    onClick={() => onSelect(avatar)}
-                    className={`relative aspect-[9/16] w-full rounded-lg overflow-hidden cursor-pointer transition hover:shadow-lg ${selected?.aiavatarId === avatar.aiavatarId ? 'ring-2 ring-offset-2 ring-indigo-500' : 'border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-300'}`}
-                  >
-                    <img src={avatar.thumbnailUrl || avatar.coverUrl} alt={avatar.aiavatarName} className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).src = '/assets/images/nullAvatar.png'; }} />
+                {avatars.map(avatar => {
+                  const avatarImageSrc = avatar.thumbnailUrl || avatar.coverUrl || nullAvatar;
+                  return (
+                    <div
+                      key={avatar.aiavatarId}
+                      onMouseEnter={() => handleMouseEnter(avatar.aiavatarId)}
+                      onMouseLeave={() => handleMouseLeave(avatar.aiavatarId)}
+                      onClick={() => onSelect(avatar)}
+                      className={`relative aspect-[9/16] w-full rounded-lg overflow-hidden cursor-pointer transition hover:shadow-lg ${selected?.aiavatarId === avatar.aiavatarId ? 'ring-2 ring-offset-2 ring-indigo-500' : 'border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-300'}`}
+                    >
+                      <img
+                        src={avatarImageSrc}
+                        alt={avatar.aiavatarName}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null; // 防止循环触发
+                          target.src = nullAvatar;
+                        }}
+                      />
                     {previewStates[avatar.aiavatarId] && avatar.previewVideoUrl && (
                       <video 
                         src={avatar.previewVideoUrl} 
@@ -470,7 +482,8 @@ const AvatarModal: React.FC<{
                       <p className="text-white/80 text-[10px]">{avatar.gender}</p>
                     </div>
                   </div>
-                ))}
+                );
+              })}
               </div>
               
               {pagination.total > pagination.pageSize && (
