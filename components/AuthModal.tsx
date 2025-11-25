@@ -326,9 +326,13 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       <div className="relative w-full max-w-md bg-surface rounded-3xl shadow-2xl border border-border">
         
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-border px-8 py-6">
+        <div className="flex items-center justify-between border-b border-border px-8 py-3">
           <h2 className="text-2xl md:text-3xl font-semibold text-foreground">
-            {t.loginTitle}
+            {t.loginTitle}👋🏻
+               {/* 副标题国际化 */}
+          <p className="text-muted text-base mb-2">
+          {t.loginSubtitle || '请输入您的手机号码以开始您的创意之旅'}
+          </p>
           </h2>
           <button 
             onClick={handleClose}
@@ -337,10 +341,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
             <X size={22} />
           </button>
         </div>
-        {/* 副标题国际化 */}
-        <p className="text-center text-muted text-base mb-2">
-          {t.loginSubtitle || '请输入您的手机号码以开始您的创意之旅'}
-        </p>
+     
 
         {/* Tabs */}
         <div className="flex border-b border-border bg-muted/5 rounded-t-xl overflow-hidden">

@@ -128,6 +128,7 @@ interface Translation {
     };
     authModal?: {
       loginTitle: string;
+      loginSubtitle: string;
       tabPassword: string;
       tabPhone: string;
       accountLabel: string;
@@ -788,6 +789,7 @@ interface Translation {
   };
   auth: {
     loginTitle: string;
+    loginSubtitle: string;
     tabPassword: string;
     tabPhone: string;
     accountLabel: string;
@@ -939,6 +941,7 @@ export const translations: Record<string, Translation> = {
       },
       authModal: {
         loginTitle: 'Welcome Back',
+        loginSubtitle: 'Please enter your phone number to start your creative journey',
         tabPassword: 'Password',
         tabPhone: 'Phone',
         accountLabel: 'Account',
@@ -2043,6 +2046,7 @@ export const translations: Record<string, Translation> = {
     },
     auth: {
       loginTitle: 'Welcome Back',
+      loginSubtitle: 'Please enter your phone number to start your creative journey',
       tabPassword: 'Password',
       tabPhone: 'Phone',
       accountLabel: 'Email or Username',
@@ -2192,6 +2196,7 @@ export const translations: Record<string, Translation> = {
       },
       authModal: {
         loginTitle: '欢迎回来',
+        loginSubtitle: '请输入您的手机号码以开始您的创意之旅',
         tabPassword: '密码登录',
         tabPhone: '手机登录',
         accountLabel: '账号',
@@ -2208,6 +2213,7 @@ export const translations: Record<string, Translation> = {
         agreePolicy: '我已阅读并同意',
         privacyPolicy: '隐私政策',
         terms: '服务条款',
+        
       },
       textToImage: {
         title: 'AI生图',
@@ -3329,8 +3335,9 @@ export const translations: Record<string, Translation> = {
     },
     auth: {
       loginTitle: '欢迎回来',
+      loginSubtitle: '请输入您的手机号码以开始您的创意之旅',
       tabPassword: '账号密码',
-      tabPhone: '手机验证',
+      tabPhone: '手机登录/注册',
       accountLabel: '邮箱或用户名',
       accountPlaceholder: '输入邮箱/用户名',
       passwordLabel: '密码',
@@ -3478,6 +3485,7 @@ export const translations: Record<string, Translation> = {
       },
       authModal: {
         loginTitle: 'Selamat Datang Kembali',
+        loginSubtitle: 'Silakan masukkan nomor telepon Anda untuk melanjutkan',
         tabPassword: 'Kata Sandi',
         tabPhone: 'Telepon',
         accountLabel: 'Akun',
@@ -4185,6 +4193,7 @@ export const translations: Record<string, Translation> = {
     },
     auth: {
       loginTitle: 'Selamat Datang Kembali',
+      loginSubtitle: 'Silakan masukkan nomor telepon Anda untuk melanjutkan',
       tabPassword: 'Kata Sandi',
       tabPhone: 'Telepon',
       accountLabel: 'Email atau Nama Pengguna',
