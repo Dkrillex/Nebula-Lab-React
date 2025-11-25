@@ -108,7 +108,7 @@ const RankPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch('/api/rank', {
+        const response = await fetch(`ph-api/rank`, {
           method: 'GET',
           headers: {
             'x-api-key': 'aa_mKpAYvFzbkXVycTHshPUgTxbVKfQqqlu',
