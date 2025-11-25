@@ -374,6 +374,28 @@ export interface CustomVoice {
   assetType: number;
 }
 
+// ==================== 自定义数字人 API ====================
+
+export interface SubmitCustomAvatarParams {
+  avatarName?: string;
+  noticeUrl?: string;
+  videoFileId: string;
+  score: string;
+}
+
+export interface CustomAvatarTaskResult {
+  taskId: string;
+  status: string;
+  errorMsg?: string;
+  errorMessage?: string;
+  aiAvatar?: {
+    aiavatarId: string;
+    aiavatarName: string;
+    previewVideoUrl: string;
+    coverUrl: string;
+  };
+}
+
 // ==================== API Service ====================
 
 export const avatarService = {
@@ -616,5 +638,26 @@ export const avatarService = {
    */
   deductPoints: (data: { deductPoints: number; systemId: number; userId: number | string | undefined }) => {
     return request.post<ApiResponse<any>>('/tp/v1/deductPoints', data);
+  },
+
+  /**
+   * 提交自定义数字人任务
+   * Endpoint: POST /tp/v1/CommonV2ISubmit
+   */
+  submitCustomAvatarTask: (data: SubmitCustomAvatarParams) => {
+    return request.post<TopViewResult<{ taskId: string }>>('/tp/v1/CommonV2ISubmit', data);
+  },
+
+  /**
+   * 查询自定义数字人任务
+   * Endpoint: GET /tp/v1/CommonV2IQuery
+   */
+  queryCustomAvatarTask: (taskId: string) => {
+    return request.get<TopViewResult<CustomAvatarTaskResult>>('/tp/v1/CommonV2IQuery', {
+      params: {
+        taskId,
+        needCloudFrontUrl: true,
+      },
+    });
   },
 };
