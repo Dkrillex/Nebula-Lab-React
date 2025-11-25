@@ -181,11 +181,11 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   const toggleKeyVisibility = (tokenId: string | number) => {
     setMaskKeyFlags(prev => ({
       ...prev,
-      [tokenId]: !(prev[tokenId] ?? false), // 如果未定义，默认为 false（隐藏），然后取反变成 true（显示）
+      [tokenId]: !(prev[tokenId] ?? false),
     }));
   };
 
-  // 获取密钥显示状态（true表示显示，false表示隐藏，默认false即隐藏）
+  // 获取密钥显示状态
   const getKeyVisibility = (tokenId: string | number) => {
     return maskKeyFlags[tokenId] ?? false;
   };
@@ -198,12 +198,11 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
     return `${key.slice(0, 2)}${'*'.repeat(len - 4)}${key.slice(-2)}`;
   };
 
-  // 格式化额度显示（参考旧项目）
+  // 格式化额度显示
   const formatQuota = (token: TokenVO) => {
     if (token.unlimitedQuota === 1) {
       return '无限';
     }
-    // 旧项目中的转换公式：(remainQuota * 7.3) / 500000
     const totalQuota = ((token.remainQuota + token.usedQuota) * 7.3) / 500000;
     return `￥${totalQuota.toFixed(2)}`;
   };
@@ -231,7 +230,6 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
       return '永不过期';
     }
     
-    // 处理字符串类型
     if (typeof expiredTime === 'string') {
       const timestamp = new Date(expiredTime).getTime();
       const now = Date.now();
@@ -250,7 +248,6 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
       }).replace(/\//g, '-');
     }
     
-    // 处理数字类型
     if (typeof expiredTime === 'number') {
       if (expiredTime === -1) {
         return '永不过期';
@@ -259,7 +256,6 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
         return '已过期';
       }
       
-      // 处理时间戳（可能是秒或毫秒）
       const timestamp = expiredTime > 1000000000000 
         ? expiredTime 
         : expiredTime * 1000;
@@ -284,26 +280,6 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
     return '永不过期';
   };
 
-  // 获取卡片渐变样式（参考 Nebula1）
-  const getRibbonStyle = (token: TokenVO) => {
-    const ribbonGradients = [
-      'linear-gradient(135deg, #2d3748 0%, #1a202c 100%)',
-    ];
-    const apiKey = String(token?.id ?? token?.name ?? '');
-    const hashStringToInt = (input: string): number => {
-      let hash = 0;
-      for (let i = 0; i < input.length; i += 1) {
-        hash = (hash << 5) - hash + input.charCodeAt(i);
-        hash = Math.trunc(hash);
-      }
-      return Math.abs(hash);
-    };
-    const index = apiKey
-      ? hashStringToInt(apiKey) % ribbonGradients.length
-      : Math.floor(Math.random() * ribbonGradients.length);
-    return { background: ribbonGradients[index] };
-  };
-
   const handlePageChange = (newPage: number) => {
     fetchTokens(newPage);
   };
@@ -317,96 +293,30 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   }
 
   return (
-    <div className="llm-model-page" style={{ 
-      padding: '24px', 
-      background: '#fff', 
-      minHeight: 'calc(100vh - 67px)',
-      boxSizing: 'border-box'
-    }}>
-      <div className="main-content" style={{ 
-        maxWidth: '1600px', 
-        margin: '0 auto',
-        display: 'flex',
-        flexDirection: 'column',
-        boxSizing: 'border-box'
-      }}>
+    <div className="p-6 bg-white dark:bg-gray-900 min-h-[calc(100vh-67px)] box-border">
+      <div className="max-w-[1600px] mx-auto flex flex-col box-border">
         {/* 工具栏 */}
-        <div className="toolbar" style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '16px',
-          gap: '12px',
-          flexWrap: 'wrap'
-        }}>
-          <div className="toolbar-left" style={{ 
-            flex: 1,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
-          }}>
-            <h1 style={{
-              fontSize: '24px',
-              fontWeight: 700,
-              color: '#1f2937',
-              margin: 0
-            }}>
+        <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
+          <div className="flex-1 flex flex-col gap-2">
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 m-0">
               API 令牌管理
             </h1>
-            <p style={{
-              fontSize: '14px',
-              color: '#6b7280',
-              margin: 0
-            }}>
+            <p className="text-sm text-gray-500 dark:text-gray-400 m-0">
               管理您的 API 密钥以访问服务
             </p>
           </div>
-          <div className="toolbar-right" style={{ 
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            flexShrink: 0
-          }}>
+          <div className="flex items-center gap-3 flex-shrink-0">
             <button 
               onClick={() => fetchTokens()}
               disabled={loading}
-              style={{
-                padding: '8px 16px',
-                border: '1px solid #e5e7eb',
-                borderRadius: '6px',
-                background: 'white',
-                color: '#374151',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: loading ? 'not-allowed' : 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap',
-                opacity: loading ? 0.6 : 1
-              }}
+              className={`px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
               刷新
             </button>
             <button 
               onClick={handleCreate}
-              style={{
-                padding: '8px 16px',
-                border: 'none',
-                borderRadius: '6px',
-                background: '#000',
-                color: 'white',
-                fontSize: '14px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                whiteSpace: 'nowrap'
-              }}
+              className="px-4 py-2 border-none rounded-md bg-black dark:bg-white text-white dark:text-black text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2 whitespace-nowrap hover:opacity-80"
             >
               <Plus size={16} />
                新建 API 密钥
@@ -415,97 +325,35 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
         </div>
 
         {/* 表格容器 */}
-        <div style={{
-          background: 'white',
-          borderRadius: '8px',
-          border: '1px solid #e5e7eb',
-          overflow: 'hidden'
-        }}>
+        <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
           {loading && tokens.length === 0 ? (
-            <div style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: '4rem 2rem',
-              minHeight: '400px'
-            }}>
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
-                <RefreshCw className="animate-spin" size={24} style={{ color: '#64748b' }} />
-                <span style={{ color: '#64748b' }}>加载中...</span>
+            <div className="flex justify-center items-center py-16 px-8 min-h-[400px]">
+              <div className="flex flex-col items-center gap-2">
+                <RefreshCw className="animate-spin text-slate-500 dark:text-slate-400" size={24} />
+                <span className="text-slate-500 dark:text-slate-400">加载中...</span>
               </div>
             </div>
           ) : tokens.length === 0 ? (
-            <div className="empty-state" style={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '4rem 2rem',
-              color: '#64748b',
-              textAlign: 'center',
-              minHeight: '400px'
-            }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem', opacity: 0.5 }}>🔑</div>
-              <div style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>暂无令牌</div>
-              <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>
+            <div className="flex flex-col items-center justify-center py-16 px-8 text-slate-500 dark:text-slate-400 text-center min-h-[400px]">
+              <div className="text-6xl mb-4 opacity-50">🔑</div>
+              <div className="text-xl font-semibold mb-2">暂无令牌</div>
+              <div className="text-sm opacity-80">
                 点击上方"新建 API 密钥"按钮创建您的第一个令牌
               </div>
             </div>
           ) : (
             <>
               {/* 表格 */}
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse'
-                }}>
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
                   <thead>
-                    <tr style={{
-                      background: '#f9fafb',
-                      borderBottom: '1px solid #e5e7eb'
-                    }}>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>名称</th>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>API Key</th>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>状态</th>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>额度使用</th>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>过期时间</th>
-                      <th style={{
-                        padding: '12px 16px',
-                        textAlign: 'left',
-                        fontSize: '14px',
-                        fontWeight: 600,
-                        color: '#374151'
-                      }}>操作</th>
+                    <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">名称</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">API Key</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">状态</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">额度使用</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">过期时间</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">操作</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -519,75 +367,25 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                       return (
                         <tr 
                           key={token.id}
-                          style={{
-                            borderBottom: index < tokens.length - 1 ? '1px solid #e5e7eb' : 'none',
-                            transition: 'background-color 0.2s ease'
-                          }}
-                          onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb';
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'transparent';
-                          }}
+                          className={`transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${index < tokens.length - 1 ? 'border-b border-gray-200 dark:border-gray-700' : ''}`}
                         >
                           {/* 名称 */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px',
-                            color: '#1f2937'
-                          }}>
+                          <td className="px-4 py-4 text-sm text-gray-800 dark:text-gray-200">
                             {token.name || token.id}
                           </td>
                           {/* API Key */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px'
-                          }}>
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}>
-                              <span style={{
-                                fontFamily: 'monospace',
-                                fontSize: '13px',
-                                color: '#374151',
-                                wordBreak: 'break-all'
-                              }}>
+                          <td className="px-4 py-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[13px] text-gray-700 dark:text-gray-300 break-all">
                                 {displayKey}
                               </span>
-                              <div style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                                flexShrink: 0
-                              }}>
+                              <div className="flex items-center gap-1 flex-shrink-0">
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     toggleKeyVisibility(token.id);
                                   }}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '28px',
-                                    height: '28px',
-                                    borderRadius: '4px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: '#6b7280',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                    e.currentTarget.style.color = '#1f2937';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#6b7280';
-                                  }}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
                                   title={isKeyVisible ? '隐藏密钥' : '显示密钥'}
                                 >
                                   {isKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -597,27 +395,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                     e.stopPropagation();
                                     copyKey(token.key);
                                   }}
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '28px',
-                                    height: '28px',
-                                    borderRadius: '4px',
-                                    background: 'transparent',
-                                    border: 'none',
-                                    cursor: 'pointer',
-                                    color: '#6b7280',
-                                    transition: 'all 0.2s ease'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                    e.currentTarget.style.color = '#1f2937';
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#6b7280';
-                                  }}
+                                  className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
                                   title="复制密钥"
                                 >
                                   <Copy size={16} />
@@ -626,88 +404,34 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                             </div>
                           </td>
                           {/* 状态 */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px'
-                          }}>
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '6px'
-                            }}>
-                              <div style={{
-                                width: '8px',
-                                height: '8px',
-                                borderRadius: '50%',
-                                background: isActive ? '#10b981' : '#6b7280'
-                              }}></div>
-                              <span style={{
-                                color: isActive ? '#10b981' : '#6b7280',
-                                fontWeight: 500
-                              }}>
+                          <td className="px-4 py-4 text-sm">
+                            <div className="flex items-center gap-1.5">
+                              <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-gray-400 dark:bg-gray-500'}`}></div>
+                              <span className={`font-medium ${isActive ? 'text-emerald-500' : 'text-gray-500 dark:text-gray-400'}`}>
                                 {isActive ? '启用' : '禁用'}
                               </span>
                             </div>
                           </td>
                           {/* 额度使用 */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px',
-                            color: '#374151'
-                          }}>
-                            <div style={{
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '4px'
-                            }}>
+                          <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">
+                            <div className="flex flex-col gap-1">
                               <span>已用: {formatUsedQuota(token)}</span>
                               <span>剩余: {token.unlimitedQuota === 1 ? '无限' : formatRemainingQuota(token)}</span>
                             </div>
                           </td>
                           {/* 过期时间 */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px',
-                            color: '#374151'
-                          }}>
+                          <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">
                             {formatExpiration(token)}
                           </td>
                           {/* 操作 */}
-                          <td style={{
-                            padding: '16px',
-                            fontSize: '14px'
-                          }}>
-                            <div style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '8px'
-                            }}>
+                          <td className="px-4 py-4 text-sm">
+                            <div className="flex items-center gap-2">
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   handleEdit(token);
                                 }}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '4px',
-                                  background: 'transparent',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#6b7280',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#eff6ff';
-                                  e.currentTarget.style.color = '#3b82f6';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                  e.currentTarget.style.color = '#6b7280';
-                                }}
+                                className="inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-500"
                                 title="编辑"
                               >
                                 <Edit2 size={16} />
@@ -718,32 +442,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                   toggleStatus(token);
                                 }}
                                 disabled={toggleStatusLoading === token.id}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '4px',
-                                  background: 'transparent',
-                                  border: 'none',
-                                  cursor: toggleStatusLoading === token.id ? 'not-allowed' : 'pointer',
-                                  color: '#6b7280',
-                                  transition: 'all 0.2s ease',
-                                  opacity: toggleStatusLoading === token.id ? 0.5 : 1
-                                }}
-                                onMouseEnter={(e) => {
-                                  if (toggleStatusLoading !== token.id) {
-                                    e.currentTarget.style.backgroundColor = '#f3f4f6';
-                                    e.currentTarget.style.color = '#1f2937';
-                                  }
-                                }}
-                                onMouseLeave={(e) => {
-                                  if (toggleStatusLoading !== token.id) {
-                                    e.currentTarget.style.backgroundColor = 'transparent';
-                                    e.currentTarget.style.color = '#6b7280';
-                                  }
-                                }}
+                                className={`inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 ${toggleStatusLoading === token.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                                 title={isActive ? '禁用' : '启用'}
                               >
                                 {toggleStatusLoading === token.id ? (
@@ -759,27 +458,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                   e.stopPropagation();
                                   deleteKey(token);
                                 }}
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  width: '32px',
-                                  height: '32px',
-                                  borderRadius: '4px',
-                                  background: 'transparent',
-                                  border: 'none',
-                                  cursor: 'pointer',
-                                  color: '#6b7280',
-                                  transition: 'all 0.2s ease'
-                                }}
-                                onMouseEnter={(e) => {
-                                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                                  e.currentTarget.style.color = '#ef4444';
-                                }}
-                                onMouseLeave={(e) => {
-                                  e.currentTarget.style.backgroundColor = 'transparent';
-                                  e.currentTarget.style.color = '#6b7280';
-                                }}
+                                className="inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500"
                                 title="删除"
                               >
                                 <Trash2 size={16} />
@@ -795,88 +474,12 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
 
               {/* 分页底部 */}
               {!loading && pagination.total > 0 && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '16px',
-                  borderTop: '1px solid #e5e7eb',
-                  background: '#f9fafb'
-                }}>
-                  <div style={{
-                    fontSize: '14px',
-                    color: '#6b7280'
-                  }}>
+                <div className="flex justify-between items-center px-4 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
                     共 {pagination.total} 条记录
                   </div>
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px'
-                  }}>
-                    {/* <button
-                      onClick={() => handlePageChange(pagination.current - 1)}
-                      disabled={pagination.current === 1}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #e5e7eb',
-                        background: 'white',
-                        color: '#374151',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: pagination.current === 1 ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        opacity: pagination.current === 1 ? 0.5 : 1
-                      }}
-                      onMouseEnter={(e) => {
-                        if (pagination.current > 1) {
-                          e.currentTarget.style.background = '#f9fafb';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (pagination.current > 1) {
-                          e.currentTarget.style.background = 'white';
-                        }
-                      }}
-                    >
-                      上一页
-                    </button>
-                    <span style={{
-                      fontSize: '14px',
-                      color: '#374151',
-                      padding: '0 12px'
-                    }}>
-                      {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
-                    </span>
-                    <button
-                      onClick={() => handlePageChange(pagination.current + 1)}
-                      disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                      style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #e5e7eb',
-                        background: 'white',
-                        color: '#374151',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 'not-allowed' : 'pointer',
-                        transition: 'all 0.2s ease',
-                        opacity: pagination.current >= Math.ceil(pagination.total / pagination.pageSize) ? 0.5 : 1
-                      }}
-                      onMouseEnter={(e) => {
-                        if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                          e.currentTarget.style.background = '#f9fafb';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (pagination.current < Math.ceil(pagination.total / pagination.pageSize)) {
-                          e.currentTarget.style.background = 'white';
-                        }
-                      }}
-                    >
-                      下一页
-                    </button> */}
+                  <div className="flex items-center gap-2">
+                    {/* 分页按钮（已注释） */}
                   </div>
                 </div>
               )}

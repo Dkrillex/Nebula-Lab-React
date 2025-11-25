@@ -553,7 +553,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {isViewMode && token && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">已用额度</label>
-                <div className="text-gray-700 font-semibold">
+                <div className="text-gray-700 dark:text-gray-300 font-semibold">
                   ￥{((token.usedQuota || 0) * 7.3 / 500000).toFixed(2)}
                 </div>
               </div>
@@ -563,7 +563,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {isViewMode && token && token.unlimitedQuota === 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">剩余额度</label>
-                <div className="text-gray-700 font-semibold">
+                <div className="text-gray-700 dark:text-gray-300 font-semibold">
                   ￥{((token.remainQuota || 0) * 7.3 / 500000).toFixed(2)}
                 </div>
               </div>
@@ -624,14 +624,14 @@ const TokenForm: React.FC<TokenFormProps> = ({
             <button
               onClick={handleSubmit}
               disabled={loading}
-              className="px-6 py-2 bg-gray-800 hover:bg-gray-900 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-gray-800 dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-100 text-white dark:text-black rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? '保存中...' : '保存'}
             </button>
           )}
           <button
             onClick={onClose}
-            className="px-6 py-2 border border-border rounded-lg hover:bg-surface transition-colors"
+            className="px-6 py-2 border border-border rounded-lg hover:bg-surface transition-colors text-foreground"
           >
             关闭
           </button>
