@@ -508,6 +508,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 处理视频容器点击
   const handleVideoContainerClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // 如果正在提交掩码绘制，禁用点击
+    if (isSubmittingMask) {
+      return;
+    }
+    
     // 如果点击的是标记点，不处理（由标记点自己的点击事件处理）
     if ((e.target as HTMLElement).closest('.mark-point')) {
       return;
@@ -559,7 +564,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       // 点击空白处取消选中
       setSelectedMarkId(null);
     }
-  }, [getVideoDisplayRect, findMarkAtPosition, isClickInInnerCircle, removeMark, addPointMark]);
+  }, [isSubmittingMask, getVideoDisplayRect, findMarkAtPosition, isClickInInnerCircle, removeMark, addPointMark, markingMode, selectedMarkId]);
 
   // 处理标记点鼠标移动
   const handleMarkPointMouseMove = useCallback((e: React.MouseEvent, mark: VideoMarker) => {
@@ -579,6 +584,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   }, []);
 
   // 清除所有标记和遮罩层（不提交）- 借鉴 Nebula1
+  // 注意：不清除预览结果（previewResult），因为确认按钮需要使用
   const clearAllMarksAndMasks = useCallback(async () => {
     // 清除所有标记修改区域和标记保护区域的坐标
     setMarkers([]);
@@ -589,11 +595,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     // 清除所有红色遮罩层和绿色遮罩层的遮罩数据
     setFrameMaskMap(new Map());
     
-    // 清除预览结果
-    setPreviewResult(null);
-    previewResultRef.current = null;
+    // 借鉴 Nebula1：不清除预览结果（previewResult 和 previewResultRef），因为确认按钮需要使用
+    // setPreviewResult(null);
+    // previewResultRef.current = null;
     
-    console.log('清除所有标记和遮罩数据');
+    console.log('清除所有标记和遮罩数据（保留预览结果）');
     
     // 更新遮罩层显示（清除遮罩）- 通过 updateMaskForCurrentFrame 来更新
     // 注意：这里不直接调用 renderMaskImages，而是通过 updateMaskForCurrentFrame
@@ -1061,7 +1067,6 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     setPreviewAllLoading(true);
     setPreviewAllDisabled(true);
     setDrawModalSpin(true);
-    setDrawModalSpin(true);
 
     try {
       // 按帧索引分组所有标记
@@ -1149,13 +1154,18 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               taskId: queryResult.result.taskId,
               trackingVideoPath: trackingVideoPath,
             };
+            console.log('预览成功：保存预览结果到 state 和 ref:', result);
             setPreviewResult(result);
             previewResultRef.current = result;
+            console.log('预览成功：previewResultRef.current =', previewResultRef.current);
 
             // 借鉴 Nebula1：如果 shouldEmitSuccess 为 true，触发子传父事件
             // emit('videoMaskSuccess', { taskId, trackingVideoPath })
             if (shouldEmitSuccess && onVideoMaskSuccess) {
+              console.log('预览成功：触发子传父事件 onVideoMaskSuccess');
               onVideoMaskSuccess(result);
+            } else {
+              console.log('预览成功：不触发子传父事件（shouldEmitSuccess =', shouldEmitSuccess, ', onVideoMaskSuccess =', !!onVideoMaskSuccess, ')');
             }
 
             // 清除所有标记和遮罩层
@@ -1191,20 +1201,23 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 确认提交（调用预览功能后关闭模态框）- 借鉴 Nebula1
   const handleConfirm = useCallback(async () => {
-    if (markers.length === 0) {
-      // 如果没有标记，直接关闭
-      onClose();
-      return;
-    }
-    
-    // 借鉴 Nebula1：如果已经有预览结果（trackingVideoPath 和 taskId），直接使用它们
-    if (previewResultRef.current) {
-      const result = previewResultRef.current;
-      console.log('使用已有的预览结果:', result);
+    // 借鉴 Nebula1：优先检查是否有预览结果（即使标记被清除了，预览结果仍然存在）
+    // 如果已经有预览结果（从 ref 或 state 中获取），直接使用它们并触发子传父事件
+    const existingResult = previewResultRef.current || previewResult;
+    if (existingResult) {
+      console.log('确认按钮：使用已有的预览结果:', existingResult);
+      console.log('确认按钮：taskId =', existingResult.taskId);
+      console.log('确认按钮：trackingVideoPath =', existingResult.trackingVideoPath);
       
-      // 触发成功回调
+      // 借鉴 Nebula1：触发子传父事件，传递 taskId 和 trackingVideoPath
       if (onVideoMaskSuccess) {
-        onVideoMaskSuccess(result);
+        console.log('确认按钮：触发子传父事件 onVideoMaskSuccess');
+        onVideoMaskSuccess({
+          taskId: existingResult.taskId,
+          trackingVideoPath: existingResult.trackingVideoPath,
+        });
+      } else {
+        console.warn('确认按钮：onVideoMaskSuccess 回调未定义');
       }
       
       // 关闭模态框
@@ -1212,12 +1225,22 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       return;
     }
     
-    // 如果没有预览结果，调用预览功能，传入 true 表示需要触发成功回调
+    // 借鉴 Nebula1：如果没有预览结果，检查是否有标记
+    // 如果没有标记也没有预览结果，直接关闭
+    if (markers.length === 0) {
+      console.log('确认按钮：没有标记也没有预览结果，直接关闭');
+      onClose();
+      return;
+    }
+    
+    // 借鉴 Nebula1：如果有标记但没有预览结果，调用预览功能并等待完成
+    // 传入 true 表示需要触发成功回调（子传父事件）
+    console.log('确认按钮：有标记但没有预览结果，开始执行预览功能');
     await handlePreviewAll(true);
     
-    // 关闭模态框
+    // 借鉴 Nebula1：预览完成后关闭模态框（handlePreviewAll 中已经触发了子传父事件）
     onClose();
-  }, [markers.length, handlePreviewAll, onClose, onVideoMaskSuccess]);
+  }, [markers.length, previewResult, handlePreviewAll, onClose, onVideoMaskSuccess]);
 
   if (!isOpen) {
     return null;
@@ -1227,8 +1250,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
       {/* 全屏加载遮罩 - 借鉴 Nebula1：只在预览任务进行时显示，不在视频加载时显示 */}
       {drawModalSpin && !isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-50">
-          <div className="text-white text-lg font-bold">正在生成绘制,请等待...</div>
+        <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-[1px]">
+          <div className="flex flex-col items-center justify-center bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
+            <span className="text-sm font-medium text-white">正在生成绘制,请等待...</span>
+          </div>
         </div>
       )}
       <div className="bg-[#1a1a1a] rounded-lg shadow-2xl w-[90vw] max-w-[1200px] max-h-[90vh] overflow-hidden flex flex-col">
@@ -1261,11 +1287,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         </div>
 
         {/* 视频预览区域 */}
-        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden">
+        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           <div
             ref={videoContainerRef}
             className="relative w-full max-w-[400px] flex items-center justify-center"
-            style={{ height: '100%', maxHeight: '100%' }}
+            style={{ 
+              height: '600px',
+              aspectRatio: 'auto'
+            }}
             onClick={handleVideoContainerClick}
           >
             {isLoading && (
@@ -1273,11 +1302,22 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
                 <div className="text-white text-lg">加载视频中...</div>
               </div>
             )}
+            {isSubmittingMask && (
+              <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-30 rounded-lg backdrop-blur-[1px]">
+                <div className="flex flex-col items-center justify-center bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
+                  <span className="text-sm font-medium text-white">正在渲染绘制标记点，请稍等...</span>
+                </div>
+              </div>
+            )}
             <video
               ref={videoRef}
               src={currentVideoUrl}
-              className="w-full h-full max-h-full object-contain rounded-lg"
-              style={{ maxHeight: '100%' }}
+              className="w-full h-full max-w-full max-h-full object-contain rounded-lg"
+              style={{ 
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
               onLoadedMetadata={handleVideoLoaded}
               onTimeUpdate={handleTimeUpdate}
               onError={(e) => {
@@ -1334,6 +1374,10 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        // 如果正在提交掩码绘制，禁用点击
+                        if (isSubmittingMask) {
+                          return;
+                        }
                         // 借鉴 Nebula1：在标记模式下，点击标记点直接删除
                         if (markingMode) {
                           removeMark(mark.id);
@@ -1421,36 +1465,39 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         <div className="flex gap-3 px-6 py-4 bg-[#2a2a2a] border-b border-[#3a3a3a] flex-wrap">
           <button
             onClick={() => setMarkingMode('modify')}
+            disabled={isSubmittingMask}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
               markingMode === 'modify'
                 ? 'bg-[#ff4d4f] border border-[#ff4d4f] text-white'
                 : 'bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a]'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Send className="w-4.5 h-4.5" />
             <span>标记修改区域</span>
           </button>
           <button
             onClick={() => setMarkingMode('protect')}
+            disabled={isSubmittingMask}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-all ${
               markingMode === 'protect'
                 ? 'bg-[#52c41a] border border-[#52c41a] text-white'
                 : 'bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a]'
-            }`}
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Shield className="w-4.5 h-4.5" />
             <span>标记保护区域</span>
           </button>
           <button
             onClick={clearAllMarks}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a] transition-all"
+            disabled={isSubmittingMask}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-4.5 h-4.5" />
             <span>清除</span>
           </button>
           <button
             onClick={() => handlePreviewAll(false)}
-            disabled={previewAllLoading || previewAllDisabled || markers.length === 0 || !videoProcessTaskId}
+            disabled={previewAllLoading || previewAllDisabled || markers.length === 0 || !videoProcessTaskId || isSubmittingMask}
             className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {previewAllLoading ? (
@@ -1471,13 +1518,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         <div className="flex justify-center items-center px-6 py-4 bg-[#2a2a2a] border-t border-[#3a3a3a]">
           <button
             onClick={onClose}
-            className="px-8 py-2 bg-[#3a3a3a] text-white rounded-md text-sm font-medium hover:bg-[#4a4a4a] transition-all mx-4"
+            disabled={isSubmittingMask}
+            className="px-8 py-2 bg-[#3a3a3a] text-white rounded-md text-sm font-medium hover:bg-[#4a4a4a] transition-all mx-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             取消
           </button>
           <button
             onClick={handleConfirm}
-            disabled={previewAllLoading || previewAllDisabled || !videoProcessTaskId}
+            disabled={previewAllLoading || previewAllDisabled || !videoProcessTaskId || isSubmittingMask}
             className="px-8 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-md text-sm font-medium hover:from-[#5a67d8] hover:to-[#6b46c1] hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
             {previewAllLoading ? '处理中...' : '确认'}
