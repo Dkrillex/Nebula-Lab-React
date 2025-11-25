@@ -136,15 +136,24 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
         if (isCustomAvatar) {
            // 处理 adsAssetsList 返回结构
            const rows = (res as any).rows || (res as any).result?.rows || (res.data as any)?.rows || [];
-           avatarData = rows.map((item: any) => ({
-             ...item,
-             aiavatarId: item.aiAvatarId,
-             aiavatarName: item.assetName,
-             coverUrl: item.assetUrl, // 使用 assetUrl 作为封面
-             thumbnailUrl: item.assetUrl,
-             previewVideoUrl: item.assetUrl, // 使用 assetUrl 作为预览视频
-             gender: 'unknown' // 个人素材可能没有性别字段
-           }));
+           avatarData = rows.map((item: any, index: number) => {
+             const fallbackId =
+               item.aiAvatarId ||
+               item.aiavatarId ||
+               item.assetId ||
+               item.assetCode ||
+               item.id ||
+               `custom-${item.assetType || 'asset'}-${item.assetId || index}`;
+             return {
+               ...item,
+               aiavatarId: String(fallbackId),
+               aiavatarName: item.assetName || item.aiavatarName || `自定义素材${index + 1}`,
+               coverUrl: item.assetUrl, // 使用 assetUrl 作为封面
+               thumbnailUrl: item.assetUrl,
+               previewVideoUrl: item.assetUrl, // 使用 assetUrl 作为预览视频
+               gender: item.gender || 'unknown', // 个人素材可能没有性别字段
+             };
+           });
            total = (res as any).total || (res as any).result?.total || (res.data as any)?.total || 0;
         } else {
           // 处理 getAiAvatarList 返回结构
@@ -317,9 +326,20 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
           onCustomChange={(isCustom) => {
             setIsCustomAvatar(isCustom);
             setAvatarPagination(prev => ({ ...prev, current: 1 }));
+            setVideoPreviewStates({});
           }}
           onVideoPreview={(avatarId, preview) => {
-            setVideoPreviewStates(prev => ({ ...prev, [avatarId]: preview }));
+            setVideoPreviewStates(prev => {
+              if (preview) {
+                return { [avatarId]: true };
+              }
+              if (!prev[avatarId]) {
+                return prev;
+              }
+              const next = { ...prev };
+              delete next[avatarId];
+              return next;
+            });
           }}
           previewStates={videoPreviewStates}
         />
@@ -361,23 +381,25 @@ const AvatarModal: React.FC<{
   onVideoPreview,
   previewStates,
 }) => {
-  // 使用 useRef 来存储当前的定时器 ID
-  const hoverTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
+  // 使用 useRef 存储每个卡片的定时器，避免互相影响
+  const hoverTimeoutMapRef = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // 处理鼠标移入：添加延时，避免快速划过时触发大量视频加载
   const handleMouseEnter = (avatarId: string) => {
-    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
-    
-    hoverTimeoutRef.current = setTimeout(() => {
+    const existingTimeout = hoverTimeoutMapRef.current[avatarId];
+    if (existingTimeout) clearTimeout(existingTimeout);
+
+    hoverTimeoutMapRef.current[avatarId] = setTimeout(() => {
       onVideoPreview(avatarId, true);
     }, 600); // 600ms 延迟
   };
 
   // 处理鼠标移出：立即清除定时器并停止播放
   const handleMouseLeave = (avatarId: string) => {
-    if (hoverTimeoutRef.current) {
-      clearTimeout(hoverTimeoutRef.current);
-      hoverTimeoutRef.current = null;
+    const timeout = hoverTimeoutMapRef.current[avatarId];
+    if (timeout) {
+      clearTimeout(timeout);
+      delete hoverTimeoutMapRef.current[avatarId];
     }
     onVideoPreview(avatarId, false);
   };
@@ -385,7 +407,8 @@ const AvatarModal: React.FC<{
   // 组件卸载时清理定时器
   useEffect(() => {
     return () => {
-      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      Object.values(hoverTimeoutMapRef.current).forEach(timeout => clearTimeout(timeout as ReturnType<typeof setTimeout>));
+      hoverTimeoutMapRef.current = {} as Record<string, ReturnType<typeof setTimeout>>;
     };
   }, []);
 
