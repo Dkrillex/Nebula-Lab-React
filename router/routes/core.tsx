@@ -23,7 +23,7 @@ export const coreRoutes: AppRouteObject[] = [
         index: true,
         element: <Home />, // 需要在 RouterProvider 中配合 Suspense
         meta: {
-          title: 'Home',
+          title: 'createHome',
           requiresAuth: false,
           keepAlive: false // 首页通常不需要缓存
         }

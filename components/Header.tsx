@@ -80,7 +80,7 @@ const Header: React.FC<HeaderProps> = ({
   // Determine active menu item based on URL (same logic as Sidebar)
   const getTabLabel = (tab: TabItem) => {
     if (!sideMenuMap) return tab.view;
-    if (tab.view === 'home') return sideMenuMap.home;
+    if (tab.view === 'home') return sideMenuMap.createHome;
     if (tab.view === 'create') {
       if (tab.activeTool) {
         // 首先尝试从 TOOLS_DATA 中获取 title
