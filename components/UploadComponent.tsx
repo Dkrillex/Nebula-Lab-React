@@ -54,8 +54,6 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onClear,
   disabled = false
 }, ref) => {
-  console.log(accept);
-  
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
   const [uploading, setUploading] = useState(false);
@@ -111,11 +109,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     }
 
     if (immediate) {
-      await uploadFile(selectedFile);
+      await uploadFile(selectedFile, objectUrl);
     }
   };
 
-  const uploadFile = async (fileToUpload: File) => {
+  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string) => {
     console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
     try {
@@ -183,7 +181,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         uploadedFile = {
             fileId: fileId,
             fileName: fileName,
-            fileUrl: previewUrl || uploadUrl, // Use local preview URL initially or constructed public URL if known
+            fileUrl: localPreviewUrl || previewUrl || uploadUrl, // Use local preview URL first, then state previewUrl, then constructed public URL
             format: format
         };
       }

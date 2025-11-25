@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic, FolderPlus, Video, Pencil } from 'lucide-react';
 import { styleTransferService, AnyShootTaskResult, Template } from '../../../services/styleTransferService';
 import { uploadService } from '../../../services/uploadService';
 import { avatarService } from '../../../services/avatarService';
@@ -10,6 +11,7 @@ import ProductCanvas from './ProductCanvas';
 import MaskCanvas, { MaskCanvasRef, ToolType, TextOptions } from './MaskCanvas';
 import UploadComponent from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import toast from 'react-hot-toast';
 
 interface StyleTransferPageProps {
@@ -73,6 +75,8 @@ interface GeneratedImage {
 }
 
 const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
+  const navigate = useNavigate();
+  const { setData } = useVideoGenerationStore();
   const [selectedMode, setSelectedMode] = useState<'standard' | 'creative' | 'clothing'>('standard');
   const [clothingType, setClothingType] = useState<'top' | 'bottom' | 'full'>('top');
   const [prompt, setPrompt] = useState('');
@@ -928,6 +932,47 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       assetId: String(img.key).includes('_') ? undefined : String(img.key)
     });
     setShowAddMaterialModal(true);
+  };
+
+  // 图生视频跳转
+  const handleImageToVideo = (img: GeneratedImage) => {
+    const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+    setData(transferId, {
+      images: [img.url],
+      sourcePrompt: prompt,
+      timestamp: Date.now(),
+      source: 'styleTransfer'
+    });
+    navigate(`/create/imgToVideo?transferId=${transferId}`);
+  };
+
+  // 继续编辑 - 将生成结果设置为产品图继续编辑
+  const handleContinueEdit = async (img: GeneratedImage) => {
+    try {
+      // 下载图片并创建本地文件
+      const response = await fetch(img.url);
+      const blob = await response.blob();
+      const file = new File([blob], `edited-${Date.now()}.png`, { type: 'image/png' });
+      
+      // 创建本地预览URL
+      const blobUrl = URL.createObjectURL(blob);
+      const imgData: UploadedImage = {
+        fileName: file.name,
+        fileUrl: blobUrl,
+        file: file
+      };
+      
+      // 设置为产品图片，准备继续编辑
+      setProductImage(imgData);
+      
+      // 清空生成结果
+      setGeneratedImages([]);
+      
+      toast.success('已载入图片，可继续编辑');
+    } catch (error) {
+      console.error('Failed to load image for editing:', error);
+      toast.error('载入图片失败');
+    }
   };
 
   const renderUploadBox = (
@@ -1861,16 +1906,30 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                          target="_blank"
                          rel="noopener noreferrer"
                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
-                         title="Download"
+                         title="下载"
                        >
                          <Download size={20} />
                        </a>
                        <button
                          onClick={() => handleSaveToAssets(img)}
                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
-                         title="Save to Assets"
+                         title="添加素材"
                        >
-                         <Upload size={20} className="rotate-90" /> {/* Using Upload icon rotated as 'Save/Import' metaphor if Save icon not available or just reuse Upload */}
+                         <FolderPlus size={20} />
+                       </button>
+                       <button
+                         onClick={() => handleImageToVideo(img)}
+                         className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                         title="图生视频"
+                       >
+                         <Video size={20} />
+                       </button>
+                       <button
+                         onClick={() => handleContinueEdit(img)}
+                         className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                         title="继续编辑"
+                       >
+                         <Pencil size={20} />
                        </button>
                      </div>
                    </div>

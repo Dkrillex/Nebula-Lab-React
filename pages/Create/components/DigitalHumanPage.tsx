@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { PenTool, Mic, X, Check, Loader, Play, AlertCircle, Palette } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
@@ -6,6 +6,7 @@ import { useAuthStore } from '../../../stores/authStore';
 import DigitalHumanVideo from './DigitalHumanVideo';
 import DigitalHumanProduct from './DigitalHumanProduct';
 import DigitalHumanSinging from './DigitalHumanSinging';
+import toast from 'react-hot-toast';
 
 interface DigitalHumanPageProps {
   t: {
@@ -69,14 +70,41 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
   });
   const [videoPreviewStates, setVideoPreviewStates] = useState<Record<string, boolean>>({});
   
+  // AbortController ref for canceling previous requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+  
   // Load Avatars when modal opens
   useEffect(() => {
     if (showAvatarModal) {
       loadAvatarList();
     }
+    
+    // Cleanup: cancel request when component unmounts or dependencies change
+    return () => {
+      if (abortControllerRef.current) {
+        // Cleanup cancellation is silent (no toast)
+        abortControllerRef.current.abort();
+        abortControllerRef.current = null;
+      }
+    };
   }, [showAvatarModal, avatarPagination.current, avatarPagination.pageSize, avatarPagination.gender, isCustomAvatar]);
   
-  const loadAvatarList = async () => {
+  const loadAvatarList = async (showCancelToast: boolean = false) => {
+    // Cancel previous request if exists
+    if (abortControllerRef.current) {
+      // Show toast immediately if requested (this is an active cancellation)
+      if (showCancelToast) {
+        toast.error('请求已取消');
+      }
+      // 直接 abort，request.ts 会根据是否有 externalSignal 来判断是主动取消还是超时
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     try {
       setAvatarLoading(true);
       setAvatarList([]);
@@ -90,7 +118,7 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
           pageSize: avatarPagination.pageSize,
           assetTypeList: '3,9',
           isPrivateModel: '1',
-        });
+        }, { signal: abortController.signal });
       } else {
         // 公共模板参数：gender, isCustom
         res = await avatarService.getAiAvatarList({ 
@@ -98,10 +126,9 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
           pageSize: avatarPagination.pageSize,
           gender: avatarPagination.gender,
           isCustom: isCustomAvatar, // false
-        });
+        }, { signal: abortController.signal });
       }
-      
-      if (res.code === '200' || res.code === 200) {
+      if (res.code === '200' || res.rows && res.rows.length > 0) {
         let avatarData: AiAvatar[] = [];
         let total = 0;
         
@@ -136,10 +163,14 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
         setAvatarList(avatarData || []);
         setAvatarPagination(prev => ({ ...prev, total }));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to load avatars:', error);
     } finally {
-      setAvatarLoading(false);
+      // Only clear loading state if this request wasn't cancelled
+      if (abortControllerRef.current === abortController) {
+        setAvatarLoading(false);
+        abortControllerRef.current = null;
+      }
     }
   };
   
