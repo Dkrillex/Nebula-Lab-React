@@ -6,6 +6,7 @@ interface Translation {
     signIn: string;
     nav: NavItem[];
     profile: string; // Add this
+    expenses: string;
     notifications: string;
   };
   hero: {
@@ -112,6 +113,19 @@ interface Translation {
       talkingPhotoDesc: string;
     };
     tabs: string[];
+    templateTypes?: {
+      textToImage: string;
+      imageToImage: string;
+      textToVideo: string;
+      imageToVideo: string;
+    };
+    templateDetail?: {
+      makeSame: string;
+      likes: string;
+      originalImage: string;
+      noTemplates: string;
+      featureNotOpen: string;
+    };
     authModal?: {
       loginTitle: string;
       tabPassword: string;
@@ -259,8 +273,7 @@ interface Translation {
         label: string;
         emptyState: string;
       };
-      progressStatusFull: string;
-      progressStatusShort: string;
+      generating: string;
     };
     digitalHuman: {
       title: string;
@@ -761,6 +774,7 @@ export const translations: Record<string, Translation> = {
         { label: 'Personal Center', href: '/profile' },
       ],
       profile: 'Profile',
+      expenses: 'Expenses',
       notifications: 'Notifications',
     },
     hero: {
@@ -864,6 +878,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: 'Make photos talk'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
+      templateTypes: {
+        textToImage: 'Text to Image',
+        imageToImage: 'Image to Image',
+        textToVideo: 'Text to Video',
+        imageToVideo: 'Image to Video',
+      },
+      templateDetail: {
+        makeSame: 'Make Same',
+        likes: 'likes',
+        originalImage: 'Original:',
+        noTemplates: 'No templates found.',
+        featureNotOpen: 'This feature is not available yet',
+      },
       authModal: {
         loginTitle: 'Welcome Back',
         tabPassword: 'Password',
@@ -1011,8 +1038,7 @@ export const translations: Record<string, Translation> = {
           label: 'Generation Result',
           emptyState: 'Upload image and enter description text to start your AI video creation journey'
         },
-        progressStatusFull: 'Generating your masterpiece...',
-        progressStatusShort: 'Generating...'
+        generating: 'Generating your masterpiece...'
       },
       digitalHuman: {
         title: 'Digital Human Video Creation',
@@ -1562,6 +1588,7 @@ export const translations: Record<string, Translation> = {
         { label: '个人中心', href: '/profile' },
       ],
       profile: '个人中心',
+      expenses: '消费记录',
       notifications: '消息通知',
     },
     hero: {
@@ -1665,6 +1692,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: '让照片开口说话'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
+      templateTypes: {
+        textToImage: '文生图',
+        imageToImage: '图生图',
+        textToVideo: '文生视频',
+        imageToVideo: '图生视频',
+      },
+      templateDetail: {
+        makeSame: '做同款',
+        likes: '喜欢',
+        originalImage: '原图：',
+        noTemplates: '暂无模板数据',
+        featureNotOpen: '该功能暂未开放',
+      },
       authModal: {
         loginTitle: '欢迎回来',
         tabPassword: '密码登录',
@@ -1812,8 +1852,7 @@ export const translations: Record<string, Translation> = {
           label: '生成结果',
           emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'
         },
-        progressStatusFull: '正在为您生成杰作...',
-        progressStatusShort: '生成中...'
+        generating: '正在生成您的杰作...'
       },
       digitalHuman: {
         title: '数字人视频创作',
@@ -2396,6 +2435,7 @@ export const translations: Record<string, Translation> = {
         { label: 'Pusat Pribadi', href: '/profile' },
       ],
       profile: 'Profil',
+      expenses: 'Pengeluaran',
       notifications: 'Notifikasi',
     },
     hero: {
@@ -2499,6 +2539,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: 'Buat foto berbicara'
       },
       tabs: ['Semua', 'Karakter', 'Hewan', 'Anime', 'Kreatif', 'Makanan', 'Pemandangan', 'Produk'],
+      templateTypes: {
+        textToImage: 'Teks ke Gambar',
+        imageToImage: 'Gambar ke Gambar',
+        textToVideo: 'Teks ke Video',
+        imageToVideo: 'Gambar ke Video',
+      },
+      templateDetail: {
+        makeSame: 'Buat Sama',
+        likes: 'suka',
+        originalImage: 'Asli:',
+        noTemplates: 'Tidak ada template ditemukan.',
+        featureNotOpen: 'Fitur ini belum tersedia',
+      },
       authModal: {
         loginTitle: 'Selamat Datang Kembali',
         tabPassword: 'Kata Sandi',
@@ -2646,8 +2699,7 @@ export const translations: Record<string, Translation> = {
           label: 'Hasil Pembuatan',
           emptyState: 'Unggah gambar dan masukkan teks deskripsi untuk memulai perjalanan pembuatan video AI Anda'
         },
-        progressStatusFull: 'Sedang membuat karya Anda... {progress}%',
-        progressStatusShort: 'Sedang membuat... {progress}%'
+        generating: 'Membuat karya agung Anda...'
       },
       digitalHuman: {
         title: 'Pembuatan Video Manusia Digital',

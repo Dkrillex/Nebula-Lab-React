@@ -67,9 +67,7 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
     // Use toast.custom to create a modal-like appearance
     toast.custom((t) => (
       <div
-        className={`${
-          t.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
       >
         <div className="flex-1 w-0 p-4">
           <div className="flex items-start">
@@ -138,9 +136,7 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
     // Use toast.custom to create a modal-like appearance
     toast.custom((t) => (
       <div
-        className={`${
-          t.visible ? 'animate-enter' : 'animate-leave'
-        } max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
       >
         <div className="flex-1 w-0 p-4">
           <div className="flex items-start">
@@ -478,6 +474,7 @@ function createRequestClient(
           showErrorMessage(authErrorMsg, errorMessageMode);
         }
         
+        // 防止多个请求同时触发登出流程
         if (!isLogoutProcessing) {
           // isLogoutProcessing = true;
           // const userStore = useAuthStore.getState();
@@ -492,7 +489,26 @@ function createRequestClient(
           // setTimeout(() => {
           //   isLogoutProcessing = false;
           // }, 1000);
+          isLogoutProcessing = true;
+          
+          // 清除认证状态
+          const userStore = useAuthStore.getState();
+          
+          // 清除 localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+          
+          // 重置 store 状态
+          userStore.setUserInfo(null);
+          
+          // 延迟重定向，让用户看到错误提示
+          setTimeout(() => {
+            isLogoutProcessing = false;
+            // 跳转到首页，会自动触发登录弹窗
+            window.location.href = '/';
+          }, 1500);
         }
+        
         throw new ApiError(authErrorMsg, 401);
       }
 

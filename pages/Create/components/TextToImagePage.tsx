@@ -371,8 +371,8 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       source: 'imageGenerates'
     });
 
-    // Navigate to Digital Human tool (Talking Photo)
-    navigate(`/create?tool=digitalHuman&transferId=${transferId}`);
+    // Navigate to Image to Video page
+    navigate(`/create/imgToVideo?transferId=${transferId}`);
   };
 
   return (
@@ -569,7 +569,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
               {isGenerating && progress > 0 ? (
                 <div className="flex flex-col items-center gap-4 z-10">
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                   <p className="text-indigo-600 font-medium">Generating your masterpiece... {progress}%</p>
+                   <p className="text-indigo-600 font-medium">{t.tips?.generating || 'Generating your masterpiece...'} {progress}%</p>
                 </div>
               ) : previewImage ? (
                 <div className="relative w-full h-full flex items-center justify-center p-4 group">

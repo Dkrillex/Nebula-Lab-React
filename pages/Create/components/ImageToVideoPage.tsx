@@ -80,8 +80,7 @@ interface ImageToVideoPageProps {
       label: string;
       emptyState: string;
     };
-    progressStatusFull: string;
-    progressStatusShort: string;
+    generating?: string;
   };
 }
 
@@ -891,7 +890,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
               {isGenerating ? (
                 <div className="flex flex-col items-center gap-4 z-10">
                    <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                   <p className="text-indigo-600 font-medium">{t.progressStatusFull.replace('{progress}', progress.toString())}</p>
+                   <p className="text-indigo-600 font-medium">{t.generating || 'Generating your masterpiece...'} {progress}%</p>
                 </div>
               ) : selectedVideo ? (
                 <div className="flex flex-col items-center w-full h-full">
@@ -948,27 +947,18 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                  <div 
                    key={vid.id}
                    onClick={() => setSelectedVideo(vid)}
-                   className={`relative aspect-video h-full rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-black ${
+                   className={`relative aspect-video h-full rounded-lg overflow-hidden cursor-pointer border-2 transition-all bg-slate-800 ${
                      selectedVideo?.id === vid.id ? 'border-indigo-500 ring-2 ring-indigo-500/20' : 'border-transparent opacity-70 hover:opacity-100'
                    }`}
                  >
                     {vid.coverUrl ? (
                        <img src={vid.coverUrl} className="w-full h-full object-cover" />
                     ) : (
-                       <video 
-                         src={vid.videoUrl} 
-                         className="w-full h-full object-cover" 
-                         muted 
-                         crossOrigin="anonymous"
-                         referrerPolicy="no-referrer"
-                         onError={(e) => {
-                           const video = e.currentTarget;
-                           if (video.crossOrigin !== null) {
-                             video.crossOrigin = null;
-                             video.referrerPolicy = 'no-referrer';
-                           }
-                         }}
-                       />
+                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-700 to-slate-900">
+                         <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                           <Play size={20} className="text-white/80 ml-0.5" />
+                         </div>
+                       </div>
                     )}
                     <div className="absolute bottom-1 right-1 text-[10px] bg-black/60 text-white px-1 rounded">
                        {vid.status}
