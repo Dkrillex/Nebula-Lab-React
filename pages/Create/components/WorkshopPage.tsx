@@ -36,13 +36,17 @@ const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
       // 如果路由是绝对路径（以 /create/ 开头），直接导航
       // 否则使用 query 参数方式（兼容旧逻辑）
       if (tool.route.startsWith('/create/')) {
-        navigate(tool.route, { state: { toolKey: tool.key }, replace: false });
+        // 如果工具没有独立路由（route 是 /create/useTool），在 URL 中添加 tool 参数
+        const route = tool.route === '/create/useTool' 
+          ? `/create/useTool?tool=${tool.key}`
+          : tool.route;
+        navigate(route, { state: { toolKey: tool.key }, replace: false });
       } else {
         navigate(tool.route, { state: { toolKey: tool.key } });
       }
     } else {
-      // 默认跳转到通用工具页面
-      navigate('/create/useTool', { state: { toolKey: tool.key }, replace: false });
+      // 默认跳转到通用工具页面，在 URL 中添加 tool 参数
+      navigate(`/create/useTool?tool=${tool.key}`, { state: { toolKey: tool.key }, replace: false });
     }
   };
 
