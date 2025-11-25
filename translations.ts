@@ -88,6 +88,7 @@ interface Translation {
       styleTransfer: string;
       voiceClone: string;
       workshop: string;
+      uploadCustomAvatar: string;
       faceSwap: string;
       ttsTool: string;
       glbViewer: string;
@@ -390,7 +391,7 @@ interface Translation {
         instructionUploadProduct: string;
         instructionDrag: string;
         instructionRotate: string;
-          instructionScale: string; // Should mention Alt(Option) for Mac compatibility
+        instructionScale: string; // Should mention Alt(Option) for Mac compatibility
         resetPosition: string;
         removingBackground: string;
         waitBackgroundRemoval: string;
@@ -1048,6 +1049,7 @@ export const translations: Record<string, Translation> = {
         styleTransfer: 'Style Transfer',
         voiceClone: 'Voice Cloning',
         workshop: 'Workshop',
+        uploadCustomAvatar: 'Upload Custom Avatar',
         faceSwap: 'AI Video Face Swap',
         ttsTool: 'Text to Speech',
         glbViewer: '3D Model',
@@ -2453,6 +2455,7 @@ export const translations: Record<string, Translation> = {
         styleTransfer: '万物迁移',
         voiceClone: '声音克隆',
         workshop: '创作工坊',
+        uploadCustomAvatar: '上传数字人',
         faceSwap: 'AI视频换脸',
         ttsTool: '文本转语音',
         glbViewer: '3D模型',
@@ -3892,6 +3895,7 @@ export const translations: Record<string, Translation> = {
         styleTransfer: 'Transfer Gaya',
         voiceClone: 'Kloning Suara',
         workshop: 'Workshop',
+        uploadCustomAvatar: 'Unggah Avatar Kustom',
         faceSwap: 'Tukar Wajah AI',
         ttsTool: 'Teks ke Ucapan',
         glbViewer: 'Model 3D',
