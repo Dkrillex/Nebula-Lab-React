@@ -78,7 +78,7 @@ function processRoutes(routes: AppRouteObject[], parentPath = ''): any[] {
       if (route.meta?.keepAlive) {
         const cacheName = route.meta.keepAliveKey || fullPath || '/';
         innerElement = (
-          <KeepAliveBoundary key={cacheName} name={cacheName} keepAlive={true}>
+          <KeepAliveBoundary key={cacheName} name={route.meta.keepAliveKey} keepAlive={true}>
             {innerElement}
           </KeepAliveBoundary>
         );

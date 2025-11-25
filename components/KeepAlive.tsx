@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { useLocation, useOutletContext } from 'react-router-dom';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useLocation, useOutletContext, useSearchParams } from 'react-router-dom';
 import { AliveScope, KeepAlive, useAliveController } from 'react-activation';
 import { AppContext, AppOutletContextType } from '../router/context';
 
@@ -52,8 +52,41 @@ export const KeepAliveBoundary: React.FC<KeepAliveBoundaryProps> = ({
   saveScrollPosition = "screen"
 }) => {
   const location = useLocation();
-  // Determine the cache key: prefer explicit name -> cacheKey -> pathname
-  const key = name || cacheKey || location.pathname;
+  const [searchParams] = useSearchParams();
+  
+  // 为 useTool 路由根据 tool 参数生成不同的 cacheKey
+  const dynamicKey = useMemo(() => {
+    // 如果已经指定了 name 或 cacheKey，直接使用
+    if (name || cacheKey) {
+      return name || cacheKey;
+    }
+    
+    // 对于 useTool 路由，根据 tool 查询参数生成不同的 key
+    if (location.pathname.includes('/useTool') || location.pathname.includes('/create/useTool')) {
+      const toolParam = searchParams.get('tool');
+      if (toolParam) {
+        // 包含 tool 参数的完整路径作为 cacheKey
+        return `${location.pathname}?tool=${toolParam}`;
+      }
+    }
+    
+    // 默认使用 pathname
+    return location.pathname;
+  }, [name, cacheKey, location.pathname, searchParams]);
+  
+  const key = dynamicKey;
+  
+  // 使用动态 key 作为 React key，确保不同的工具实例被正确识别
+  const reactKey = useMemo(() => {
+    // 对于 useTool 路由，包含 tool 参数
+    if (location.pathname.includes('/useTool') || location.pathname.includes('/create/useTool')) {
+      const toolParam = searchParams.get('tool');
+      if (toolParam) {
+        return `${location.pathname}?tool=${toolParam}`;
+      }
+    }
+    return key;
+  }, [key, location.pathname, searchParams]);
 
   // Capture the current Outlet context to bridge it across the KeepAlive barrier
   const outletContext = useOutletContext<AppOutletContextType | null>();
@@ -88,6 +121,7 @@ export const KeepAliveBoundary: React.FC<KeepAliveBoundaryProps> = ({
 
   return (
     <KeepAlive 
+      key={reactKey}
       name={key} 
       id={key} 
       saveScrollPosition={saveScrollPosition}
