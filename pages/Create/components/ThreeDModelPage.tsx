@@ -268,14 +268,8 @@ const ThreeDModelPage: React.FC = () => {
         <div className="flex flex-col gap-6 rounded-xl border border-[rgba(0,0,0,0.1)] bg-[rgba(255,255,255,0.6)] p-6 shadow-2xl shadow-black/20 backdrop-blur-lg result result-left">
           <div>
             <div className="mb-4">
-              <div className="flex items-center gap-4 mb-4">
-                <button
-                  onClick={() => navigate('/create?tool=workshop')}
-                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                >
-                  <ArrowLeft size={20} />
-                </button>
-                <h2 className="page-title">3D 模型生成</h2>
+              <div className="mb-4">
+                <h2 className="page-title">3D 模型</h2>
               </div>
             </div>
 
