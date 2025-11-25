@@ -557,6 +557,10 @@ interface Translation {
           title: string;
           description: string;
           emoji: string;
+          primaryUploaderTitle?: string;
+          primaryUploaderDescription?: string;
+          secondaryUploaderTitle?: string;
+          secondaryUploaderDescription?: string;
         };
       };
     };
@@ -675,7 +679,49 @@ interface Translation {
       custom: string;
       buy: string;
       contact: string;
-    }
+    };
+    serviceAdvantages: {
+      title: string;
+      aiCreation: string;
+      efficientContent: string;
+      techSupport: string;
+      dataSecurity: string;
+    };
+    needHelp: {
+      title: string;
+      callPhone: string;
+    };
+    wechatPayModal: {
+      scanToPay: string;
+      paySuccess: string;
+      thankYou: string;
+      payAmount: string;
+      generatingQR: string;
+      pleaseWait: string;
+      step1: string;
+      step2: string;
+      step3: string;
+      tip: string;
+    };
+    consultModal: {
+      title: string;
+      contactUs: string;
+      scanQR: string;
+      workTime: string;
+      serviceSupport: string;
+    };
+    enterpriseModal: {
+      title: string;
+      subtitle: string;
+      phone: string;
+      serviceTime: string;
+      workDays: string;
+      wechatContact: string;
+      scanToAdd: string;
+      customSolution: string;
+      techSupport: string;
+      dataAnalysis: string;
+    };
   };
   assetsPage: {
     title: string;
@@ -854,10 +900,10 @@ export const translations: Record<string, Translation> = {
         styleTransfer: 'Style Transfer',
         voiceClone: 'Voice Cloning',
         workshop: 'Workshop',
-        faceSwap: 'AI Face Swap',
+        faceSwap: 'AI Video Face Swap',
         ttsTool: 'Text to Speech',
         glbViewer: '3D Model',
-        imageTranslation: 'Image Translation',
+        imageTranslation: 'AI Image Face Swap',
         videoTranslation: 'Video Translation',
         assets: 'Assets',
         pricing: 'Pricing',
@@ -1312,7 +1358,7 @@ export const translations: Record<string, Translation> = {
       },
       workshop: {
         title: 'Creation Workshop',
-        description: 'Explore creative AI tools',
+        description: 'What can I help you create?',
         allTools: 'All Tools',
         image: 'Image',
         video: 'Video',
@@ -1320,34 +1366,431 @@ export const translations: Record<string, Translation> = {
         others: 'Others',
         tools: {
           translation: {
-            title: 'AI Face Swap',
-            description: 'Use AI technology for face replacement',
+            title: 'AI Video Face Swap',
+            description: 'Replace faces in your video with faces from images',
             emoji: '🧍'
           },
           tts: {
             title: 'Text to Speech',
-            description: 'Convert text to natural speech',
+            description: 'Convert text to natural, fluent speech with multiple voices and languages',
             emoji: '🎤'
           },
-          glbViewer: {
-            title: '3D Model Viewer',
-            description: 'View and manipulate 3D models',
+          '3dModel': {
+            title: '3D Model',
+            description: 'Transform your photo into a 3D render.',
             emoji: '🤖'
           },
           customPrompt: {
             title: 'Custom Prompt',
-            description: 'Generate images with custom prompts',
-            emoji: '✍️'
+            description: 'Describe any transformation you can imagine. Upload up to two images as reference.',
+            emoji: '✍️',
+            primaryUploaderTitle: 'Primary Image',
+            primaryUploaderDescription: 'The main image to edit.',
+            secondaryUploaderTitle: 'Reference Image (Optional)',
+            secondaryUploaderDescription: 'A second image for style, content, or context.'
           },
           imageTranslation: {
-            title: 'Image Translation',
-            description: 'Transform images into different styles',
+            title: 'AI Image Face Swap',
+            description: 'Replace the face in your primary image with the face from the reference image',
             emoji: '🧍'
           },
           aiTemplate: {
-            title: 'AI Template',
-            description: 'Quickly generate content with AI templates',
+            title: 'Creative Image Generation',
+            description: 'Generate corresponding content based on selected AI templates',
             emoji: '🖼️'
+          },
+          figurine: {
+            title: '3D Figurine',
+            description: 'Transform your photo into a collectible 3D character figurine with packaging.',
+            emoji: '🧍'
+          },
+          funko: {
+            title: 'Funko Pop',
+            description: 'Reshape your subject into an adorable Funko Pop! vinyl figure, shown in its box.',
+            emoji: '📦'
+          },
+          lego: {
+            title: 'LEGO Minifigure',
+            description: 'Build a LEGO minifigure version of your subject, ready to play.',
+            emoji: '🧱'
+          },
+          crochet: {
+            title: 'Crochet Doll',
+            description: 'Transform your image into a soft, handmade crocheted yarn doll.',
+            emoji: '🧶'
+          },
+          cosplay: {
+            title: 'Anime to Cosplay',
+            description: 'Transform an anime character into a realistic cosplay photo.',
+            emoji: '🎭'
+          },
+          plushie: {
+            title: 'Cute Plushie',
+            description: 'Transform your subject into a cute, soft plushie doll.',
+            emoji: '🧸'
+          },
+          keychain: {
+            title: 'Acrylic Keychain',
+            description: 'Create a cute acrylic keychain of your subject, perfect for hanging on a bag.',
+            emoji: '🔑'
+          },
+          hdEnhance: {
+            title: 'HD Enhance',
+            description: 'Upscale your image, increasing sharpness and detail for a high-resolution look.',
+            emoji: '🔍'
+          },
+          pose: {
+            title: 'Pose Reference',
+            description: 'Apply the pose from one image to the character in another image.',
+            emoji: '💃',
+            primaryUploaderTitle: 'Character',
+            primaryUploaderDescription: 'Main character',
+            secondaryUploaderTitle: 'Pose Reference',
+            secondaryUploaderDescription: 'Pose to apply'
+          },
+          photorealistic: {
+            title: 'Photorealistic',
+            description: 'Transform paintings or illustrations into stunningly realistic photos.',
+            emoji: '🪄'
+          },
+          fashion: {
+            title: 'Fashion Magazine',
+            description: 'Give your photo a high-fashion, editorial look worthy of a magazine cover.',
+            emoji: '📸'
+          },
+          hyperrealistic: {
+            title: 'Hyperrealistic',
+            description: 'Apply a gritty, direct-flash photography style for a cool hyperrealistic vibe.',
+            emoji: '✨'
+          },
+          architecture: {
+            title: 'Architecture Model',
+            description: 'Transform buildings into detailed miniature architecture models.',
+            emoji: '🏗️'
+          },
+          productRender: {
+            title: 'Product Render',
+            description: 'Turn product sketches into professional, photorealistic 3D renders.',
+            emoji: '💡'
+          },
+          sodaCan: {
+            title: 'Soda Can Design',
+            description: 'Wrap your image onto a soda can and place it in a beautiful product photo.',
+            emoji: '🥤'
+          },
+          industrialDesign: {
+            title: 'Industrial Design Render',
+            description: 'Render industrial design sketches into realistic products displayed in a museum setting.',
+            emoji: '🛋️'
+          },
+          iphoneWallpaper: {
+            title: 'iPhone Wallpaper Effect',
+            description: 'Instantly transform your image into a stylish iPhone lock screen interface.',
+            emoji: '📱'
+          },
+          colorPalette: {
+            title: 'Color Palette Swap',
+            description: 'Convert the image to line art, then color it using the second image as a palette.',
+            emoji: '🎨',
+            primaryUploaderTitle: 'Original Image',
+            primaryUploaderDescription: 'Image to convert',
+            secondaryUploaderTitle: 'Color Palette',
+            secondaryUploaderDescription: 'Color reference'
+          },
+          videoGeneration: {
+            title: 'Video Generation',
+            description: 'Create short videos through text prompts and optional images.',
+            emoji: '🎬'
+          },
+          isolate: {
+            title: 'Isolate and Enhance',
+            description: 'Cut out the subject in the masked area and create a clean, high-definition portrait.',
+            emoji: '🎯'
+          },
+          screen3d: {
+            title: '3D Screen Effect',
+            description: 'Make content on screens in your photos appear as glasses-free 3D.',
+            emoji: '📺'
+          },
+          makeup: {
+            title: 'Makeup Analysis',
+            description: 'Analyze makeup in portraits and suggest improvements with red pen markings.',
+            emoji: '💄'
+          },
+          background: {
+            title: 'Change Background',
+            description: 'Replace the existing background with a cool retro Y2K aesthetic style.',
+            emoji: '🪩'
+          },
+          addIllustration: {
+            title: 'Add Illustration',
+            description: 'Add charming hand-drawn characters to your real-world photos.',
+            emoji: '🧑‍🎨'
+          },
+          pixelArt: {
+            title: 'Pixel Art',
+            description: 'Transform your image into retro 8-bit pixel art.',
+            emoji: '👾'
+          },
+          watercolor: {
+            title: 'Watercolor',
+            description: 'Transform your image into a soft and vibrant watercolor painting.',
+            emoji: '🖌️'
+          },
+          popArt: {
+            title: 'Pop Art',
+            description: 'Reimagine your image in Andy Warhol\'s bold pop art style.',
+            emoji: '🎨'
+          },
+          comicBook: {
+            title: 'Comic Book',
+            description: 'Turn your photo into a classic comic book panel.',
+            emoji: '💥'
+          },
+          claymation: {
+            title: 'Claymation',
+            description: 'Recreate your image as a charming stop-motion claymation scene.',
+            emoji: '🗿'
+          },
+          ukiyoE: {
+            title: 'Ukiyo-e',
+            description: 'Redraw your image in the style of traditional Japanese woodblock prints.',
+            emoji: '🌊'
+          },
+          stainedGlass: {
+            title: 'Stained Glass',
+            description: 'Transform your image into a vibrant stained glass window.',
+            emoji: '🪟'
+          },
+          origami: {
+            title: 'Origami',
+            description: 'Reconstruct your subject using an origami paper-folding style.',
+            emoji: '🦢'
+          },
+          neonGlow: {
+            title: 'Neon Glow',
+            description: 'Outline your subject in bright, glowing neon lights.',
+            emoji: '💡'
+          },
+          doodleArt: {
+            title: 'Doodle Art',
+            description: 'Overlay your image with playful, hand-drawn doodle-style illustrations.',
+            emoji: '✏️'
+          },
+          vintagePhoto: {
+            title: 'Vintage Photo',
+            description: 'Give your image an aged, sepia-toned vintage photograph look.',
+            emoji: '📜'
+          },
+          blueprintSketch: {
+            title: 'Blueprint',
+            description: 'Convert your image into a technical blueprint-style architectural drawing.',
+            emoji: '📐'
+          },
+          glitchArt: {
+            title: 'Glitch Art',
+            description: 'Apply digital glitch effects including datamoshing and pixel sorting.',
+            emoji: '📉'
+          },
+          doubleExposure: {
+            title: 'Double Exposure',
+            description: 'Blend your image with natural scenes in a double exposure effect.',
+            emoji: '🏞️'
+          },
+          hologram: {
+            title: 'Hologram',
+            description: 'Project your subject as a futuristic, glowing blue hologram.',
+            emoji: '🌐'
+          },
+          lowPoly: {
+            title: 'Low Poly',
+            description: 'Reconstruct your image using a low-polygon geometric mesh.',
+            emoji: '🔺'
+          },
+          charcoalSketch: {
+            title: 'Charcoal Sketch',
+            description: 'Redraw your image as a dramatic, high-contrast charcoal sketch.',
+            emoji: '✍🏽'
+          },
+          impressionism: {
+            title: 'Impressionism',
+            description: 'Repaint your image in the style of an Impressionist masterpiece.',
+            emoji: '👨‍🎨'
+          },
+          cubism: {
+            title: 'Cubism',
+            description: 'Deconstruct your subject in the abstract, geometric style of Cubism.',
+            emoji: '🧊'
+          },
+          steampunk: {
+            title: 'Steampunk',
+            description: 'Reimagine your subject with steampunk aesthetics featuring gears, brass, and Victorian-era technology.',
+            emoji: '⚙️'
+          },
+          fantasyArt: {
+            title: 'Fantasy Art',
+            description: 'Transform your image into an epic fantasy-style painting.',
+            emoji: '🐉'
+          },
+          graffiti: {
+            title: 'Graffiti',
+            description: 'Spray-paint your image as vibrant graffiti on a brick wall.',
+            emoji: '🎨'
+          },
+          minimalistLineArt: {
+            title: 'Minimalist Line Art',
+            description: 'Reduce your image to a single, continuous, minimalist line drawing.',
+            emoji: '〰️'
+          },
+          storybook: {
+            title: 'Storybook',
+            description: 'Redraw your image in the style of a whimsical children\'s storybook illustration.',
+            emoji: '📖'
+          },
+          thermal: {
+            title: 'Thermal Imaging',
+            description: 'Apply a thermal imaging effect with a heat map color palette.',
+            emoji: '🌡️'
+          },
+          risograph: {
+            title: 'Risograph',
+            description: 'Simulate a rough, limited-color Risograph print effect.',
+            emoji: '📠'
+          },
+          crossStitch: {
+            title: 'Cross Stitch',
+            description: 'Convert your image into a textured, handmade cross-stitch pattern.',
+            emoji: '🧵'
+          },
+          tattoo: {
+            title: 'Tattoo Art',
+            description: 'Redesign your subject as a classic American traditional style tattoo.',
+            emoji: '🖋️'
+          },
+          psychedelic: {
+            title: 'Psychedelic Style',
+            description: 'Apply a vibrant, swirling psychedelic art style from the 1960s.',
+            emoji: '🌀'
+          },
+          gothic: {
+            title: 'Gothic',
+            description: 'Reimagine your scene with a dark, gothic art style.',
+            emoji: '🏰'
+          },
+          tribal: {
+            title: 'Tribal Art',
+            description: 'Redraw your subject using patterns and motifs from traditional tribal art.',
+            emoji: '🗿'
+          },
+          dotPainting: {
+            title: 'Dot Painting',
+            description: 'Recreate your image using the dot painting technique of Aboriginal art.',
+            emoji: '🎨'
+          },
+          chalk: {
+            title: 'Chalk Drawing',
+            description: 'Draw your image as a colorful chalk illustration on a sidewalk.',
+            emoji: '🖍️'
+          },
+          sandArt: {
+            title: 'Sand Art',
+            description: 'Recreate your image as if it were made from colored sand.',
+            emoji: '🏜️'
+          },
+          mosaic: {
+            title: 'Mosaic',
+            description: 'Transform your image into a mosaic made of small ceramic tiles.',
+            emoji: '💠'
+          },
+          paperQuilling: {
+            title: 'Paper Quilling',
+            description: 'Reconstruct your subject using the art of paper quilling with rolled and shaped strips of paper.',
+            emoji: '📜'
+          },
+          woodCarving: {
+            title: 'Wood Carving',
+            description: 'Recreate your subject as a detailed wood carving.',
+            emoji: '🪵'
+          },
+          iceSculpture: {
+            title: 'Ice Sculpture',
+            description: 'Transform your subject into a translucent, detailed ice sculpture.',
+            emoji: '🧊'
+          },
+          bronzeStatue: {
+            title: 'Bronze Statue',
+            description: 'Turn your subject into a weathered bronze statue on a pedestal.',
+            emoji: '🗿'
+          },
+          galaxy: {
+            title: 'Galaxy',
+            description: 'Blend your image with a vibrant nebula and starry galaxy background.',
+            emoji: '🌌'
+          },
+          fire: {
+            title: 'Fire',
+            description: 'Reimagine your subject as if it were formed from roaring flames.',
+            emoji: '🔥'
+          },
+          water: {
+            title: 'Water',
+            description: 'Reimagine your subject as if it were formed from flowing, liquid water.',
+            emoji: '💧'
+          },
+          smokeArt: {
+            title: 'Smoke Art',
+            description: 'Create your subject from elegant, swirling wisps of smoke.',
+            emoji: '💨'
+          },
+          vectorArt: {
+            title: 'Vector Art',
+            description: 'Convert your photo into clean, scalable vector art with flat colors and sharp lines.',
+            emoji: '🎨'
+          },
+          infrared: {
+            title: 'Infrared',
+            description: 'Simulate an infrared photo effect with surreal colors and glowing foliage.',
+            emoji: '📸'
+          },
+          knitted: {
+            title: 'Knitted',
+            description: 'Recreate your image as a cozy, knitted wool pattern.',
+            emoji: '🧶'
+          },
+          etching: {
+            title: 'Etching',
+            description: 'Redraw your image as a classic black and white etching or engraving.',
+            emoji: '✒️'
+          },
+          diorama: {
+            title: 'Diorama',
+            description: 'Turn the scene into a miniature 3D diorama inside a box.',
+            emoji: '📦'
+          },
+          paintingProcess: {
+            title: 'Painting Process',
+            description: 'Display a 4-panel grid showing the artistic process of creating this image, from sketch to final render.',
+            emoji: '🖼️'
+          },
+          markerSketch: {
+            title: 'Marker Sketch',
+            description: 'Redraw your photo in the style of a Copic marker sketch, often used in design.',
+            emoji: '🖊️'
+          },
+          vanGogh: {
+            title: 'Van Gogh Style',
+            description: 'Reimagine the photo in the style of Van Gogh\'s \'Starry Night\'.',
+            emoji: '🌌'
+          },
+          cyberpunk: {
+            title: 'Cyberpunk',
+            description: 'Transform the scene into a futuristic cyberpunk city.',
+            emoji: '🤖'
+          },
+          lineArt: {
+            title: 'Line Art Drawing',
+            description: 'Simplify your photo to its essential lines, creating a clean sketch.',
+            emoji: '✍🏻'
           }
         }
       }
@@ -1494,6 +1937,48 @@ export const translations: Record<string, Translation> = {
         custom: 'Custom',
         buy: 'Buy Now',
         contact: 'Contact Us'
+      },
+      serviceAdvantages: {
+        title: 'Service Advantages',
+        aiCreation: '✨ AI Intelligent Creation',
+        efficientContent: '🚀 Efficient Content Generation',
+        techSupport: '💎 Professional Tech Support',
+        dataSecurity: '🔒 Data Security Guarantee'
+      },
+      needHelp: {
+        title: 'Need Help?',
+        callPhone: 'Call:'
+      },
+      wechatPayModal: {
+        scanToPay: 'Scan to Pay',
+        paySuccess: 'Payment Successful!',
+        thankYou: 'Thank you for your purchase',
+        payAmount: 'Payment Amount',
+        generatingQR: 'Generating QR Code',
+        pleaseWait: 'Please wait...',
+        step1: 'Open WeChat Scan',
+        step2: 'Scan the QR code above',
+        step3: 'Confirm payment to complete',
+        tip: 'The window will close automatically after payment. Please do not pay repeatedly.'
+      },
+      consultModal: {
+        title: 'Online Consultation',
+        contactUs: 'Contact Us',
+        scanQR: 'Scan the QR code below to consult',
+        workTime: 'Working Hours: Mon-Fri 9:00-18:00',
+        serviceSupport: 'We will provide professional service support'
+      },
+      enterpriseModal: {
+        title: 'Enterprise Custom Service',
+        subtitle: 'Professional AI solutions for you',
+        phone: 'Contact Phone',
+        serviceTime: 'Service Hours',
+        workDays: 'Weekdays 9:00-18:00',
+        wechatContact: 'WeChat Contact',
+        scanToAdd: 'Scan to add WeChat',
+        customSolution: '🎯 Custom Solutions',
+        techSupport: '🔧 Technical Support',
+        dataAnalysis: '📊 Data Analysis'
       }
     },
     assetsPage: {
@@ -1669,10 +2154,10 @@ export const translations: Record<string, Translation> = {
         styleTransfer: '万物迁移',
         voiceClone: '声音克隆',
         workshop: '创作工坊',
-        faceSwap: 'AI换脸',
+        faceSwap: 'AI视频换脸',
         ttsTool: '文本转语音',
         glbViewer: '3D模型',
-        imageTranslation: '图像翻译',
+        imageTranslation: 'AI图片换脸',
         videoTranslation: '视频翻译',
         assets: '素材管理',
         pricing: '定价列表',
@@ -2127,7 +2612,7 @@ export const translations: Record<string, Translation> = {
       },
       workshop: {
         title: '创作工坊',
-        description: '探索创意AI工具',
+        description: '我能帮你创造什么?',
         allTools: '全部工具',
         image: '图片',
         video: '视频',
@@ -2135,34 +2620,431 @@ export const translations: Record<string, Translation> = {
         others: '其他',
         tools: {
           translation: {
-            title: 'AI换脸',
-            description: '使用AI技术进行人脸替换',
+            title: 'AI视频换脸',
+            description: '将您的视频中的人脸替换成图片的人脸',
             emoji: '🧍'
           },
           tts: {
             title: '文本转语音',
-            description: '将文本转换为自然语音',
+            description: '将文本转换为自然流畅的语音，支持多种音色和语言',
             emoji: '🎤'
           },
-          glbViewer: {
-            title: '3D模型查看器',
-            description: '查看和操作3D模型',
+          '3dModel': {
+            title: '3D模型',
+            description: '将您的照片变成一份3D效果图。',
             emoji: '🤖'
           },
           customPrompt: {
-            title: '自定义提示词',
-            description: '使用自定义提示词生成图像',
-            emoji: '✍️'
+            title: '自定义提示',
+            description: '描述你能想象到的任何变化。最多可上传两张图片作为参考。',
+            emoji: '✍️',
+            primaryUploaderTitle: '主图像',
+            primaryUploaderDescription: '要编辑的主要图像。',
+            secondaryUploaderTitle: '参考图像（可选）',
+            secondaryUploaderDescription: '用于风格、内容或上下文的第二张图像。'
           },
           imageTranslation: {
-            title: '图像翻译',
-            description: '将图像转换为不同风格',
+            title: 'AI图片换脸',
+            description: '将您的主图片人脸替换成参考图片的人脸',
             emoji: '🧍'
           },
           aiTemplate: {
-            title: 'AI模板',
-            description: '使用AI模板快速生成内容',
+            title: '创意生图',
+            description: '根据选中AI模板生成对应内容',
             emoji: '🖼️'
+          },
+          figurine: {
+            title: '3D手办',
+            description: '将您的照片变成一个可收藏的3D角色手办，并配有包装。',
+            emoji: '🧍'
+          },
+          funko: {
+            title: 'Funko Pop公仔',
+            description: '将您的主题重塑为一个可爱的Funko Pop！乙烯基公仔，放在盒子里。',
+            emoji: '📦'
+          },
+          lego: {
+            title: '乐高小人仔',
+            description: '构建一个乐高小人仔版本的您的主题，准备好玩耍。',
+            emoji: '🧱'
+          },
+          crochet: {
+            title: '钩针娃娃',
+            description: '将您的图像变成一个柔软的手工钩针娃娃。',
+            emoji: '🧶'
+          },
+          cosplay: {
+            title: '动漫转Cosplay',
+            description: '将动漫角色变为一张逼真的Cosplay照片。',
+            emoji: '🎭'
+          },
+          plushie: {
+            title: '可爱毛绒玩具',
+            description: '将您的主题转换成一个可爱的、柔软的毛绒玩具。',
+            emoji: '🧸'
+          },
+          keychain: {
+            title: '亚克力钥匙扣',
+            description: '创建一个您的主题的可爱亚克力钥匙扣，非常适合挂在包上。',
+            emoji: '🔑'
+          },
+          hdEnhance: {
+            title: '高清增强',
+            description: '放大您的图像，增加清晰度、细节，以获得高分辨率外观。',
+            emoji: '🔍'
+          },
+          pose: {
+            title: '姿势参考',
+            description: '将一张图像中的姿势应用到另一张图像中的角色上。',
+            emoji: '💃',
+            primaryUploaderTitle: '角色',
+            primaryUploaderDescription: '主要角色',
+            secondaryUploaderTitle: '姿势参考',
+            secondaryUploaderDescription: '要应用的姿势'
+          },
+          photorealistic: {
+            title: '转为照片级真实',
+            description: '将绘画或插图转换为惊人逼真的照片。',
+            emoji: '🪄'
+          },
+          fashion: {
+            title: '时尚杂志',
+            description: '为您的照片赋予高级时尚、编辑风格的外观，堪比杂志封面。',
+            emoji: '📸'
+          },
+          hyperrealistic: {
+            title: '超写实',
+            description: '应用一种粗粝、直闪的摄影风格，打造酷炫的超写实氛围。',
+            emoji: '✨'
+          },
+          architecture: {
+            title: '建筑模型',
+            description: '将建筑物转变为精细的微缩建筑模型。',
+            emoji: '🏗️'
+          },
+          productRender: {
+            title: '产品渲染',
+            description: '将产品草图变成专业的、照片级的3D渲染图。',
+            emoji: '💡'
+          },
+          sodaCan: {
+            title: '汽水罐设计',
+            description: '将您的图像包装到汽水罐上，并将其放置在精美的产品照片中。',
+            emoji: '🥤'
+          },
+          industrialDesign: {
+            title: '工业设计渲染',
+            description: '将工业设计草图渲染成在博物馆环境中展示的真实产品。',
+            emoji: '🛋️'
+          },
+          iphoneWallpaper: {
+            title: 'iPhone壁纸效果',
+            description: '将您的图片即时转换为时尚的iPhone锁屏界面。',
+            emoji: '📱'
+          },
+          colorPalette: {
+            title: '色板换色',
+            description: '将图像转换为线稿，然后使用第二张图像作为调色板为其上色。',
+            emoji: '🎨',
+            primaryUploaderTitle: '原始图像',
+            primaryUploaderDescription: '要转换的图像',
+            secondaryUploaderTitle: '调色板',
+            secondaryUploaderDescription: '颜色参考'
+          },
+          videoGeneration: {
+            title: '视频生成',
+            description: '通过文本提示和可选图像创建短视频。',
+            emoji: '🎬'
+          },
+          isolate: {
+            title: '分离并增强',
+            description: '剪出蒙版中的主体，并创建一个干净、高清的肖像。',
+            emoji: '🎯'
+          },
+          screen3d: {
+            title: '3D屏幕效果',
+            description: '使您照片中屏幕上的内容呈现出裸眼3D效果。',
+            emoji: '📺'
+          },
+          makeup: {
+            title: '妆容分析',
+            description: '分析肖像中的妆容，并用红笔标记提出改进建议。',
+            emoji: '💄'
+          },
+          background: {
+            title: '更换背景',
+            description: '将现有背景更换为酷炫的复古Y2K美学风格。',
+            emoji: '🪩'
+          },
+          addIllustration: {
+            title: '添加插画',
+            description: '在您的真实世界照片中添加迷人的手绘角色。',
+            emoji: '🧑‍🎨'
+          },
+          pixelArt: {
+            title: '像素艺术',
+            description: '将您的图像转换为复古的8位像素艺术。',
+            emoji: '👾'
+          },
+          watercolor: {
+            title: '水彩画',
+            description: '将您的图像转换为柔和、充满活力的水彩画。',
+            emoji: '🖌️'
+          },
+          popArt: {
+            title: '波普艺术',
+            description: '以安迪·沃霍尔的大胆风格重新想象您的图像。',
+            emoji: '🎨'
+          },
+          comicBook: {
+            title: '漫画书',
+            description: '将您的照片变成一个经典的漫画书面板。',
+            emoji: '💥'
+          },
+          claymation: {
+            title: '黏土动画',
+            description: '将您的图像重现为一个迷人的定格黏土场景。',
+            emoji: '🗿'
+          },
+          ukiyoE: {
+            title: '浮世绘',
+            description: '将您的图像重绘为传统的日本木版画。',
+            emoji: '🌊'
+          },
+          stainedGlass: {
+            title: '彩色玻璃',
+            description: '将您的图像转换为一个充满活力的彩色玻璃窗。',
+            emoji: '🪟'
+          },
+          origami: {
+            title: '折纸',
+            description: '用折纸风格重建您的主题。',
+            emoji: '🦢'
+          },
+          neonGlow: {
+            title: '霓虹灯光',
+            description: '用明亮、发光的霓虹灯勾勒您的主题。',
+            emoji: '💡'
+          },
+          doodleArt: {
+            title: '涂鸦艺术',
+            description: '在您的图像上覆盖好玩的手绘涂鸦。',
+            emoji: '✏️'
+          },
+          vintagePhoto: {
+            title: '复古照片',
+            description: '为您的图像赋予一种陈旧的、深褐色的复古外观。',
+            emoji: '📜'
+          },
+          blueprintSketch: {
+            title: '蓝图',
+            description: '将您的图像转换为技术蓝图图纸。',
+            emoji: '📐'
+          },
+          glitchArt: {
+            title: '故障艺术',
+            description: '应用数字故障效果，包括数据融合和像素排序。',
+            emoji: '📉'
+          },
+          doubleExposure: {
+            title: '双重曝光',
+            description: '在双重曝光中将您的图像与自然场景融合。',
+            emoji: '🏞️'
+          },
+          hologram: {
+            title: '全息图',
+            description: '将您的主题投影为一个未来主义的、发光的蓝色全息图。',
+            emoji: '🌐'
+          },
+          lowPoly: {
+            title: '低多边形',
+            description: '使用低多边形几何网格重建您的图像。',
+            emoji: '🔺'
+          },
+          charcoalSketch: {
+            title: '炭笔素描',
+            description: '将您的图像重绘为一幅戏剧性的、高对比度的炭笔素描。',
+            emoji: '✍🏽'
+          },
+          impressionism: {
+            title: '印象派',
+            description: '以印象派杰作的风格重绘您的图像。',
+            emoji: '👨‍🎨'
+          },
+          cubism: {
+            title: '立体主义',
+            description: '以抽象、几何的立体主义风格解构您的主题。',
+            emoji: '🧊'
+          },
+          steampunk: {
+            title: '蒸汽朋克',
+            description: '用齿轮、黄铜和维多利亚时代的技术重新想象您的主题。',
+            emoji: '⚙️'
+          },
+          fantasyArt: {
+            title: '奇幻艺术',
+            description: '将您的图像转变为一幅史诗般的奇幻风格绘画。',
+            emoji: '🐉'
+          },
+          graffiti: {
+            title: '涂鸦',
+            description: '将您的图像喷绘成砖墙上充满活力的涂鸦。',
+            emoji: '🎨'
+          },
+          minimalistLineArt: {
+            title: '极简线稿',
+            description: '将您的图像简化为一条连续的线稿。',
+            emoji: '〰️'
+          },
+          storybook: {
+            title: '故事书',
+            description: '以异想天开的儿童故事书风格重绘您的图像。',
+            emoji: '📖'
+          },
+          thermal: {
+            title: '热成像',
+            description: '应用带有热图调色板的热成像效果。',
+            emoji: '🌡️'
+          },
+          risograph: {
+            title: 'Risograph',
+            description: '模拟粗糙、色彩有限的Risograph印刷效果。',
+            emoji: '📠'
+          },
+          crossStitch: {
+            title: '十字绣',
+            description: '将您的图像转换为手工制作的十字绣图案。',
+            emoji: '🧵'
+          },
+          tattoo: {
+            title: '纹身艺术',
+            description: '将您的主题重新设计为经典的美式传统纹身。',
+            emoji: '🖋️'
+          },
+          psychedelic: {
+            title: '迷幻风格',
+            description: '应用20世纪60年代充满活力、旋转的迷幻艺术风格。',
+            emoji: '🌀'
+          },
+          gothic: {
+            title: '哥特式',
+            description: '用黑暗的哥特艺术风格重新想象您的场景。',
+            emoji: '🏰'
+          },
+          tribal: {
+            title: '部落艺术',
+            description: '使用传统的部落图案重绘您的主题。',
+            emoji: '🗿'
+          },
+          dotPainting: {
+            title: '点画',
+            description: '使用原住民点画技术重新创作您的图像。',
+            emoji: '🎨'
+          },
+          chalk: {
+            title: '粉笔画',
+            description: '将您的图像画成人行道上色彩缤纷的粉笔画。',
+            emoji: '🖍️'
+          },
+          sandArt: {
+            title: '沙画',
+            description: '重新创作您的图像，仿佛它是由彩色沙子制成的。',
+            emoji: '🏜️'
+          },
+          mosaic: {
+            title: '马赛克',
+            description: '将您的图像转换为由小瓷砖制成的马赛克。',
+            emoji: '💠'
+          },
+          paperQuilling: {
+            title: '纸艺',
+            description: '使用卷曲和成形的纸条重建您的主题。',
+            emoji: '📜'
+          },
+          woodCarving: {
+            title: '木雕',
+            description: '将您的主题重塑为精细的木雕。',
+            emoji: '🪵'
+          },
+          iceSculpture: {
+            title: '冰雕',
+            description: '将您的主题转变为半透明的冰雕。',
+            emoji: '🧊'
+          },
+          bronzeStatue: {
+            title: '铜像',
+            description: '将您的主题变成一尊风化的铜像。',
+            emoji: '🗿'
+          },
+          galaxy: {
+            title: '星系',
+            description: '将您的图像与充满活力的星云和星空背景融合。',
+            emoji: '🌌'
+          },
+          fire: {
+            title: '火焰',
+            description: '重新想象您的主题，仿佛它是由熊熊火焰形成的。',
+            emoji: '🔥'
+          },
+          water: {
+            title: '水',
+            description: '重新想象您的主题，仿佛它是由流动的水形成的。',
+            emoji: '💧'
+          },
+          smokeArt: {
+            title: '烟雾艺术',
+            description: '用优雅、旋转的烟雾创造您的主题。',
+            emoji: '💨'
+          },
+          vectorArt: {
+            title: '矢量艺术',
+            description: '将您的照片转换为干净、可缩放的矢量艺术。',
+            emoji: '🎨'
+          },
+          infrared: {
+            title: '红外线',
+            description: '模拟具有超现实色彩的红外照片效果。',
+            emoji: '📸'
+          },
+          knitted: {
+            title: '针织',
+            description: '将您的图像重塑为一个舒适的针织羊毛图案。',
+            emoji: '🧶'
+          },
+          etching: {
+            title: '蚀刻',
+            description: '将您的图像重绘为经典的黑白蚀刻画。',
+            emoji: '✒️'
+          },
+          diorama: {
+            title: '立体模型',
+            description: '将您的场景变成盒子里的微型3D立体模型。',
+            emoji: '📦'
+          },
+          paintingProcess: {
+            title: '绘画过程',
+            description: '展示一个4步网格，展示您的图像从草图到最终绘画的创作过程。',
+            emoji: '🖼️'
+          },
+          markerSketch: {
+            title: '马克笔素描',
+            description: '用Copic马克笔的风格重塑您的照片，创造出充满活力的素描。',
+            emoji: '🖊️'
+          },
+          vanGogh: {
+            title: '梵高风格',
+            description: '用梵高《星夜》标志性的、旋转的笔触重绘您的照片。',
+            emoji: '🌌'
+          },
+          cyberpunk: {
+            title: '赛博朋克',
+            description: '将您的场景转变为一个充满霓虹灯的未来赛博朋克城市。',
+            emoji: '🤖'
+          },
+          lineArt: {
+            title: '线稿绘画',
+            description: '将您的照片简化为其基本线条，创建一个干净的草图。',
+            emoji: '✍🏻'
           }
         }
       }
@@ -2309,6 +3191,48 @@ export const translations: Record<string, Translation> = {
         custom: '自定义',
         buy: '立即购买',
         contact: '联系我们'
+      },
+      serviceAdvantages: {
+        title: '服务优势',
+        aiCreation: '✨ AI智能创作',
+        efficientContent: '🚀 高效内容生成',
+        techSupport: '💎 专业技术支持',
+        dataSecurity: '🔒 数据安全保障'
+      },
+      needHelp: {
+        title: '需要帮助？',
+        callPhone: '请拨打电话：'
+      },
+      wechatPayModal: {
+        scanToPay: '扫码支付',
+        paySuccess: '支付成功！',
+        thankYou: '感谢您的购买',
+        payAmount: '支付金额',
+        generatingQR: '正在生成支付二维码',
+        pleaseWait: '请稍候...',
+        step1: '打开微信扫一扫',
+        step2: '扫描上方二维码',
+        step3: '确认支付完成购买',
+        tip: '支付完成后将自动关闭此窗口，请勿重复支付'
+      },
+      consultModal: {
+        title: '在线咨询',
+        contactUs: '联系我们',
+        scanQR: '扫描下方二维码，立即咨询',
+        workTime: '工作时间：周一至周五 9:00-18:00',
+        serviceSupport: '我们将为您提供专业的服务支持'
+      },
+      enterpriseModal: {
+        title: '企业定制服务',
+        subtitle: '为您提供专业的AI解决方案',
+        phone: '联系电话',
+        serviceTime: '服务时间',
+        workDays: '工作日 9:00-18:00',
+        wechatContact: '微信联系',
+        scanToAdd: '扫码添加企业微信',
+        customSolution: '🎯 定制化方案',
+        techSupport: '🔧 技术支持',
+        dataAnalysis: '📊 数据分析'
       }
     },
     assetsPage: {
@@ -3157,6 +4081,48 @@ export const translations: Record<string, Translation> = {
         custom: 'Kustom',
         buy: 'Beli Sekarang',
         contact: 'Hubungi Kami'
+      },
+      serviceAdvantages: {
+        title: 'Keunggulan Layanan',
+        aiCreation: '✨ Kreasi AI Cerdas',
+        efficientContent: '🚀 Pembuatan Konten Efisien',
+        techSupport: '💎 Dukungan Teknis Profesional',
+        dataSecurity: '🔒 Jaminan Keamanan Data'
+      },
+      needHelp: {
+        title: 'Butuh Bantuan?',
+        callPhone: 'Hubungi:'
+      },
+      wechatPayModal: {
+        scanToPay: 'Pindai untuk Bayar',
+        paySuccess: 'Pembayaran Berhasil!',
+        thankYou: 'Terima kasih atas pembelian Anda',
+        payAmount: 'Jumlah Pembayaran',
+        generatingQR: 'Membuat Kode QR',
+        pleaseWait: 'Mohon tunggu...',
+        step1: 'Buka WeChat Scan',
+        step2: 'Pindai kode QR di atas',
+        step3: 'Konfirmasi pembayaran',
+        tip: 'Jendela akan menutup otomatis setelah pembayaran. Jangan bayar berulang.'
+      },
+      consultModal: {
+        title: 'Konsultasi Online',
+        contactUs: 'Hubungi Kami',
+        scanQR: 'Pindai kode QR di bawah untuk konsultasi',
+        workTime: 'Jam Kerja: Sen-Jum 9:00-18:00',
+        serviceSupport: 'Kami akan memberikan dukungan layanan profesional'
+      },
+      enterpriseModal: {
+        title: 'Layanan Kustom Perusahaan',
+        subtitle: 'Solusi AI profesional untuk Anda',
+        phone: 'Telepon Kontak',
+        serviceTime: 'Jam Layanan',
+        workDays: 'Hari Kerja 9:00-18:00',
+        wechatContact: 'Kontak WeChat',
+        scanToAdd: 'Pindai untuk menambahkan WeChat',
+        customSolution: '🎯 Solusi Kustom',
+        techSupport: '🔧 Dukungan Teknis',
+        dataAnalysis: '📊 Analisis Data'
       }
     },
     assetsPage: {

@@ -116,7 +116,7 @@ export interface ApiTalkQuery {
 
 export type Language = 'en' | 'zh' | 'id';
 
-export type View = 'home' | 'create' | 'keys' | 'chat' | 'models' | 'expenses' | 'pricing' | 'assets';
+export type View = 'home' | 'create' | 'keys' | 'chat' | 'models' | 'expenses' | 'pricing' | 'assets' | 'profile';
 
 export interface TabItem {
   view: View;
