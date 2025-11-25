@@ -417,25 +417,25 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         const scoreValue = Number(score.score) || 0;
         const displayValue = -scoreValue; // 扣积分取反显示
         const assetTypeMap: Record<number, string> = {
-          1: '视频生成',
-          2: 'AI对话',
-          3: '视频编辑',
-          4: '视频制作',
-          5: '视频录制',
+          1: 'AI混剪视频',
+          2: '产品数字人',
+          3: '数字人视频',
+          4: '图生视频',
+          5: '原创视频',
           6: '万物迁移',
-          7: '图像处理',
-          8: '语音处理',
-          9: 'AI助手',
-          10: '智能分析',
+          7: 'AI生图',
+          8: '声音克隆',
+          9: '自定义数字人',
+          10: '唱歌数字人',
           11: 'AI视频换脸',
-          15: 'AI创作实验室',
+          15: '创作工坊',
         };
         const typeText = assetTypeMap[score.assetType] || '未知服务';
         const statusText = {
-          '1': '已完成',
-          '0': '进行中',
-          '-1': '失败',
-        }[String(score.status) || '0'] || '未知';
+          '1': t.status?.paid || '已扣款',
+          '0': t.status?.unpaid || '未扣款',
+          '-1': t.status?.failed || '失败',
+        }[String(score.status) || '0'] || (t.status?.unknown || '未知');
         
         return [
           score.createTime || '-',
@@ -1362,18 +1362,18 @@ const ScoreListItem: React.FC<{
   const displayValue = -scoreValue;
   const isPositive = displayValue > 0;
   const assetTypeMap: Record<number, { text: string; icon: string }> = {
-    1: { text: '视频生成', icon: '🎬' },
-    2: { text: 'AI对话', icon: '🤖' },
-    3: { text: '视频编辑', icon: '🎥' },
-    4: { text: '视频制作', icon: '🎞️' },
-    5: { text: '视频录制', icon: '📹' },
+    1: { text: 'AI混剪视频', icon: '🎬' },
+    2: { text: '产品数字人', icon: '🤖' },
+    3: { text: '数字人视频', icon: '🎥' },
+    4: { text: '图生视频', icon: '🎞️' },
+    5: { text: '原创视频', icon: '📹' },
     6: { text: '万物迁移', icon: '🌟' },
-    7: { text: '图像处理', icon: '🎨' },
-    8: { text: '语音处理', icon: '🎤' },
-    9: { text: 'AI助手', icon: '🤖' },
-    10: { text: '智能分析', icon: '🤖' },
+    7: { text: 'AI生图', icon: '🎨' },
+    8: { text: '声音克隆', icon: '🎤' },
+    9: { text: '自定义数字人', icon: '🤖' },
+    10: { text: '唱歌数字人', icon: '🤖' },
     11: { text: 'AI视频换脸', icon: '🤖' },
-    15: { text: 'AI创作实验室', icon: '🤖' },
+    15: { text: '创作工坊', icon: '🤖' },
   };
   
   const typeInfo = assetTypeMap[score.assetType] || { text: '未知服务', icon: '❓' };
@@ -1397,10 +1397,10 @@ const ScoreListItem: React.FC<{
   
   // 状态映射
   const statusInfo = {
-    '1': { text: '已完成', class: 'text-gray-600 dark:text-zinc-400' },
-    '0': { text: '进行中', class: 'text-gray-600 dark:text-zinc-400' },
-    '-1': { text: '失败', class: 'text-red-600 dark:text-red-400' },
-  }[String(score.status) || '0'] || { text: '未知', class: 'text-gray-600 dark:text-zinc-400' };
+    '1': { text: t.status?.paid || '已扣款', class: 'text-gray-600 dark:text-zinc-400' },
+    '0': { text: t.status?.unpaid || '未扣款', class: 'text-gray-600 dark:text-zinc-400' },
+    '-1': { text: t.status?.failed || '失败', class: 'text-red-600 dark:text-red-400' },
+  }[String(score.status) || '0'] || { text: t.status?.unknown || '未知', class: 'text-gray-600 dark:text-zinc-400' };
   
   return (
     <div className="flex items-start gap-4 p-4 bg-white dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
@@ -1534,32 +1534,28 @@ const ScoreCard: React.FC<{
   const displayValue = -scoreValue;
   const isPositive = displayValue > 0;
   const assetTypeMap: Record<number, { text: string; icon: string }> = {
-    // 1: { text: '图片生成', icon: '🎨' },
-    // 2: { text: '视频生成', icon: '🎬' },
-    // 3: { text: '音频生成', icon: '🎤' },
-    // 4: { text: '其他服务', icon: '🤖' },
-    // 15: { text: 'AI创作实验室', icon: '🧪' },
-     1: { text:  '视频生成', icon: '🎬' },
-    2: { text: 'AI对话', icon: '🤖' },
-    3: { text: '视频编辑', icon: '🎥' },
-    4: { text: '视频制作', icon: '🎞️' },
-    5: { text: '视频录制', icon: '📹' },
-    6: { text: '特效处理', icon: '🌟' },
-    7: { text: '图像处理', icon: '🎨' },
-    8: { text: '语音处理', icon: '🎤' },
-    9: { text: 'AI助手', icon: '🤖' },
-    10: { text: '智能分析', icon: '🤖' },
-    15: { text: 'AI创作实验室', icon: '🤖' },
+     1: { text:  'AI混剪视频', icon: '🎬' },
+    2: { text: '产品数字人', icon: '🤖' },
+    3: { text: '数字人视频', icon: '🎥' },
+    4: { text: '图生视频', icon: '🎞️' },
+    5: { text: '原创视频', icon: '📹' },
+    6: { text: '万物迁移', icon: '🌟' },
+    7: { text: 'AI生图', icon: '🎨' },
+    8: { text: '声音克隆', icon: '🎤' },
+    9: { text: '自定义数字人', icon: '🤖' },
+    10: { text: '唱歌数字人', icon: '🤖' },
+    11: { text: 'AI视频换脸', icon: '🤖' },
+    15: { text: '创作工坊', icon: '🤖' },
   };
   
   const typeInfo = assetTypeMap[score.assetType] || { text: '未知服务', icon: '❓' };
   
-  // 状态映射 - 根据图片，"已扣款"对应已完成状态（status === '1'）
+  // 状态映射 - status: '1'=已扣款, '0'=未扣款, '-1'=失败
   const statusInfo = {
-    '1': { text: '已扣款', class: 'bg-blue-600 text-white' }, // 已完成 -> 已扣款，深蓝色背景，白色文字
-    '0': { text: '进行中', class: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
-    '-1': { text: '失败', class: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
-  }[String(score.status) || '0'] || { text: '未知', class: 'bg-gray-50 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300' };
+    '1': { text: t.status?.paid || '已扣款', class: 'bg-blue-600 text-white' }, // 已扣款，深蓝色背景，白色文字
+    '0': { text: t.status?.unpaid || '未扣款', class: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
+    '-1': { text: t.status?.failed || '失败', class: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+  }[String(score.status) || '0'] || { text: t.status?.unknown || '未知', class: 'bg-gray-50 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300' };
   
   // 格式化时间戳为 2025/11/21 18:15:39 格式
   const formatTimestamp = (timeStr: string) => {
