@@ -4,7 +4,7 @@ import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 import { 
   Home, Box, Sparkles, Grid, Key, FileText, 
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
-  UserCircle, Folder, CreditCard, DollarSign, 
+  UserCircle, Folder, CreditCard, DollarSign, Trophy,
   ChevronDown, ChevronRight, LogOut, ExternalLink, X
 } from 'lucide-react';
 
@@ -54,6 +54,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
     if (path === 'chat') return 'aiExperience';
     if (path === 'models') return 'modelSquare';
     if (path === 'keys') return 'apiKeys';
+    if (path === 'rank') return 'rank';
     if (path === 'expenses') return 'expenses';
     if (path === 'pricing') return 'pricing';
     if (path === 'assets') return 'assets';
@@ -110,6 +111,7 @@ const MobileSidebar: React.FC<MobileSidebarProps> = ({
           { id: 'modelSquare', icon: Grid, label: sideMenuMap.modelSquare, path: '/models' },
           { id: 'apiKeys', icon: Key, label: sideMenuMap.apiKeys, path: '/keys' },
           { id: 'apiDocs', icon: FileText, label: sideMenuMap.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
+          { id: 'rank', icon: Trophy, label: sideMenuMap.rank, path: '/rank' },
         ]
       },
       { 
