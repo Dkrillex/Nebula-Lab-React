@@ -193,17 +193,15 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       return;
     }
 
-    // 获取URL参数中的channelId和teamId
-    const channelId = searchParams.get('channelId') || undefined;
-    const teamId = searchParams.get('teamId') || undefined;
-
-    // 如果存在这些参数，在登录时传递
-    if (channelId) {
-      console.log('手机号登录：检测到邀请参数 channelId:', channelId);
-    }
-    if (teamId) {
-      console.log('手机号登录：检测到邀请参数 teamId:', teamId);
-    }
+    // 获取URL参数中的channelId、teamId和inviteCode
+    // 注意：由于使用了 hash 路由，需要同时检查 searchParams 和 window.location.search
+    const urlParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+    
+    // 优先使用 searchParams（React Router），如果为空则使用 window.location.search
+    const channelId = searchParams.get('channelId') || urlParams.get('channelId') || hashParams.get('channelId') || undefined;
+    const teamId = searchParams.get('teamId') || urlParams.get('teamId') || hashParams.get('teamId') || undefined;
+    const inviteCode = searchParams.get('inviteCode') || urlParams.get('inviteCode') || hashParams.get('inviteCode') || undefined;
 
     try {
       const firstLoginInfo = await phoneLogin({
@@ -212,6 +210,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         countryCode: countryCode,
         channelId: channelId,
         teamId: teamId,
+        inviteCode: inviteCode,
       });
       
       // 注意：URL 参数清除已在 authStore.phoneLogin 中处理，这里不需要重复清除
@@ -240,23 +239,22 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
 
     try {
       if (mode === 'password') {
-        // 获取URL参数中的channelId和teamId
-        const channelId = searchParams.get('channelId') || undefined;
-        const teamId = searchParams.get('teamId') || undefined;
-
-        // 如果存在这些参数，在登录时传递
-        if (channelId) {
-          console.log('账号密码登录：检测到邀请参数 channelId:', channelId);
-        }
-        if (teamId) {
-          console.log('账号密码登录：检测到邀请参数 teamId:', teamId);
-        }
+        // 获取URL参数中的channelId、teamId和inviteCode
+        // 注意：由于使用了 hash 路由，需要同时检查 searchParams 和 window.location.search
+        const urlParams = new URLSearchParams(window.location.search);
+        const hashParams = new URLSearchParams(window.location.hash.split('?')[1] || '');
+        
+        // 优先使用 searchParams（React Router），如果为空则使用 window.location.search
+        const channelId = searchParams.get('channelId') || urlParams.get('channelId') || hashParams.get('channelId') || undefined;
+        const teamId = searchParams.get('teamId') || urlParams.get('teamId') || hashParams.get('teamId') || undefined;
+        const inviteCode = searchParams.get('inviteCode') || urlParams.get('inviteCode') || hashParams.get('inviteCode') || undefined;
 
         const firstLoginInfo = await login({ 
           username, 
           password,
           channelId: channelId,
           teamId: teamId,
+          inviteCode: inviteCode,
         });
         if (onLoginSuccess) onLoginSuccess();
         handleClose();

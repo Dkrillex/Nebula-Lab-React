@@ -1546,7 +1546,6 @@ const ScoreCard: React.FC<{
     10: { text: '唱歌数字人', icon: '🤖' },
     11: { text: 'AI视频换脸', icon: '🤖' },
     15: { text: '创作工坊', icon: '🤖' },
-  };
   
   const typeInfo = assetTypeMap[score.assetType] || { text: '未知服务', icon: '❓' };
   

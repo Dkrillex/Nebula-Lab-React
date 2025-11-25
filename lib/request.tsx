@@ -304,7 +304,6 @@ function createRequestClient(
 
     if (ENABLE_ENCRYPT && encrypt && requestBody && !isFormData && ['POST', 'PUT'].includes((customConfig.method || '').toUpperCase())) {
       try {
-        console.log('[Encrypt] Starting encryption');
         // Parse the JSON body if it's a string
         const bodyData = typeof requestBody === 'string' ? JSON.parse(requestBody) : requestBody;
 

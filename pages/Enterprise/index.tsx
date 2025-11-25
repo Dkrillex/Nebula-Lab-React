@@ -531,8 +531,9 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   const handleInviteNewUser = async () => {
     if (!currentTeam) return;
     // 新用户和老用户使用同一个链接
-    const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
-    
+    // const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    const inviteUrl = `https://ai.nebula-data.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+
     try {
       await navigator.clipboard.writeText(inviteUrl);
       toast.success('邀请链接已复制到剪贴板');
@@ -545,8 +546,9 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   const handleInviteOldUser = async () => {
     if (!currentTeam) return;
     // 新用户和老用户使用同一个链接
-    const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
-    
+    // const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    const inviteUrl = `https://ai.nebula-data.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+
     // 添加提示信息到链接后面（作为注释说明）
     const inviteUrlWithTip = `${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`;
     
