@@ -94,6 +94,7 @@ interface Translation {
       glbViewer: string;
       imageTranslation: string;
       videoTranslation: string;
+      productReplace: string;
       // Personal Center items
       assets: string;
       pricing: string;
@@ -1058,6 +1059,7 @@ export const translations: Record<string, Translation> = {
         glbViewer: '3D Model',
         imageTranslation: 'AI Image Face Swap',
         videoTranslation: 'Video Translation',
+        productReplace: 'Product Digital Human',
         assets: 'Assets',
         pricing: 'Pricing',
         expenses: 'My Expenses',
@@ -2467,6 +2469,7 @@ export const translations: Record<string, Translation> = {
         glbViewer: '3D模型',
         imageTranslation: 'AI图片换脸',
         videoTranslation: '视频翻译',
+        productReplace: '产品数字人',
         assets: '素材管理',
         pricing: '定价列表',
         expenses: '我的费用',
@@ -3910,6 +3913,7 @@ export const translations: Record<string, Translation> = {
         glbViewer: 'Model 3D',
         imageTranslation: 'Terjemahan Gambar',
         videoTranslation: 'Terjemahan Video',
+        productReplace: 'Produk Digital Human',
         assets: 'Aset',
         pricing: 'Harga',
         expenses: 'Pengeluaran Saya',

@@ -414,7 +414,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Avatar Selection */}
-      <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col lg:h-[calc(100vh-230px)]">
+      <div className="w-full lg:w-3/5 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col lg:h-[calc(100vh-230px)]">
         <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 shrink-0">
             {t?.leftPanel?.title || 'Select Avatar Template'}
         </h3>
@@ -438,7 +438,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             onScroll={handleScroll}
         >
             {/* Upload Custom Item */}
-            <div className="w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(50%-6px)] xl:w-[calc(33.33%-8px)] aspect-[9/16]">
+            <div className="w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(20%-10px)] aspect-[9/16]">
             <UploadComponent
                 uploadType="tv"
                 immediate={true}
@@ -463,7 +463,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   <div 
                       key={avatar.avatarId}
                       onClick={() => { setSelectedAvatar(avatar); setCustomAvatarImage(null); }}
-                      className={`relative w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(50%-6px)] xl:w-[calc(33.33%-8px)] aspect-[9/16] rounded-lg overflow-hidden cursor-pointer border-2 transition ${selectedAvatar?.avatarId === avatar.avatarId ? 'border-indigo-500 shadow-md' : 'border-transparent hover:shadow-sm'}`}
+                      className={`relative w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(20%-10px)] aspect-[9/16] rounded-lg overflow-hidden cursor-pointer border-2 transition ${selectedAvatar?.avatarId === avatar.avatarId ? 'border-indigo-500 shadow-md' : 'border-transparent hover:shadow-sm'}`}
                   >
                       <img src={avatar.avatarImagePath} className="w-full h-full object-cover" loading="lazy" alt={avatar.avatarName} />
                       {selectedAvatar?.avatarId === avatar.avatarId && (
@@ -484,8 +484,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         </div>
       </div>
 
-      {/* Middle: Configuration & Results */}
-      <div className="h-[calc(100vh-230px)] flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
+      {/* Right: Configuration & Results */}
+      <div className="h-[calc(100vh-230px)] w-full lg:w-2/5 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 mb-[80px]">
           <div className="flex flex-col gap-6 mb-6">
               {/* Preview */}
