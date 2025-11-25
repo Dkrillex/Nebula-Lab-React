@@ -84,6 +84,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   // Timers
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasCheckedTaskIdRef = useRef(false);
 
   // Calculate points
   const pointsTip = () => {
@@ -496,14 +497,22 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     }
   };
 
-  // Initialize
+  // Warn once if taskId is missing
   useEffect(() => {
-    if (taskId) {
-      pollTask(taskId);
-    } else {
+    if (hasCheckedTaskIdRef.current) return;
+    hasCheckedTaskIdRef.current = true;
+
+    if (!taskId) {
       toast.error('缺少任务ID');
       navigate('/create?tool=digitalHuman');
     }
+  }, [taskId, navigate]);
+
+  // Initialize polling while taskId exists
+  useEffect(() => {
+    if (!taskId) return;
+
+    pollTask(taskId);
 
     return () => {
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);

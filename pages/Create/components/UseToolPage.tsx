@@ -174,12 +174,12 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
     <div className="container mx-auto px-4 py-6 max-w-6xl h-full flex flex-col">
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button 
+        {/* <button 
             onClick={() => navigate('/create?tool=workshop')}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
         >
             <ArrowLeft size={20} />
-        </button>
+        </button> */}
         <div>
             <h1 className="text-2xl font-bold flex items-center gap-2">
                 <span>{activeTool.emoji}</span>
