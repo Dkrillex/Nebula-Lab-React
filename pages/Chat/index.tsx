@@ -4102,7 +4102,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
 
           {/* History */}
-          <div className="flex-1 min-h-0 flex flex-col" style={{ minHeight: '200px', maxHeight: '100%' }}>
+          <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
              <div className="flex items-center justify-between mb-4 flex-shrink-0">
                <h3 className="font-semibold text-foreground">{t.historyTitle}</h3>
                <div className="flex items-center gap-1">
