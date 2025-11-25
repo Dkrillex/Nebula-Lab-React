@@ -69,7 +69,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
           assetType: 8,
           isPrivateModel: '1',
         });
-        if (res.code === '200' && res.rows) {
+        if (res.rows) {
             list = res.rows.map((item: any) => ({
                 voiceId: item.assetId,
                 voiceName: item.assetName,
