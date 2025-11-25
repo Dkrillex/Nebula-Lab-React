@@ -359,22 +359,22 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         <div className="flex items-center gap-2">
           {!isCollapsed && (
             <>
-              <div className="flex items-center gap-2 text-xs text-muted flex-1">
+              <div className="flex items-center justify-center gap-2 text-xs text-muted flex-1">
                 <a 
                   href="/#/privacy" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:text-foreground transition-colors"
                 >
-                  隐私协议
+                  {t?.footer?.privacyPolicy || '隐私协议'}
                 </a>
                 <span className="text-border">|</span>
                 <div className="relative group cursor-pointer hover:text-foreground transition-colors">
-                  <span>备案信息</span>
+                  <span>{t?.footer?.recordInfo || '备案信息'}</span>
                   <div className="absolute bottom-full left-0 mb-2 w-max px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border border-border">
-                    <p>粤ICP备2022093288号-4</p>
-                    <p>Copyright © 2025</p>
-                    <p>星雲數據(香港)有限公司</p>
+                    <p>{t?.footer?.icpNumber || '粤ICP备2022093288号-4'}</p>
+                    <p>{t?.footer?.copyright || 'Copyright © 2025'}</p>
+                    <p>{t?.footer?.companyName || '星雲數據(香港)有限公司'}</p>
                   </div>
                 </div>
               </div>

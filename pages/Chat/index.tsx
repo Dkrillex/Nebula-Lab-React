@@ -3296,7 +3296,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
           {/* Mode Selector */}
           <div className="mb-6">
-            <label className="text-sm font-medium text-muted mb-2 block">功能模式</label>
+            <label className="text-sm font-medium text-muted mb-2 block">{t.functionMode?.title || '功能模式'}</label>
             <div className="grid grid-cols-3 gap-2">
               <button
                 onClick={() => setCurrentMode('chat')}
@@ -3307,7 +3307,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 }`}
               >
                 <MessageCircle size={18} />
-                <span className="text-xs">对话</span>
+                <span className="text-xs">{t.functionMode?.chat || '对话'}</span>
               </button>
               <button
                 onClick={() => setCurrentMode('image')}
@@ -3318,7 +3318,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 }`}
               >
                 <ImageIcon size={18} />
-                <span className="text-xs">图片</span>
+                <span className="text-xs">{t.functionMode?.image || '图片'}</span>
               </button>
               <button
                 onClick={() => setCurrentMode('video')}
@@ -3329,7 +3329,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 }`}
               >
                 <Video size={18} />
-                <span className="text-xs">视频</span>
+                <span className="text-xs">{t.functionMode?.video || '视频'}</span>
               </button>
             </div>
           </div>
@@ -4395,7 +4395,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             
             {/* 底部温馨提示 */}
             <p className="text-[10px] text-center text-muted mt-2">
-              温馨提示: 所有内容均由AI模型生成,准确性和完整性无法保证,不代表平台的态度或观点
+            {t.footerTip || '温馨提示: 所有内容均由AI模型生成,准确性和完整性无法保证,不代表平台的态度或观点'}
             </p>
           </div>
         </div>

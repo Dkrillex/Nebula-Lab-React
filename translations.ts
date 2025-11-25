@@ -97,6 +97,14 @@ interface Translation {
       pricing: string;
       expenses: string;
       profile: string;
+      // Footer items
+      footer: {
+        privacyPolicy: string;
+        recordInfo: string;
+        icpNumber: string;
+        copyright: string;
+        companyName: string;
+      };
     };
     shortcuts: {
       video: string;
@@ -604,7 +612,12 @@ interface Translation {
     send: string;
     welcomeMessage: string;
     footerTip: string;
-
+    functionMode: {
+      title: string;
+      chat: string;
+      image: string;
+      video: string;
+    };
   };
   keysPage: {
     title: string;
@@ -911,6 +924,13 @@ export const translations: Record<string, Translation> = {
         pricing: 'Pricing',
         expenses: 'My Expenses',
         profile: 'Profile',
+        footer: {
+          privacyPolicy: 'Privacy Policy',
+          recordInfo: 'Filing Info',
+          icpNumber: 'ICP备2022093288号-4',
+          copyright: 'Copyright © 2025',
+          companyName: 'Nebula Data (HK) Limited'
+        }
       },
       shortcuts: {
         video: 'AI Viral Video',
@@ -1835,7 +1855,13 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: 'Enter your question... (Enter to send, Shift+Enter for newline)',
       send: 'Send',
       welcomeMessage: 'Hi! I am your AI assistant. How can I help you today?',
-      footerTip: 'Disclaimer: Content is AI-generated. Accuracy not guaranteed.'
+      footerTip: 'Disclaimer: Content is AI-generated. Accuracy not guaranteed.',
+      functionMode: {
+        title: 'Function Mode',
+        chat: 'Chat',
+        image: 'Image',
+        video: 'Video'
+      }
     },
     keysPage: {
       title: 'API Key Management',
@@ -2167,6 +2193,13 @@ export const translations: Record<string, Translation> = {
         pricing: '定价列表',
         expenses: '我的费用',
         profile: '个人中心',
+        footer: {
+          privacyPolicy: '隐私协议',
+          recordInfo: '备案信息',
+          icpNumber: '粤ICP备2022093288号-4',
+          copyright: 'Copyright © 2025',
+          companyName: '星雲數據(香港)有限公司'
+        }
       },
       shortcuts: {
         video: 'AI混剪爆款视频',
@@ -3092,7 +3125,13 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: '输入您的问题... (Enter发送，Shift+Enter换行)',
       send: '发送',
       welcomeMessage: '你好！我是AI助手，很高兴为您服务。请问有什么可以帮助您的吗？',
-      footerTip: '温馨提示：所有内容均由AI模型生成，准确性和完整性无法保证，不代表平台的态度或观点'
+      footerTip: '温馨提示：所有内容均由AI模型生成，准确性和完整性无法保证，不代表平台的态度或观点',
+      functionMode: {
+        title: '功能模式',
+        chat: '对话',
+        image: '图片',
+        video: '视频'
+      }
     },
     keysPage: {
       title: 'API 令牌管理',
@@ -3457,6 +3496,13 @@ export const translations: Record<string, Translation> = {
         pricing: 'Harga',
         expenses: 'Pengeluaran Saya',
         profile: 'Profil',
+        footer: {
+          privacyPolicy: 'Kebijakan Privasi',
+          recordInfo: 'Info Registrasi',
+          icpNumber: 'ICP备2022093288号-4',
+          copyright: 'Copyright © 2025',
+          companyName: 'Nebula Data (HK) Limited'
+        }
       },
       shortcuts: {
         video: 'Video Viral AI',
@@ -3984,7 +4030,13 @@ export const translations: Record<string, Translation> = {
       inputPlaceholder: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
       send: 'Kirim',
       welcomeMessage: 'Hai! Saya adalah asisten AI Anda. Bagaimana saya bisa membantu Anda hari ini?',
-      footerTip: 'Penafian: Konten dihasilkan oleh AI. Akurasi tidak dijamin.'
+      footerTip: 'Penafian: Konten dihasilkan oleh AI. Akurasi tidak dijamin.',
+      functionMode: {
+        title: 'Mode Fungsi',
+        chat: 'Obrolan',
+        image: 'Gambar',
+        video: 'Video'
+      }
     },
     keysPage: {
       title: 'Manajemen Kunci API',
