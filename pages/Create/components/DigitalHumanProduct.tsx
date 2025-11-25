@@ -121,7 +121,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         setHasMore(false);
     }
   }, [avatars]);
-
   const fetchCategories = async () => {
     try {
       const res = await avatarService.getProductAvatarCategories();
