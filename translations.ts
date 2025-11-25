@@ -8,6 +8,7 @@ interface Translation {
     profile: string; // Add this
     expenses: string;
     notifications: string;
+    signOut: string;
   };
   hero: {
     status: string;
@@ -838,6 +839,7 @@ export const translations: Record<string, Translation> = {
       profile: 'Profile',
       expenses: 'Expenses',
       notifications: 'Notifications',
+      signOut: 'Sign out',
     },
     hero: {
       status: 'All systems operational',
@@ -2107,6 +2109,7 @@ export const translations: Record<string, Translation> = {
       profile: '个人中心',
       expenses: '消费记录',
       notifications: '消息通知',
+      signOut: '退出登录',
     },
     hero: {
       status: '系统运行正常',
@@ -3410,6 +3413,7 @@ export const translations: Record<string, Translation> = {
       profile: 'Profil',
       expenses: 'Pengeluaran',
       notifications: 'Notifikasi',
+      signOut: 'Keluar',
     },
     hero: {
       status: 'Semua sistem beroperasi',
