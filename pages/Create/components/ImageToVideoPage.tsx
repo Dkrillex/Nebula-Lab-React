@@ -81,6 +81,7 @@ interface ImageToVideoPageProps {
       emptyState: string;
     };
     generating?: string;
+    progressStatusShort?: string;
   };
 }
 
@@ -845,7 +846,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                {isGenerating ? (
                  <>
                    <Loader2 size={18} className="animate-spin" />
-                   {t.progressStatusShort.replace('{progress}', progress.toString())}
+                   {t.progressStatusShort} {progress}%
                  </>
                ) : (
                  <>
@@ -855,7 +856,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                )}
             </button>
 
-            <div className="flex gap-2">
+            {/* <div className="flex gap-2">
                <button
                  onClick={() => {
                    setGeneratedVideos([]);
@@ -873,7 +874,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                >
                  <Download size={14} /> {t.actions.downloadAll}
                </button>
-            </div>
+            </div> */}
           </div>
         </div>
 

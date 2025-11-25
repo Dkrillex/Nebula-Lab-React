@@ -660,11 +660,13 @@ const AiFaceSwapPage: React.FC = () => {
             {/* 生成的视频 */}
             {generatedVideoUrl && (
               <div className="space-y-4">
-                <video
-                  src={generatedVideoUrl}
-                  controls
-                  className="w-full h-[500px] object-contain rounded-xl bg-black"
-                />
+                <div className="w-full flex items-center justify-center bg-black rounded-xl overflow-hidden">
+                  <video
+                    src={generatedVideoUrl}
+                    controls
+                    className="w-full h-[500px] object-contain rounded-xl"
+                  />
+                </div>
                 
                 {/* 操作按钮 */}
                 <div className="flex justify-between gap-4 mt-4">

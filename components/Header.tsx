@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Command, Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Bell } from 'lucide-react';
+import { Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Bell } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
+import { TOOLS_DATA } from '../pages/Create/data';
 
 interface HeaderProps {
   isDark: boolean;
@@ -81,7 +82,26 @@ const Header: React.FC<HeaderProps> = ({
     if (!sideMenuMap) return tab.view;
     if (tab.view === 'home') return sideMenuMap.home;
     if (tab.view === 'create') {
-      return tab.activeTool ? (sideMenuMap[tab.activeTool] || tab.activeTool) : sideMenuMap.home;
+      if (tab.activeTool) {
+        // 首先尝试从 TOOLS_DATA 中获取 title
+        const tool = TOOLS_DATA.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
+        if (tool) {
+          return tool.title;
+        }
+        
+        // 如果找不到，尝试从翻译映射中获取
+        // 将 aiFaceSwap 映射到 faceSwap 的翻译，tts 映射到 ttsTool 的翻译，3dModel 映射到 glbViewer 的翻译
+        let toolKey = tab.activeTool;
+        if (tab.activeTool === 'aiFaceSwap') {
+          toolKey = 'faceSwap';
+        } else if (tab.activeTool === 'tts') {
+          toolKey = 'ttsTool';
+        } else if (tab.activeTool === '3dModel') {
+          toolKey = 'glbViewer';
+        }
+        return sideMenuMap[toolKey] || tab.activeTool;
+      }
+      return sideMenuMap.home;
     }
     if (tab.view === 'models') return sideMenuMap.modelSquare;
     if (tab.view === 'chat') return sideMenuMap.aiExperience;
@@ -146,6 +166,7 @@ const Header: React.FC<HeaderProps> = ({
     return false;
   });
 
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
       {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
@@ -178,75 +199,65 @@ const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Center: Command Search (Home) OR Tags View (Other Pages) */}
+        {/* Center: Tags View */}
         <div className="flex-1 flex items-center min-w-0 overflow-hidden">
-          {currentView === 'home' ? (
-            <div className="hidden md:flex w-full items-center justify-center px-6 max-w-md mx-auto">
-              <button className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted hover:text-foreground hover:border-secondary transition-colors shadow-sm">
-                <Command size={14} />
-                <span>{t.searchPlaceholder}</span>
-                <span className="ml-auto text-xs opacity-70">⌘K</span>
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-1 w-full relative">
-              {/* 左箭头 */}
-              {canScrollLeft && (
-                <button
-                  onClick={() => scrollTabs('left')}
-                  className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
-                  aria-label="Scroll left"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-              )}
-              
-              {/* 标签页容器 */}
-              <div 
-                ref={tabsContainerRef}
-                className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+          <div className="flex items-center gap-1 w-full relative">
+            {/* 左箭头 */}
+            {canScrollLeft && (
+              <button
+                onClick={() => scrollTabs('left')}
+                className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
+                aria-label="Scroll left"
               >
-              {visitedViews && visitedViews.map((tab, index) => {
-                const isActive = tab.view === currentView && 
-                                 (tab.view !== 'create' || tab.activeTool === activeTool);
-                return (
-                  <div 
-                    key={`${tab.view}-${tab.activeTool || index}`}
-                    onClick={() => onTabClick && onTabClick(tab)}
-                    className={`
-                      group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
-                      ${isActive 
-                        ? 'bg-surface border-border text-foreground shadow-sm' 
-                        : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
-                    `}
-                  >
-                    {tab.view === 'home' && <Home size={12} />}
-                    <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
-                    {visitedViews.length > 1 && (
-                      <button 
-                        onClick={(e) => onTabClose && onTabClose(e, index)}
-                        className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
-                      >
-                        <X size={12} />
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-              </div>
-              
-              {/* 右箭头 */}
-              {canScrollRight && (
-                <button
-                  onClick={() => scrollTabs('right')}
-                  className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
-                  aria-label="Scroll right"
+                <ChevronLeft size={16} />
+              </button>
+            )}
+            
+            {/* 标签页容器 */}
+            <div 
+              ref={tabsContainerRef}
+              className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+            {visitedViews && visitedViews.map((tab, index) => {
+              const isActive = tab.view === currentView && 
+                               (tab.view !== 'create' || tab.activeTool === activeTool);
+              return (
+                <div 
+                  key={`${tab.view}-${tab.activeTool || index}`}
+                  onClick={() => onTabClick && onTabClick(tab)}
+                  className={`
+                    group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all
+                    ${isActive 
+                      ? 'bg-surface border-border text-foreground shadow-sm' 
+                      : 'bg-transparent border-transparent text-muted hover:bg-surface/50 hover:text-foreground'}
+                  `}
                 >
-                  <ChevronRightIcon size={16} />
-                </button>
-              )}
+                  {tab.view === 'home' && <Home size={12} />}
+                  <span className="whitespace-nowrap">{getTabLabel(tab)}</span>
+                  {visitedViews.length > 1 && (
+                    <button 
+                      onClick={(e) => onTabClose && onTabClose(e, index)}
+                      className={`rounded-full p-0.5 transition-colors ${isActive ? 'hover:bg-border' : 'opacity-0 group-hover:opacity-100 hover:bg-border'}`}
+                    >
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
             </div>
-          )}
+            
+            {/* 右箭头 */}
+            {canScrollRight && (
+              <button
+                onClick={() => scrollTabs('right')}
+                className="flex-shrink-0 p-1 rounded-md text-muted hover:text-foreground hover:bg-surface/50 transition-colors"
+                aria-label="Scroll right"
+              >
+                <ChevronRightIcon size={16} />
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Right: Nav & Actions */}
@@ -345,7 +356,7 @@ const Header: React.FC<HeaderProps> = ({
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                   >
                           <LogOut size={16} />
-                          Sign out
+                          {t.signOut || 'Sign out'}
                   </button>
                       </div>
                     </div>

@@ -73,7 +73,7 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
   }
   
   const translation = getCurrentTranslation();
-  
+
   if (mode === 'modal') {
     // Use toast.custom to create a modal-like appearance
     toast.custom((toastInstance) => (
@@ -144,7 +144,7 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
   }
   
   const translation = getCurrentTranslation();
-  
+
   if (mode === 'modal') {
     // Use toast.custom to create a modal-like appearance
     toast.custom((toastInstance) => (
@@ -270,8 +270,8 @@ function createRequestClient(
 
     // 使用外部提供的 signal 或创建新的 AbortController
     const externalSignal = (customConfig as any).signal;
-    const controller = externalSignal ? 
-      { signal: externalSignal, abort: () => {} } as AbortController :
+    const controller = externalSignal ?
+      { signal: externalSignal, abort: () => { } } as AbortController :
       new AbortController();
     const id = externalSignal ? null : setTimeout(() => controller.abort(), requestTimeout);
 
@@ -367,11 +367,15 @@ function createRequestClient(
     // 优先使用外部传入的 signal
     const signal = (customConfig as any).signal || controller.signal;
 
+    // 保存 signal 引用，用于在 catch 块中检查标记
+    // 这样可以确保检查的是同一个对象
+    const requestSignal = signal;
+
     const config: RequestInit = {
       ...customConfig,
       body: requestBody,
       headers,
-      signal,
+      signal: requestSignal,
     };
 
     try {
@@ -447,20 +451,20 @@ function createRequestClient(
       if (code === 200 || code === '200') {
         // Success - Handle success message based on successMessageMode
         let successMsg = msg;
-        
+
         // 如果后端返回了msg且不为空，使用后端的msg；否则使用默认成功消息
         if (!successMsg || successMsg.trim() === '') {
           const t = getCurrentTranslation();
           successMsg = t.error.operationSuccess;
         }
-        
+
         // 根据successMessageMode显示成功消息
         // 注意：这里使用_skipErrorDisplay来控制是否显示，但实际上应该用单独的标志
         // 为了保持与旧系统一致，这里也使用_skipErrorDisplay
         if (!_skipErrorDisplay) {
           showSuccessMessage(successMsg, successMessageMode);
         }
-        
+
         // Handle TopView style result structure
         if (resData.result !== undefined) {
           return resData.result;
@@ -487,7 +491,7 @@ function createRequestClient(
         // 防止多个请求同时触发登出流程和重复显示错误消息
         if (!isLogoutProcessing) {
           isLogoutProcessing = true;
-          
+
           // 显示401错误消息（只显示一次）
           if (!_skipErrorDisplay) {
             showErrorMessage(authErrorMsg, errorMessageMode);
@@ -537,6 +541,8 @@ function createRequestClient(
         throw error;
       }
 
+      let skipErrorHint = false;
+
       const t = getCurrentTranslation();
       let message = error.message || t.error.unknownError;
       if (message === 'Network Error') {
@@ -546,16 +552,62 @@ function createRequestClient(
       } else if (message.includes('Request failed with status code')) {
         message = t.error.requestFailed + ': ' + message.substr(message.length - 3);
       } else if (error.name === 'AbortError') {
+        // 检查是否是主动取消（通过 signal 上的 _isManualCancel 标记）
+        // 使用 requestSignal（在请求开始时保存的 signal 引用）进行检查
+        // 这样可以确保检查的是同一个对象，标记应该在这个对象上
+        const signalsToCheck = [
+          requestSignal,            // 请求开始时保存的 signal 引用（最优先）
+          externalSignal,           // 外部传入的原始 signal
+          (config as any)?.signal,  // 实际传递给 fetch 的 signal
+          signal,                   // signal 变量
+          controller.signal          // 内部 controller 的 signal
+        ].filter(Boolean); // 过滤掉 null/undefined
+
+        let isManualCancel = false;
+        let checkedSignal: AbortSignal | null = null;
+
+        // 检查所有可能的 signal，只要有一个有标记就认为是主动取消
+        // 优先使用 WeakMap 检查，然后检查对象属性（兼容旧方式）
+        for (const sig of signalsToCheck) {
+          if (sig) {
+            // 先检查 WeakMap
+            if (manualCancelSignals.get(sig) === true) {
+              isManualCancel = true;
+              checkedSignal = sig;
+              break;
+            }
+            // 兼容旧方式：检查对象属性
+            if ((sig as any)._isManualCancel === true) {
+              isManualCancel = true;
+              checkedSignal = sig;
+              break;
+            }
+          }
+        }
+
+        if (isManualCancel) {
+          // 主动取消：设置错误消息，并标记跳过错误提示，让调用方决定是否显示
+          message = '请求已取消';
+          skipErrorHint = true;
+        } else {
+          // 超时：显示请求超时错误
+          message = '请求超时';
+        }
         message = t.error.timeout;
       }
 
       // 对于网络错误等，也根据errorMessageMode显示
-      if (!_skipErrorDisplay) {
+      // 如果是主动取消，根据 skipErrorHint 决定是否显示
+      if (!_skipErrorDisplay && !skipErrorHint) {
         showErrorMessage(message, errorMessageMode);
       }
 
       console.error('Request Error:', message);
-      throw new ApiError(message, error.code || 0);
+      const apiError = new ApiError(message, error.code || 0);
+      if (skipErrorHint) {
+        apiError._skipErrorHint = true;
+      }
+      throw apiError;
     }
   }
 
@@ -603,6 +655,7 @@ function createRequestClient(
     request: http
   };
 }
+
 
 // Export different client instances
 export const requestClient = createRequestClient(API_BASE_URL);

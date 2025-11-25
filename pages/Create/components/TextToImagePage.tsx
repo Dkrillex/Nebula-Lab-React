@@ -527,7 +527,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
               )}
             </button>
 
-            <div className="flex gap-2">
+            {/* <div className="flex gap-2">
                <button
                  onClick={() => {
                    setGeneratedImages([]);
@@ -545,7 +545,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                >
                  <Download size={14} /> {t.actions.downloadAll}
                </button>
-            </div>
+            </div> */}
           </div>
         </div>
 
