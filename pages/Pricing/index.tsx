@@ -728,7 +728,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                <img 
-                 src="/lab/zhenshangWxCode.png" 
+                 src="/lab//zhenshangWxCode.png" 
                  alt="微信联系方式" 
                  className="w-[200px] h-[200px] object-contain"
                />
