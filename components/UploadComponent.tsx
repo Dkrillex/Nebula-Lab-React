@@ -54,15 +54,21 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onClear,
   disabled = false
 }, ref) => {
+  console.log(accept);
+  
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
   const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState(false); // 是否已上传成功
+  const [useIframe, setUseIframe] = useState(false); // 是否使用 iframe（遇到跨域问题时）
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update preview URL when initialUrl changes
   React.useEffect(() => {
     if (initialUrl && initialUrl !== previewUrl) {
       setPreviewUrl(initialUrl);
+      setUseIframe(false); // 重置 iframe 状态
+      setUploaded(!!initialUrl); // 如果有初始 URL，说明已上传
     }
   }, [initialUrl]);
 
@@ -76,6 +82,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     clear: () => {
         setFile(null);
         setPreviewUrl('');
+        setUploaded(false);
         if (fileInputRef.current) fileInputRef.current.value = '';
     },
     file: file
@@ -96,6 +103,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     const objectUrl = URL.createObjectURL(selectedFile);
     setFile(selectedFile);
     setPreviewUrl(objectUrl);
+    setUseIframe(false); // 重置 iframe 状态，新文件先尝试 video 标签
+    setUploaded(false); // 重置上传状态
 
     if (onFileSelected) {
       onFileSelected(selectedFile);
@@ -180,6 +189,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       }
       console.log('文件上传完成，调用 onUploadComplete:', uploadedFile);
       
+      // 标记为已上传成功
+      setUploaded(true);
+      
       // 确保 onUploadComplete 被调用
       if (onUploadComplete) {
         onUploadComplete(uploadedFile);
@@ -199,9 +211,34 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       e.stopPropagation();
       setFile(null);
       setPreviewUrl('');
+      setUploaded(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (onClear) onClear();
   };
+
+  // Helper function to determine file type from accept string
+  const getFileTypeFromAccept = (acceptStr: string): 'video' | 'audio' | 'image' => {
+    const acceptLower = acceptStr.toLowerCase();
+    // Check for video extensions
+    if (acceptLower.includes('.mp4') || acceptLower.includes('.mov') || acceptLower.includes('.avi') || acceptLower.includes('.webm') || acceptLower.includes('.bmp')) {
+      return 'video';
+    }
+    // Check for audio extensions
+    if (acceptLower.includes('.mp3') || acceptLower.includes('.wav') || acceptLower.includes('.m4a') || acceptLower.includes('.ogg')) {
+      return 'audio';
+    }
+    // Check for MIME types (backward compatibility)
+    if (acceptStr.startsWith('video/')) {
+      return 'video';
+    }
+    if (acceptStr.startsWith('audio/')) {
+      return 'audio';
+    }
+    // Default to image
+    return 'image';
+  };
+
+  const fileType = getFileTypeFromAccept(accept);
 
   return (
     <div 
@@ -228,24 +265,73 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
       {showPreview && previewUrl ? (
         <>
-            {accept.startsWith('video') ? (
-                <video 
-                  src={previewUrl} 
-                  className="w-full h-full object-contain rounded-xl" 
-                  controls 
-                  crossOrigin="anonymous"
-                  referrerPolicy="no-referrer"
-                  preload="metadata"
-                  onError={(e) => {
-                    // 如果 crossOrigin 失败，尝试不使用 crossOrigin
-                    const video = e.currentTarget;
-                    if (video.crossOrigin !== null) {
-                      video.crossOrigin = null;
-                      video.referrerPolicy = 'no-referrer';
-                    }
-                  }}
-                />
-            ) : accept.startsWith('audio') ? (
+            {fileType === 'video' ? (
+                useIframe ? (
+                  <iframe
+                    srcDoc={`
+                      <!DOCTYPE html>
+                      <html>
+                        <head>
+                          <meta charset="UTF-8">
+                          <style>
+                            * {
+                              margin: 0;
+                              padding: 0;
+                              box-sizing: border-box;
+                            }
+                            html, body {
+                              width: 100%;
+                              height: 100%;
+                              overflow: hidden;
+                              background: #000;
+                            }
+                            video {
+                              width: 100%;
+                              height: 100%;
+                              object-fit: contain;
+                            }
+                          </style>
+                        </head>
+                        <body>
+                          <video src="${previewUrl.replace(/"/g, '&quot;')}" controls muted playsinline></video>
+                        </body>
+                      </html>
+                    `}
+                    className="w-full h-full rounded-xl border-0"
+                    allow="autoplay; encrypted-media; fullscreen"
+                    sandbox="allow-same-origin allow-scripts allow-presentation allow-popups"
+                  />
+                ) : (
+                  <video 
+                    src={previewUrl} 
+                    className="w-full h-full object-contain rounded-xl" 
+                    controls 
+                    preload="metadata"
+                    playsInline
+                    onError={(e) => {
+                      // 当视频加载失败时（可能是 CORS 或其他错误），切换到 iframe 模式
+                      const video = e.currentTarget;
+                      const error = video.error;
+                      
+                      // 记录错误信息用于调试
+                      if (error) {
+                        console.warn('视频加载错误:', {
+                          code: error.code,
+                          message: error.message || '未知错误',
+                          MEDIA_ERR_ABORTED: 1,
+                          MEDIA_ERR_NETWORK: 2,
+                          MEDIA_ERR_DECODE: 3,
+                          MEDIA_ERR_SRC_NOT_SUPPORTED: 4
+                        });
+                      }
+                      
+                      // 尝试切换到 iframe 模式（可以绕过 CORS 限制）
+                      console.warn('视频加载失败，切换到 iframe 模式');
+                      setUseIframe(true);
+                    }}
+                  />
+                )
+            ) : fileType === 'audio' ? (
                 <div className="flex flex-col items-center justify-center w-full h-full p-4">
                     <FileIcon size={32} className="text-indigo-500 mb-2" />
                     <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
@@ -290,7 +376,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             )}
             
             {/* If manual upload is required and not uploaded yet */}
-            {!disabled && !immediate && file && !uploading && (
+            {!disabled && !immediate && file && !uploading && !uploaded && (
                  <button 
                     onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
                     className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"

@@ -127,6 +127,7 @@ export const modelService = {
         }
 
         return {
+          ...item,
           id: item.modelName || item.id || `model-${Date.now()}-${Math.random()}`,
           name: item.modelName || item.displayName || '未知模型',
           description: item.remark || item.description || item.productDescription || '',

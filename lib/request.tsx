@@ -474,6 +474,7 @@ function createRequestClient(
           showErrorMessage(authErrorMsg, errorMessageMode);
         }
         
+        // 防止多个请求同时触发登出流程
         if (!isLogoutProcessing) {
           // isLogoutProcessing = true;
           // const userStore = useAuthStore.getState();
@@ -488,7 +489,26 @@ function createRequestClient(
           // setTimeout(() => {
           //   isLogoutProcessing = false;
           // }, 1000);
+          isLogoutProcessing = true;
+          
+          // 清除认证状态
+          const userStore = useAuthStore.getState();
+          
+          // 清除 localStorage
+          localStorage.removeItem('token');
+          localStorage.removeItem('userInfo');
+          
+          // 重置 store 状态
+          userStore.setUserInfo(null);
+          
+          // 延迟重定向，让用户看到错误提示
+          setTimeout(() => {
+            isLogoutProcessing = false;
+            // 跳转到首页，会自动触发登录弹窗
+            window.location.href = '/';
+          }, 1500);
         }
+        
         throw new ApiError(authErrorMsg, 401);
       }
 

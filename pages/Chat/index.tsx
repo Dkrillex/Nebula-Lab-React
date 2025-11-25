@@ -4277,14 +4277,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         {/* Input Area */}
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
-            <div className="border-2 border-border rounded-xl bg-white transition-all overflow-hidden focus-within:border-indigo-500 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)]">
+            <div className="border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)]">
               
               {/* 上传的图片预览 */}
               {uploadedImages.length > 0 && (
-                <div className="p-4 pb-0 border-b border-gray-100">
+                <div className="p-4 pb-0 border-b border-gray-100 dark:border-gray-700">
                   <div className="flex gap-2 flex-wrap">
                   {uploadedImages.map((img, index) => (
-                      <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+                      <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
                       <img 
                         src={img} 
                         alt={`上传图片 ${index + 1}`}
@@ -4316,7 +4316,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                       : '描述您想要生成的视频,也可以上传参考图片...'
                   }
                   disabled={isLoading || !selectedModel}
-                  className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 placeholder-gray-400 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
                   rows={1}
                   style={{ 
                     lineHeight: '1.5',
@@ -4326,7 +4326,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 
                 {/* 图片上传按钮 - 只有支持图片上传的模型才显示 */}
                    {currentMode === 'image' && ModelCapabilities.supportsImageUpload(selectedModel, 'image') && (
-                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                        <input
                          type="file"
                          accept="image/*"
@@ -4340,7 +4340,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                    )}
                    {/* 视频模式：只有支持图片上传的模型才显示上传按钮 */}
                    {currentMode === 'video' && ModelCapabilities.supportsImageUpload(selectedModel, 'video') && (
-                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 rounded-lg bg-white text-indigo-600 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 hover:border-indigo-500 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
+                  <label className="flex-shrink-0 w-9 h-9 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 cursor-pointer transition-all flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-600 hover:border-indigo-500 dark:hover:border-indigo-400 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none">
                        <input
                          type="file"
                          accept="image/*"
@@ -4363,12 +4363,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                      </button>
                    ) : (
                    <button 
-                     onClick={handleSend}
+                    onClick={handleSend}
                        disabled={(!inputValue.trim() && uploadedImages.length === 0) || isLoading || !selectedModel}
                     className={`flex-shrink-0 w-9 h-9 border-none rounded-lg cursor-pointer transition-all flex items-center justify-center
                       ${(inputValue.trim() || uploadedImages.length > 0) && !isLoading && selectedModel
                         ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white hover:scale-110 hover:shadow-[0_4px_12px_rgba(102,126,234,0.4)]'
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 dark:bg-gray-600 text-gray-400 dark:text-gray-500 cursor-not-allowed'
                       }`}
                    >
                      <Send size={16} />
@@ -4377,19 +4377,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                  </div>
               
               {/* 底部提示栏 */}
-              <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 bg-gray-50/50 rounded-b-[10px]">
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <span className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Enter</span>
+              <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-[10px]">
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                  <span className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Enter</span>
                   <span>发送 ·</span>
-                  <span className="bg-gray-200 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Shift + Enter</span>
+                  <span className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Shift + Enter</span>
                   <span>换行</span>
                   {currentMode === 'image' && ModelCapabilities.supportsImageUpload(selectedModel, 'image') && (
-                    <span className="text-orange-500 font-medium">
+                    <span className="text-orange-500 dark:text-orange-400 font-medium">
                       {' '}· 支持格式: {ModelCapabilities.getFormatDisplayText(selectedModel)} · 最大: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
                     </span>
                   )}
               </div>
-                <span className="text-xs text-gray-500 font-medium">{inputValue.length}/2000</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{inputValue.length}/2000</span>
             </div>
             </div>
             

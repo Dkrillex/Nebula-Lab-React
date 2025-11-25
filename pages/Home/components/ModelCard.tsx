@@ -12,10 +12,10 @@ const ModelCard: React.FC<ModelCardProps> = ({ data, isActive, onClick }) => {
     <div 
       onClick={onClick}
       className={`
-        relative w-full bg-white rounded-xl p-5 border transition-all duration-300 cursor-pointer group select-none
+        relative w-full bg-white dark:bg-zinc-900 rounded-xl p-5 border transition-all duration-300 cursor-pointer group select-none
         ${isActive 
           ? `border-indigo-500 shadow-[0_0_0_1px_rgba(99,102,241,1)] shadow-indigo-100` 
-          : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
+          : 'border-gray-200 dark:border-zinc-800 hover:border-gray-300 dark:hover:border-zinc-700 hover:shadow-sm'
         }
       `}
     >
@@ -23,14 +23,14 @@ const ModelCard: React.FC<ModelCardProps> = ({ data, isActive, onClick }) => {
       <div className="flex justify-between items-start mb-4">
         <div className="flex flex-col">
           <div className="flex items-center gap-2">
-            <h3 className="font-semibold text-gray-900 text-[15px]">{data.name}</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white text-[15px]">{data.name}</h3>
             {data.isNew && (
-              <span className="bg-gray-100 text-gray-600 text-[10px] font-medium px-1.5 py-0.5 rounded-[4px]">New</span>
+              <span className="bg-gray-100 text-gray-600 dark:bg-zinc-800 dark:text-zinc-300 text-[10px] font-medium px-1.5 py-0.5 rounded-[4px]">New</span>
             )}
           </div>
           <div className="flex items-center gap-1 mt-0.5">
-            <span className="text-xs text-gray-500">by</span>
-            <span className="text-xs font-medium text-gray-700 hover:underline decoration-gray-400">{data.provider}</span>
+            <span className="text-xs text-gray-500 dark:text-zinc-400">by</span>
+            <span className="text-xs font-medium text-gray-700 dark:text-zinc-200 hover:underline decoration-gray-400">{data.provider}</span>
           </div>
         </div>
         
@@ -64,17 +64,17 @@ const ModelCard: React.FC<ModelCardProps> = ({ data, isActive, onClick }) => {
       <div className="grid grid-cols-3 gap-4">
         <div>
           <p className="text-[13px] font-bold text-green-600">{data.stats.tokensPerWeek}</p>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5">Tokens/wk</p>
+          <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-medium mt-0.5">Tokens/wk</p>
         </div>
         <div>
-          <p className="text-[13px] font-bold text-gray-900">{data.stats.latency}</p>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5">Latency</p>
+          <p className="text-[13px] font-bold text-gray-900 dark:text-white">{data.stats.latency}</p>
+          <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-medium mt-0.5">Latency</p>
         </div>
         <div>
-          <p className={`text-[13px] font-bold ${data.stats.isNegative ? 'text-red-500' : 'text-gray-300'}`}>
+          <p className={`text-[13px] font-bold ${data.stats.isNegative ? 'text-red-500' : 'text-gray-300 dark:text-zinc-400'}`}>
             {data.stats.weeklyGrowth}
           </p>
-          <p className="text-[10px] text-gray-400 font-medium mt-0.5">Weekly growth</p>
+          <p className="text-[10px] text-gray-400 dark:text-zinc-500 font-medium mt-0.5">Weekly growth</p>
         </div>
       </div>
       

@@ -290,7 +290,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const handleTypeClick = (toolId: string) => {
     // AI混剪视频功能暂未开放
     if (toolId === 'viralVideo') {
-      toast.error('该功能暂未开放');
+      toast.error(t.templateDetail?.featureNotOpen || '该功能暂未开放');
       return;
     }
     // 使用路由跳转而不是 query params
@@ -433,11 +433,12 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   };
 
   const renderDict = (type: number) => {
+    const templateTypes = t.templateTypes || {};
     const map: Record<number, string> = {
-      1: '文生图',
-      2: '图生图',
-      3: '文生视频',
-      4: '图生视频'
+      1: templateTypes.textToImage || '文生图',
+      2: templateTypes.imageToImage || '图生图',
+      3: templateTypes.textToVideo || '文生视频',
+      4: templateTypes.imageToVideo || '图生视频'
     };
     return map[type] || 'Unknown';
   };
@@ -600,7 +601,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
                                    handleDoSame(item);
                                  }}
                                >
-                                 做同款
+                                 {t.templateDetail?.makeSame || '做同款'}
                                </button>
                                <div 
                                  className="flex items-center gap-1 cursor-pointer" 
@@ -635,7 +636,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
             
             {!loading && labTemplateData.length === 0 && (
                <div className="text-center py-12 text-muted">
-                  No templates found.
+                  {t.templateDetail?.noTemplates || 'No templates found.'}
                </div>
             )}
       </div>
@@ -652,6 +653,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
             onDoSame={handleDoSame}
             onLike={(e, type) => clickTemplateLike(e, selectedTemplate, type)}
             renderDict={renderDict}
+            t={t}
           />
         )}
 
@@ -682,7 +684,8 @@ const TemplateDetailModal: React.FC<{
   onDoSame: (template: LabTemplate) => void;
   onLike: (e: React.MouseEvent, type: boolean) => void;
   renderDict: (type: number) => string;
-}> = ({ template, isOpen, onClose, onDoSame, onLike, renderDict }) => {
+  t: any;
+}> = ({ template, isOpen, onClose, onDoSame, onLike, renderDict, t }) => {
   if (!isOpen) return null;
 
   return (
@@ -736,7 +739,7 @@ const TemplateDetailModal: React.FC<{
           {/* Original Image (for image-to-video) */}
           {template.videoTemplateUrl && (
             <div className="mb-4">
-              <p className="text-sm text-muted mb-2">原图：</p>
+              <p className="text-sm text-muted mb-2">{t.templateDetail?.originalImage || '原图：'}</p>
               <img
                 src={template.videoTemplateUrl.replace(/`/g, '')}
                 alt="Original"
@@ -754,7 +757,7 @@ const TemplateDetailModal: React.FC<{
               >
                 {template.isLike ? '❤️' : '🤍'}
               </button>
-              <span className="text-sm text-muted">{template.likeCount || 0} 喜欢</span>
+              <span className="text-sm text-muted">{template.likeCount || 0} {t.templateDetail?.likes || '喜欢'}</span>
             </div>
             <span className="px-3 py-1 rounded-full bg-indigo-600 text-white text-sm">
               {renderDict(template.templateType)}
@@ -766,7 +769,7 @@ const TemplateDetailModal: React.FC<{
             onClick={() => onDoSame(template)}
             className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium transition-colors"
           >
-            做同款
+            {t.templateDetail?.makeSame || '做同款'}
           </button>
         </div>
       </div>

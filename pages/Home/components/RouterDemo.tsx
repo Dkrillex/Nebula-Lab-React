@@ -132,8 +132,8 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
 
           <div 
             className={`
-              w-full bg-white rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 lg:mt-16
-              ${isProcessing ? 'border-violet-400 ring-1 ring-violet-100' : 'border-gray-200 hover:border-gray-300'}
+              w-full bg-white dark:bg-zinc-900 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 lg:mt-16
+              ${isProcessing ? 'border-violet-400 ring-1 ring-violet-100' : 'border-gray-200 dark:border-zinc-800 hover:border-gray-300'}
             `}
           >
             <div className="p-1.5">
@@ -183,7 +183,7 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
             </div>
           </div>
           
-          <div className="mt-6 flex flex-row items-center gap-4 pl-1 relative z-20">
+            <div className="mt-6 flex flex-row items-center gap-4 pl-1 relative z-20">
              <button 
                onClick={() => navigate('/models')}
                className="h-11 rounded-lg bg-indigo-500 px-6 text-sm font-medium text-white hover:bg-indigo-400 transition-all flex items-center gap-2 shadow-sm"
@@ -202,8 +202,8 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
         {/* Right Side: Model Cards - 40% width */}
         <div className="w-full lg:w-[40%] flex flex-col gap-6 z-20 mt-10 lg:mt-0">
              {/* Header */}
-             <div className="flex justify-between items-baseline mb-1 px-1">
-                <span className="text-sm font-medium text-gray-500">Featured Models</span>
+        <div className="flex justify-between items-baseline mb-1 px-1">
+           <span className="text-sm font-medium text-gray-500 dark:text-zinc-400">Featured Models</span>
                 <a 
                   href="#trending-models" 
                   onClick={(e) => {
