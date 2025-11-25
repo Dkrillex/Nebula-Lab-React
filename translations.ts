@@ -1302,7 +1302,7 @@ export const translations: Record<string, Translation> = {
           },
           diamondCoin: 'Points',
           tryExample: 'Try Example',
-          generate: 'Generate after settings'
+          generate: 'Start Generating'
         },
         voiceModal: {
           title: 'Select Voice',
@@ -2712,7 +2712,7 @@ export const translations: Record<string, Translation> = {
           },
           diamondCoin: '积分',
           tryExample: '试用示例',
-          generate: '设置完成后可生成'
+          generate: '开始生成'
         },
         voiceModal: {
           title: '选择音色',
@@ -4154,7 +4154,7 @@ export const translations: Record<string, Translation> = {
           },
           diamondCoin: 'Poin',
           tryExample: 'Coba Contoh',
-          generate: 'Hasilkan setelah pengaturan'
+          generate: 'Mulai membuat'
         },
         voiceModal: {
           title: 'Pilih Suara',

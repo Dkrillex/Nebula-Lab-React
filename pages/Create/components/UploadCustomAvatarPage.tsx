@@ -295,12 +295,12 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                     <span>{t?.tips?.primary1 || '开始生成'}</span>
                   </>)}
                 </button>
-                <button
+                {/* <button
                   onClick={resetForm}
                   className="px-6 py-2.5 border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium transition"
                 >
                   {t?.tips?.actionBtn || '重置'}
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
@@ -407,6 +407,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
         } : undefined}
         disableAssetTypeSelection={true}
         isImportMode={true}
+        importMaterial={true}
       />
     </div>
   );
