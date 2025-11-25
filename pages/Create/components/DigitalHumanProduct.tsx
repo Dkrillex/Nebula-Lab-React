@@ -318,9 +318,12 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           const resultData = (res as any).result || res;
           
           if (resultData?.taskId) {
-            // Save to store and navigate to result page
+            // Save to store and navigate to result page in new tab
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
-            navigate(`/create/product-replace?taskId=${resultData.taskId}&v2=true`);
+            // Use navigate with replace: false to create a new tab in the tab system
+            navigate(`/create/product-replace?taskId=${resultData.taskId}&v2=true`, { replace: false });
+            // Reset generating state after navigation
+            setGenerating(false);
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
           }
@@ -339,9 +342,12 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           const resultData = (res as any).result || res;
           
           if (resultData?.taskId) {
-            // Save to store and navigate to result page
+            // Save to store and navigate to result page in new tab
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
-            navigate(`/create/product-replace?taskId=${resultData.taskId}`);
+            // Use navigate with replace: false to create a new tab in the tab system
+            navigate(`/create/product-replace?taskId=${resultData.taskId}`, { replace: false });
+            // Reset generating state after navigation
+            setGenerating(false);
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
           }
