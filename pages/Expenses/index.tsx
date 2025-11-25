@@ -13,6 +13,30 @@ interface ExpensesPageProps {
   t?: any;
 }
 
+// 获取今天的日期（只包含日期部分，时间设为00:00:00）
+const getToday = (): Date => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+};
+
+// 将日期格式化为本地时间的 YYYY-MM-DD 格式（避免时区问题）
+const formatDateToLocalString = (date: Date | null): string => {
+  if (!date) return '';
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+// 从 YYYY-MM-DD 字符串创建本地日期对象（避免时区问题）
+const parseLocalDate = (dateString: string): Date => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
+
 const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   const { t: rootT } = useAppOutletContext();
   // 添加空值保护，防止页面崩溃
@@ -21,22 +45,26 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   const { user } = useAuthStore();
   // 模式切换：'balance' 余额模式，'points' 积分模式，'logos' 日志/账单模式
   const [currentMode, setCurrentMode] = useState<'balance' | 'points' | 'logos'>('balance');
-  
+
   // 余额相关状态
   const [quotaInfo, setQuotaInfo] = useState<UserQuotaInfo | null>(null);
   const [expenseLogs, setExpenseLogs] = useState<ExpenseLog[]>([]);
-  const [balanceDateRange, setBalanceDateRange] = useState<[Date | null, Date | null]>([
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7天前
-    new Date(), // 今天
-  ]);
+  const [balanceDateRange, setBalanceDateRange] = useState<[Date | null, Date | null]>(() => {
+    const today = getToday();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return [sevenDaysAgo, today];
+  });
   
   // 积分相关状态
   const [userAccounts, setUserAccounts] = useState<UserAccount[]>([]);
   const [scoreList, setScoreList] = useState<ScoreRecord[]>([]);
-  const [pointsDateRange, setPointsDateRange] = useState<[Date | null, Date | null]>([
-    new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // 7天前
-    new Date(), // 今天
-  ]);
+  const [pointsDateRange, setPointsDateRange] = useState<[Date | null, Date | null]>(() => {
+    const today = getToday();
+    const sevenDaysAgo = new Date(today);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    return [sevenDaysAgo, today];
+  });
   
   // 日志/账单相关状态
   const [teamLogs, setTeamLogs] = useState<TeamLog[]>([]);
@@ -64,6 +92,15 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   // 判断是否显示日志/账单按钮
   const isShowTeamLogos = (user?.team?.length > 0 || user?.channelId);
 
+  // 检查日期是否是今天（比较年月日部分）
+  const isToday = (date: Date | null): boolean => {
+    if (!date) return false;
+    const today = getToday();
+    const dateToCheck = new Date(date);
+    dateToCheck.setHours(0, 0, 0, 0);
+    return dateToCheck.getTime() === today.getTime();
+  };
+
   // 获取用户余额信息
   const fetchQuotaInfo = async () => {
     if (!user?.nebulaApiId) return;
@@ -89,18 +126,26 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
     try {
       setLoading(true);
+      
+      // 如果结束日期是今天，则更新为当前的今天
+      let endDate = balanceDateRange[1];
+      if (isToday(endDate)) {
+        endDate = getToday();
+        setBalanceDateRange([balanceDateRange[0], endDate]);
+      }
+      
       const params: any = {
         pageNum: page,
         pageSize: pagination.pageSize,
         userId: user.nebulaApiId,
       };
       
-      // 添加日期范围参数
+      // 添加日期范围参数（使用本地时间格式化，避免时区问题）
       if (balanceDateRange[0]) {
-        params.startDate = balanceDateRange[0].toISOString().split('T')[0];
+        params.startDate = formatDateToLocalString(balanceDateRange[0]);
       }
-      if (balanceDateRange[1]) {
-        params.endDate = balanceDateRange[1].toISOString().split('T')[0];
+      if (endDate) {
+        params.endDate = formatDateToLocalString(endDate);
       }
       
       const res = await expenseService.getExpenseLogs(params);
@@ -148,18 +193,26 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
     try {
       setLoading(true);
+      
+      // 如果结束日期是今天，则更新为当前的今天
+      let endDate = pointsDateRange[1];
+      if (isToday(endDate)) {
+        endDate = getToday();
+        setPointsDateRange([pointsDateRange[0], endDate]);
+      }
+      
       const params: any = {
         createBy: user.userId,
         pageNum: page,
         pageSize: pagination.pageSize,
       };
       
-      // 添加日期范围参数（如果接口支持）
+      // 添加日期范围参数（使用本地时间格式化，避免时区问题）
       if (pointsDateRange[0]) {
-        params.startDate = pointsDateRange[0].toISOString().split('T')[0];
+        params.startDate = formatDateToLocalString(pointsDateRange[0]);
       }
-      if (pointsDateRange[1]) {
-        params.endDate = pointsDateRange[1].toISOString().split('T')[0];
+      if (endDate) {
+        params.endDate = formatDateToLocalString(endDate);
       }
       
       const res = await expenseService.getScoreList(params);
@@ -340,10 +393,10 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       };
       
       if (balanceDateRange[0]) {
-        params.startDate = balanceDateRange[0].toISOString().split('T')[0];
+        params.startDate = formatDateToLocalString(balanceDateRange[0]);
       }
       if (balanceDateRange[1]) {
-        params.endDate = balanceDateRange[1].toISOString().split('T')[0];
+        params.endDate = formatDateToLocalString(balanceDateRange[1]);
       }
       
       const res = await expenseService.getExpenseLogs(params);
@@ -380,7 +433,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `余额账单_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `余额账单_${formatDateToLocalString(new Date())}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -402,10 +455,10 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       };
       
       if (pointsDateRange[0]) {
-        params.startDate = pointsDateRange[0].toISOString().split('T')[0];
+        params.startDate = formatDateToLocalString(pointsDateRange[0]);
       }
       if (pointsDateRange[1]) {
-        params.endDate = pointsDateRange[1].toISOString().split('T')[0];
+        params.endDate = formatDateToLocalString(pointsDateRange[1]);
       }
       
       const res = await expenseService.getScoreList(params);
@@ -458,7 +511,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `积分账单_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `积分账单_${formatDateToLocalString(new Date())}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -512,7 +565,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `日志账单_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `日志账单_${formatDateToLocalString(new Date())}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -867,14 +920,16 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <input
                         type="date"
                         value={currentMode === 'balance' 
-                          ? (balanceDateRange[0] ? balanceDateRange[0].toISOString().split('T')[0] : '')
-                          : (pointsDateRange[0] ? pointsDateRange[0].toISOString().split('T')[0] : '')
+                          ? formatDateToLocalString(balanceDateRange[0])
+                          : formatDateToLocalString(pointsDateRange[0])
                         }
                         onChange={(e) => {
                           if (currentMode === 'balance') {
-                            setBalanceDateRange([e.target.value ? new Date(e.target.value) : null, balanceDateRange[1]]);
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setBalanceDateRange([date, balanceDateRange[1]]);
                           } else {
-                            setPointsDateRange([e.target.value ? new Date(e.target.value) : null, pointsDateRange[1]]);
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setPointsDateRange([date, pointsDateRange[1]]);
                           }
                         }}
                         className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
@@ -885,14 +940,16 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <input
                         type="date"
                         value={currentMode === 'balance'
-                          ? (balanceDateRange[1] ? balanceDateRange[1].toISOString().split('T')[0] : '')
-                          : (pointsDateRange[1] ? pointsDateRange[1].toISOString().split('T')[0] : '')
+                          ? formatDateToLocalString(balanceDateRange[1])
+                          : formatDateToLocalString(pointsDateRange[1])
                         }
                         onChange={(e) => {
                           if (currentMode === 'balance') {
-                            setBalanceDateRange([balanceDateRange[0], e.target.value ? new Date(e.target.value) : null]);
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setBalanceDateRange([balanceDateRange[0], date]);
                           } else {
-                            setPointsDateRange([pointsDateRange[0], e.target.value ? new Date(e.target.value) : null]);
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setPointsDateRange([pointsDateRange[0], date]);
                           }
                         }}
                         className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
@@ -1027,8 +1084,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
-                          value={dateRange[0] ? dateRange[0].toISOString().split('T')[0] : ''}
-                          onChange={(e) => setDateRange([e.target.value ? new Date(e.target.value) : null, dateRange[1]])}
+                          value={formatDateToLocalString(dateRange[0])}
+                          onChange={(e) => {
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setDateRange([date, dateRange[1]]);
+                          }}
                           className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
@@ -1041,8 +1101,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
-                          value={dateRange[1] ? dateRange[1].toISOString().split('T')[0] : ''}
-                          onChange={(e) => setDateRange([dateRange[0], e.target.value ? new Date(e.target.value) : null])}
+                          value={formatDateToLocalString(dateRange[1])}
+                          onChange={(e) => {
+                            const date = e.target.value ? parseLocalDate(e.target.value) : null;
+                            setDateRange([dateRange[0], date]);
+                          }}
                           className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
