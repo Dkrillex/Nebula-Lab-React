@@ -259,6 +259,8 @@ interface Translation {
         label: string;
         emptyState: string;
       };
+      progressStatusFull: string;
+      progressStatusShort: string;
     };
     digitalHuman: {
       title: string;
@@ -1008,7 +1010,9 @@ export const translations: Record<string, Translation> = {
         result: {
           label: 'Generation Result',
           emptyState: 'Upload image and enter description text to start your AI video creation journey'
-        }
+        },
+        progressStatusFull: 'Generating your masterpiece...',
+        progressStatusShort: 'Generating...'
       },
       digitalHuman: {
         title: 'Digital Human Video Creation',
@@ -1807,7 +1811,9 @@ export const translations: Record<string, Translation> = {
         result: {
           label: '生成结果',
           emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'
-        }
+        },
+        progressStatusFull: '正在为您生成杰作...',
+        progressStatusShort: '生成中...'
       },
       digitalHuman: {
         title: '数字人视频创作',
@@ -2639,7 +2645,9 @@ export const translations: Record<string, Translation> = {
         result: {
           label: 'Hasil Pembuatan',
           emptyState: 'Unggah gambar dan masukkan teks deskripsi untuk memulai perjalanan pembuatan video AI Anda'
-        }
+        },
+        progressStatusFull: 'Sedang membuat karya Anda... {progress}%',
+        progressStatusShort: 'Sedang membuat... {progress}%'
       },
       digitalHuman: {
         title: 'Pembuatan Video Manusia Digital',
