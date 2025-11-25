@@ -778,7 +778,13 @@ interface Translation {
       input: string;
       output: string;
       consumption: string;
-    }
+    };
+    status: {
+      paid: string; // 已扣款
+      unpaid: string; // 未扣款
+      failed: string; // 失败
+      unknown: string; // 未知
+    };
   };
   pricingPage: {
     title: string;
@@ -2152,6 +2158,12 @@ export const translations: Record<string, Translation> = {
         input: 'Input',
         output: 'Output',
         consumption: 'Consumption'
+      },
+      status: {
+        paid: 'Paid',
+        unpaid: 'Unpaid',
+        failed: 'Failed',
+        unknown: 'Unknown'
       }
     },
     pricingPage: {
@@ -3552,6 +3564,12 @@ export const translations: Record<string, Translation> = {
         input: '输入token:',
         output: '输出token:',
         consumption: '消费'
+      },
+      status: {
+        paid: '已扣款',
+        unpaid: '未扣款',
+        failed: '失败',
+        unknown: '未知'
       }
     },
     pricingPage: {
@@ -4523,6 +4541,12 @@ export const translations: Record<string, Translation> = {
         input: 'Input',
         output: 'Output',
         consumption: 'Konsumsi'
+      },
+      status: {
+        paid: 'Telah Dikurangi',
+        unpaid: 'Belum Dikurangi',
+        failed: 'Gagal',
+        unknown: 'Tidak Diketahui'
       }
     },
     pricingPage: {
