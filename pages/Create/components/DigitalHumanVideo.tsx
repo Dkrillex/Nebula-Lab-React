@@ -607,10 +607,15 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                             </div>
                             <div className="voice-container flex gap-4 items-center">
                                 {selectedVoice && (
-                                    <div className="selected-voice flex gap-2 items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-                                        <span className="voice-name text-sm font-medium text-indigo-700 dark:text-indigo-300">{selectedVoice.voiceName}</span>
+                                    <div className="selected-voice flex gap-2 items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg max-w-[200px]">
+                                        <span 
+                                            className="voice-name text-sm font-medium text-indigo-700 dark:text-indigo-300 truncate" 
+                                            title={selectedVoice.voiceName}
+                                        >
+                                            {selectedVoice.voiceName}
+                                        </span>
                                         <button 
-                                            className="voice-remove flex items-center justify-center w-5 h-5 text-xs text-white bg-indigo-600 rounded-full hover:bg-indigo-700"
+                                            className="voice-remove flex items-center justify-center w-5 h-5 text-xs text-white bg-indigo-600 rounded-full hover:bg-indigo-700 flex-shrink-0"
                                             onClick={(e) => { e.stopPropagation(); setSelectedVoice(null); }}
                                         >
                                             ×

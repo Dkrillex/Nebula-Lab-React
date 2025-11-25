@@ -35,6 +35,37 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
 
+  // 缓存机制：存储已获取的音色列表
+  const cacheRef = useRef<Map<string, { list: Voice[]; total: number; timestamp: number }>>(new Map());
+  const CACHE_EXPIRY = 5 * 60 * 1000; // 缓存5分钟
+
+  // 生成缓存键
+  const getCacheKey = (tab: 'public' | 'custom', pageNo: number, filters?: any) => {
+    if (tab === 'custom') {
+      return `custom_${pageNo}`;
+    }
+    const filterStr = filters ? JSON.stringify(filters) : '';
+    return `public_${pageNo}_${filterStr}`;
+  };
+
+  // 检查缓存是否有效
+  const getCachedData = (key: string) => {
+    const cached = cacheRef.current.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_EXPIRY) {
+      return cached;
+    }
+    return null;
+  };
+
+  // 设置缓存
+  const setCache = (key: string, list: Voice[], total: number) => {
+    cacheRef.current.set(key, {
+      list,
+      total,
+      timestamp: Date.now(),
+    });
+  };
+
   useEffect(() => {
     if (isOpen) {
       fetchVoices();
@@ -44,6 +75,18 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
   }, [isOpen, activeTab, pagination.pageNo, filters]);
 
   const fetchVoices = async () => {
+    // 先检查缓存
+    const cacheKey = getCacheKey(activeTab, pagination.pageNo, activeTab === 'public' ? filters : undefined);
+    const cached = getCachedData(cacheKey);
+    
+    if (cached) {
+      // 使用缓存数据
+      setVoiceList(cached.list);
+      setPagination(prev => ({ ...prev, total: cached.total }));
+      return;
+    }
+
+    // 缓存未命中，调用接口
     setLoading(true);
     try {
       let list: Voice[] = [];
@@ -78,6 +121,9 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
             total = res.total || 0;
         }
       }
+      
+      // 保存到缓存
+      setCache(cacheKey, list, total);
       
       setVoiceList(list || []);
       setPagination(prev => ({ ...prev, total }));
@@ -261,9 +307,12 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
                                     : 'border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800'}
                             `}
                         >
-                            <div className="flex justify-between items-start mb-2">
-                                <div className="flex-1">
-                                    <h4 className={`font-semibold truncate ${selectedVoiceId === voice.voiceId ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-100'}`}>
+                            <div className="flex justify-between items-start mb-2 gap-2">
+                                <div className="flex-1 min-w-0">
+                                    <h4 
+                                        className={`font-semibold truncate ${selectedVoiceId === voice.voiceId ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-900 dark:text-gray-100'}`}
+                                        title={voice.voiceName}
+                                    >
                                         {voice.voiceName}
                                     </h4>
                                     {activeTab === 'public' && (
@@ -275,7 +324,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
                                 <button
                                     onClick={(e) => handlePlay(voice, e)}
                                     className={`
-                                        p-2 rounded-full transition-colors flex-shrink-0
+                                        p-2 rounded-full transition-colors flex-shrink-0 ml-2
                                         ${playingId === voice.voiceId 
                                             ? 'bg-indigo-600 text-white' 
                                             : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-indigo-100 hover:text-indigo-600'}
