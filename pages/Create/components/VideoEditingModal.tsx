@@ -579,6 +579,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   }, []);
 
   // 清除所有标记和遮罩层（不提交）- 借鉴 Nebula1
+  // 注意：不清除预览结果（previewResult），因为确认按钮需要使用
   const clearAllMarksAndMasks = useCallback(async () => {
     // 清除所有标记修改区域和标记保护区域的坐标
     setMarkers([]);
@@ -589,11 +590,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     // 清除所有红色遮罩层和绿色遮罩层的遮罩数据
     setFrameMaskMap(new Map());
     
-    // 清除预览结果
-    setPreviewResult(null);
-    previewResultRef.current = null;
+    // 借鉴 Nebula1：不清除预览结果（previewResult 和 previewResultRef），因为确认按钮需要使用
+    // setPreviewResult(null);
+    // previewResultRef.current = null;
     
-    console.log('清除所有标记和遮罩数据');
+    console.log('清除所有标记和遮罩数据（保留预览结果）');
     
     // 更新遮罩层显示（清除遮罩）- 通过 updateMaskForCurrentFrame 来更新
     // 注意：这里不直接调用 renderMaskImages，而是通过 updateMaskForCurrentFrame
@@ -1061,7 +1062,6 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     setPreviewAllLoading(true);
     setPreviewAllDisabled(true);
     setDrawModalSpin(true);
-    setDrawModalSpin(true);
 
     try {
       // 按帧索引分组所有标记
@@ -1149,13 +1149,18 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               taskId: queryResult.result.taskId,
               trackingVideoPath: trackingVideoPath,
             };
+            console.log('预览成功：保存预览结果到 state 和 ref:', result);
             setPreviewResult(result);
             previewResultRef.current = result;
+            console.log('预览成功：previewResultRef.current =', previewResultRef.current);
 
             // 借鉴 Nebula1：如果 shouldEmitSuccess 为 true，触发子传父事件
             // emit('videoMaskSuccess', { taskId, trackingVideoPath })
             if (shouldEmitSuccess && onVideoMaskSuccess) {
+              console.log('预览成功：触发子传父事件 onVideoMaskSuccess');
               onVideoMaskSuccess(result);
+            } else {
+              console.log('预览成功：不触发子传父事件（shouldEmitSuccess =', shouldEmitSuccess, ', onVideoMaskSuccess =', !!onVideoMaskSuccess, ')');
             }
 
             // 清除所有标记和遮罩层
@@ -1191,20 +1196,23 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 确认提交（调用预览功能后关闭模态框）- 借鉴 Nebula1
   const handleConfirm = useCallback(async () => {
-    if (markers.length === 0) {
-      // 如果没有标记，直接关闭
-      onClose();
-      return;
-    }
-    
-    // 借鉴 Nebula1：如果已经有预览结果（trackingVideoPath 和 taskId），直接使用它们
-    if (previewResultRef.current) {
-      const result = previewResultRef.current;
-      console.log('使用已有的预览结果:', result);
+    // 借鉴 Nebula1：优先检查是否有预览结果（即使标记被清除了，预览结果仍然存在）
+    // 如果已经有预览结果（从 ref 或 state 中获取），直接使用它们并触发子传父事件
+    const existingResult = previewResultRef.current || previewResult;
+    if (existingResult) {
+      console.log('确认按钮：使用已有的预览结果:', existingResult);
+      console.log('确认按钮：taskId =', existingResult.taskId);
+      console.log('确认按钮：trackingVideoPath =', existingResult.trackingVideoPath);
       
-      // 触发成功回调
+      // 借鉴 Nebula1：触发子传父事件，传递 taskId 和 trackingVideoPath
       if (onVideoMaskSuccess) {
-        onVideoMaskSuccess(result);
+        console.log('确认按钮：触发子传父事件 onVideoMaskSuccess');
+        onVideoMaskSuccess({
+          taskId: existingResult.taskId,
+          trackingVideoPath: existingResult.trackingVideoPath,
+        });
+      } else {
+        console.warn('确认按钮：onVideoMaskSuccess 回调未定义');
       }
       
       // 关闭模态框
@@ -1212,12 +1220,22 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       return;
     }
     
-    // 如果没有预览结果，调用预览功能，传入 true 表示需要触发成功回调
+    // 借鉴 Nebula1：如果没有预览结果，检查是否有标记
+    // 如果没有标记也没有预览结果，直接关闭
+    if (markers.length === 0) {
+      console.log('确认按钮：没有标记也没有预览结果，直接关闭');
+      onClose();
+      return;
+    }
+    
+    // 借鉴 Nebula1：如果有标记但没有预览结果，调用预览功能并等待完成
+    // 传入 true 表示需要触发成功回调（子传父事件）
+    console.log('确认按钮：有标记但没有预览结果，开始执行预览功能');
     await handlePreviewAll(true);
     
-    // 关闭模态框
+    // 借鉴 Nebula1：预览完成后关闭模态框（handlePreviewAll 中已经触发了子传父事件）
     onClose();
-  }, [markers.length, handlePreviewAll, onClose, onVideoMaskSuccess]);
+  }, [markers.length, previewResult, handlePreviewAll, onClose, onVideoMaskSuccess]);
 
   if (!isOpen) {
     return null;
@@ -1261,11 +1279,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         </div>
 
         {/* 视频预览区域 */}
-        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden">
+        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden" style={{ maxHeight: 'calc(90vh - 200px)' }}>
           <div
             ref={videoContainerRef}
             className="relative w-full max-w-[400px] flex items-center justify-center"
-            style={{ height: '100%', maxHeight: '100%' }}
+            style={{ 
+              height: '600px',
+              aspectRatio: 'auto'
+            }}
             onClick={handleVideoContainerClick}
           >
             {isLoading && (
@@ -1276,8 +1297,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             <video
               ref={videoRef}
               src={currentVideoUrl}
-              className="w-full h-full max-h-full object-contain rounded-lg"
-              style={{ maxHeight: '100%' }}
+              className="w-full h-full max-w-full max-h-full object-contain rounded-lg"
+              style={{ 
+                maxWidth: '100%',
+                maxHeight: '100%'
+              }}
               onLoadedMetadata={handleVideoLoaded}
               onTimeUpdate={handleTimeUpdate}
               onError={(e) => {
