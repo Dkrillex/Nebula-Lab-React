@@ -112,6 +112,19 @@ interface Translation {
       talkingPhotoDesc: string;
     };
     tabs: string[];
+    templateTypes?: {
+      textToImage: string;
+      imageToImage: string;
+      textToVideo: string;
+      imageToVideo: string;
+    };
+    templateDetail?: {
+      makeSame: string;
+      likes: string;
+      originalImage: string;
+      noTemplates: string;
+      featureNotOpen: string;
+    };
     authModal?: {
       loginTitle: string;
       tabPassword: string;
@@ -862,6 +875,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: 'Make photos talk'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
+      templateTypes: {
+        textToImage: 'Text to Image',
+        imageToImage: 'Image to Image',
+        textToVideo: 'Text to Video',
+        imageToVideo: 'Image to Video',
+      },
+      templateDetail: {
+        makeSame: 'Make Same',
+        likes: 'likes',
+        originalImage: 'Original:',
+        noTemplates: 'No templates found.',
+        featureNotOpen: 'This feature is not available yet',
+      },
       authModal: {
         loginTitle: 'Welcome Back',
         tabPassword: 'Password',
@@ -1661,6 +1687,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: '让照片开口说话'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
+      templateTypes: {
+        textToImage: '文生图',
+        imageToImage: '图生图',
+        textToVideo: '文生视频',
+        imageToVideo: '图生视频',
+      },
+      templateDetail: {
+        makeSame: '做同款',
+        likes: '喜欢',
+        originalImage: '原图：',
+        noTemplates: '暂无模板数据',
+        featureNotOpen: '该功能暂未开放',
+      },
       authModal: {
         loginTitle: '欢迎回来',
         tabPassword: '密码登录',
@@ -2493,6 +2532,19 @@ export const translations: Record<string, Translation> = {
         talkingPhotoDesc: 'Buat foto berbicara'
       },
       tabs: ['Semua', 'Karakter', 'Hewan', 'Anime', 'Kreatif', 'Makanan', 'Pemandangan', 'Produk'],
+      templateTypes: {
+        textToImage: 'Teks ke Gambar',
+        imageToImage: 'Gambar ke Gambar',
+        textToVideo: 'Teks ke Video',
+        imageToVideo: 'Gambar ke Video',
+      },
+      templateDetail: {
+        makeSame: 'Buat Sama',
+        likes: 'suka',
+        originalImage: 'Asli:',
+        noTemplates: 'Tidak ada template ditemukan.',
+        featureNotOpen: 'Fitur ini belum tersedia',
+      },
       authModal: {
         loginTitle: 'Selamat Datang Kembali',
         tabPassword: 'Kata Sandi',
