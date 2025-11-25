@@ -5,6 +5,7 @@ import {
   MoreHorizontal, Cpu, MessageSquare, X, Copy, Loader2, Square,
   Image as ImageIcon, Video, MessageCircle, Eye, Maximize2, Reply
 } from 'lucide-react';
+import ModelSelect from '../../components/ModelSelect';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -3337,30 +3338,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           {/* Model Selection */}
           <div className="space-y-3 mb-8">
             <label className="text-sm font-medium text-muted">{t.selectModel}</label>
-            <div className="relative">
-              <Cpu className="absolute left-3 top-1/2 -translate-y-1/2 text-muted z-10" size={16} />
-              {modelsLoading ? (
-                <div className="w-full py-2.5 pl-10 pr-8 text-sm text-muted flex items-center">
-                  <Loader2 size={14} className="animate-spin mr-2" />
-                  加载中...
-                </div>
-              ) : (
-              <select 
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value)}
-                className="w-full appearance-none rounded-lg border border-border bg-surface py-2.5 pl-10 pr-8 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-all"
-                  disabled={models.length === 0}
-              >
-                  {models.length === 0 ? (
-                    <option value="">暂无可用模型</option>
-                  ) : (
-                    models.map(m => (
-                      <option key={m.id} value={m.modelName}>{m.modelName}</option>
-                    ))
-                  )}
-              </select>
-              )}
-            </div>
+            <ModelSelect
+              value={selectedModel}
+              onChange={setSelectedModel}
+              models={models}
+              loading={modelsLoading}
+              placeholder="暂无可用模型"
+              loadingText="加载中..."
+            />
           </div>
 
           {/* Parameters */}
