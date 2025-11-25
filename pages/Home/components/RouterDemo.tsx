@@ -13,7 +13,7 @@ const MODELS: ModelCardData[] = [
     providerLogo: 'G',
     tags: ['New'],
     isNew: true,
-    stats: { tokensPerWeek: '43.7B', latency: '3.3s', weeklyGrowth: '- -' },
+    stats: { tokensPerWeek: '43.7B', latency: '3.3s', weeklyGrowth: '55.26%', isNegative: true },
     color: 'blue'
   },
   {
@@ -22,7 +22,7 @@ const MODELS: ModelCardData[] = [
     provider: 'openai',
     providerLogo: 'O',
     tags: [],
-    stats: { tokensPerWeek: '56.0B', latency: '8.8s', weeklyGrowth: '-35.26%', isNegative: true },
+    stats: { tokensPerWeek: '56.0B', latency: '8.8s', weeklyGrowth: '35.26%', isNegative: true },
     color: 'green'
   },
   {
@@ -31,7 +31,7 @@ const MODELS: ModelCardData[] = [
     provider: 'anthropic',
     providerLogo: 'A',
     tags: [],
-    stats: { tokensPerWeek: '587.2B', latency: '1.3s', weeklyGrowth: '-21.14%', isNegative: true },
+    stats: { tokensPerWeek: '587.2B', latency: '1.3s', weeklyGrowth: '21.14%', isNegative: true },
     color: 'orange'
   },
 ];
