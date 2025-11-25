@@ -1,19 +1,14 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SearchIcon, ChevronDown, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
+import { SearchIcon, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAppOutletContext } from '@/router/context';
 import { modelService } from '@/services/modelService.ts';
 import { AIModel } from '@/types.ts';
 import toast from 'react-hot-toast';
+import FilterSelect, { FilterOption } from './components/FilterSelect';
 
 interface ModelSquarePageProps {
   t?: any;
-}
-
-interface FilterOption {
-  value: string;
-  label: string;
-  count: number;
 }
 
 const getBillingTypeLabel = (quotaType?: number): string => {
@@ -25,29 +20,6 @@ const getBillingTypeLabel = (quotaType?: number): string => {
   if (quotaType === 5) return '按张计费';
   return '未知';
 };
-
-const FilterDropdown = ({ label, options, value, onChange }: { 
-  label: string; 
-  options: FilterOption[]; 
-  value: string; 
-  onChange: (value: string) => void;
-}) => (
-  <div className="space-y-2">
-    <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{label}</label>
-    <div className="relative">
-      <select 
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-10 appearance-none rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-3 text-sm focus:border-zinc-400 focus:ring-4 focus:ring-zinc-100 dark:focus:ring-zinc-800 outline-none transition-all text-zinc-900 dark:text-zinc-100 cursor-pointer"
-      >
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>{opt.label}</option>
-        ))}
-      </select>
-      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none" size={16} />
-    </div>
-  </div>
-);
 
 const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
   const { t: rootT } = useAppOutletContext();
@@ -776,7 +748,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         </div>
 
         {/* Vendor Filter */}
-        <FilterDropdown 
+        <FilterSelect 
           label={t.filters.vendorLabel} 
           options={vendorOptions} 
           value={selectedVendor} 
@@ -784,7 +756,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         />
 
         {/* Tag Filter */}
-        <FilterDropdown 
+        <FilterSelect 
           label={t.filters.capabilityLabel} 
           options={tagOptions} 
           value={selectedTag} 
@@ -792,7 +764,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         />
 
         {/* Billing Type */}
-        <FilterDropdown 
+        <FilterSelect 
           label={t.filters.billingLabel} 
           options={billingTypeOptions} 
           value={selectedBilling}

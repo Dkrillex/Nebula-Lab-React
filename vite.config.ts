@@ -2,6 +2,8 @@ import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Prerender from '@prerenderer/rollup-plugin';
+import PuppeteerRenderer from '@prerenderer/renderer-puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -24,11 +26,44 @@ export default defineConfig(({ mode, command }) => {
     console.log(`🔒 加密功能: ${env.VITE_ENABLE_ENCRYPT !== 'false' ? '✅ 启用' : '❌ 禁用'}`);
     console.log(`🐛 调试模式: ${env.VITE_DEBUG === 'true' ? '✅ 启用' : '❌ 禁用'}`);
     console.log(`📂 输出目录: lab/`);
+    console.log(`🔄 预渲染路由: /, /create`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
   }
 
+  // 预渲染配置 - 仅在生产构建时启用
+  const prerenderPlugin = isProduction && isBuild
+    ? Prerender({
+        routes: ['/', '/create'], // 需要预渲染的路由
+        renderer: new PuppeteerRenderer({
+          // 等待页面渲染完成的条件
+          renderAfterTime: 3000, // 等待 3 秒确保页面完全加载
+          // Puppeteer 启动选项
+          launchOptions: {
+            headless: true,
+            // 使用系统已安装的 Chrome（macOS 默认路径）
+            executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          },
+        }),
+        postProcess(renderedRoute) {
+          // 后处理：注入预渲染标记，便于调试
+          renderedRoute.html = renderedRoute.html.replace(
+            '</head>',
+            `<meta name="prerender-status" content="prerendered" />\n</head>`
+          );
+          // 移除可能导致问题的脚本状态
+          renderedRoute.html = renderedRoute.html.replace(
+            /<script type="application\/json" id="__PRERENDER_STATE__">.*?<\/script>/gs,
+            ''
+          );
+        },
+      })
+    : null;
+
   return {
-    plugins: [react()],
+    plugins: [
+      react(),
+      prerenderPlugin, // 预渲染插件（生产构建时启用）
+    ].filter(Boolean),
     resolve: {
       alias: {
         '@': path.resolve(__dirname, './'),

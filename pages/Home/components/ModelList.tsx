@@ -1,8 +1,258 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Search, ArrowUpRight } from 'lucide-react';
-import { modelService } from '../../../services/modelService';
 import { AIModel } from '../../../types';
+
+// 静态模型数据
+const STATIC_MODELS: AIModel[] = [
+  {
+    id: 'gpt-4o',
+    name: 'GPT-4o',
+    description: 'OpenAI 最新多模态旗舰模型，支持文本、图像、音频输入',
+    provider: 'OpenAI',
+    contextLength: 128000,
+    inputPrice: 2.5,
+    outputPrice: 10,
+    isNew: true,
+    isFree: false,
+    tags: ['chat', 'vision', 'reasoning'],
+  },
+  {
+    id: 'gpt-4o-mini',
+    name: 'GPT-4o Mini',
+    description: '轻量级多模态模型，性价比高',
+    provider: 'OpenAI',
+    contextLength: 128000,
+    inputPrice: 0.15,
+    outputPrice: 0.6,
+    isNew: true,
+    isFree: false,
+    tags: ['chat', 'vision'],
+  },
+  {
+    id: 'claude-4-sonnet',
+    name: 'Claude 4 Sonnet',
+    description: 'Anthropic 最新旗舰模型，强大的推理和编码能力',
+    provider: 'Anthropic',
+    contextLength: 200000,
+    inputPrice: 3,
+    outputPrice: 15,
+    isNew: true,
+    isFree: false,
+    tags: ['chat', 'code', 'reasoning'],
+  },
+  {
+    id: 'claude-3.5-sonnet',
+    name: 'Claude 3.5 Sonnet',
+    description: '平衡性能与成本的优秀选择',
+    provider: 'Anthropic',
+    contextLength: 200000,
+    inputPrice: 3,
+    outputPrice: 15,
+    isFree: false,
+    tags: ['chat', 'code'],
+  },
+  {
+    id: 'claude-3.5-haiku',
+    name: 'Claude 3.5 Haiku',
+    description: '快速响应，适合简单任务',
+    provider: 'Anthropic',
+    contextLength: 200000,
+    inputPrice: 0.8,
+    outputPrice: 4,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'gemini-2.0-flash',
+    name: 'Gemini 2.0 Flash',
+    description: 'Google 最新多模态模型，支持实时交互',
+    provider: 'Google',
+    contextLength: 1000000,
+    inputPrice: 0.075,
+    outputPrice: 0.3,
+    isNew: true,
+    isFree: false,
+    tags: ['chat', 'vision', 'audio'],
+  },
+  {
+    id: 'gemini-1.5-pro',
+    name: 'Gemini 1.5 Pro',
+    description: '超长上下文窗口，适合文档分析',
+    provider: 'Google',
+    contextLength: 2000000,
+    inputPrice: 1.25,
+    outputPrice: 5,
+    isFree: false,
+    tags: ['chat', 'vision'],
+  },
+  {
+    id: 'deepseek-chat',
+    name: 'DeepSeek Chat',
+    description: '国产高性价比对话模型',
+    provider: 'DeepSeek',
+    contextLength: 64000,
+    inputPrice: 0.14,
+    outputPrice: 0.28,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'deepseek-coder',
+    name: 'DeepSeek Coder',
+    description: '专注代码生成与理解',
+    provider: 'DeepSeek',
+    contextLength: 64000,
+    inputPrice: 0.14,
+    outputPrice: 0.28,
+    isFree: false,
+    tags: ['code'],
+  },
+  {
+    id: 'qwen-max',
+    name: 'Qwen Max',
+    description: '阿里通义千问旗舰模型',
+    provider: 'Alibaba',
+    contextLength: 32000,
+    inputPrice: 2.4,
+    outputPrice: 9.6,
+    isFree: false,
+    tags: ['chat', 'reasoning'],
+  },
+  {
+    id: 'qwen-plus',
+    name: 'Qwen Plus',
+    description: '通义千问进阶版，平衡性能与成本',
+    provider: 'Alibaba',
+    contextLength: 131072,
+    inputPrice: 0.8,
+    outputPrice: 2,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'qwen-turbo',
+    name: 'Qwen Turbo',
+    description: '通义千问快速版，响应迅速',
+    provider: 'Alibaba',
+    contextLength: 131072,
+    inputPrice: 0.3,
+    outputPrice: 0.6,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'llama-3.3-70b',
+    name: 'Llama 3.3 70B',
+    description: 'Meta 开源大模型，性能强劲',
+    provider: 'Meta',
+    contextLength: 128000,
+    inputPrice: 0.59,
+    outputPrice: 0.79,
+    isNew: true,
+    isFree: false,
+    tags: ['chat', 'code'],
+  },
+  {
+    id: 'llama-3.1-8b',
+    name: 'Llama 3.1 8B',
+    description: '轻量级开源模型，部署灵活',
+    provider: 'Meta',
+    contextLength: 128000,
+    inputPrice: 0.05,
+    outputPrice: 0.08,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'mistral-large',
+    name: 'Mistral Large',
+    description: 'Mistral 旗舰模型，欧洲领先',
+    provider: 'Mistral',
+    contextLength: 128000,
+    inputPrice: 2,
+    outputPrice: 6,
+    isFree: false,
+    tags: ['chat', 'reasoning'],
+  },
+  {
+    id: 'mistral-small',
+    name: 'Mistral Small',
+    description: '高效紧凑，适合边缘部署',
+    provider: 'Mistral',
+    contextLength: 32000,
+    inputPrice: 0.2,
+    outputPrice: 0.6,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'yi-large',
+    name: 'Yi Large',
+    description: '零一万物旗舰模型',
+    provider: '01.AI',
+    contextLength: 32000,
+    inputPrice: 3,
+    outputPrice: 9,
+    isFree: false,
+    tags: ['chat', 'reasoning'],
+  },
+  {
+    id: 'moonshot-v1-128k',
+    name: 'Moonshot v1 128K',
+    description: '月之暗面长上下文模型',
+    provider: 'Moonshot',
+    contextLength: 128000,
+    inputPrice: 0.84,
+    outputPrice: 0.84,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'glm-4-plus',
+    name: 'GLM-4 Plus',
+    description: '智谱 AI 旗舰模型',
+    provider: 'Zhipu',
+    contextLength: 128000,
+    inputPrice: 1,
+    outputPrice: 1,
+    isFree: false,
+    tags: ['chat', 'code'],
+  },
+  {
+    id: 'hunyuan-pro',
+    name: 'Hunyuan Pro',
+    description: '腾讯混元大模型',
+    provider: 'Tencent',
+    contextLength: 32000,
+    inputPrice: 3,
+    outputPrice: 9,
+    isFree: false,
+    tags: ['chat'],
+  },
+  {
+    id: 'ernie-4.0',
+    name: 'ERNIE 4.0',
+    description: '百度文心一言 4.0',
+    provider: 'Baidu',
+    contextLength: 8192,
+    inputPrice: 4,
+    outputPrice: 12,
+    isFree: false,
+    tags: ['chat', 'reasoning'],
+  },
+  {
+    id: 'spark-4.0-ultra',
+    name: 'Spark 4.0 Ultra',
+    description: '讯飞星火认知大模型',
+    provider: 'iFlytek',
+    contextLength: 128000,
+    inputPrice: 2.1,
+    outputPrice: 2.1,
+    isFree: false,
+    tags: ['chat'],
+  },
+];
 
 interface ModelListProps {
   t: {
@@ -21,41 +271,17 @@ interface ModelListProps {
 }
 
 const ModelList: React.FC<ModelListProps> = ({ t }) => {
-  const [models, setModels] = useState<AIModel[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  // Fetch models on mount
-  useEffect(() => {
-    const fetchModels = async () => {
-      setLoading(true);
-      try {
-        const response = await modelService.getModels();
-        // modelService.getModels() 返回 { models: AIModel[], vendors: [], tags: [], ... }
-        const modelsArray = Array.isArray(response?.models) ? response.models : [];
-        setModels(modelsArray);
-      } catch (error) {
-        console.error('Failed to fetch models:', error);
-        setModels([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchModels();
-  }, []);
-
   const filteredModels = useMemo(() => {
-    // 确保 models 是数组
-    if (!Array.isArray(models)) {
-      return [];
-    }
     const lower = search.toLowerCase();
-    return models.filter(m => 
-      m?.name?.toLowerCase().includes(lower) || 
-      m?.provider?.toLowerCase().includes(lower) ||
-      m?.id?.toLowerCase().includes(lower)
+    return STATIC_MODELS.filter(m => 
+      m.name.toLowerCase().includes(lower) || 
+      m.provider.toLowerCase().includes(lower) ||
+      m.id.toLowerCase().includes(lower) ||
+      m.description.toLowerCase().includes(lower)
     );
-  }, [models, search]);
+  }, [search]);
 
   const formatPrice = (price: number) => {
     if (price === 0) return t.free;
@@ -104,21 +330,17 @@ const ModelList: React.FC<ModelListProps> = ({ t }) => {
 
         {/* Table Body */}
         <div className="divide-y divide-border">
-          {loading ? (
-             <div className="py-12 text-center text-muted">Loading...</div>
-          ) : (
-            filteredModels.map((model) => (
-              <ModelRow 
-                key={model.id} 
-                model={model} 
-                formatContext={formatContext} 
-                formatPrice={formatPrice} 
-                t={t}
-              />
-            ))
-          )}
+          {filteredModels.map((model) => (
+            <ModelRow 
+              key={model.id} 
+              model={model} 
+              formatContext={formatContext} 
+              formatPrice={formatPrice} 
+              t={t}
+            />
+          ))}
           
-          {!loading && filteredModels.length === 0 && (
+          {filteredModels.length === 0 && (
              <div className="py-12 text-center text-muted">
                {t.noResults} "{search}"
              </div>
