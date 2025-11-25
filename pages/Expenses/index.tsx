@@ -677,29 +677,29 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   }
 
   return (
-    <div className="min-h-screen pb-12 font-sans bg-white">
+    <div className="min-h-screen pb-12 font-sans bg-white dark:bg-zinc-900">
       <div className="container mx-auto px-4 py-6 max-w-7xl space-y-6">
         
         {/* Balance and Quick Actions - 左右布局 */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           {/* 左侧：余额/积分信息框 - 始终显示余额相关内容 */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 border border-gray-200 dark:border-zinc-700 shadow-sm">
             <>
-              <div className="text-sm text-gray-600 mb-2">可用余额 (CNY)</div>
-              <div className="text-4xl font-bold text-blue-600 mb-3">
+              <div className="text-sm text-gray-600 dark:text-zinc-400 mb-2">可用余额 (CNY)</div>
+              <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-3">
                 ¥{quotaLoading ? '...' : formatPoints(balance)}
               </div>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
                 <span>可兑换积分:</span>
-                <span className="font-semibold text-gray-700">{formatPoints(points)}</span>
+                <span className="font-semibold text-gray-700 dark:text-zinc-200">{formatPoints(points)}</span>
               </div>
             </>
           </div>
 
           {/* 右侧：快捷操作框 */}
-          <div className="bg-white rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col items-center justify-center space-y-4">
+          <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 border border-gray-200 dark:border-zinc-700 shadow-sm flex flex-col items-center justify-center space-y-4">
             {/* 余额、积分和日志/账单切换按钮 */}
-            <div className="text-sm text-gray-600">快捷操作</div>
+            <div className="text-sm text-gray-600 dark:text-zinc-400">快捷操作</div>
 
             <div className="flex flex-wrap gap-2 justify-center">
               <button
@@ -707,7 +707,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   currentMode === 'balance'
                     ? 'bg-blue-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
                 }`}
               >
                 余额
@@ -717,7 +717,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   currentMode === 'points'
                     ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                    : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
                 }`}
               >
                 积分
@@ -728,7 +728,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                   className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                     currentMode === 'logos'
                       ? 'bg-indigo-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
                   }`}
                 >
                   日志/账单
@@ -756,16 +756,16 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     : '刷新余额'}
                 </span>
               </button>
-              <p className="text-xs text-gray-500">数据同步可能存在延迟</p>
+              <p className="text-xs text-gray-500 dark:text-zinc-500">数据同步可能存在延迟</p>
             </div>
           </div>
         </div>
 
         {/* Usage List - 按照图片布局 */}
-        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <div className="p-6">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold text-gray-800">
+              <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
                 {currentMode === 'logos' ? '日志/账单' : t.recordsTitle}
               </h2>
               <div className="flex items-center gap-3">
@@ -774,7 +774,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <button
                       onClick={handleExportLogs}
                       disabled={loading || !selectedTeamId}
-                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-200 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="导出"
                     >
                       <Download size={16} />
@@ -783,19 +783,19 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <button
                       onClick={() => selectedTeamId && fetchTeamLogs(pagination.current)}
                       disabled={loading || !selectedTeamId}
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="刷新"
                     >
                       <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
                     </button>
                     <button
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                       title="全屏"
                     >
                       <Maximize2 size={16} />
                     </button>
                     <button
-                      className="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                      className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded-lg transition-colors"
                       title="设置"
                     >
                       <Settings size={16} />
@@ -807,13 +807,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <button
                       onClick={handleExportBalance}
                       disabled={loading}
-                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-200 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="导出账单"
                     >
                       <Download size={16} />
                       导出账单
                     </button>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       共 {pagination.total} 条记录
                     </span>
                   </>
@@ -823,13 +823,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <button
                       onClick={handleExportPoints}
                       disabled={loading}
-                      className="flex items-center gap-2 px-3 py-2 bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-200 border border-gray-300 dark:border-zinc-600 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                       title="导出账单"
                     >
                       <Download size={16} />
                       导出账单
                     </button>
-                    <span className="text-sm text-gray-500">
+                    <span className="text-sm text-gray-500 dark:text-zinc-400">
                       共 {pagination.total} 条记录
                     </span>
                   </>
@@ -839,9 +839,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
             {/* 余额/积分模式：日期选择器 */}
             {(currentMode === 'balance' || currentMode === 'points') && (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200">
+              <div className="mb-6 p-4 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700">
                 <div className="flex items-center gap-4">
-                  <label className="text-sm font-medium text-gray-700 whitespace-nowrap">时间范围：</label>
+                  <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 whitespace-nowrap">时间范围：</label>
                   <div className="flex items-center gap-2 flex-1">
                     <div className="relative flex-1 min-w-0">
                       <input
@@ -857,10 +857,10 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                             setPointsDateRange([e.target.value ? new Date(e.target.value) : null, pointsDateRange[1]]);
                           }
                         }}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                       />
                     </div>
-                    <span className="text-gray-400 flex-shrink-0 px-1">至</span>
+                    <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">至</span>
                     <div className="relative flex-1 min-w-0">
                       <input
                         type="date"
@@ -875,7 +875,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                             setPointsDateRange([pointsDateRange[0], e.target.value ? new Date(e.target.value) : null]);
                           }
                         }}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                       />
                     </div>
                     <button
@@ -899,16 +899,16 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
             {/* 日志/账单模式：筛选条件 - 按照 Nebula1 设计 */}
             {currentMode === 'logos' && (
-              <div className="mb-6 p-4 bg-white rounded-lg border border-gray-200 overflow-hidden">
+              <div className="mb-6 p-4 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                   {/* 团队选择 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">团队</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">团队</label>
                     <div className="relative">
                       <select
                         value={selectedTeamId || ''}
                         onChange={(e) => handleTeamChange(e.target.value || null)}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white"
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 appearance-none bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                       >
                         <option value="">请选择</option>
                         {teamOptions.map((team) => (
@@ -918,7 +918,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
@@ -927,7 +927,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
                   {/* 成员选择 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">成员</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">成员</label>
                     <div className="relative">
                       <select
                         value={selectedUserIds.length > 0 ? selectedUserIds[0] : ''}
@@ -938,7 +938,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                             setSelectedUserIds([]);
                           }
                         }}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none bg-white"
+                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 appearance-none bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                       >
                         <option value="">请选择</option>
                         {memberOptions.map((member) => (
@@ -948,7 +948,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         ))}
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                         </svg>
                       </div>
@@ -957,20 +957,20 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
                   {/* 费用类型 - 标签形式 */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">费用类型</label>
-                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 border border-gray-300 rounded-lg bg-white">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">费用类型</label>
+                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 border border-gray-300 dark:border-zinc-600 rounded-lg bg-white dark:bg-zinc-700">
                       {selectedTypes.length === 0 ? (
-                        <span className="text-sm text-gray-400">请选择</span>
+                        <span className="text-sm text-gray-400 dark:text-zinc-500">请选择</span>
                       ) : (
                         selectedTypes.map((type) => (
                           <span
                             key={type}
-                            className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 text-indigo-700 rounded text-xs font-medium"
+                            className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300 rounded text-xs font-medium"
                           >
                             {type === '1' ? '充值' : '消费'}
                             <button
                               onClick={() => handleRemoveType(type)}
-                              className="hover:bg-indigo-200 rounded-full p-0.5"
+                              className="hover:bg-indigo-200 dark:hover:bg-indigo-800 rounded-full p-0.5"
                             >
                               <X size={12} />
                             </button>
@@ -983,7 +983,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         {!selectedTypes.includes('1') && (
                           <button
                             onClick={() => setSelectedTypes([...selectedTypes, '1'])}
-                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                           >
                             + 充值
                           </button>
@@ -991,7 +991,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         {!selectedTypes.includes('2') && (
                           <button
                             onClick={() => setSelectedTypes([...selectedTypes, '2'])}
-                            className="text-xs text-indigo-600 hover:text-indigo-800"
+                            className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300"
                           >
                             + 消费
                           </button>
@@ -1002,31 +1002,31 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
                   {/* 时间范围 - 单个范围选择器 */}
                   <div className="w-full">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">时间</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-zinc-300 mb-2">时间</label>
                     <div className="flex items-center gap-1 w-full">
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
                           value={dateRange[0] ? dateRange[0].toISOString().split('T')[0] : ''}
                           onChange={(e) => setDateRange([e.target.value ? new Date(e.target.value) : null, dateRange[1]])}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
                       </div>
-                      <span className="text-gray-400 flex-shrink-0 px-1">→</span>
+                      <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">→</span>
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
                           value={dateRange[1] ? dateRange[1].toISOString().split('T')[0] : ''}
                           onChange={(e) => setDateRange([dateRange[0], e.target.value ? new Date(e.target.value) : null])}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
+                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
                         />
                         <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
@@ -1039,7 +1039,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 <div className="flex items-center justify-end gap-2">
                   <button
                     onClick={handleResetFilters}
-                    className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors"
+                    className="px-4 py-2 bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 rounded-lg text-sm font-medium transition-colors"
                   >
                     重置
                   </button>
@@ -1056,7 +1056,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
             )}
 
             {loading ? (
-              <div className="flex items-center justify-center py-16 text-gray-500">
+              <div className="flex items-center justify-center py-16 text-gray-500 dark:text-zinc-400">
                 <RefreshCw className="animate-spin mr-2" size={20} />
                 加载中...
               </div>
@@ -1067,54 +1067,54 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                   <div className="overflow-x-auto">
                     {teamLogs.length === 0 ? (
                       <div className="py-16 text-center">
-                        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-gray-100 rounded-lg">
-                          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="inline-flex items-center justify-center w-16 h-16 mb-4 bg-gray-100 dark:bg-zinc-700 rounded-lg">
+                          <svg className="w-8 h-8 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                           </svg>
                         </div>
-                        <div className="text-gray-500 text-sm font-medium">暂无数据</div>
+                        <div className="text-gray-500 dark:text-zinc-400 text-sm font-medium">暂无数据</div>
                       </div>
                     ) : (
                       <>
-                        <div className="border border-gray-200 rounded-lg overflow-hidden">
-                          <table className="w-full border-collapse bg-white">
+                        <div className="border border-gray-200 dark:border-zinc-700 rounded-lg overflow-hidden">
+                          <table className="w-full border-collapse bg-white dark:bg-zinc-800">
                             <thead>
-                              <tr className="bg-gray-50 border-b border-gray-200">
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">团队名称</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">用户名</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">创作/令牌</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">功能/模型</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">费用(¥)</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">费用类型</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">时间</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">输入(Tokens)</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">完成(Tokens)</th>
+                              <tr className="bg-gray-50 dark:bg-zinc-700 border-b border-gray-200 dark:border-zinc-600">
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">团队名称</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">用户名</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">创作/令牌</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">功能/模型</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">费用(¥)</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">费用类型</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">时间</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">输入(Tokens)</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">完成(Tokens)</th>
                               </tr>
                             </thead>
                             <tbody>
                               {teamLogs.map((log) => {
                                 const isConsumption = String(log.type) === '2';
                                 return (
-                                  <tr key={log.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                    <td className="px-4 py-3 text-sm text-gray-800">{log.teamName || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-800">{log.userName || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-800">{log.tokenName || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-800">{log.modelName || '-'}</td>
-                                    <td className={`px-4 py-3 text-sm font-medium ${isConsumption ? 'text-red-600' : 'text-green-600'}`}>
+                                  <tr key={log.id} className="border-b border-gray-100 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
+                                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.teamName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.userName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.tokenName || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.modelName || '-'}</td>
+                                    <td className={`px-4 py-3 text-sm font-medium ${isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                                       {isConsumption ? '-' : '+'}¥{Number(log.quotaRmb || 0).toFixed(6)}
                                     </td>
                                     <td className="px-4 py-3 text-sm">
                                       <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                                         isConsumption 
-                                          ? 'bg-red-50 text-red-700 border border-red-200' 
-                                          : 'bg-green-50 text-green-700 border border-green-200'
+                                          ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' 
+                                          : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
                                       }`}>
                                         {isConsumption ? '消费' : '充值'}
                                       </span>
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{log.createdAt || '-'}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{log.promptTokens || 0}</td>
-                                    <td className="px-4 py-3 text-sm text-gray-600">{log.completionTokens || 0}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-zinc-400">{log.createdAt || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-zinc-400">{log.promptTokens || 0}</td>
+                                    <td className="px-4 py-3 text-sm text-gray-600 dark:text-zinc-400">{log.completionTokens || 0}</td>
                                   </tr>
                                 );
                               })}
@@ -1123,8 +1123,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         </div>
 
                         {/* Pagination Footer - 按照 Nebula1 设计 */}
-                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 mt-4">
-                          <div className="text-sm text-gray-600">
+                        <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-zinc-700 mt-4">
+                          <div className="text-sm text-gray-600 dark:text-zinc-400">
                             共 {pagination.total} 条记录
                           </div>
                           <div className="flex items-center gap-2">
@@ -1134,7 +1134,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                                 const newPageSize = Number(e.target.value);
                                 fetchTeamLogs(1, newPageSize);
                               }}
-                              className="px-2 py-1 border border-gray-300 rounded text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                              className="px-2 py-1 border border-gray-300 dark:border-zinc-600 rounded text-sm text-gray-700 dark:text-zinc-300 bg-white dark:bg-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400"
                             >
                               <option value={10}>10条/页</option>
                               <option value={20}>20条/页</option>
@@ -1145,7 +1145,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                               <button
                                 onClick={() => fetchTeamLogs(1)}
                                 disabled={pagination.current <= 1}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 title="第一页"
                               >
                                 ««
@@ -1153,18 +1153,18 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                               <button
                                 onClick={() => fetchTeamLogs(pagination.current - 1)}
                                 disabled={pagination.current <= 1}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 title="上一页"
                               >
                                 «
                               </button>
-                              <span className="px-3 py-2 text-sm text-indigo-600 font-medium bg-indigo-50 rounded">
+                              <span className="px-3 py-2 text-sm text-indigo-600 dark:text-indigo-400 font-medium bg-indigo-50 dark:bg-indigo-900/30 rounded">
                                 {pagination.current}
                               </span>
                               <button
                                 onClick={() => fetchTeamLogs(pagination.current + 1)}
                                 disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 title="下一页"
                               >
                                 »
@@ -1172,7 +1172,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                               <button
                                 onClick={() => fetchTeamLogs(Math.ceil(pagination.total / pagination.pageSize))}
                                 disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                                className="p-2 text-gray-600 hover:bg-gray-100 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                                className="p-2 text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700 rounded disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                                 title="最后一页"
                               >
                                 »»
@@ -1189,8 +1189,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     {(currentMode === 'balance' ? expenseLogs : scoreList).length === 0 ? (
                       <div className="py-16 text-center">
                         <div className="text-6xl mb-4 opacity-50">📊</div>
-                        <div className="text-gray-500 text-lg font-medium">暂无记录</div>
-                        <div className="text-gray-400 text-sm mt-2">
+                        <div className="text-gray-500 dark:text-zinc-400 text-lg font-medium">暂无记录</div>
+                        <div className="text-gray-400 dark:text-zinc-500 text-sm mt-2">
                           {currentMode === 'balance' ? '暂无使用记录' : '暂无积分流水'}
                         </div>
                       </div>
@@ -1210,21 +1210,21 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
                     {/* Pagination Footer - 按照图片布局 */}
                     {!loading && pagination.total > 0 && (
-                      <div className="flex items-center justify-center gap-4 pt-6 mt-6 border-t border-gray-200">
+                      <div className="flex items-center justify-center gap-4 pt-6 mt-6 border-t border-gray-200 dark:border-zinc-700">
                         <button
                           onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current - 1) : fetchScoreList(pagination.current - 1)}
                           disabled={pagination.current <= 1}
-                          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           上一页
                         </button>
-                        <span className="text-sm text-gray-600 font-medium">
+                        <span className="text-sm text-gray-600 dark:text-zinc-400 font-medium">
                           {pagination.current}/{Math.ceil(pagination.total / pagination.pageSize)}
                         </span>
                         <button
                           onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current + 1) : fetchScoreList(pagination.current + 1)}
                           disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
-                          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          className="px-4 py-2 rounded-lg bg-gray-100 dark:bg-zinc-700 hover:bg-gray-200 dark:hover:bg-zinc-600 text-gray-700 dark:text-zinc-300 font-medium transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                         >
                           下一页
                         </button>
@@ -1274,7 +1274,7 @@ const ExpenseListItem: React.FC<{
   const completionTokens = record.completionTokens || 0;
   
   return (
-    <div className="flex items-start gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
+    <div className="flex items-start gap-4 p-4 bg-white dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
       {/* 图标 - 橙色方块，白色文档符号 */}
       <div className="w-10 h-10 bg-orange-500 rounded flex items-center justify-center flex-shrink-0">
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1284,10 +1284,10 @@ const ExpenseListItem: React.FC<{
       
       {/* 服务/模型名和详细信息 */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-800 mb-1.5">{record.modelName}</div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+        <div className="text-sm font-medium text-gray-800 dark:text-zinc-200 mb-1.5">{record.modelName}</div>
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400 mb-2">
           <div className="flex items-center gap-1.5">
-            <Clock size={12} className="text-gray-400" />
+            <Clock size={12} className="text-gray-400 dark:text-zinc-500" />
             <span>{record.timestamp}</span>
           </div>
         </div>
@@ -1295,36 +1295,36 @@ const ExpenseListItem: React.FC<{
         <div className="flex items-center gap-4 text-xs">
           {/* 类型 */}
           <div className="flex items-center gap-1">
-            <span className="text-gray-500">类型:</span>
+            <span className="text-gray-500 dark:text-zinc-400">类型:</span>
             <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
               isConsumption 
-                ? 'bg-red-50 text-red-700 border border-red-200' 
-                : 'bg-green-50 text-green-700 border border-green-200'
+                ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' 
+                : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
             }`}>
               {isConsumption ? '消费' : '充值'}
             </span>
           </div>
           {/* 用时 */}
           <div className="flex items-center gap-1">
-            <span className="text-gray-500">用时:</span>
-            <span className="text-gray-800 font-medium">{record.duration}</span>
+            <span className="text-gray-500 dark:text-zinc-400">用时:</span>
+            <span className="text-gray-800 dark:text-zinc-200 font-medium">{record.duration}</span>
           </div>
           {/* 输入token */}
           <div className="flex items-center gap-1">
-            <span className="text-gray-500">输入token:</span>
-            <span className="text-gray-800 font-medium">{promptTokens.toLocaleString()}</span>
+            <span className="text-gray-500 dark:text-zinc-400">输入token:</span>
+            <span className="text-gray-800 dark:text-zinc-200 font-medium">{promptTokens.toLocaleString()}</span>
           </div>
           {/* 输出token */}
           <div className="flex items-center gap-1">
-            <span className="text-gray-500">输出token:</span>
-            <span className="text-gray-800 font-medium">{completionTokens.toLocaleString()}</span>
+            <span className="text-gray-500 dark:text-zinc-400">输出token:</span>
+            <span className="text-gray-800 dark:text-zinc-200 font-medium">{completionTokens.toLocaleString()}</span>
           </div>
         </div>
       </div>
       
       {/* 金额 - 充值显示绿色正数，扣费显示红色负数 */}
       <div className={`text-sm font-medium whitespace-nowrap self-center ${
-        isConsumption ? 'text-red-600' : 'text-green-600'
+        isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
       }`}>
         ￥ {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(4)}
       </div>
@@ -1377,13 +1377,13 @@ const ScoreListItem: React.FC<{
   
   // 状态映射
   const statusInfo = {
-    '1': { text: '已完成', class: 'text-gray-600' },
-    '0': { text: '进行中', class: 'text-gray-600' },
-    '-1': { text: '失败', class: 'text-red-600' },
-  }[String(score.status) || '0'] || { text: '未知', class: 'text-gray-600' };
+    '1': { text: '已完成', class: 'text-gray-600 dark:text-zinc-400' },
+    '0': { text: '进行中', class: 'text-gray-600 dark:text-zinc-400' },
+    '-1': { text: '失败', class: 'text-red-600 dark:text-red-400' },
+  }[String(score.status) || '0'] || { text: '未知', class: 'text-gray-600 dark:text-zinc-400' };
   
   return (
-    <div className="flex items-start gap-4 p-4 bg-white border-b border-gray-100 hover:bg-gray-50 transition-colors">
+    <div className="flex items-start gap-4 p-4 bg-white dark:bg-zinc-800 border-b border-gray-100 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
       {/* 图标 - 浅蓝色方块，白色文档符号 */}
       <div className="w-10 h-10 bg-blue-400 rounded flex items-center justify-center flex-shrink-0">
         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1393,9 +1393,9 @@ const ScoreListItem: React.FC<{
       
       {/* 服务名和时间戳+ID */}
       <div className="flex-1 min-w-0">
-        <div className="text-sm font-medium text-gray-800 mb-1.5">{typeInfo.text}</div>
-        <div className="flex items-center gap-1.5 text-xs text-gray-500">
-          <Clock size={12} className="text-gray-400" />
+        <div className="text-sm font-medium text-gray-800 dark:text-zinc-200 mb-1.5">{typeInfo.text}</div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-zinc-400">
+          <Clock size={12} className="text-gray-400 dark:text-zinc-500" />
           <span>{formatTimestamp(score.createTime || '-')}</span>
           {score.taskId && (
             <>
@@ -1409,7 +1409,7 @@ const ScoreListItem: React.FC<{
       {/* 右侧：积分值和状态，右对齐 */}
       <div className="flex flex-col items-end gap-1">
         {/* 积分值 - 扣积分显示为红色 */}
-        <div className={`text-sm font-medium ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+        <div className={`text-sm font-medium ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
           {isPositive ? '+' : ''}{displayValue} 积分
         </div>
         {/* 状态 */}
@@ -1440,19 +1440,19 @@ const ExpenseRow: React.FC<{
   const completionTokens = record.completionTokens || 0;
   
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
       {/* Card Header - 按照 Nebula1 布局 */}
       <div className="p-4">
         {/* 模型信息 */}
         <div className="flex items-center gap-2 mb-2">
           <span className="text-xl">🤖</span>
-          <span className="font-semibold text-gray-800">{record.modelName}</span>
+          <span className="font-semibold text-gray-800 dark:text-zinc-200">{record.modelName}</span>
         </div>
         {/* 金额 - 充值显示绿色正数，扣费显示红色负数 */}
         <div className={`inline-flex items-center px-3 py-1.5 rounded text-base font-bold font-mono ${
           isConsumption 
-            ? 'text-red-600 bg-pink-50' 
-            : 'text-green-600 bg-green-50'
+            ? 'text-red-600 dark:text-red-400 bg-pink-50 dark:bg-red-900/30' 
+            : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
         }`}>
           ¥{record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
         </div>
@@ -1464,38 +1464,38 @@ const ExpenseRow: React.FC<{
           {/* 左列 */}
           <div className="space-y-3">
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs mb-1">{t.record.type}:</span>
+              <span className="text-gray-500 dark:text-zinc-400 text-xs mb-1">{t.record.type}:</span>
               <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium w-fit ${
                 isConsumption 
-                  ? 'bg-red-50 text-red-700 border border-red-200' 
-                  : 'bg-green-50 text-green-700 border border-green-200'
+                  ? 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' 
+                  : 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800'
               }`}>
                 {isConsumption ? t.record.consumption : '充值'}
               </span>
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs mb-1">{t.record.input}</span>
-              <span className="text-gray-800 font-medium">{promptTokens.toLocaleString()}</span>
+              <span className="text-gray-500 dark:text-zinc-400 text-xs mb-1">{t.record.input}</span>
+              <span className="text-gray-800 dark:text-zinc-200 font-medium">{promptTokens.toLocaleString()}</span>
             </div>
           </div>
           
           {/* 右列 */}
           <div className="space-y-3">
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs mb-1">{t.record.duration}:</span>
-              <span className="text-gray-800 font-medium">{record.duration}</span>
+              <span className="text-gray-500 dark:text-zinc-400 text-xs mb-1">{t.record.duration}:</span>
+              <span className="text-gray-800 dark:text-zinc-200 font-medium">{record.duration}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-gray-500 text-xs mb-1">{t.record.output}</span>
-              <span className="text-gray-800 font-medium">{completionTokens.toLocaleString()}</span>
+              <span className="text-gray-500 dark:text-zinc-400 text-xs mb-1">{t.record.output}</span>
+              <span className="text-gray-800 dark:text-zinc-200 font-medium">{completionTokens.toLocaleString()}</span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Card Footer */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-zinc-700/50 border-t border-gray-100 dark:border-zinc-700">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
           <Clock size={12} />
           <span>{record.timestamp}</span>
         </div>
@@ -1537,9 +1537,9 @@ const ScoreCard: React.FC<{
   // 状态映射 - 根据图片，"已扣款"对应已完成状态（status === '1'）
   const statusInfo = {
     '1': { text: '已扣款', class: 'bg-blue-600 text-white' }, // 已完成 -> 已扣款，深蓝色背景，白色文字
-    '0': { text: '进行中', class: 'bg-yellow-50 text-yellow-700' },
-    '-1': { text: '失败', class: 'bg-red-50 text-red-700' },
-  }[String(score.status) || '0'] || { text: '未知', class: 'bg-gray-50 text-gray-700' };
+    '0': { text: '进行中', class: 'bg-yellow-50 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
+    '-1': { text: '失败', class: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300' },
+  }[String(score.status) || '0'] || { text: '未知', class: 'bg-gray-50 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300' };
   
   // 格式化时间戳为 2025/11/21 18:15:39 格式
   const formatTimestamp = (timeStr: string) => {
@@ -1559,23 +1559,23 @@ const ScoreCard: React.FC<{
   };
   
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+    <div className="bg-white dark:bg-zinc-800 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-sm hover:shadow-md transition-all overflow-hidden">
       {/* Top Section - 服务名称和图标 - 按照 Nebula1 图片布局 */}
       <div className="p-4">
         <div className="flex items-center gap-2 mb-3">
           {/* 图标容器 - 白色背景，圆角方形 */}
-          <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-sm border border-gray-100">
+          <div className="w-10 h-10 bg-white dark:bg-zinc-700 rounded-lg flex items-center justify-center shadow-sm border border-gray-100 dark:border-zinc-600">
             <span className="text-xl">{typeInfo.icon}</span>
           </div>
-          <span className="font-semibold text-gray-800">{typeInfo.text}</span>
+          <span className="font-semibold text-gray-800 dark:text-zinc-200">{typeInfo.text}</span>
         </div>
       </div>
 
       {/* Middle Section - 积分值和状态 */}
-      <div className="px-4 pb-4 border-b border-gray-100">
+      <div className="px-4 pb-4 border-b border-gray-100 dark:border-zinc-700">
         <div className="flex items-center justify-between">
           {/* 左侧：积分值 - 扣积分显示为红色 */}
-          <div className={`text-base font-bold ${isPositive ? 'text-green-600' : 'text-red-600'}`}>
+          <div className={`text-base font-bold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
             {isPositive ? '+' : ''}{displayValue} 积分
           </div>
           {/* 右侧：状态按钮 */}
@@ -1588,8 +1588,8 @@ const ScoreCard: React.FC<{
       </div>
 
       {/* Bottom Section - 时间戳 */}
-      <div className="px-4 py-3 bg-gray-50">
-        <div className="flex items-center gap-2 text-xs text-gray-500">
+      <div className="px-4 py-3 bg-gray-50 dark:bg-zinc-700/50">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-zinc-400">
           <Clock size={12} />
           <span>{formatTimestamp(score.createTime || '-')}</span>
         </div>
