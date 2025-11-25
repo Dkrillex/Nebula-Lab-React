@@ -330,6 +330,9 @@ interface Translation {
         aiSubtitle: string;
         selectSubtitleStyle: string;
         previewPlaceholder: string;
+        previewGeneratingTip?: string;
+        generatingLabel?: string;
+        loadingStatus?: string;
         buttonTip?: {
           text: string;
           audio: string;
@@ -1289,6 +1292,9 @@ export const translations: Record<string, Translation> = {
           aiSubtitle: 'AI Generated Subtitles',
           selectSubtitleStyle: 'Select Subtitle Style',
           previewPlaceholder: 'Please enter text.',
+          previewGeneratingTip: 'Generating your video...',
+          generatingLabel: 'Generating...',
+          loadingStatus: 'Generating',
           buttonTip: {
             text: 'Please enter text.',
             audio: 'Please select an audio file.',
@@ -2696,6 +2702,9 @@ export const translations: Record<string, Translation> = {
           aiSubtitle: 'AI生成字幕',
           selectSubtitleStyle: '选择字幕样式',
           previewPlaceholder: '请输入文本。',
+          previewGeneratingTip: '正在生成您的视频...',
+          generatingLabel: '生成中...',
+          loadingStatus: '正在生成',
           buttonTip: {
             text: '请输入文本。',
             audio: '请选择上传一个音频文件。',
@@ -4135,6 +4144,9 @@ export const translations: Record<string, Translation> = {
           aiSubtitle: 'Subtitle yang Dihasilkan AI',
           selectSubtitleStyle: 'Pilih Gaya Subtitle',
           previewPlaceholder: 'Silakan masukkan teks.',
+          previewGeneratingTip: 'Sedang membuat video Anda...',
+          generatingLabel: 'Sedang membuat...',
+          loadingStatus: 'Sedang membuat',
           buttonTip: {
             text: 'Silakan masukkan teks.',
             audio: 'Silakan pilih file audio.',

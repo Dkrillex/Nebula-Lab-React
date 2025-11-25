@@ -61,6 +61,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hiddenAudioRef = useRef<HTMLAudioElement>(null);
+  const resultsSectionRef = useRef<HTMLDivElement>(null);
 
   // 监听音频变化，如果没有时长则获取时长
   useEffect(() => {
@@ -89,6 +90,13 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
+
+  useEffect(() => {
+    if (!resultsSectionRef.current) return;
+    if (generatedVideos.length > 0 || generating || taskStatus !== 'idle') {
+      resultsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [generatedVideos.length, generating, taskStatus]);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
 
@@ -260,7 +268,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
         imageFileId: '',
         audioDuration: scriptMode === 'audio' ? (uploadedAudio?.duration || 0) : 0,
       };
-
+      
       // Clear fields based on source type (matching index.vue handleSubmitTask logic)
       if (params.avatarSourceFrom === 0) {
         params.aiAvatarId = '';
@@ -410,7 +418,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           {/* Avatar Selection Display */}
           {selectedAvatar ? (
               <div className="relative">
-                  <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100 max-h-[60vh] mx-auto">
+                  <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100 max-h-[57vh] mx-auto">
                       {selectedAvatar.previewVideoUrl ? (
                           <video 
                             src={selectedAvatar.previewVideoUrl} 
@@ -674,7 +682,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
              {/* Results Area (New) */}
              {(generatedVideos.length > 0 || generating || taskStatus !== 'idle') && (
-             <div className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+            <div ref={resultsSectionRef} className="mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
                 <div className="flex items-center justify-between mb-6">
                     <h3 className="font-bold text-gray-800 dark:text-gray-200">{t.rightPanel.resultTitle || '生成结果'}</h3>
                     <div className="flex gap-2">
@@ -709,7 +717,9 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                     {generating || taskStatus === 'running' ? (
                          <div className="flex flex-col items-center gap-4 z-10">
                             <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                            <p className="text-indigo-600 font-medium">Generating your video...</p>
+                            <p className="text-indigo-600 font-medium">
+                              {t.rightPanel?.previewGeneratingTip || '正在生成您的视频...'}
+                            </p>
                          </div>
                     ) : previewVideoUrl ? (
                         <div className="relative w-full h-full flex items-center justify-center bg-black/5 dark:bg-black/20">
@@ -818,7 +828,14 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                     onClick={handleGenerate}
                     disabled={generating || uploading || pointsTip === 0 || (!selectedAvatar && !uploadedVideo) || (scriptMode === 'text' ? !text.trim() : !uploadedAudio)}
                   >
-                    {generating ? <Loader className="animate-spin" size={16} /> : (pointsTip > 0 ? t.rightPanel.generate : (t.rightPanel.awaitWorking || '设置完成之后生成'))}
+                    {generating ? (
+                      <span className="flex items-center gap-2">
+                        <Loader className="animate-spin" size={16} />
+                        <span>{t.rightPanel?.generatingLabel || '生成中...'}</span>
+                      </span>
+                    ) : (
+                      pointsTip > 0 ? t.rightPanel.generate : (t.rightPanel.awaitWorking || '设置完成之后生成')
+                    )}
                   </button>
                 </div>
               </div>
