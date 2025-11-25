@@ -289,7 +289,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                   onClick={handleSubmit}
                   disabled={
                     loading ||
-                    taskStatus !== 'success' ||
+                    taskStatus !== 'idle' ||
                     !formData.videoFileId ||
                     !formData.avatarName
                   }

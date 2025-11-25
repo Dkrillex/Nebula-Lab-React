@@ -79,6 +79,11 @@ interface ImageToVideoPageProps {
     result: {
       label: string;
       emptyState: string;
+      previewActions: {
+        fullscreen: string;
+        download: string;
+        addToMaterials: string;
+      };
     };
     generating?: string;
     progressStatusShort?: string;
@@ -911,21 +916,21 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                       <button 
                         onClick={() => setIsPreviewOpen(true)}
                         className="p-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-full transition-colors"
-                        title="View Full Screen"
+                        title={t.result.previewActions.fullscreen}
                       >
                         <Maximize2 size={20} />
                       </button>
                       <button 
                         onClick={() => handleDownload(selectedVideo.videoUrl)}
                         className="p-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-full transition-colors"
-                        title="Download"
+                        title={t.result.previewActions.download}
                       >
                         <Download size={20} />
                       </button>
                       <button 
                         onClick={handleImportClick}
                         className="p-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-full transition-colors"
-                        title="Add to Materials"
+                        title={t.result.previewActions.addToMaterials}
                       >
                         <FolderPlus size={20} />
                       </button>
