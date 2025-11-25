@@ -20,7 +20,6 @@ import {
   Save
 } from 'lucide-react';
 import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
-import { uploadService } from '../../../services/uploadService';
 import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import UploadComponent from '../../../components/UploadComponent';
@@ -557,31 +556,60 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setAudioData(prev => ({ ...prev, originVoiceFileId: '' }));
   };
 
+  const mapRecordedFileType = (file: File) => {
+    const mimePart = file.type.split('/')[1] || '';
+    let fileType = (mimePart || file.name.split('.').pop() || 'wav').toLowerCase();
+    if (fileType === 'mpeg') fileType = 'mp3';
+    if (fileType === 'quicktime') fileType = 'mp4';
+    if (fileType === 'x-m4a') fileType = 'm4a';
+    if (fileType === 'x-wav') fileType = 'wav';
+    if (fileType === 'x-msvideo') fileType = 'avi';
+    return fileType;
+  };
+
   const uploadRecording = async () => {
     if (!audioFile?.file) {
-        toast.error(t.audioFirst);
-        return;
+      toast.error(t.audioFirst);
+      return;
     }
+
     setRecordSubmitLoading(true);
     try {
-        const res = await uploadService.uploadFile(audioFile.file);
-        
-        // Handle response: it might be wrapped in { code, data } or just the data object directly
-        const data = (res as any).data || res;
-        
-        if (data && data.ossId) {
-            setAudioData(prev => ({ ...prev, originVoiceFileId: data.ossId }));
-            setAudioFile(prev => prev ? ({ ...prev, fileId: data.ossId }) : null);
-            toast.success(t.recordUploadSuccess);
-        } else {
-            console.error('Upload response invalid:', res);
-            toast.error(t.recordUploadFail);
-        }
+      const fileToUpload = audioFile.file;
+      const fileType = mapRecordedFileType(fileToUpload);
+
+      const credRes = await avatarService.getUploadCredential(fileType);
+      if (!credRes || !credRes.result || credRes.code !== '200') {
+        console.error('获取录音上传凭证失败:', credRes);
+        throw new Error(credRes?.message || 'Failed to get upload credentials');
+      }
+
+      const { uploadUrl, fileName, fileId, format } = credRes.result;
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: fileToUpload,
+        headers: { 'Content-Type': fileToUpload.type || 'application/octet-stream' }
+      });
+
+      if (!uploadRes.ok) {
+        console.error('录音上传失败:', uploadRes.status, uploadRes.statusText);
+        throw new Error(`Upload failed: ${uploadRes.statusText}`);
+      }
+
+      setAudioData(prev => ({ ...prev, originVoiceFileId: fileId }));
+      setAudioFile(prev => prev ? ({
+        ...prev,
+        fileId,
+        fileName: fileName || prev.fileName,
+        format: format || prev.format
+      }) : prev);
+
+      toast.success(t.recordUploadSuccess);
     } catch (error) {
-        console.error('Upload error:', error);
-        toast.error(t.recordUploadFail);
+      console.error('Upload error:', error);
+      toast.error(t.recordUploadFail);
     } finally {
-        setRecordSubmitLoading(false);
+      setRecordSubmitLoading(false);
     }
   };
 
