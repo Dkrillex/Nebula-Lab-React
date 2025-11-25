@@ -249,6 +249,21 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   // --- Helper Functions ---
 
+  // Handle upload complete
+  const handleUploadComplete = (uploaded: UploadedFile) => {
+    setAudioFile({
+      ...uploaded,
+      file: tempFile || undefined,
+      size: tempFile?.size
+    });
+    setAudioData(prev => ({ 
+      ...prev, 
+      originVoiceFileId: uploaded.fileId,
+      name: prev.name || uploaded.fileName.replace(/\.[^/.]+$/, '')
+    }));
+    toast.success(t.uploadSuccess);
+  };
+
   // Convert AudioBuffer to WAV
   const audioBufferToWav = (buffer: AudioBuffer): ArrayBuffer => {
     const length = buffer.length;
@@ -553,7 +568,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         
         // Handle response: it might be wrapped in { code, data } or just the data object directly
         const data = (res as any).data || res;
-
+        
         if (data && data.ossId) {
             setAudioData(prev => ({ ...prev, originVoiceFileId: data.ossId }));
             setAudioFile(prev => prev ? ({ ...prev, fileId: data.ossId }) : null);
@@ -894,18 +909,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                       accept="audio/mpeg,audio/mp3,audio/wav,audio/x-m4a,audio/m4a,.mp3,.wav,.m4a"
                       initialUrl={audioFile?.fileUrl}
                       onFileSelected={(file) => setTempFile(file)}
-                      onUploadComplete={(uploaded) => {
-                          setAudioFile({
-                              ...uploaded,
-                              file: tempFile || undefined,
-                              size: tempFile?.size
-                          });
-                          setAudioData(prev => ({ 
-                              ...prev, 
-                              originVoiceFileId: uploaded.fileId,
-                              name: prev.name || uploaded.fileName.replace(/\.[^/.]+$/, '')
-                          }));
-                      }}
+                      onUploadComplete={handleUploadComplete}
                       onClear={() => {
                           setAudioFile(null);
                           setAudioData(prev => ({ ...prev, originVoiceFileId: '', name: '' }));
