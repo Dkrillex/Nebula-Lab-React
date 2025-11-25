@@ -6,6 +6,7 @@ interface Translation {
     signIn: string;
     nav: NavItem[];
     profile: string; // Add this
+    expenses: string;
     notifications: string;
   };
   hero: {
@@ -773,6 +774,7 @@ export const translations: Record<string, Translation> = {
         { label: 'Personal Center', href: '/profile' },
       ],
       profile: 'Profile',
+      expenses: 'Expenses',
       notifications: 'Notifications',
     },
     hero: {
@@ -1586,6 +1588,7 @@ export const translations: Record<string, Translation> = {
         { label: '个人中心', href: '/profile' },
       ],
       profile: '个人中心',
+      expenses: '消费记录',
       notifications: '消息通知',
     },
     hero: {
@@ -2432,6 +2435,7 @@ export const translations: Record<string, Translation> = {
         { label: 'Pusat Pribadi', href: '/profile' },
       ],
       profile: 'Profil',
+      expenses: 'Pengeluaran',
       notifications: 'Notifikasi',
     },
     hero: {

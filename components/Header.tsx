@@ -324,7 +324,7 @@ const Header: React.FC<HeaderProps> = ({
                           className="w-full flex items-center gap-2 px-3 py-2 text-sm text-muted hover:text-foreground hover:bg-background rounded-lg transition-colors"
                         >
                           <CreditCard size={16} />
-                          Expenses
+                          {t.expenses || 'Expenses'}
                         </button>
                         <button 
                           onClick={() => {

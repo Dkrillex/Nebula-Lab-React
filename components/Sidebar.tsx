@@ -318,26 +318,25 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         })}
       </div>
       
-      <div className="p-4 border-t border-border bg-surface/30 flex flex-col gap-4">
+      <div className="p-2 border-t border-border bg-surface/30 flex flex-col gap-2">
         {!isCollapsed ? (
           showPromo && (
-            <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-xl p-2 border border-indigo-500/20">
+            <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-lg p-1.5 mx-5 border border-indigo-500/20">
                 <button 
                   onClick={() => setShowPromo(false)}
-                  className="absolute top-2 right-2 text-indigo-500/50 hover:text-indigo-500 transition-colors"
+                  className="absolute top-1 right-1 text-indigo-500/50 hover:text-indigo-500 transition-colors"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
-                <div className="flex items-start gap-3 mb-2 text-indigo-500">
-                  <Sparkles size={16} className="mt-0.5 flex-shrink-0" />
-                  <div className="flex flex-col">
-                    <span className="text-xs font-bold uppercase tracking-wider">NebulaLab</span>
-                    <span className="text-xs font-bold uppercase tracking-wider">全新版本上线!!</span>
+                <div className="flex items-start gap-2 mb-1 text-indigo-500">
+                  <Sparkles size={14} className="mt-0.5 flex-shrink-0" />
+                  <div className="flex flex-col items-center">
+                    <span className="text-[9px] font-bold uppercase tracking-wider">NebulaLab新版本上线</span>
                   </div>
               </div>
               {/* 新增个logo */}
                 <div className="flex justify-center">
-                  <img src="/img/lab.png" alt="NebulaLab" className="w-20 h-20 animate-float" />
+                  <img src="/img/lab.png" alt="NebulaLab" className="w-14 h-14 animate-float" />
               </div>
               {/* <p className="text-xs text-muted mb-3">Unlock advanced models and faster generation speeds.</p> */}
               {/* <button className="w-full py-1.5 text-xs font-medium bg-background text-foreground border border-indigo-500/20 rounded hover:bg-gradient-to-br hover:from-indigo-500/20 hover:to-purple-500/20 hover:text-indigo-700 dark:hover:text-indigo-100 transition-colors">

@@ -18,66 +18,40 @@ const NotificationModal: React.FC<NotificationModalProps> = ({ isOpen, onClose }
 
   const fetchNotifications = async () => {
     setLoading(true);
-    try {
-      const res = await notificationService.getList({ 
-        pageNum: 1, 
-        pageSize: 20,
-        // status: activeTab === 'unread' ? '0' : undefined // assuming '0' is unread
-      });
-      
-      // Handle response format (depending on actual API)
-      const list = res.rows || res.data || [];
-      setNotifications(list);
+    // 静态数据，暂不请求接口
+    setNotifications([
+      {
+        id: 1,
+        title: '🎉 NebulaLab 新版本上线',
+        content: `亲爱的用户，您好！
 
-      // Mock data if empty (REMOVE IN PRODUCTION)
-      if (list.length === 0) {
-         setNotifications([
-           {
-             id: 1,
-             title: 'Welcome to Nebula Lab',
-             content: 'Welcome to Nebula Lab! Start creating your first project.',
-             type: 'system',
-             status: 'unread',
-             createTime: new Date().toISOString(),
-             sender: 'System'
-           },
-           {
-             id: 2,
-             title: 'New Feature Alert',
-             content: 'We have added new AI models to the platform. Check them out!',
-             type: 'info',
-             status: 'read',
-             createTime: new Date(Date.now() - 86400000).toISOString(),
-             sender: 'Admin'
-           }
-         ]);
+我们非常高兴地宣布 NebulaLab 全新版本正式上线！本次更新带来了众多令人期待的新功能和优化：
+
+✨ 新功能亮点：
+• AI 换脸 - 一键实现人脸替换，效果自然逼真
+• 风格迁移 - 将您的照片转换为艺术大师风格
+• 文生图 - 输入文字描述，AI 为您生成精美图片
+• 图生视频 - 让静态图片动起来，创造动态内容
+• 智能对话 - 接入多种大语言模型，随时为您解答
+
+🚀 性能优化：
+• 全新的用户界面，更加简洁美观
+• 处理速度大幅提升，等待时间更短
+• 移动端适配优化，随时随地创作
+
+💡 温馨提示：
+新用户注册即可获得免费体验额度，快来探索 AI 创作的无限可能吧！
+
+感谢您一直以来的支持与信任，我们将持续为您带来更好的产品体验！
+
+NebulaLab 团队`,
+        type: 'system',
+        status: 'unread',
+        createTime: new Date().toISOString(),
+        sender: 'NebulaLab 官方'
       }
-    } catch (error) {
-      console.error('Failed to fetch notifications', error);
-      // Fallback mock
-       setNotifications([
-           {
-             id: 1,
-             title: 'Welcome to Nebula Lab',
-             content: 'Welcome to Nebula Lab! Start creating your first project.',
-             type: 'system',
-             status: 'unread',
-             createTime: new Date().toISOString(),
-             sender: 'System'
-           },
-           {
-             id: 2,
-             title: 'New Feature Alert',
-             content: 'We have added new AI models to the platform. Check them out!',
-             type: 'info',
-             status: 'read',
-             createTime: new Date(Date.now() - 86400000).toISOString(),
-             sender: 'Admin'
-           }
-         ]);
-    } finally {
-      setLoading(false);
-    }
+    ]);
+    setLoading(false);
   };
 
   useEffect(() => {
