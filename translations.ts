@@ -1610,7 +1610,7 @@ export const translations: Record<string, Translation> = {
           },
           customPrompt: {
             title: 'Custom Prompt',
-            description: 'Describe any transformation you can imagine. Upload up to two images as reference.',
+            description: 'Describe any transformation you can imagine. Upload up to two images as reference (e.g., character and style reference). Your creativity is the only limit!',
             emoji: '✍️',
             primaryUploaderTitle: 'Primary Image',
             primaryUploaderDescription: 'The main image to edit.',
@@ -3020,7 +3020,7 @@ export const translations: Record<string, Translation> = {
           },
           customPrompt: {
             title: '自定义提示',
-            description: '描述你能想象到的任何变化。最多可上传两张图片作为参考。',
+            description: '描述你能想象到的任何变化。最多可上传两张图片作为参考（例如，角色和风格参考）。你的创造力是唯一的限制！',
             emoji: '✍️',
             primaryUploaderTitle: '主图像',
             primaryUploaderDescription: '要编辑的主要图像。',

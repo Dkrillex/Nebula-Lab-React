@@ -193,19 +193,18 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
         {/* Left: Controls */}
         <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-sm border border-gray-200 dark:border-gray-800 overflow-y-auto custom-scrollbar">
             
-            {/* Prompt */}
-            {/* <div className="mb-6">
-                <label className="block text-sm font-medium mb-2">提示词</label>
+            {/* Prompt - 只在自定义提示工具时显示 */}
+            {activeTool.prompt === 'CUSTOM' && !activeTool.isVideo && (
+              <div className="mb-6">
                 <textarea 
-                    value={activeTool.prompt === 'CUSTOM' ? customPrompt : activeTool.prompt}
+                    value={customPrompt}
                     onChange={(e) => setCustomPrompt(e.target.value)}
-                    disabled={activeTool.prompt !== 'CUSTOM'}
-                    className={`w-full h-24 p-3 rounded-xl border bg-gray-50 dark:bg-gray-800 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
-                        activeTool.prompt !== 'CUSTOM' ? 'text-gray-500 cursor-not-allowed' : ''
-                    }`}
-                    placeholder="描述你想要的效果..."
+                    rows={3}
+                    className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                    placeholder="描述你想要的效果，例如：一只雄伟的狮子在日落时分的岩石上咆哮..."
                 />
-            </div> */}
+              </div>
+            )}
 
             {/* Image Uploaders */}
             <div className="space-y-6">
@@ -244,62 +243,55 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                     className="w-full h-full"
                                 />
                             </div>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setIsMaskToolActive(!isMaskToolActive)}
-                                    className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                                        isMaskToolActive
-                                            ? 'bg-indigo-600 text-white hover:bg-indigo-700'
-                                            : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                    }`}
-                                >
-                                    <Edit3 size={16} />
-                                    {isMaskToolActive ? '退出蒙版编辑' : '绘制蒙版'}
-                                </button>
-                                {/* <button
-                                    onClick={() => {
-                                        setPrimaryImageBase64(null);
-                                        setPrimaryFile(null);
-                                        setMaskDataUrl(null);
-                                        setIsMaskToolActive(false);
-                                        maskCanvasRef.current?.clearCanvas();
-                                    }}
-                                    className="px-3 py-2 rounded-lg text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                >
-                                    清除
-                                </button> */}
-                            </div>
-                            {isMaskToolActive && (
-                                <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                                    <label className="block text-xs font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                        画笔大小: {brushSize}px
-                                    </label>
-                                    <input
-                                        type="range"
-                                        min="5"
-                                        max="100"
-                                        value={brushSize}
-                                        onChange={(e) => setBrushSize(Number(e.target.value))}
-                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                                    />
-                                    <div className="flex gap-2 mt-2">
+                            {/* 自定义提示和姿势参考工具不显示绘制蒙版按钮 */}
+                            {activeTool.key !== 'customPrompt' && activeTool.key !== 'pose' && (
+                                <>
+                                    <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => maskCanvasRef.current?.undoLastAction()}
-                                            className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                            onClick={() => setIsMaskToolActive(!isMaskToolActive)}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                                                isMaskToolActive
+                                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700'
+                                                    : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                                            }`}
                                         >
-                                            撤销
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                maskCanvasRef.current?.clearCanvas();
-                                                setMaskDataUrl(null);
-                                            }}
-                                            className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
-                                        >
-                                            清除蒙版
+                                            <Edit3 size={16} />
+                                            {isMaskToolActive ? '退出蒙版编辑' : '绘制蒙版'}
                                         </button>
                                     </div>
-                                </div>
+                                    {isMaskToolActive && (
+                                        <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                                            <label className="block text-xs font-medium mb-2 text-gray-700 dark:text-gray-300">
+                                                画笔大小: {brushSize}px
+                                            </label>
+                                            <input
+                                                type="range"
+                                                min="5"
+                                                max="100"
+                                                value={brushSize}
+                                                onChange={(e) => setBrushSize(Number(e.target.value))}
+                                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                            />
+                                            <div className="flex gap-2 mt-2">
+                                                <button
+                                                    onClick={() => maskCanvasRef.current?.undoLastAction()}
+                                                    className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                >
+                                                    撤销
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        maskCanvasRef.current?.clearCanvas();
+                                                        setMaskDataUrl(null);
+                                                    }}
+                                                    className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+                                                >
+                                                    清除蒙版
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </div>
                     )}
