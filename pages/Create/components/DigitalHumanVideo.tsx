@@ -523,7 +523,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                        <span className={`text-sm font-medium ${mode === 'mode1' ? 'text-indigo-600' : 'text-gray-600'}`}>{t.rightPanel.mode1}</span>
                     </label>
                     
-                    <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-50 hidden group-hover:block pointer-events-none">
+                    <div className="absolute top-full left-0 mt-2 w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-50 hidden group-hover:block pointer-events-none">
                         <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">{t.rightPanel.mode1}</h4>
                          <div className="space-y-2 text-xs text-gray-600 dark:text-gray-300">
                             <div className="flex gap-2 items-start">
@@ -551,7 +551,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                        <span className={`text-sm font-medium ${mode === 'mode2' ? 'text-indigo-600' : 'text-gray-600'}`}>{t.rightPanel.mode2}</span>
                     </label>
                     
-                    <div className="absolute bottom-full left-0 mb-2 w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-50 hidden group-hover:block pointer-events-none">
+                    <div className="absolute top-full left-0 mt-2 w-72 p-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl shadow-xl z-50 hidden group-hover:block pointer-events-none">
                         <h4 className="font-bold text-gray-800 dark:text-gray-200 mb-2">{t.rightPanel.mode2}</h4>
                          <div className="space-y-2 text-xs text-gray-600 dark:text-gray-300">
                             <div className="flex gap-2 items-start">

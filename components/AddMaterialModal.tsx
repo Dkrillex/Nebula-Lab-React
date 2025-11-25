@@ -43,7 +43,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   // Asset Types
   const [assetTypes, setAssetTypes] = useState<{label: string, value: number}[]>([]);
   const [assetTypesLoading, setAssetTypesLoading] = useState(true);
-
+  
   // Fetch Asset Types
   useEffect(() => {
     const fetchDicts = async () => {
@@ -591,7 +591,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           </div>
 
           {/* Private Model Checkbox */}
-          {!isFolderMode && !isImportMode && [2, 3, 8, 9, 10].includes(formData.assetType as number) && (
+          {!isFolderMode && [2, 3, 8, 9, 10].includes(formData.assetType as number) && (
             <div className="flex items-center gap-2">
                <input
                   type="checkbox"
