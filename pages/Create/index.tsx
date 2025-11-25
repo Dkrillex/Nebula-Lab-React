@@ -39,7 +39,11 @@ const CreateLayout: React.FC = () => {
        if (map[tool]) {
          // 使用 replace 避免历史记录混乱
          // 注意：这里的路径是相对于 /create 的
-         navigate(map[tool], { replace: true });
+         // 使用 setTimeout 确保在下一个事件循环中执行，避免与当前渲染冲突
+         const timer = setTimeout(() => {
+           navigate(map[tool], { replace: true });
+         }, 0);
+         return () => clearTimeout(timer);
        }
     }
   }, [searchParams, navigate]);
