@@ -282,6 +282,7 @@ const ThreeDModelPage: React.FC = () => {
                 className="h-64 w-full"
                 showPreview={true}
                 immediate={false}
+                showConfirmButton={false}
               >
                 <div className="text-center p-4">
                   <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
