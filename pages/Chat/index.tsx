@@ -3266,11 +3266,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   };
 
   return (
-    <div className="flex h-full bg-surface text-foreground overflow-hidden">
+    <div className="flex h-[calc(100vh-4rem)] bg-surface text-foreground overflow-hidden">
       {/* Left Settings Sidebar */}
       <aside className={`
         ${isSettingsOpen ? 'w-80' : 'w-0'} 
-        flex-shrink-0 border-r border-border bg-background transition-all duration-300 flex flex-col h-full relative
+        flex-shrink-0 border-r border-border bg-background transition-all duration-300 flex flex-col relative
       `}>
         {!isSettingsOpen && (
           <button 
