@@ -55,11 +55,12 @@ const Layout: React.FC = () => {
     const params = new URLSearchParams(location.search);
     
     // 优先从 location.state 中获取 toolKey（由 WorkshopPage 传递）
+    // 但只在路径中没有明确 tool 时使用（例如 /create/useTool?tool=xxx 的情况）
     const stateToolKey = (location.state as any)?.toolKey;
     
     // Map URL path to View type
     let view: View = 'home';
-    let tool = params.get('tool') || stateToolKey || undefined;
+    let tool = params.get('tool') || undefined;
 
     // Handle new route structure for create
     if (path === 'create' || path.startsWith('create/')) {
@@ -69,9 +70,14 @@ const Layout: React.FC = () => {
         const parts = path.split('/');
         if (parts.length > 1) {
           const pathTool = parts[1];
-          // 如果 state 中有 toolKey，优先使用 toolKey；否则使用路径中的 tool
-          // 这样可以处理像 lego 这样没有独立路由的工具
-          tool = stateToolKey || pathTool;
+          // 优先使用路径中的 tool（因为路径是当前实际的路由）
+          // 如果路径中没有 tool（例如 /create/useTool），则使用 query 参数或 state 中的 toolKey
+          if (pathTool && pathTool !== 'useTool') {
+            tool = pathTool;
+          } else {
+            // 对于 /create/useTool 这种情况，使用 query 参数或 state 中的 toolKey
+            tool = tool || stateToolKey;
+          }
         }
       }
     }
@@ -129,17 +135,42 @@ const Layout: React.FC = () => {
   };
 
   const handleTabClick = (tab: TabItem) => {
-    if (tab.view === 'create' && tab.activeTool) {
-      navigate(`/create/${tab.activeTool}`);
+    if (tab.view === 'create') {
+      // 对于 create 视图，如果有 activeTool，导航到对应的路由
+      if (tab.activeTool) {
+        // 检查工具的实际路由配置
+        const tool = TOOLS_DATA.find(t => t.key === tab.activeTool);
+        if (tool?.route) {
+          // 如果工具配置了 route，使用该 route
+          // 如果 route 是 /create/useTool，需要添加 tool 参数
+          if (tool.route === '/create/useTool') {
+            navigate(`/create/useTool?tool=${tab.activeTool}`, { 
+              replace: false,
+              state: { toolKey: tab.activeTool }
+            });
+          } else {
+            navigate(tool.route, { 
+              replace: false,
+              state: { toolKey: tab.activeTool }
+            });
+          }
+        } else {
+          // 如果没有配置 route，尝试直接使用路径（向后兼容）
+          navigate(`/create/${tab.activeTool}`, { replace: false });
+        }
+      } else {
+        // 如果没有 activeTool，导航到 create 首页
+        navigate('/create', { replace: false });
+      }
       return;
     }
 
     let path = tab.view === 'home' ? '/' : `/${tab.view}`;
     // Legacy support for query params if any other views use them
-    if (tab.activeTool && tab.view !== 'create') {
+    if (tab.activeTool) {
       path += `?tool=${tab.activeTool}`;
     }
-    navigate(path);
+    navigate(path, { replace: false });
   };
 
   const handleTabClose = (e: React.MouseEvent, index: number) => {
