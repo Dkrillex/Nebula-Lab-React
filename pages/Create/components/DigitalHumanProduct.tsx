@@ -414,7 +414,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Avatar Selection */}
-      <div className="w-full lg:w-1/2 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col lg:h-[calc(100vh-230px)]">
+      <div className="w-full lg:w-3/5 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col lg:h-[calc(100vh-230px)]">
         <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4 shrink-0">
             {t?.leftPanel?.title || 'Select Avatar Template'}
         </h3>
@@ -485,7 +485,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
       </div>
 
       {/* Right: Configuration & Results */}
-      <div className="h-[calc(100vh-230px)] w-full lg:w-1/2 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-230px)] w-full lg:w-2/5 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 mb-[80px]">
           <div className="flex flex-col gap-6 mb-6">
               {/* Preview */}
