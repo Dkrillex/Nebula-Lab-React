@@ -1273,7 +1273,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         onClose={() => setShowAddMaterialModal(false)}
         onSuccess={() => {
           setShowAddMaterialModal(false);
-          // Optional: toast.success('Saved successfully'); // handled in modal
+          setIsAddedToLib(true);
+          toast.success(t.addedToLibrary || '已添加到素材库');
         }}
         initialData={addMaterialData}
         disableAssetTypeSelection={true}
