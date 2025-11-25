@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Image, Video, Music, Box } from 'lucide-react';
-import { TOOLS_DATA, Tool } from '../data';
+import { getToolsData, Tool } from '../data';
+import { translations } from '../../../translations';
 
 interface WorkshopPageProps {
   t: any;
@@ -11,7 +12,26 @@ const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
   const navigate = useNavigate();
   const [activeCategory, setActiveCategory] = useState<'all' | 'image' | 'video' | 'audio' | 'other'>('all');
 
-  const tools: Tool[] = useMemo(() => TOOLS_DATA, []);
+  // 根据翻译对象推断语言
+  const lang = useMemo(() => {
+    // 检查是否是中文（通过检查特定的翻译键）
+    if (t?.description === '我能帮你创造什么?' || t?.allTools === '全部工具') {
+      return 'zh';
+    }
+    // 检查是否是英文
+    if (t?.description === 'What can I help you create?' || t?.allTools === 'All Tools') {
+      return 'en';
+    }
+    // 检查是否是印尼语
+    if (t?.description?.includes('Apa yang bisa saya bantu') || t?.allTools === 'Semua Alat') {
+      return 'id';
+    }
+    // 默认返回中文
+    return 'zh';
+  }, [t]);
+
+  // 使用翻译后的工具数据
+  const tools: Tool[] = useMemo(() => getToolsData(lang), [lang]);
 
   // 分类数据
   const categories = [
