@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic, FolderPlus, Video, Pencil } from 'lucide-react';
+import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic, FolderPlus, Video, Pencil, Eye } from 'lucide-react';
+import ImagePreviewModal, { ImagePreviewAction } from '../../../components/ImagePreviewModal';
 import { styleTransferService, AnyShootTaskResult, Template } from '../../../services/styleTransferService';
 import { uploadService } from '../../../services/uploadService';
 import { avatarService } from '../../../services/avatarService';
@@ -139,6 +140,10 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   // AddMaterialModal State
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
   const [addMaterialData, setAddMaterialData] = useState<any>(null);
+
+  // 图片预览状态
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   // Updated Text Constants matching Vue version
   const TEXTS = {
@@ -951,6 +956,41 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     });
     navigate(`/create/imgToVideo?transferId=${transferId}`);
   };
+
+  // 图片预览
+  const handlePreview = (img: GeneratedImage) => {
+    const index = generatedImages.findIndex(i => i.key === img.key);
+    setPreviewIndex(index >= 0 ? index : 0);
+    setPreviewVisible(true);
+  };
+
+  // 预览操作按钮配置
+  const previewActions: ImagePreviewAction[] = [
+    {
+      key: 'saveToAssets',
+      icon: <FolderPlus size={18} />,
+      label: '添加素材',
+      onClick: (image) => {
+        const img = generatedImages.find(i => i.url === image.url);
+        if (img) {
+          handleSaveToAssets(img);
+          setPreviewVisible(false);
+        }
+      },
+    },
+    {
+      key: 'imageToVideo',
+      icon: <Video size={18} />,
+      label: '图生视频',
+      onClick: (image) => {
+        const img = generatedImages.find(i => i.url === image.url);
+        if (img) {
+          handleImageToVideo(img);
+        }
+      },
+      className: "flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium",
+    },
+  ];
 
   // 继续编辑 - 将生成结果设置为产品图继续编辑
   const handleContinueEdit = async (img: GeneratedImage) => {
@@ -1931,12 +1971,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                        >
                          <Video size={20} />
                        </button>
-                       <button
+                       {/* <button
                          onClick={() => handleContinueEdit(img)}
                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
                          title="继续编辑"
                        >
                          <Pencil size={20} />
+                       </button> */}
+                       {/* 点击预览 */}
+                       <button
+                         onClick={() => handlePreview(img)}
+                         className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                         title="预览"
+                       >
+                         <Eye size={20} />
                        </button>
                      </div>
                    </div>
@@ -1979,6 +2027,16 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         initialData={addMaterialData}
         disableAssetTypeSelection={true}
         isImportMode={true}
+      />
+
+      {/* 图片预览弹窗 */}
+      <ImagePreviewModal
+        visible={previewVisible}
+        images={generatedImages.map(img => ({ key: img.key, url: img.url }))}
+        initialIndex={previewIndex}
+        onClose={() => setPreviewVisible(false)}
+        actions={previewActions}
+        downloadPrefix="style_transfer"
       />
     </div>
   );
