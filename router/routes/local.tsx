@@ -35,7 +35,7 @@ const AIFaceSwappingPage = React.lazy(() => import('../../pages/Create/component
 const TemplateUiPage = React.lazy(() => import('../../pages/Create/components/TemplateUiPage'));
 const WorkshopPage = React.lazy(() => import('../../pages/Create/components/WorkshopPage'));
 const ProductReplacePage = React.lazy(() => import('../../pages/Create/components/ProductReplacePage'));
-
+const UploadCustomAvatarPage = React.lazy(() => import('../../pages/Create/components/UploadCustomAvatarPage'));
 // Wrapper components defined inline or imported if complex logic needed
 // For now, we assume components can handle their own data fetching or use hooks
 
@@ -145,6 +145,11 @@ export const localRoutes: AppRouteObject[] = [
               })}
             />,
             meta: { title: '产品数字人视频生成', keepAlive: true, keepAliveKey: '/create/product-replace' }
+          },
+          {
+            path: 'uploadCustomAvatar',
+            element: <RouteWrapper component={UploadCustomAvatarPage} translationKey="createPage.uploadCustomAvatar" />,
+            meta: { title: 'Upload Custom Avatar', keepAlive: true }
           }
         ]
       },

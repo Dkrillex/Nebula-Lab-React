@@ -589,7 +589,6 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
           }}
           disableAssetTypeSelection={true}
           isImportMode={true}
-          disableAssetTypeSelection={true}
        />
     </div>
   );
