@@ -15,8 +15,8 @@ interface AuthState {
   loading: boolean;
   isAuthenticated: boolean;
   firstLoginInfo: FirstLoginInfo | null; // 首次登录信息，用于全局显示提示
-  login: (params: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string }) => Promise<FirstLoginInfo | null>;
-  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string; channelId?: string; teamId?: string }) => Promise<FirstLoginInfo | null>;
+  login: (params: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string; inviteCode?: string }) => Promise<FirstLoginInfo | null>;
+  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string; channelId?: string; teamId?: string; inviteCode?: string }) => Promise<FirstLoginInfo | null>;
   logout: () => Promise<void>;
   fetchUserInfo: () => Promise<UserInfo | null>;
   setUserInfo: (userInfo: UserInfo | null) => void;
@@ -65,12 +65,14 @@ export const useAuthStore = create<AuthState>()(
         console.log('Token saved:', access_token.substring(0, 20) + '...');
         
         // 步骤2: 处理邀请（如果 URL 中有邀请参数）
+        // 注意：inviteCode 在注册时已经处理，这里只处理 channelId 和 teamId
         // 无论新用户还是老用户，都调用 handleInviteJoin 处理邀请
         // 后端接口应该是幂等的，重复调用不会出错
         // 即使后端在注册时已经处理了邀请，再次调用也不会影响结果
         const urlParams = new URLSearchParams(window.location.search);
         const channelId = urlParams.get('channelId');
         const teamId = urlParams.get('teamId');
+        const inviteCode = urlParams.get('inviteCode');
         
         if (channelId || teamId) {
           console.log('检测到邀请参数，调用 handleInviteJoin，channelId:', channelId, 'teamId:', teamId);
@@ -105,6 +107,14 @@ export const useAuthStore = create<AuthState>()(
           const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
           window.history.replaceState({}, '', newUrl);
           console.log('已清除 URL 中的邀请参数');
+        }
+        
+        // 清除 inviteCode 参数（如果存在）
+        if (inviteCode) {
+          urlParams.delete('inviteCode');
+          const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
+          window.history.replaceState({}, '', newUrl);
+          console.log('已清除 URL 中的 inviteCode 参数');
         }
         
         // 步骤3: 获取用户信息
@@ -153,6 +163,7 @@ export const useAuthStore = create<AuthState>()(
         countryCode: params.countryCode,
         channelId: params.channelId,
         teamId: params.teamId,
+        inviteCode: params.inviteCode,
       });
       console.log('Phone login response:', loginData);
       
@@ -163,12 +174,14 @@ export const useAuthStore = create<AuthState>()(
         console.log('Token saved:', access_token.substring(0, 20) + '...');
         
         // 步骤2: 处理邀请（如果 URL 中有邀请参数）
+        // 注意：inviteCode 在注册时已经处理，这里只处理 channelId 和 teamId
         // 无论新用户还是老用户，都调用 handleInviteJoin 处理邀请
         // 后端接口应该是幂等的，重复调用不会出错
         // 即使后端在注册时已经处理了邀请，再次调用也不会影响结果
         const urlParams = new URLSearchParams(window.location.search);
         const channelId = urlParams.get('channelId');
         const teamId = urlParams.get('teamId');
+        const inviteCode = urlParams.get('inviteCode');
         
         if (channelId || teamId) {
           console.log('检测到邀请参数，调用 handleInviteJoin，channelId:', channelId, 'teamId:', teamId);
@@ -203,6 +216,14 @@ export const useAuthStore = create<AuthState>()(
           const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
           window.history.replaceState({}, '', newUrl);
           console.log('已清除 URL 中的邀请参数');
+        }
+        
+        // 清除 inviteCode 参数（如果存在）
+        if (inviteCode) {
+          urlParams.delete('inviteCode');
+          const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
+          window.history.replaceState({}, '', newUrl);
+          console.log('已清除 URL 中的 inviteCode 参数');
         }
         
         // 步骤3: 获取用户信息
@@ -255,9 +276,11 @@ export const useAuthStore = create<AuthState>()(
       const urlParams = new URLSearchParams(window.location.search);
       const channelId = urlParams.get('channelId');
       const teamId = urlParams.get('teamId');
+      const inviteCode = urlParams.get('inviteCode');
 
       // 如果存在邀请参数，先处理邀请逻辑（老用户通过邀请链接加入）
       // 这种情况是：用户已经登录，然后访问邀请链接
+      // 注意：inviteCode 只在注册时有效，已登录用户访问 inviteCode 链接不需要处理
       if (channelId || teamId) {
         console.log('检测到邀请参数（老用户已登录场景），channelId:', channelId, 'teamId:', teamId);
         try {
@@ -288,6 +311,14 @@ export const useAuthStore = create<AuthState>()(
           console.error('处理邀请参数失败:', error);
           // 即使邀请处理失败，也继续获取用户信息
         }
+      }
+      
+      // 清除 inviteCode 参数（如果存在，已登录用户不需要处理 inviteCode）
+      if (inviteCode) {
+        urlParams.delete('inviteCode');
+        const newUrl = `${window.location.pathname}${urlParams.toString() ? `?${urlParams.toString()}` : ''}${window.location.hash}`;
+        window.history.replaceState({}, '', newUrl);
+        console.log('已清除 URL 中的 inviteCode 参数（已登录用户）');
       }
 
       const userInfoResp = await authService.getInfo();

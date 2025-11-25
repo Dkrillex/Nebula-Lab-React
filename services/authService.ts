@@ -8,7 +8,7 @@ export const authService = {
    * Login (Standard Ruoyi)
    * Endpoint: /login
    */
-  login: (data: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string }) => {
+  login: (data: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string; inviteCode?: string }) => {
     const loginData = {
       ...data,
       clientId: CLIENT_ID,
@@ -60,7 +60,7 @@ export const authService = {
    * Phone Login (SMS Code)
    * Endpoint: /auth/login
    */
-  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string; channelId?: string; teamId?: string }) => {
+  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string; channelId?: string; teamId?: string; inviteCode?: string }) => {
     const loginData = {
       ...data,
       clientId: CLIENT_ID,
@@ -91,6 +91,7 @@ export const authService = {
     countryCode?: string;
     channelId?: string;
     teamId?: string;
+    inviteCode?: string;
   }) => {
     const registerData = {
       ...data,
