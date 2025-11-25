@@ -9,6 +9,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
+import { TOOLS_DATA } from '../pages/Create/data';
 
 import MobileSidebar from './MobileSidebar';
 
@@ -53,9 +54,12 @@ const Layout: React.FC = () => {
     const path = location.pathname.substring(1) || 'home';
     const params = new URLSearchParams(location.search);
     
+    // 优先从 location.state 中获取 toolKey（由 WorkshopPage 传递）
+    const stateToolKey = (location.state as any)?.toolKey;
+    
     // Map URL path to View type
     let view: View = 'home';
-    let tool = params.get('tool') || undefined;
+    let tool = params.get('tool') || stateToolKey || undefined;
 
     // Handle new route structure for create
     if (path === 'create' || path.startsWith('create/')) {
@@ -64,7 +68,10 @@ const Layout: React.FC = () => {
         // Extract tool from path: create/viralVideo -> viralVideo
         const parts = path.split('/');
         if (parts.length > 1) {
-          tool = parts[1];
+          const pathTool = parts[1];
+          // 如果 state 中有 toolKey，优先使用 toolKey；否则使用路径中的 tool
+          // 这样可以处理像 lego 这样没有独立路由的工具
+          tool = stateToolKey || pathTool;
         }
       }
     }
@@ -77,6 +84,13 @@ const Layout: React.FC = () => {
     else if (path === 'profile') view = 'profile';
 
     return { view, tool };
+  };
+  
+  // Helper to get tool title from TOOLS_DATA
+  const getToolTitle = (toolKey: string | undefined): string | undefined => {
+    if (!toolKey) return undefined;
+    const tool = TOOLS_DATA.find(t => t.key === toolKey || t.route === `/create/${toolKey}`);
+    return tool?.title;
   };
 
   const { view: currentView, tool: activeTool } = getCurrentViewAndTool();

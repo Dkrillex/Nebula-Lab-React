@@ -5,6 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
+import { TOOLS_DATA } from '../pages/Create/data';
 
 interface HeaderProps {
   isDark: boolean;
@@ -81,7 +82,26 @@ const Header: React.FC<HeaderProps> = ({
     if (!sideMenuMap) return tab.view;
     if (tab.view === 'home') return sideMenuMap.home;
     if (tab.view === 'create') {
-      return tab.activeTool ? (sideMenuMap[tab.activeTool] || tab.activeTool) : sideMenuMap.home;
+      if (tab.activeTool) {
+        // 首先尝试从 TOOLS_DATA 中获取 title
+        const tool = TOOLS_DATA.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
+        if (tool) {
+          return tool.title;
+        }
+        
+        // 如果找不到，尝试从翻译映射中获取
+        // 将 aiFaceSwap 映射到 faceSwap 的翻译，tts 映射到 ttsTool 的翻译，3dModel 映射到 glbViewer 的翻译
+        let toolKey = tab.activeTool;
+        if (tab.activeTool === 'aiFaceSwap') {
+          toolKey = 'faceSwap';
+        } else if (tab.activeTool === 'tts') {
+          toolKey = 'ttsTool';
+        } else if (tab.activeTool === '3dModel') {
+          toolKey = 'glbViewer';
+        }
+        return sideMenuMap[toolKey] || tab.activeTool;
+      }
+      return sideMenuMap.home;
     }
     if (tab.view === 'models') return sideMenuMap.modelSquare;
     if (tab.view === 'chat') return sideMenuMap.aiExperience;
