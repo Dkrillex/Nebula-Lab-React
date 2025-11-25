@@ -146,6 +146,11 @@ const Header: React.FC<HeaderProps> = ({
     return false;
   });
 
+  // 个人中心相关页面显示 Tab 标签而不是搜索框
+  const profilePaths = ['/profile', '/assets', '/expenses', '/pricing'];
+  const isProfilePath = profilePaths.some(path => location.pathname.includes(path));
+  const showSearchBox = currentView === 'home' && !isProfilePath;
+
   return (
     <header className="sticky top-0 z-50 w-full flex flex-col bg-background/95 backdrop-blur-md border-b border-border transition-all duration-300 shadow-sm">
       {/* Main Toolbar - Changed container mx-auto to w-full for left alignment */}
@@ -180,7 +185,7 @@ const Header: React.FC<HeaderProps> = ({
 
         {/* Center: Command Search (Home) OR Tags View (Other Pages) */}
         <div className="flex-1 flex items-center min-w-0 overflow-hidden">
-          {currentView === 'home' ? (
+          {showSearchBox ? (
             <div className="hidden md:flex w-full items-center justify-center px-6 max-w-md mx-auto">
               <button className="flex h-9 w-full items-center gap-2 rounded-lg border border-border bg-surface px-3 text-sm text-muted hover:text-foreground hover:border-secondary transition-colors shadow-sm">
                 <Command size={14} />

@@ -74,6 +74,7 @@ const Layout: React.FC = () => {
     else if (path === 'expenses') view = 'expenses';
     else if (path === 'pricing') view = 'pricing';
     else if (path === 'assets') view = 'assets';
+    else if (path === 'profile') view = 'profile';
 
     return { view, tool };
   };
