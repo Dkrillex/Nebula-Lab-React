@@ -33,10 +33,16 @@ const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
   // 打开工具
   const openTool = (tool: Tool) => {
     if (tool.route) {
-      navigate(tool.route, { state: { toolKey: tool.key } });
+      // 如果路由是绝对路径（以 /create/ 开头），直接导航
+      // 否则使用 query 参数方式（兼容旧逻辑）
+      if (tool.route.startsWith('/create/')) {
+        navigate(tool.route, { state: { toolKey: tool.key }, replace: false });
+      } else {
+        navigate(tool.route, { state: { toolKey: tool.key } });
+      }
     } else {
       // 默认跳转到通用工具页面
-      navigate('/create?tool=useTool', { state: { toolKey: tool.key } });
+      navigate('/create/useTool', { state: { toolKey: tool.key }, replace: false });
     }
   };
 

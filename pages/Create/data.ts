@@ -25,7 +25,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🧍',
     description: '将您的视频中的人脸替换成图片的人脸',
     flitType: 'video',
-    route: '/create?tool=aiFaceSwap',
+    route: '/create/aiFaceSwap',
   },
   {
     key: 'tts',
@@ -33,7 +33,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🎤',
     description: '将文本转换为自然流畅的语音，支持多种音色和语言',
     flitType: 'audio',
-    route: '/create?tool=tts',
+    route: '/create/tts',
   },
   {
     key: '3dModel',
@@ -41,7 +41,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🤖',
     description: '将您的照片变成一份3D效果图。',
     flitType: 'image',
-    route: '/create?tool=3dModel',
+    route: '/create/3dModel',
   },
   {
     key: 'customPrompt',
@@ -49,7 +49,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '✍️',
     description: '描述你能想象到的任何变化。最多可上传两张图片作为参考。',
     flitType: 'image',
-    route: '/create?tool=useTool',
+    route: '/create/useTool',
     prompt: 'CUSTOM',
     isMultiImage: true,
     isSecondaryOptional: true,
@@ -64,7 +64,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🧍',
     description: '将您的主图片人脸替换成参考图片的人脸',
     flitType: 'image',
-    route: '/create?tool=aIFacSwapping',
+    route: '/create/imageTranslation',
   },
   {
     key: 'aiTemplate',
@@ -72,7 +72,7 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🖼️',
     description: '根据选中AI模板生成对应内容',
     flitType: 'image',
-    route: '/create?tool=templateUi',
+    route: '/create/templateUi',
   },
   {
     key: 'figurine',
@@ -80,7 +80,8 @@ export const TOOLS_DATA: Tool[] = [
     emoji: '🧍',
     description: '将您的照片变成一个可收藏的3D角色手办，并配有包装。',
     flitType: 'image',
-    prompt: 'turn this photo into a character figure. Behind it, place a box with the character’s image printed on it, and a computer showing the Blender modeling process on its screen. In front of the box, add a round plastic base with the character figure standing on it. set the scene indoors if possible',
+    route: '/create/useTool',
+    prompt: "turn this photo into a character figure. Behind it, place a box with the character's image printed on it, and a computer showing the Blender modeling process on its screen. In front of the box, add a round plastic base with the character figure standing on it. set the scene indoors if possible",
   },
   {
     key: 'funko',
