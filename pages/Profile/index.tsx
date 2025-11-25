@@ -2,9 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { profileService, UserProfileData } from '../../services/profileService';
 import { useAuthStore } from '../../stores/authStore';
-import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users, Gift } from 'lucide-react';
 import EnterprisePage from '../Enterprise';
 import ChannelManagement from './components/ChannelManagement';
+import InviteRecord from './components/InviteRecord';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
 import toast from 'react-hot-toast';
@@ -17,7 +18,7 @@ const ProfilePage: React.FC = () => {
   const { user, fetchUserInfo } = useAuthStore();
   const navigate = useNavigate();
   const location = useLocation();
-  const [activeTab, setActiveTab] = useState<'basic' | 'security' | 'enterprise'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'security' | 'enterprise' | 'invite'>('basic');
   const [enterpriseSubTab, setEnterpriseSubTab] = useState<'channel' | 'team'>('channel');
   const [profile, setProfile] = useState<UserProfileData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -71,6 +72,9 @@ const ProfilePage: React.FC = () => {
       }
     } else if (tab === 'security') {
       setActiveTab('security');
+      setEnterpriseSubTab('channel'); // 重置子 tab
+    } else if (tab === 'invite') {
+      setActiveTab('invite');
       setEnterpriseSubTab('channel'); // 重置子 tab
     } else {
       setActiveTab('basic');
@@ -253,7 +257,7 @@ const ProfilePage: React.FC = () => {
     setIsEditing(false);
   };
 
-  const handleTabChange = (tab: 'basic' | 'security' | 'enterprise') => {
+  const handleTabChange = (tab: 'basic' | 'security' | 'enterprise' | 'invite') => {
     setActiveTab(tab);
     const params = new URLSearchParams(location.search);
     if (tab === 'basic') {
@@ -327,6 +331,19 @@ const ProfilePage: React.FC = () => {
             <div className="flex items-center gap-2">
               <Building2 size={18} />
               企业管理
+            </div>
+          </button>
+          <button
+            onClick={() => handleTabChange('invite')}
+            className={`px-4 py-2 font-medium transition-colors border-b-2 ${
+              activeTab === 'invite'
+                ? 'border-indigo-600 text-indigo-600'
+                : 'border-transparent text-muted hover:text-foreground'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Gift size={18} />
+              推广邀请记录
             </div>
           </button>
         </div>
@@ -724,6 +741,13 @@ const ProfilePage: React.FC = () => {
           ) : (
             <EnterprisePage t={t?.enterprisePage || t} />
           )}
+        </div>
+      )}
+
+      {/* Invite Record Tab */}
+      {activeTab === 'invite' && (
+        <div>
+          <InviteRecord t={t} />
         </div>
       )}
     </div>

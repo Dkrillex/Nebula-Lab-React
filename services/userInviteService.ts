@@ -9,6 +9,27 @@ export interface UserInviteVO {
   createTime: string;
 }
 
+export interface NebulaUserInviteVO {
+  id?: number;
+  systemId?: string;
+  channelId?: number;
+  channelName?: string;
+  channelInviteCode?: string;
+  invitedUserId?: number;
+  invitedUserName?: string;
+  invitedUserCode?: string;
+  createTime?: string;
+}
+
+export interface UserInviteListParams {
+  channelId?: number;
+  channelInviteCode?: string;
+  invitedUserName?: string;
+  systemId?: number;
+  pageNum?: number;
+  pageSize?: number;
+}
+
 export const userInviteService = {
   /**
    * 根据渠道ID查询邀请用户列表（关联用户表）
@@ -24,6 +45,17 @@ export const userInviteService = {
         searchKeyword,
         ...params
       }
+    });
+  },
+
+  /**
+   * 查询推广邀请信息列表
+   * @param params 查询参数
+   * @returns 推广邀请信息列表
+   */
+  getUserInviteList: (params?: UserInviteListParams) => {
+    return request.get<{ rows: NebulaUserInviteVO[]; total: number }>('/system/userInvite/list', {
+      params
     });
   }
 };
