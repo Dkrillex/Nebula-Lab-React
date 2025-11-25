@@ -674,7 +674,49 @@ interface Translation {
       custom: string;
       buy: string;
       contact: string;
-    }
+    };
+    serviceAdvantages: {
+      title: string;
+      aiCreation: string;
+      efficientContent: string;
+      techSupport: string;
+      dataSecurity: string;
+    };
+    needHelp: {
+      title: string;
+      callPhone: string;
+    };
+    wechatPayModal: {
+      scanToPay: string;
+      paySuccess: string;
+      thankYou: string;
+      payAmount: string;
+      generatingQR: string;
+      pleaseWait: string;
+      step1: string;
+      step2: string;
+      step3: string;
+      tip: string;
+    };
+    consultModal: {
+      title: string;
+      contactUs: string;
+      scanQR: string;
+      workTime: string;
+      serviceSupport: string;
+    };
+    enterpriseModal: {
+      title: string;
+      subtitle: string;
+      phone: string;
+      serviceTime: string;
+      workDays: string;
+      wechatContact: string;
+      scanToAdd: string;
+      customSolution: string;
+      techSupport: string;
+      dataAnalysis: string;
+    };
   };
   assetsPage: {
     title: string;
@@ -1492,6 +1534,48 @@ export const translations: Record<string, Translation> = {
         custom: 'Custom',
         buy: 'Buy Now',
         contact: 'Contact Us'
+      },
+      serviceAdvantages: {
+        title: 'Service Advantages',
+        aiCreation: '✨ AI Intelligent Creation',
+        efficientContent: '🚀 Efficient Content Generation',
+        techSupport: '💎 Professional Tech Support',
+        dataSecurity: '🔒 Data Security Guarantee'
+      },
+      needHelp: {
+        title: 'Need Help?',
+        callPhone: 'Call:'
+      },
+      wechatPayModal: {
+        scanToPay: 'Scan to Pay',
+        paySuccess: 'Payment Successful!',
+        thankYou: 'Thank you for your purchase',
+        payAmount: 'Payment Amount',
+        generatingQR: 'Generating QR Code',
+        pleaseWait: 'Please wait...',
+        step1: 'Open WeChat Scan',
+        step2: 'Scan the QR code above',
+        step3: 'Confirm payment to complete',
+        tip: 'The window will close automatically after payment. Please do not pay repeatedly.'
+      },
+      consultModal: {
+        title: 'Online Consultation',
+        contactUs: 'Contact Us',
+        scanQR: 'Scan the QR code below to consult',
+        workTime: 'Working Hours: Mon-Fri 9:00-18:00',
+        serviceSupport: 'We will provide professional service support'
+      },
+      enterpriseModal: {
+        title: 'Enterprise Custom Service',
+        subtitle: 'Professional AI solutions for you',
+        phone: 'Contact Phone',
+        serviceTime: 'Service Hours',
+        workDays: 'Weekdays 9:00-18:00',
+        wechatContact: 'WeChat Contact',
+        scanToAdd: 'Scan to add WeChat',
+        customSolution: '🎯 Custom Solutions',
+        techSupport: '🔧 Technical Support',
+        dataAnalysis: '📊 Data Analysis'
       }
     },
     assetsPage: {
@@ -2306,6 +2390,48 @@ export const translations: Record<string, Translation> = {
         custom: '自定义',
         buy: '立即购买',
         contact: '联系我们'
+      },
+      serviceAdvantages: {
+        title: '服务优势',
+        aiCreation: '✨ AI智能创作',
+        efficientContent: '🚀 高效内容生成',
+        techSupport: '💎 专业技术支持',
+        dataSecurity: '🔒 数据安全保障'
+      },
+      needHelp: {
+        title: '需要帮助？',
+        callPhone: '请拨打电话：'
+      },
+      wechatPayModal: {
+        scanToPay: '扫码支付',
+        paySuccess: '支付成功！',
+        thankYou: '感谢您的购买',
+        payAmount: '支付金额',
+        generatingQR: '正在生成支付二维码',
+        pleaseWait: '请稍候...',
+        step1: '打开微信扫一扫',
+        step2: '扫描上方二维码',
+        step3: '确认支付完成购买',
+        tip: '支付完成后将自动关闭此窗口，请勿重复支付'
+      },
+      consultModal: {
+        title: '在线咨询',
+        contactUs: '联系我们',
+        scanQR: '扫描下方二维码，立即咨询',
+        workTime: '工作时间：周一至周五 9:00-18:00',
+        serviceSupport: '我们将为您提供专业的服务支持'
+      },
+      enterpriseModal: {
+        title: '企业定制服务',
+        subtitle: '为您提供专业的AI解决方案',
+        phone: '联系电话',
+        serviceTime: '服务时间',
+        workDays: '工作日 9:00-18:00',
+        wechatContact: '微信联系',
+        scanToAdd: '扫码添加企业微信',
+        customSolution: '🎯 定制化方案',
+        techSupport: '🔧 技术支持',
+        dataAnalysis: '📊 数据分析'
       }
     },
     assetsPage: {
@@ -3153,6 +3279,48 @@ export const translations: Record<string, Translation> = {
         custom: 'Kustom',
         buy: 'Beli Sekarang',
         contact: 'Hubungi Kami'
+      },
+      serviceAdvantages: {
+        title: 'Keunggulan Layanan',
+        aiCreation: '✨ Kreasi AI Cerdas',
+        efficientContent: '🚀 Pembuatan Konten Efisien',
+        techSupport: '💎 Dukungan Teknis Profesional',
+        dataSecurity: '🔒 Jaminan Keamanan Data'
+      },
+      needHelp: {
+        title: 'Butuh Bantuan?',
+        callPhone: 'Hubungi:'
+      },
+      wechatPayModal: {
+        scanToPay: 'Pindai untuk Bayar',
+        paySuccess: 'Pembayaran Berhasil!',
+        thankYou: 'Terima kasih atas pembelian Anda',
+        payAmount: 'Jumlah Pembayaran',
+        generatingQR: 'Membuat Kode QR',
+        pleaseWait: 'Mohon tunggu...',
+        step1: 'Buka WeChat Scan',
+        step2: 'Pindai kode QR di atas',
+        step3: 'Konfirmasi pembayaran',
+        tip: 'Jendela akan menutup otomatis setelah pembayaran. Jangan bayar berulang.'
+      },
+      consultModal: {
+        title: 'Konsultasi Online',
+        contactUs: 'Hubungi Kami',
+        scanQR: 'Pindai kode QR di bawah untuk konsultasi',
+        workTime: 'Jam Kerja: Sen-Jum 9:00-18:00',
+        serviceSupport: 'Kami akan memberikan dukungan layanan profesional'
+      },
+      enterpriseModal: {
+        title: 'Layanan Kustom Perusahaan',
+        subtitle: 'Solusi AI profesional untuk Anda',
+        phone: 'Telepon Kontak',
+        serviceTime: 'Jam Layanan',
+        workDays: 'Hari Kerja 9:00-18:00',
+        wechatContact: 'Kontak WeChat',
+        scanToAdd: 'Pindai untuk menambahkan WeChat',
+        customSolution: '🎯 Solusi Kustom',
+        techSupport: '🔧 Dukungan Teknis',
+        dataAnalysis: '📊 Analisis Data'
       }
     },
     assetsPage: {

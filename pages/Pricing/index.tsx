@@ -454,7 +454,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                }}
                className="text-sm text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-300 cursor-pointer"
              >
-               如对充值有疑问？请点击此处
+               {t.questions}
              </a>
            </div>
            
@@ -572,7 +572,8 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                   onCustomAmountChange={(amount) => handleCustomAmountChange(item.id, amount)}
                   onBuy={() => handlePayment(item)}
                   loading={payLoading}
-             labels={t.labels}
+                  labels={t.labels}
+                  t={t}
                   borderColor={borderColor}
                   btnColor={btnColor}
                 />
@@ -587,20 +588,20 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             {/* 服务优势 */}
             <div className="flex-1">
               <h4 className="text-xl font-semibold text-foreground mb-4">
-                服务优势
+                {t.serviceAdvantages?.title || '服务优势'}
               </h4>
               <div className="flex flex-wrap gap-2">
                 <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
-                  ✨ AI智能创作
+                  {t.serviceAdvantages?.aiCreation || '✨ AI智能创作'}
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
-                  🚀 高效内容生成
+                  {t.serviceAdvantages?.efficientContent || '🚀 高效内容生成'}
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
-                  💎 专业技术支持
+                  {t.serviceAdvantages?.techSupport || '💎 专业技术支持'}
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400 px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700 whitespace-nowrap">
-                  🔒 数据安全保障
+                  {t.serviceAdvantages?.dataSecurity || '🔒 数据安全保障'}
                 </span>
               </div>
             </div>
@@ -608,10 +609,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             {/* 需要帮助 */}
             <div className="flex-shrink-0 text-center">
               <h4 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-3">
-                需要帮助？
+                {t.needHelp?.title || '需要帮助？'}
               </h4>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                请拨打电话：<a 
+                {t.needHelp?.callPhone || '请拨打电话：'}<a 
                   href="tel:18890659150" 
                   className="text-blue-600 dark:text-blue-400 hover:underline"
                 >
@@ -627,7 +628,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       <BaseModal
         isOpen={wxPayModalOpen}
         onClose={handleCloseModal}
-        title={payStatus === 'success' ? '支付成功' : '扫码支付'}
+        title={payStatus === 'success' ? t.wechatPayModal?.paySuccess : t.wechatPayModal?.scanToPay || '扫码支付'}
         width="max-w-md"
       >
         <div className="flex flex-col items-center justify-center py-6 space-y-6">
@@ -636,14 +637,14 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
                 <Check size={32} className="text-green-600" />
               </div>
-              <h3 className="text-xl font-bold">支付成功！</h3>
-              <p className="text-gray-500 mt-2">感谢您的购买</p>
+              <h3 className="text-xl font-bold">{t.wechatPayModal?.paySuccess || '支付成功！'}</h3>
+              <p className="text-gray-500 mt-2">{t.wechatPayModal?.thankYou || '感谢您的购买'}</p>
             </div>
           ) : (
             <>
               {/* 支付金额显示 */}
               <div className="text-center space-y-2 w-full">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">支付金额</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t.wechatPayModal?.payAmount || '支付金额'}</div>
                 <div className="text-3xl font-bold text-gray-900 dark:text-white">
                   ¥{orderInfo ? Number(orderInfo.originalAmount || orderInfo.totalAmount || 0).toFixed(2) : '0.00'}
                 </div>
@@ -669,10 +670,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                       <Loader2 size={32} className="animate-spin text-primary" />
                       <div className="text-center">
                         <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          正在生成支付二维码
+                          {t.wechatPayModal?.generatingQR || '正在生成支付二维码'}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          请稍候...
+                          {t.wechatPayModal?.pleaseWait || '请稍候...'}
                         </p>
                       </div>
                     </div>
@@ -686,19 +687,19 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
                     1
                   </div>
-                  <span>打开微信扫一扫</span>
+                  <span>{t.wechatPayModal?.step1 || '打开微信扫一扫'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
                     2
                   </div>
-                  <span>扫描上方二维码</span>
+                  <span>{t.wechatPayModal?.step2 || '扫描上方二维码'}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-gray-700 dark:text-gray-300">
                   <div className="flex-shrink-0 w-6 h-6 rounded-full bg-purple-500 text-white flex items-center justify-center font-medium text-xs">
                     3
                   </div>
-                  <span>确认支付完成购买</span>
+                  <span>{t.wechatPayModal?.step3 || '确认支付完成购买'}</span>
                 </div>
               </div>
 
@@ -706,7 +707,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               <div className="w-full bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-3 flex items-start gap-2">
                 <span className="text-lg">💡</span>
                 <p className="text-xs text-orange-800 dark:text-orange-200 flex-1">
-                  支付完成后将自动关闭此窗口，请勿重复支付
+                  {t.wechatPayModal?.tip || '支付完成后将自动关闭此窗口，请勿重复支付'}
                 </p>
               </div>
             </>
@@ -718,12 +719,12 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       <BaseModal
         isOpen={consultModalOpen}
         onClose={() => setConsultModalOpen(false)}
-        title="在线咨询"
+        title={t.consultModal?.title || '在线咨询'}
         width="max-w-sm"
       >
          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">联系我们</h3>
-            <p className="text-sm text-gray-500 mb-6">扫描下方二维码，立即咨询</p>
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">{t.consultModal?.contactUs || '联系我们'}</h3>
+            <p className="text-sm text-gray-500 mb-6">{t.consultModal?.scanQR || '扫描下方二维码，立即咨询'}</p>
             
             <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
                <img 
@@ -734,8 +735,8 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             </div>
 
             <div className="text-sm text-gray-500 dark:text-gray-400 space-y-1">
-              <p>工作时间：周一至周五 9:00-18:00</p>
-              <p>我们将为您提供专业的服务支持</p>
+              <p>{t.consultModal?.workTime || '工作时间：周一至周五 9:00-18:00'}</p>
+              <p>{t.consultModal?.serviceSupport || '我们将为您提供专业的服务支持'}</p>
             </div>
          </div>
       </BaseModal>
@@ -744,14 +745,14 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       <BaseModal
         isOpen={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
-        title="企业定制服务"
+        title={t.enterpriseModal?.title || '企业定制服务'}
         width="max-w-2xl"
       >
          <div className="py-2">
             {/* 副标题 */}
             <div className="text-center mb-6">
               <p className="text-sm text-gray-600 dark:text-gray-400">
-                为您提供专业的AI解决方案
+                {t.enterpriseModal?.subtitle || '为您提供专业的AI解决方案'}
               </p>
             </div>
 
@@ -762,15 +763,15 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                 <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="text-2xl flex-shrink-0">📱</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">联系电话</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t.enterpriseModal?.phone || '联系电话'}</div>
                     <div className="text-base font-medium text-gray-900 dark:text-white">18890659150</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
                   <div className="text-2xl flex-shrink-0">⏰</div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">服务时间</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">工作日 9:00-18:00</div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t.enterpriseModal?.serviceTime || '服务时间'}</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">{t.enterpriseModal?.workDays || '工作日 9:00-18:00'}</div>
                   </div>
                 </div>
               </div>
@@ -778,7 +779,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               {/* 微信联系 */}
               <div className="flex-shrink-0 text-center">
                 <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-                  微信联系
+                  {t.enterpriseModal?.wechatContact || '微信联系'}
                 </div>
                 <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
                   <img 
@@ -788,7 +789,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                   />
                 </div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">
-                  扫码添加企业微信
+                  {t.enterpriseModal?.scanToAdd || '扫码添加企业微信'}
                 </div>
               </div>
             </div>
@@ -796,13 +797,13 @@ const PricingPage: React.FC<PricingPageProps> = () => {
             {/* 功能标签 */}
             <div className="flex justify-center gap-3 flex-wrap">
               <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                🎯 定制化方案
+                {t.enterpriseModal?.customSolution || '🎯 定制化方案'}
               </div>
               <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                🔧 技术支持
+                {t.enterpriseModal?.techSupport || '🔧 技术支持'}
               </div>
               <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                📊 数据分析
+                {t.enterpriseModal?.dataAnalysis || '📊 数据分析'}
               </div>
             </div>
          </div>
@@ -834,12 +835,13 @@ interface PricingCardProps {
   onBuy: () => void;
   loading: boolean;
   labels: any;
+  t: any;
   borderColor: string;
   btnColor: string;
 }
 
 const PricingCard: React.FC<PricingCardProps> = ({ 
-  item, isEnterprise, paymentType, invoiceEnabled, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, borderColor, btnColor 
+  item, isEnterprise, paymentType, invoiceEnabled, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, t, borderColor, btnColor 
 }) => {
   const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
   const price = Number(item.productPrice);
@@ -985,37 +987,34 @@ const PricingCard: React.FC<PricingCardProps> = ({
       )}
 
       <div className="flex-1 space-y-3 mb-8 relative z-10">
-         {!isEnterprise && item.productDescription && (
-            <div className="text-xs text-muted/80 whitespace-pre-line text-center">
-               {item.productDescription}
-            </div>
+         {item.productName === 'Starter' && t.starter?.features && (
+            <ul className="space-y-2 flex flex-col items-start">
+              {t.starter.features.map((feature: string, index: number) => (
+                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
+                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
          )}
-         {isEnterprise && (
-            <ul className="space-y-2.5 text-left">
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                自定义团队席位
-              </li>
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                自定义积分额度
-              </li>
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                自定义数字人
-              </li>
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                自定义AI音色
-              </li>
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                自定义功能
-              </li>
-              <li className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center">
-                <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                定制化功能开发
-              </li>
+         {item.productName === 'Business' && t.business?.features && (
+            <ul className="space-y-2 flex flex-col items-start">
+              {t.business.features.map((feature: string, index: number) => (
+                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
+                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                  {feature}
+                </li>
+              ))}
+            </ul>
+         )}
+         {isEnterprise && t.enterprise?.features && (
+            <ul className="space-y-2 flex flex-col items-center">
+              {t.enterprise.features.map((feature: string, index: number) => (
+                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
+                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
+                  {feature}
+                </li>
+              ))}
             </ul>
          )}
       </div>
