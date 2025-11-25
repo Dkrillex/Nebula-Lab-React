@@ -284,6 +284,11 @@ interface Translation {
       result: {
         label: string;
         emptyState: string;
+        previewActions: {
+          fullscreen: string;
+          download: string;
+          addToMaterials: string;
+        };
       };
       generating: string;
       progressStatusShort: string;
@@ -1246,7 +1251,12 @@ export const translations: Record<string, Translation> = {
         },
         result: {
           label: 'Generation Result',
-          emptyState: 'Upload image and enter description text to start your AI video creation journey'
+          emptyState: 'Upload image and enter description text to start your AI video creation journey',
+          previewActions: {
+            fullscreen: 'View Full Screen',
+            download: 'Download',
+            addToMaterials: 'Add to Materials'
+          }
         },
         generating: 'Generating your masterpiece...',
         progressStatusShort: 'Generating'
@@ -2657,7 +2667,12 @@ export const translations: Record<string, Translation> = {
         },
         result: {
           label: '生成结果',
-          emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅'
+          emptyState: '上传图片并输入描述文字，开始您的AI视频创作之旅',
+          previewActions: {
+            fullscreen: '全屏预览',
+            download: '下载',
+            addToMaterials: '导入素材'
+          }
         },
         generating: '正在生成您的杰作...',
         progressStatusShort: '生成中'
@@ -4100,7 +4115,12 @@ export const translations: Record<string, Translation> = {
         },
         result: {
           label: 'Hasil Pembuatan',
-          emptyState: 'Unggah gambar dan masukkan teks deskripsi untuk memulai perjalanan pembuatan video AI Anda'
+          emptyState: 'Unggah gambar dan masukkan teks deskripsi untuk memulai perjalanan pembuatan video AI Anda',
+          previewActions: {
+            fullscreen: 'Tampilkan Layar Penuh',
+            download: 'Unduh',
+            addToMaterials: 'Tambahkan ke Materi'
+          }
         },
         generating: 'Membuat karya agung Anda...',
         progressStatusShort: 'Membuat'
