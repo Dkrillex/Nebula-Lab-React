@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useImperativeHandle, forwardRef } from 'react';
 import { Loader2 } from 'lucide-react';
 
 interface ProductCanvasProps {
@@ -8,6 +8,10 @@ interface ProductCanvasProps {
   className?: string;
 }
 
+export interface ProductCanvasRef {
+  resetTransform: () => void;
+}
+
 interface TransformState {
   x: number;
   y: number;
@@ -15,12 +19,12 @@ interface TransformState {
   rotation: number;
 }
 
-const ProductCanvas: React.FC<ProductCanvasProps> = ({
+const ProductCanvas = forwardRef<ProductCanvasRef, ProductCanvasProps>(({
   modelImageUrl,
   productImageUrl,
   onLocationChange,
   className = ''
-}) => {
+}, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -297,6 +301,11 @@ const ProductCanvas: React.FC<ProductCanvasProps> = ({
     interactionRef.current.isScaling = false;
   };
 
+  // Expose resetTransform via ref
+  useImperativeHandle(ref, () => ({
+    resetTransform
+  }));
+
   return (
     <div className={`relative w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 ${className}`} ref={containerRef}>
       {isLoading && (
@@ -336,6 +345,8 @@ const ProductCanvas: React.FC<ProductCanvasProps> = ({
       )}
     </div>
   );
-};
+});
+
+ProductCanvas.displayName = 'ProductCanvas';
 
 export default ProductCanvas;

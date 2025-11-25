@@ -1,7 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus, Trash2, Download, Check } from 'lucide-react';
+import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus, Trash2, Download, Check, RotateCcw } from 'lucide-react';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
 import UploadComponent from '../../../components/UploadComponent';
+import ProductCanvas, { ProductCanvasRef } from './ProductCanvas';
+import { useProductAvatarStore } from '../../../stores/productAvatarStore';
+import { useNavigate } from 'react-router-dom';
 import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
@@ -50,6 +53,14 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [prompt, setPrompt] = useState('');
   const [productSize, setProductSize] = useState(2); // 1-6
   const [autoShow, setAutoShow] = useState(true);
+  const [activeMode, setActiveMode] = useState<'normal' | 'highPrecision'>('normal');
+  
+  // Manual mode state
+  const [productLocation, setProductLocation] = useState<number[][]>([]);
+  const [bgRemovedProductImage, setBgRemovedProductImage] = useState<{ fileId: string, url: string } | null>(null);
+  const [removingBackground, setRemovingBackground] = useState(false);
+  const removeBgTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const productCanvasRef = useRef<ProductCanvasRef | null>(null);
   
   // Result
   const [generating, setGenerating] = useState(false);
@@ -60,6 +71,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   // Progress
   const [progress, setProgress] = useState(0);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Store and navigation
+  const productAvatarStore = useProductAvatarStore();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCategories();
@@ -198,6 +213,102 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
       setProgress(100);
   };
 
+  // Handle mode change
+  const changeActiveMode = (mode: 'normal' | 'highPrecision') => {
+    setActiveMode(mode);
+    if (mode === 'highPrecision' && productImage) {
+      // Clear product image when switching to manual mode to trigger background removal
+      setProductImage(null);
+      setBgRemovedProductImage(null);
+      setProductLocation([]);
+    }
+  };
+
+  // Handle background removal (for manual mode)
+  const handleProductImageUpload = async (file: { fileId: string, fileUrl: string }) => {
+    setProductImage({ fileId: file.fileId, url: file.fileUrl });
+    
+    if (activeMode === 'highPrecision') {
+      // Automatically trigger background removal
+      await removeBackground(file.fileId);
+    }
+  };
+
+  const removeBackground = async (productImageFileId: string) => {
+    try {
+      setRemovingBackground(true);
+      const res = await avatarService.submitRemoveBackground({ productImageFileId });
+      const resultData = (res as any).result || res;
+      
+      if (resultData?.taskId) {
+        pollRemoveBackground(resultData.taskId);
+      } else {
+        throw new Error((res as any).msg || (res as any).message || 'Background removal failed');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Background removal failed');
+      setRemovingBackground(false);
+    }
+  };
+
+  const pollRemoveBackground = async (taskId: string) => {
+    const interval = 5000;
+    let attempts = 0;
+    const maxAttempts = 60;
+
+    const check = async () => {
+      try {
+        const { result: resultData } = await avatarService.queryRemoveBackground(taskId);
+        const status = resultData?.status;
+        
+        if (status === 'success') {
+          if (resultData.bgRemovedImagePath && resultData.bgRemovedImageFileId) {
+            setBgRemovedProductImage({
+              fileId: resultData.bgRemovedImageFileId,
+              url: resultData.bgRemovedImagePath
+            });
+            setRemovingBackground(false);
+          }
+        } else if (status === 'fail') {
+          toast.error(resultData.errorMsg || 'Background removal failed');
+          setRemovingBackground(false);
+        } else {
+          attempts++;
+          if (attempts < maxAttempts) {
+            if (removeBgTimerRef.current) clearTimeout(removeBgTimerRef.current);
+            removeBgTimerRef.current = setTimeout(check, interval);
+          } else {
+            toast.error(t?.errors?.taskTimeout || 'Task timed out');
+            setRemovingBackground(false);
+          }
+        }
+      } catch (e) {
+        attempts++;
+        if (attempts < maxAttempts) {
+          if (removeBgTimerRef.current) clearTimeout(removeBgTimerRef.current);
+          removeBgTimerRef.current = setTimeout(check, interval);
+        } else {
+          toast.error(t?.errors?.queryFailed || 'Failed to query status');
+          setRemovingBackground(false);
+        }
+      }
+    };
+    
+    check();
+  };
+
+  // Handle location change from ProductCanvas
+  const handleLocationChange = (location: number[][]) => {
+    setProductLocation(location);
+  };
+
+  // Reset product position
+  const handleResetTransform = () => {
+    if (productCanvasRef.current) {
+      productCanvasRef.current.resetTransform();
+    }
+  };
+
   const handleGenerate = async () => {
     if (!productImage) {
         showError(t?.rightPanel?.uploadProductImg || 'Please upload product image');
@@ -207,26 +318,68 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
         showError(t?.rightPanel?.uploadAvatar || 'Please select an avatar');
         return;
     }
+    
+    // Manual mode validation
+    if (activeMode === 'highPrecision') {
+      if (!bgRemovedProductImage) {
+        showError(t?.rightPanel?.waitBackgroundRemoval || 'Please wait for background removal to complete');
+        return;
+      }
+      if (productLocation.length === 0) {
+        showError(t?.rightPanel?.setProductLocation || 'Please set product location');
+        return;
+      }
+    }
+    
     try {
         setGenerating(true);
         setPreviewImageUrl(null);
         startProgress();
 
-        const params = {
+        let params: any;
+        
+        if (activeMode === 'highPrecision') {
+          // V2 manual mode
+          params = {
+            generateImageMode: 'manual',
+            avatarId: selectedAvatar?.avatarId || '',
+            templateImageFileId: customAvatarImage?.fileId || '',
+            productImageWithoutBackgroundFileId: bgRemovedProductImage!.fileId,
+            userFaceImageFileId: userFaceImage?.fileId || '',
+            location: productLocation as any
+          };
+          
+          const res = await avatarService.submitV2ImageReplaceTask(params);
+          const resultData = (res as any).result || res;
+          
+          if (resultData?.taskId) {
+            // Save to store and navigate to result page
+            productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
+            navigate(`/create/product-replace?taskId=${resultData.taskId}&v2=true`);
+          } else {
+            throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
+          }
+        } else {
+          // V1 normal mode
+          params = {
             avatarId: selectedAvatar?.avatarId || '',
             templateImageFileId: customAvatarImage?.fileId || '',
             productImageFileId: productImage.fileId,
             userFaceImageFileId: userFaceImage?.fileId || '',
             imageEditPrompt: prompt,
             productSize: String(productSize)
-        };
-        const res = await avatarService.submitImageReplaceTask(params);
-        const resultData = (res as any).result || res;
-        
-        if (resultData?.taskId) {
-             pollTask(resultData.taskId);
-        } else {
+          };
+          
+          const res = await avatarService.submitImageReplaceTask(params);
+          const resultData = (res as any).result || res;
+          
+          if (resultData?.taskId) {
+            // Save to store and navigate to result page
+            productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
+            navigate(`/create/product-replace?taskId=${resultData.taskId}`);
+          } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
+          }
         }
     } catch (error: any) {
         toast.error(error.message || 'Generation failed');
@@ -383,6 +536,18 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     setPreviewImageUrl(null);
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (removeBgTimerRef.current) {
+        clearTimeout(removeBgTimerRef.current);
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
+
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left: Avatar Selection */}
@@ -465,19 +630,74 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">
                       {t?.rightPanel?.templatePreview || 'Avatar Preview'}
                   </h3>
+                  
+                  {/* Mode Tabs */}
+                  <div className="flex gap-2 mb-4 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg">
+                    <button
+                      onClick={() => changeActiveMode('normal')}
+                      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition ${
+                        activeMode === 'normal'
+                          ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      }`}
+                    >
+                      {t?.rightPanel?.automaticMode || 'Automatic Mode'}
+                    </button>
+                    <button
+                      onClick={() => changeActiveMode('highPrecision')}
+                      className={`flex-1 px-4 py-2 rounded-md text-sm font-medium transition ${
+                        activeMode === 'highPrecision'
+                          ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-gray-100'
+                      }`}
+                    >
+                      {t?.rightPanel?.manualMode || 'Manual Mode'}
+                    </button>
+                  </div>
+
+                  {/* Manual Mode Instructions */}
+                  {activeMode === 'highPrecision' && (
+                    <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-xs text-gray-700 dark:text-gray-300">
+                      <div className="flex items-start gap-2 mb-2">
+                        <span>✏️</span>
+                        <span>{t?.rightPanel?.instructionUploadProduct || 'Please upload product image first'}</span>
+                      </div>
+                      <div className="flex items-start gap-2 mb-2">
+                        <span>👆</span>
+                        <span>{t?.rightPanel?.instructionDrag || 'Drag: Hold left mouse button to move product'}</span>
+                      </div>
+                      <div className="flex items-start gap-2 mb-2">
+                        <span>🔄</span>
+                        <span>{t?.rightPanel?.instructionRotate || 'Rotate: Hold Shift + drag'}</span>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <span>🔍</span>
+                        <span>{t?.rightPanel?.instructionScale || 'Scale: Hold Alt + drag up/down'}</span>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="relative aspect-[9/16] max-w-[240px] max-h-[300px] mx-auto bg-gray-100 dark:bg-gray-700 rounded-xl overflow-hidden">
-                      {(selectedAvatar || customAvatarImage) ? (
-                          <img src={selectedAvatar?.avatarImagePath || customAvatarImage?.url} className="w-full h-full object-cover" />
+                      {activeMode === 'highPrecision' && (selectedAvatar || customAvatarImage) && bgRemovedProductImage ? (
+                        <ProductCanvas
+                          ref={productCanvasRef}
+                          modelImageUrl={selectedAvatar?.avatarImagePath || customAvatarImage?.url || null}
+                          productImageUrl={bgRemovedProductImage.url}
+                          onLocationChange={handleLocationChange}
+                          className="w-full h-full"
+                        />
+                      ) : (selectedAvatar || customAvatarImage) ? (
+                        <img src={selectedAvatar?.avatarImagePath || customAvatarImage?.url} className="w-full h-full object-cover" />
                       ) : (
-                          <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center p-4">
-                              <ImageIcon size={48} className="mb-2" />
-                              <span>{t?.rightPanel?.pickerTemplate || 'Please select template'}</span>
-                          </div>
+                        <div className="flex flex-col items-center justify-center h-full text-gray-400 text-center p-4">
+                            <ImageIcon size={48} className="mb-2" />
+                            <span>{t?.rightPanel?.pickerTemplate || 'Please select template'}</span>
+                        </div>
                       )}
                       
                       {/* Face Upload Overlay */}
                       {(selectedAvatar || customAvatarImage) && (
-                          <div className="absolute bottom-4 right-4">
+                          <div className="absolute bottom-4 right-4 z-30">
                               <div className="relative group">
                                   {userFaceImage ? (
                                       <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-lg relative">
@@ -499,6 +719,17 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                               </div>
                           </div>
                       )}
+                      
+                      {/* Reset Button for Manual Mode */}
+                      {activeMode === 'highPrecision' && bgRemovedProductImage && (
+                        <button
+                          onClick={handleResetTransform}
+                          className="absolute top-2 right-2 z-30 px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition flex items-center gap-1 shadow-sm"
+                        >
+                          <RotateCcw size={14} />
+                          {t?.rightPanel?.resetPosition || 'Reset Position'}
+                        </button>
+                      )}
                   </div>
               </div>
 
@@ -511,19 +742,32 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   {/* Product Upload */}
                   {productImage ? (
                       <div className="relative h-40 bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden border-2 border-indigo-500/20">
-                          <img src={productImage.url} className="w-full h-full object-contain p-2" alt="Product" />
-                          <button 
-                              onClick={() => setProductImage(null)} 
-                              className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-600 transition shadow-sm"
-                          >
-                              ×
-                          </button>
+                          {removingBackground ? (
+                            <div className="flex flex-col items-center justify-center h-full">
+                              <Loader className="animate-spin text-indigo-600 mb-2" size={24} />
+                              <p className="text-xs text-gray-600 dark:text-gray-400">{t?.rightPanel?.removingBackground || 'Removing background...'}</p>
+                            </div>
+                          ) : (
+                            <>
+                              <img src={bgRemovedProductImage?.url || productImage.url} className="w-full h-full object-contain p-2" alt="Product" />
+                              <button 
+                                  onClick={() => {
+                                    setProductImage(null);
+                                    setBgRemovedProductImage(null);
+                                    setProductLocation([]);
+                                  }} 
+                                  className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-600 transition shadow-sm"
+                              >
+                                  ×
+                              </button>
+                            </>
+                          )}
                       </div>
                   ) : (
                     <UploadComponent
                         uploadType="tv"
                         immediate={true}
-                        onUploadComplete={(file) => {setProductImage({ fileId: file.fileId, url: file.fileUrl || '' })}}
+                        onUploadComplete={(file) => handleProductImageUpload({ fileId: file.fileId, fileUrl: file.fileUrl || '' })}
                         className="h-40"
                     >
                             <div className="text-center text-gray-500">
@@ -533,8 +777,8 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                     </UploadComponent>
                   )}
 
-                  {/* Product Size */}
-                  {productImage && (
+                  {/* Product Size - Only show in normal mode */}
+                  {productImage && activeMode === 'normal' && (
                     <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl">
                         <div className="flex justify-between items-center mb-2">
                             <span className="text-sm font-medium">{t?.rightPanel?.productSize || 'Product Size'}</span>
@@ -561,18 +805,24 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
               </div>
           </div>
 
-          {/* Prompt */}
-          <div className="mb-4">
-              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
-                  {t?.rightPanel?.aiTips || 'AI Mixed Prompt'}
-              </h3>
-              <textarea 
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                className="w-full h-24 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                placeholder={t?.rightPanel?.aiTipsPlaceholder || 'Tell AI how to blend...'}
-              />
-          </div>
+          {/* Prompt - Only show in normal mode */}
+          {activeMode === 'normal' && (
+            <div className="mb-4">
+                <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-2">
+                    {t?.rightPanel?.aiTips || 'AI Mixed Prompt'}
+                </h3>
+                <textarea 
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  className="w-full h-24 p-3 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                  placeholder={t?.rightPanel?.aiTipsPlaceholder || 'Tell AI how to blend...'}
+                  maxLength={2000}
+                />
+                <div className="text-right text-xs text-gray-500 mt-1">
+                  {prompt.length}/2000
+                </div>
+            </div>
+          )}
 
           {/* Results Area */}
           {(generatedImages.length > 0 || generating) && (
@@ -698,7 +948,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   </button>
                   <button 
                     onClick={handleGenerate} 
-                    disabled={generating || !productImage || !userFaceImage} 
+                    disabled={generating || !productImage || (activeMode === 'normal' && !userFaceImage) || (activeMode === 'highPrecision' && (!bgRemovedProductImage || productLocation.length === 0))} 
                     className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {generating ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.startWorking || 'Start Generating')}

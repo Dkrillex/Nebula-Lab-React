@@ -34,6 +34,7 @@ const UseToolPage = React.lazy(() => import('../../pages/Create/components/UseTo
 const AIFaceSwappingPage = React.lazy(() => import('../../pages/Create/components/AIFaceSwappingPage'));
 const TemplateUiPage = React.lazy(() => import('../../pages/Create/components/TemplateUiPage'));
 const WorkshopPage = React.lazy(() => import('../../pages/Create/components/WorkshopPage'));
+const ProductReplacePage = React.lazy(() => import('../../pages/Create/components/ProductReplacePage'));
 
 // Wrapper components defined inline or imported if complex logic needed
 // For now, we assume components can handle their own data fetching or use hooks
@@ -134,6 +135,16 @@ export const localRoutes: AppRouteObject[] = [
             path: 'workshop',
             element: <RouteWrapper component={WorkshopPage} translationKey="createPage.workshop" />,
             meta: { title: 'Workshop', keepAlive: true }
+          },
+          {
+            path: 'product-replace',
+            element: <RouteWrapper
+              component={ProductReplacePage}
+              mapContextToProps={(t) => ({
+                t: t?.createPage?.productAvatar?.productReplace || {}
+              })}
+            />,
+            meta: { title: 'Product Replace', keepAlive: true }
           }
         ]
       },
