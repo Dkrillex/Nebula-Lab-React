@@ -27,7 +27,7 @@ export const SYSTEM_TYPE = {
 } as const;
 
 // 当前选中的系统类型 (修改此处来切换显示的模块)
-export const CURRENT_SYSTEM: number = SYSTEM_TYPE.BOTH;
+export const CURRENT_SYSTEM: number = SYSTEM_TYPE.MODEL_CENTER;
 
 export const MODELS: AIModel[] = [
   {
