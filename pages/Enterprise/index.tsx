@@ -530,9 +530,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleInviteNewUser = async () => {
     if (!currentTeam) return;
-    // 新用户和老用户使用同一个链接
-    // const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
-    const inviteUrl = `https://ai.nebula-data.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    // 获取当前用户的邀请码
+    const inviteCode = user?.inviteCode;
+    // 构建邀请链接，包含 channelId、teamId 和 inviteCode
+    let inviteUrl = `https://ai-nebula.com/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    if (inviteCode) {
+      inviteUrl += `&inviteCode=${inviteCode}`;
+    }
 
     try {
       await navigator.clipboard.writeText(inviteUrl);
@@ -545,9 +549,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleInviteOldUser = async () => {
     if (!currentTeam) return;
-    // 新用户和老用户使用同一个链接
-    // const inviteUrl = `https://ai-nebula.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
-    const inviteUrl = `https://ai.nebula-data.com/?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    // 获取当前用户的邀请码
+    const inviteCode = user?.inviteCode;
+    // 构建邀请链接，包含 channelId、teamId 和 inviteCode
+    let inviteUrl = `https://ai-nebula.com/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    if (inviteCode) {
+      inviteUrl += `&inviteCode=${inviteCode}`;
+    }
 
     // 添加提示信息到链接后面（作为注释说明）
     const inviteUrlWithTip = `${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`;
