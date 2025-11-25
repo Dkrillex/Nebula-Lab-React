@@ -23,7 +23,7 @@ const Home: React.FC = () => {
           <div id="trending-models" className="relative z-10 -mt-8">
             <ModelList t={t.modelList} />
           </div>
-          <HomeFooter />
+          {/* <HomeFooter /> */}
         </>
       )}
     </>

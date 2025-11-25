@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { teamService } from '../../services/teamService';
 import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 
 interface ExpensesPageProps {
   t?: any;
@@ -712,16 +713,18 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
               >
                 余额
               </button>
-              <button
-                onClick={() => handleModeChange('points')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  currentMode === 'points'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
-                }`}
-              >
-                积分
-              </button>
+              {CURRENT_SYSTEM !== SYSTEM_TYPE.MODEL_CENTER && (
+                <button
+                  onClick={() => handleModeChange('points')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    currentMode === 'points'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
+                  }`}
+                >
+                  积分
+                </button>
+              )}
               {isShowTeamLogos && (
                 <button
                   onClick={() => handleModeChange('logos')}
