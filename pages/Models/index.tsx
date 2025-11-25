@@ -872,9 +872,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         <div className="h-16 border-b border-zinc-100 dark:border-zinc-800 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-md sticky top-0 z-10 px-4 md:px-6 flex items-center justify-between">
            <div className="flex items-center gap-2 text-sm text-zinc-500">
               <span className="text-zinc-900 dark:text-zinc-100 font-medium text-lg mr-2 whitespace-nowrap">{t.title}</span>
-              <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs hidden sm:inline-block">
+              {/* <span className="px-2 py-0.5 bg-zinc-100 dark:bg-zinc-800 rounded-full text-xs hidden sm:inline-block">
                 {t.filters.all} {filteredModels.length}
-              </span>
+              </span> */}
            </div>
            
            <button 
@@ -1037,7 +1037,7 @@ const ModelCard: React.FC<{
       onClick={() => onOpenDetail(model)}
     >
       <div className="p-5 flex flex-col flex-1">
-        <div className="flex justify-between items-start mb-4">
+        <div className="flex justify-between items-center mb-4">
            {/* Icon & Vendor */}
            <div className="flex items-center gap-3">
              <div className="w-10 h-10 rounded-xl bg-zinc-50 dark:bg-zinc-800 border border-zinc-100 dark:border-zinc-700 flex items-center justify-center flex-shrink-0 overflow-hidden p-1">
@@ -1055,17 +1055,17 @@ const ModelCard: React.FC<{
            </div>
            
            {/* Price */}
-           <div className="text-right">
-              <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex items-baseline justify-end gap-1">
+           <div className="text-right items-center">
+              <div className="font-semibold text-zinc-900 dark:text-zinc-100 flex justify-end gap-1 items-center">
                  <span>{formatPrice(model)}</span>
                  {formatPrice(model, 'origin') !== formatPrice(model) && (
                    <span className="text-xs text-zinc-400 line-through decoration-zinc-400/80">
                      {formatPrice(model, 'origin')}
                    </span>
                  )}
-              </div>
-              <div className="text-xs text-zinc-400">
-                 {formatPriceUnit(model)}
+                 <div className="text-xs text-zinc-400">
+                  {formatPriceUnit(model)}
+                </div>
               </div>
            </div>
         </div>
@@ -1145,6 +1145,7 @@ const ModelDetailDrawer = ({
   formatDetailPriceUnit: () => string;
   onCopyName: (model: AIModel, event?: React.MouseEvent) => void;
 }) => {
+
   const navigate = useNavigate();
 
   if (!visible) return null;
