@@ -9,6 +9,7 @@ import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '@/components/AddMaterialModal';
+import UploadComponent from '@/components/UploadComponent';
 interface DigitalHumanVideoProps {
   t: any;
   onShowAvatarModal: (isCustom: boolean) => void;
@@ -88,6 +89,11 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
+
+  const handleVideoUploadComplete = (file: UploadedFile) => {
+    setUploadedVideo(file);
+    setSelectedAvatar(null);
+  };
 
   const handleAudioFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -395,87 +401,102 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
       {/* Left Panel */}
-      <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 flex flex-col gap-6 shadow-lg">
-        <h2 className="font-bold text-lg text-gray-800 dark:text-gray-200">{t.leftPanel.myDigitalHuman}</h2>
-        
-        {/* Avatar Selection Display */}
-        {selectedAvatar ? (
-            <div className="relative">
-                <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100">
-                    {selectedAvatar.previewVideoUrl ? (
-                        <video 
-                          src={selectedAvatar.previewVideoUrl} 
-                          className="w-full h-full object-cover" 
-                          controls 
-                          crossOrigin="anonymous"
-                          referrerPolicy="no-referrer"
-                          onError={(e) => {
-                            const video = e.currentTarget;
-                            if (video.crossOrigin !== null) {
-                              video.crossOrigin = null;
-                              video.referrerPolicy = 'no-referrer';
-                            }
-                          }}
-                        />
-                    ) : (
-                        <img src={selectedAvatar.thumbnailUrl || selectedAvatar.coverUrl} alt={selectedAvatar.aiavatarName} className="w-full h-full object-cover" />
-                    )}
-                    <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
-                        <p className="font-semibold">{selectedAvatar.aiavatarName}</p>
-                    </div>
-                </div>
-                <button onClick={() => setSelectedAvatar(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
-                    <X size={16} className="text-gray-600" />
-                </button>
-            </div>
-        ) : uploadedVideo ? (
-            <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] max-h-[570px] mx-auto bg-gray-100">
-                 <video 
-                   src={uploadedVideo.url || uploadedVideo.fileUrl} 
-                   className="w-full h-full object-cover" 
-                   controls 
-                   crossOrigin="anonymous"
-                   referrerPolicy="no-referrer"
-                   onError={(e) => {
-                     const video = e.currentTarget;
-                     if (video.crossOrigin !== null) {
-                       video.crossOrigin = null;
-                       video.referrerPolicy = 'no-referrer';
-                     }
-                   }}
-                 />
-                 <button onClick={() => setUploadedVideo(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
-                    <X size={16} className="text-gray-600" />
-                </button>
-            </div>
-        ) : (
-            <div onClick={() => onShowAvatarModal(false)} className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer flex flex-col items-center justify-center gap-4 min-h-[300px] group">
-                <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-600 shadow flex items-center justify-center text-gray-400 group-hover:text-indigo-500 transition">
-                    <Upload size={32} />
-                </div>
-                <div className="text-center px-4">
-                    <p className="text-base font-bold text-gray-700 dark:text-gray-300 mb-1">{t.leftPanel.uploadTitle}</p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">{t.leftPanel.uploadDesc}</p>
-                </div>
-            </div>
-        )}
+      <div className="flex flex-col h-full w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 flex flex-col gap-6 shadow-lg">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <h2 className="font-bold text-lg text-gray-800 dark:text-gray-200">{t.leftPanel.myDigitalHuman}</h2>
+          
+          {/* Avatar Selection Display */}
+          {selectedAvatar ? (
+              <div className="relative">
+                  <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100 max-h-[60vh] mx-auto">
+                      {selectedAvatar.previewVideoUrl ? (
+                          <video 
+                            src={selectedAvatar.previewVideoUrl} 
+                            className="w-full h-full object-cover" 
+                            controls 
+                            crossOrigin="anonymous"
+                            referrerPolicy="no-referrer"
+                            onError={(e) => {
+                              const video = e.currentTarget;
+                              if (video.crossOrigin !== null) {
+                                video.crossOrigin = null;
+                                video.referrerPolicy = 'no-referrer';
+                              }
+                            }}
+                          />
+                      ) : (
+                          <img src={selectedAvatar.thumbnailUrl || selectedAvatar.coverUrl} alt={selectedAvatar.aiavatarName} className="w-full h-full object-cover" />
+                      )}
+                      <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-black/70 to-transparent text-white">
+                          <p className="font-semibold">{selectedAvatar.aiavatarName}</p>
+                      </div>
+                  </div>
+                  <button onClick={() => setSelectedAvatar(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
+                      <X size={16} className="text-gray-600" />
+                  </button>
+              </div>
+          ) : uploadedVideo ? (
+              <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] max-h-[570px] mx-auto bg-gray-100">
+                  <video 
+                    src={uploadedVideo.url || uploadedVideo.fileUrl} 
+                    className="w-full h-full object-cover" 
+                    controls 
+                    crossOrigin="anonymous"
+                    referrerPolicy="no-referrer"
+                    onError={(e) => {
+                      const video = e.currentTarget;
+                      if (video.crossOrigin !== null) {
+                        video.crossOrigin = null;
+                        video.referrerPolicy = 'no-referrer';
+                      }
+                    }}
+                  />
+                  <button onClick={() => setUploadedVideo(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
+                      <X size={16} className="text-gray-600" />
+                  </button>
+              </div>
+          ) : (
+              <UploadComponent
+                  onUploadComplete={handleVideoUploadComplete}
+                  uploadType="tv"
+                  accept=".mp4,.mov,.webm"
+                  maxSize={200}
+                  disabled={!user}
+                  immediate={true}
+                  className="min-h-[300px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer group"
+                  showPreview={false}
+              >
+                  <div className="flex flex-col items-center justify-center gap-4 w-full h-full">
+                      <div className="w-16 h-16 rounded-2xl bg-white dark:bg-gray-600 shadow flex items-center justify-center text-gray-400 group-hover:text-indigo-500 transition">
+                          <Upload size={32} />
+                      </div>
+                      <div className="text-center px-4">
+                          <p className="text-base font-bold text-gray-700 dark:text-gray-300 mb-1">{t.leftPanel.uploadTitle}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{t.leftPanel.uploadDesc}</p>
+                      </div>
+                  </div>
+              </UploadComponent>
+          )}
 
-        <div className="flex gap-3">
-            <button onClick={() => onShowAvatarModal(true)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
-                {t.leftPanel.personalTemplate}
-            </button>
-             <button onClick={() => onShowAvatarModal(false)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
-                {t.leftPanel.publicTemplate}
-            </button>
         </div>
-        {/* TODO 晓彬明天记得处理一下 */}
-        {/* <div>
-             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">上传数字人视频 (自定义)</label>
-             <input ref={fileInputRef} type="file" accept=".mp4,.mov,.webm" onChange={handleVideoFileChange} className="hidden" />
-             <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition disabled:opacity-50">
-                 {uploading ? '上传中...' : t.leftPanel.customUpload}
-             </button>
-        </div> */}
+        <div>
+          <div className="flex gap-3">
+              <button onClick={() => onShowAvatarModal(true)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
+                  {t.leftPanel.personalTemplate}
+              </button>
+              <button onClick={() => onShowAvatarModal(false)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
+                  {t.leftPanel.publicTemplate}
+              </button>
+          </div>
+          {/* TODO 晓彬明天记得处理一下 */}
+          {/* <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">上传数字人视频 (自定义)</label>
+              <input ref={fileInputRef} type="file" accept=".mp4,.mov,.webm" onChange={handleVideoFileChange} className="hidden" />
+              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition disabled:opacity-50">
+                  {uploading ? '上传中...' : t.leftPanel.customUpload}
+              </button>
+          </div> */}
+        </div>
       </div>
 
       {/* Right Panel */}
@@ -834,7 +855,6 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           }}
           disableAssetTypeSelection={true}
           isImportMode={true}
-          disableAssetTypeSelection={true}
        />
     </div>
   );

@@ -1,6 +1,12 @@
 import { request } from '../lib/request';
 import { ApiResponse } from '../types';
 
+// Import RequestOptions type (it's not exported, so we'll define it inline or use any)
+type RequestOptions = {
+  signal?: AbortSignal;
+  [key: string]: any;
+};
+
 // ==================== 数字人营销视频 API ====================
 
 // TopView API 专用响应格式 (不同于通用的 ApiResponse)
@@ -347,10 +353,10 @@ export const avatarService = {
    * 获取数字人列表（营销视频）
    * Endpoint: GET /tp/v1/AiAvatarQuery
    */
-  getAiAvatarList: (params?: { pageNo?: number; pageSize?: number; gender?: string; isCustom?: boolean }) => {
+  getAiAvatarList: (params?: { pageNo?: number; pageSize?: number; gender?: string; isCustom?: boolean }, options?: RequestOptions) => {
     return request.get<ApiResponse<{ data: AiAvatar[]; pageNo: number; pageSize: number; total: number }>>(
       '/tp/v1/AiAvatarQuery',
-      { params }
+      { params, ...options }
     );
   },
 
@@ -469,9 +475,10 @@ export const avatarService = {
   /**
    * 查询素材列表
    */
-  adsAssetsList: (params?: AdsAssetsQuery) => {
+  adsAssetsList: (params?: AdsAssetsQuery, options?: RequestOptions) => {
     return request.get<ApiResponse<AdsAssetsVO>>('/ads/adsAssets/list', {
       params,
+      ...options,
     });
   },
 };
