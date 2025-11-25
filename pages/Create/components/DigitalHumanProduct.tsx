@@ -691,7 +691,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   </button>
                   <button 
                     onClick={handleGenerate} 
-                    disabled={generating || !productImage || (activeMode === 'normal' && !userFaceImage) || (activeMode === 'highPrecision' && (!bgRemovedProductImage || productLocation.length === 0))} 
+                    disabled={generating || !productImage || (activeMode === 'highPrecision' && (!bgRemovedProductImage || productLocation.length === 0))} 
                     className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {generating ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.startWorking || 'Start Generating')}

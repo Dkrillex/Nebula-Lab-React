@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { profileService, UserProfileData } from '../../services/profileService';
 import { useAuthStore } from '../../stores/authStore';
-import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users, Gift } from 'lucide-react';
+import { User, Phone, Mail, Calendar, Shield, Lock, Upload, Loader2, Building2, Eye, EyeOff, Users, Gift, Copy, Link, Share2, Check } from 'lucide-react';
 import EnterprisePage from '../Enterprise';
 import ChannelManagement from './components/ChannelManagement';
 import InviteRecord from './components/InviteRecord';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import toast from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
@@ -48,7 +49,43 @@ const ProfilePage: React.FC = () => {
   const [profileFormLoading, setProfileFormLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
+  // 邀请码复制状态
+  const [codeCopied, setCodeCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  // 获取用户邀请码和构建邀请链接
+  const inviteCode = user?.inviteCode;
+  // 根据系统类型选择域名：模型中心用 openai-nebula.com，创作中心或两者都有用 ai-nebula.com
+  const inviteDomain = CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'openai-nebula.com' : 'ai-nebula.com';
+  const inviteUrl = inviteCode ? `https://${inviteDomain}/login?inviteCode=${inviteCode}` : '';
+
+  // 复制邀请码
+  const handleCopyCode = async () => {
+    if (!inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setCodeCopied(true);
+      toast.success('邀请码已复制');
+      setTimeout(() => setCodeCopied(false), 2000);
+    } catch {
+      toast.error('复制失败');
+    }
+  };
+
+  // 复制邀请链接
+  const handleCopyLink = async () => {
+    if (!inviteUrl) return;
+    try {
+      await navigator.clipboard.writeText(inviteUrl);
+      setLinkCopied(true);
+      toast.success('邀请链接已复制');
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      toast.error('复制失败');
+    }
+  };
 
   // 从URL参数获取当前标签页
   useEffect(() => {
@@ -746,7 +783,45 @@ const ProfilePage: React.FC = () => {
 
       {/* Invite Record Tab */}
       {activeTab === 'invite' && (
-        <div>
+        <div className="space-y-6">
+          {/* 用户的邀请码 */}
+          {inviteCode && (
+            <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                {/* 邀请码 */}
+                <div className="flex items-center gap-3 flex-1">
+                  <span className="text-sm text-muted whitespace-nowrap">邀请码:</span>
+                  <span className="font-bold font-mono text-foreground">{inviteCode}</span>
+                  <button onClick={handleCopyCode} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="复制邀请码">
+                    {codeCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-muted" />}
+                  </button>
+                </div>
+                {/* 邀请链接 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted truncate max-w-[200px] hidden md:inline">{inviteUrl}</span>
+                  <button onClick={handleCopyLink} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium">
+                    {linkCopied ? <Check size={14} /> : <Link size={14} />}
+                    {linkCopied ? '已复制' : '复制链接'}
+                  </button>
+                  {/* <button
+                    onClick={() => {
+                      if (navigator.share) {
+                        navigator.share({ title: 'NebulaLab 邀请', text: `邀请码：${inviteCode}`, url: inviteUrl }).catch(() => {});
+                      } else {
+                        handleCopyLink();
+                      }
+                    }}
+                    className="p-1.5 border border-border hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                    title="分享"
+                  >
+                    <Share2 size={16} className="text-muted" />
+                  </button> */}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 邀请记录 */}
           <InviteRecord t={t} />
         </div>
       )}

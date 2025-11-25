@@ -12,6 +12,7 @@ import { quotaService } from '../../services/quotaService';
 import { useAuthStore } from '../../stores/authStore';
 import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import ConfirmDialog from '../../components/ConfirmDialog';
 
 interface EnterprisePageProps {
@@ -533,7 +534,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     // 获取当前用户的邀请码
     const inviteCode = user?.inviteCode;
     // 构建邀请链接，包含 channelId、teamId 和 inviteCode
-    let inviteUrl = `https://ai-nebula.com/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    const inviteDomain = CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'openai-nebula.com' : 'ai-nebula.com';
+    let inviteUrl = `https://${inviteDomain}/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     if (inviteCode) {
       inviteUrl += `&inviteCode=${inviteCode}`;
     }
@@ -552,7 +554,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     // 获取当前用户的邀请码
     const inviteCode = user?.inviteCode;
     // 构建邀请链接，包含 channelId、teamId 和 inviteCode
-    let inviteUrl = `https://ai-nebula.com/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
+    const inviteDomain = CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'openai-nebula.com' : 'ai-nebula.com';
+    let inviteUrl = `https://${inviteDomain}/login?channelId=${currentTeam.channelId}&teamId=${currentTeam.teamId}`;
     if (inviteCode) {
       inviteUrl += `&inviteCode=${inviteCode}`;
     }
