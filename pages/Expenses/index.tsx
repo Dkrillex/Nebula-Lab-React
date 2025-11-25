@@ -691,7 +691,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 ¥{quotaLoading ? '...' : formatPoints(balance)}
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
-                <span>可兑换积分:</span>
+                <span>可转换积分:</span>
                 <span className="font-semibold text-gray-700 dark:text-zinc-200">{formatPoints(points)}</span>
               </div>
               {/* 显示会员等级 Free会员｜Starter会员｜Business会员 */}
