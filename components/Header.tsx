@@ -170,10 +170,10 @@ const Header: React.FC<HeaderProps> = ({
               <path d="M2 17L12 22L22 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg> */}
-            <img src="/img/lab.png" alt="NebulaLab" className="w-8 h-8 object-contain" />
+            <img src="/img/lab.png" alt={CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'} className="w-8 h-8 object-contain" />
           </div>
             <span className="text-lg font-bold tracking-tight text-foreground hidden sm:block">
-              NebulaLab
+              {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}
             </span>
           </div>
         </div>
