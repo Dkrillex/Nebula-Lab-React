@@ -36,18 +36,21 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
   // Load tool from state or query param
   useEffect(() => {
     let tool: Tool | undefined;
+    const toolKeyFromQuery = searchParams.get('tool');
     
-    // 1. Try from state (passed from WorkshopPage)
-    if (location.state?.toolKey) {
-      tool = TOOLS_DATA.find(t => t.key === location.state.toolKey);
+    // 1. Try from query param first (most reliable for URL-based navigation)
+    if (toolKeyFromQuery) {
+      tool = TOOLS_DATA.find(t => t.key === toolKeyFromQuery);
     }
     
-    // 2. Try from query param
+    // 2. Try from state (passed from WorkshopPage)
+    if (!tool && location.state?.toolKey) {
+      tool = TOOLS_DATA.find(t => t.key === location.state.toolKey);
+    }
+
+    // 3. Fallback to generic Custom Prompt tool
     if (!tool) {
-        // URL might be /create?tool=useTool&toolKey=... or just /create?tool=useTool (which implies generic custom prompt)
-        // But here we might have stored the key in location.state.
-        // If direct access, we might need another param like `subTool` or `id`.
-        // Assuming WorkshopPage passes state.
+      tool = TOOLS_DATA.find(t => t.key === 'customPrompt');
     }
 
     if (tool) {
@@ -57,12 +60,9 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
       } else {
         setCustomPrompt(tool.prompt || '');
       }
-    } else {
-      // Fallback to generic Custom Prompt tool if accessed directly without state
-      const defaultTool = TOOLS_DATA.find(t => t.key === 'customPrompt');
-      if (defaultTool) setActiveTool(defaultTool);
     }
-  }, [location.state]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state, searchParams]);
 
   // Handle File Selection
   const handlePrimarySelect = async (file: File) => {
