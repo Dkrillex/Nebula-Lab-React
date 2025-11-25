@@ -509,7 +509,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       </div>
 
       {/* Right Panel */}
-      <div className="h-[calc(100vh-230px)] flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
+      <div className="h-[calc(100vh-230px)] flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-visible flex flex-col">
          <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 mb-[80px]">
          <div>
              <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-3">{t.rightPanel.modeSelection}</h3>

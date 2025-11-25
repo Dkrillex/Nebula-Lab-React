@@ -406,7 +406,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
           aiAvatarId: aiAvatar.aiavatarId
         } : undefined}
         disableAssetTypeSelection={true}
-        isImportMode={true}
+        isImportMode={false}
         importMaterial={true}
       />
     </div>
