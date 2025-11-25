@@ -8,6 +8,7 @@ interface Translation {
     profile: string; // Add this
     expenses: string;
     notifications: string;
+    signOut: string;
   };
   hero: {
     status: string;
@@ -384,6 +385,20 @@ interface Translation {
         replacementSuccess: string;
         uploadAvatar: string;
         autoShow: string;
+        automaticMode: string;
+        manualMode: string;
+        instructionUploadProduct: string;
+        instructionDrag: string;
+        instructionRotate: string;
+          instructionScale: string; // Should mention Alt(Option) for Mac compatibility
+        resetPosition: string;
+        removingBackground: string;
+        waitBackgroundRemoval: string;
+        setProductLocation: string;
+        generating: string;
+        pleaseWait: string;
+        previewPlaceholder: string;
+        resultTitle: string;
       };
       sliderMarks: {
         tiny: string;
@@ -392,6 +407,56 @@ interface Translation {
         large: string;
         xLarge: string;
         xxLarge: string;
+      };
+      productReplace: {
+        pageTitle: string;
+        pageDescription: string;
+        tip: string;
+        tip1: string;
+        panelTitle: string;
+        panelDescription: string;
+        overlayText1: string;
+        overlayText2: string;
+        regenerateText: string;
+        regenerate: string;
+        videoConfigTitle: string;
+        videoConfigDescription: string;
+        modeLabel: string;
+        modeDescLite: string;
+        modeDescPro: string;
+        modeDescAvatar2: string;
+        scriptLabel: string;
+        scriptPlaceholder: string;
+        voiceLabel: string;
+        changeVoice: string;
+        selectVoice: string;
+        captionLabel: string;
+        changeCaption: string;
+        selectCaption: string;
+        generateVideo: string;
+        originalMaterial: string;
+        configInfo: string;
+        configMode: string;
+        configVoice: string;
+        configScript: string;
+        notSelected: string;
+        resultTitle: string;
+        resultDescription: string;
+        exportVideo: string;
+        addToMaterials: string;
+        imagePreview: string;
+        selectImageFirst: string;
+        selectVoiceFirst: string;
+        selectAudioFirst: string;
+        errors: {
+          taskTimeout: string;
+          queryFailed: string;
+          sampleLoadFailed: string;
+          generateFailed: string;
+        };
+        tips: {
+          downloadStarted: string;
+        };
       };
     };
     styleTransfer: {
@@ -873,6 +938,17 @@ interface Translation {
       indonesia: string;
     };
   };
+  error: {
+    sessionExpired: string;
+    unknownError: string;
+    networkError: string;
+    timeout: string;
+    requestFailed: string;
+    errorTitle: string;
+    successTitle: string;
+    operationSuccess: string;
+    close: string;
+  };
 }
 
 export const translations: Record<string, Translation> = {
@@ -888,6 +964,7 @@ export const translations: Record<string, Translation> = {
       profile: 'Profile',
       expenses: 'Expenses',
       notifications: 'Notifications',
+      signOut: 'Sign out',
     },
     hero: {
       status: 'All systems operational',
@@ -1259,7 +1336,21 @@ export const translations: Record<string, Translation> = {
           startWorking: 'Start Generating',
           replacementSuccess: 'Replacement Successful',
           uploadAvatar: 'Please select or upload an avatar',
-          autoShow: 'Auto'
+          autoShow: 'Auto',
+          automaticMode: 'Automatic Mode',
+          manualMode: 'Manual Mode',
+          instructionUploadProduct: 'Please upload product image first',
+          instructionDrag: 'Drag: Hold left mouse button to move product',
+          instructionRotate: 'Rotate: Hold Shift + drag',
+          instructionScale: 'Scale: Hold Alt(Option) + drag up/down',
+          resetPosition: 'Reset Position',
+          removingBackground: 'Removing background...',
+          waitBackgroundRemoval: 'Please wait for background removal to complete',
+          setProductLocation: 'Please set product location',
+          generating: 'AI Generating',
+          pleaseWait: 'AI is analyzing...',
+          previewPlaceholder: 'Generated results will appear here',
+          resultTitle: 'Generation Results'
         },
         sliderMarks: {
           tiny: 'Tiny',
@@ -1268,6 +1359,56 @@ export const translations: Record<string, Translation> = {
           large: 'Large',
           xLarge: 'X-Large',
           xxLarge: 'XX-Large'
+        },
+        productReplace: {
+          pageTitle: 'Product + AI Digital Human Synthesis',
+          pageDescription: 'AI is generating professional product showcase videos for you, please wait patiently for amazing results',
+          tip: 'Synthesizing images, approximately 1~2 minutes...',
+          tip1: 'Synthesizing video, approximately 1~2 minutes...',
+          panelTitle: 'View Generation Results',
+          panelDescription: 'Nebula Lab has generated product digital human images for you, please combine with copy to drive video',
+          overlayText1: 'Version 1',
+          overlayText2: 'Version 2',
+          regenerateText: 'Generate More Versions',
+          regenerate: 'Regenerate',
+          videoConfigTitle: 'Video Production Configuration',
+          videoConfigDescription: 'Configure your video parameters and voice content',
+          modeLabel: 'Generation Mode',
+          modeDescLite: 'Fast generation, 720p, up to 60 seconds',
+          modeDescPro: 'High quality generation, 1080p, up to 60 seconds',
+          modeDescAvatar2: 'Best quality, 1080p, up to 28 seconds',
+          scriptLabel: 'AI Voiceover Script',
+          scriptPlaceholder: 'Please enter the script content for AI voiceover...',
+          voiceLabel: 'Voice Selection',
+          changeVoice: 'Change Voice',
+          selectVoice: 'Select Voice',
+          captionLabel: 'Caption Style',
+          changeCaption: 'Change Caption Style',
+          selectCaption: 'Select Caption Style',
+          generateVideo: 'Consume {points} points to create video',
+          originalMaterial: 'Original Material',
+          configInfo: 'Configuration Info',
+          configMode: 'Generation Mode:',
+          configVoice: 'Voice:',
+          configScript: 'Script:',
+          notSelected: 'Not Selected',
+          resultTitle: 'Generation Results',
+          resultDescription: 'Your professional product showcase video is ready',
+          exportVideo: 'Export Video',
+          addToMaterials: 'Add to Materials',
+          imagePreview: 'Image Preview',
+          selectImageFirst: 'Please select an image first',
+          selectVoiceFirst: 'Please select a voice',
+          selectAudioFirst: 'Please select an audio file',
+          errors: {
+            taskTimeout: 'Task timeout',
+            queryFailed: 'Query failed',
+            sampleLoadFailed: 'Failed to load sample',
+            generateFailed: 'Generation failed'
+          },
+          tips: {
+            downloadStarted: 'Download started...'
+          }
         }
       },
       styleTransfer: {
@@ -2197,6 +2338,17 @@ export const translations: Record<string, Translation> = {
         japan: 'Japan',
         indonesia: 'Indonesia'
       }
+    },
+    error: {
+      sessionExpired: 'Invalid session or session has expired, please log in again.',
+      unknownError: 'Unknown error',
+      networkError: 'Backend connection error',
+      timeout: 'Request timeout',
+      requestFailed: 'Request failed',
+      errorTitle: 'Error',
+      successTitle: 'Success',
+      operationSuccess: 'Operation successful',
+      close: 'Close'
     }
   },
   zh: {
@@ -2211,6 +2363,7 @@ export const translations: Record<string, Translation> = {
       profile: '个人中心',
       expenses: '消费记录',
       notifications: '消息通知',
+      signOut: '退出登录',
     },
     hero: {
       status: '系统运行正常',
@@ -2583,7 +2736,21 @@ export const translations: Record<string, Translation> = {
           startWorking: '开始生成',
           replacementSuccess: '替换成功',
           uploadAvatar: '请选择一个头像或上传一个头像',
-          autoShow: '自动'
+          autoShow: '自动',
+          automaticMode: '自动模式',
+          manualMode: '手动模式',
+          instructionUploadProduct: '请先上传产品图片',
+          instructionDrag: '拖动：按住鼠标左键移动产品图片',
+          instructionRotate: '旋转：按住Shift键+鼠标拖动',
+          instructionScale: '缩放：按住Alt(Option)键+鼠标上下拖动',
+          resetPosition: '重置图片位置',
+          removingBackground: '正在去除背景...',
+          waitBackgroundRemoval: '请等待背景去除完成',
+          setProductLocation: '请设置产品位置',
+          generating: 'AI生成中',
+          pleaseWait: 'AI正在分析...',
+          previewPlaceholder: '生成结果将在这里显示',
+          resultTitle: '生成结果'
         },
         sliderMarks: {
           tiny: '微小',
@@ -2592,6 +2759,56 @@ export const translations: Record<string, Translation> = {
           large: '大',
           xLarge: '加大',
           xxLarge: '超大'
+        },
+        productReplace: {
+          pageTitle: '产品 + AI数字人合成',
+          pageDescription: 'AI正在为您生成专业的产品展示视频，请耐心等待精彩效果',
+          tip: '合成图片中大约需要1~2分钟...',
+          tip1: '合成视频中大约需要1~2分钟...',
+          panelTitle: '查看生成结果',
+          panelDescription: 'Nebula Lab为您生成了产品数字人的图片,请结合文案进行驱动视频',
+          overlayText1: '版本 1',
+          overlayText2: '版本 2',
+          regenerateText: '生成更多版本',
+          regenerate: '重新生成',
+          videoConfigTitle: '视频制作配置',
+          videoConfigDescription: '配置您的视频参数和语音内容',
+          modeLabel: '生成模式',
+          modeDescLite: '快速生成，720p，最长60秒',
+          modeDescPro: '高质量生成，1080p，最长60秒',
+          modeDescAvatar2: '质量最佳，1080p，最长28秒',
+          scriptLabel: 'AI配音文案',
+          scriptPlaceholder: '请输入需要AI配音的文案内容...',
+          voiceLabel: '音色选择',
+          changeVoice: '更换音色',
+          selectVoice: '选择音色',
+          captionLabel: '字幕样式',
+          changeCaption: '更换字幕样式',
+          selectCaption: '选择字幕样式',
+          generateVideo: '消耗 {points} 积分制作视频',
+          originalMaterial: '原始素材',
+          configInfo: '配置信息',
+          configMode: '生成模式:',
+          configVoice: '音色:',
+          configScript: '文案:',
+          notSelected: '未选择',
+          resultTitle: '生成结果',
+          resultDescription: '您的专业产品展示视频已制作完成',
+          exportVideo: '导出视频',
+          addToMaterials: '添加到素材库',
+          imagePreview: '图片预览',
+          selectImageFirst: '请先选择图片',
+          selectVoiceFirst: '请选择音色',
+          selectAudioFirst: '请选择音频文件',
+          errors: {
+            taskTimeout: '任务超时',
+            queryFailed: '查询失败',
+            sampleLoadFailed: '加载示例失败',
+            generateFailed: '生成失败'
+          },
+          tips: {
+            downloadStarted: '开始下载...'
+          }
         }
       },
       styleTransfer: {
@@ -3554,6 +3771,17 @@ export const translations: Record<string, Translation> = {
         japan: '日本',
         indonesia: '印度尼西亚'
       }
+    },
+    error: {
+      sessionExpired: '无效的会话，或者会话已过期，请重新登录。',
+      unknownError: '未知错误',
+      networkError: '后端接口连接异常',
+      timeout: '系统接口请求超时',
+      requestFailed: '请求失败',
+      errorTitle: '错误提示',
+      successTitle: '操作成功',
+      operationSuccess: '操作成功',
+      close: '关闭'
     }
   },
   id: {
@@ -3568,6 +3796,7 @@ export const translations: Record<string, Translation> = {
       profile: 'Profil',
       expenses: 'Pengeluaran',
       notifications: 'Notifikasi',
+      signOut: 'Keluar',
     },
     hero: {
       status: 'Semua sistem beroperasi',
@@ -4480,6 +4709,17 @@ export const translations: Record<string, Translation> = {
         japan: 'Jepang',
         indonesia: 'Indonesia'
       }
+    },
+    error: {
+      sessionExpired: 'Sesi tidak valid atau sesi telah kedaluwarsa, silakan masuk lagi.',
+      unknownError: 'Kesalahan tidak diketahui',
+      networkError: 'Kesalahan koneksi backend',
+      timeout: 'Permintaan timeout',
+      requestFailed: 'Permintaan gagal',
+      errorTitle: 'Kesalahan',
+      successTitle: 'Berhasil',
+      operationSuccess: 'Operasi berhasil',
+      close: 'Tutup'
     }
   }
 };

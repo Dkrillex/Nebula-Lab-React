@@ -371,7 +371,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                 <span className="text-border">|</span>
                 <div className="relative group cursor-pointer hover:text-foreground transition-colors">
                   <span>{t?.footer?.recordInfo || '备案信息'}</span>
-                  <div className="absolute bottom-full left-0 mb-2 w-max px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 border border-border">
+                  <div className="fixed bottom-16 left-4 w-max px-3 py-2 bg-popover text-popover-foreground text-xs rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[9999] border border-border">
                     <p>{t?.footer?.icpNumber || '粤ICP备2022093288号-4'}</p>
                     <p>{t?.footer?.copyright || 'Copyright © 2025'}</p>
                     <p>{t?.footer?.companyName || '星雲數據(香港)有限公司'}</p>

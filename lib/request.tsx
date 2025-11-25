@@ -7,6 +7,7 @@ import { encrypt as rsaEncrypt, decrypt as rsaDecrypt } from '../utils/jsencrypt
 import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
 import React from 'react';
+import { translations } from '../translations';
 
 // 全局加密开关（可以通过环境变量配置，默认启用）
 // 如果环境变量明确设置为 'false' 则禁用，否则启用
@@ -19,6 +20,14 @@ function getLanguage(): string {
   if (lang === 'zh') return 'zh_CN';
   if (lang === 'id') return 'id_ID';
   return 'en_US';
+}
+
+/**
+ * 获取当前语言的翻译对象
+ */
+function getCurrentTranslation() {
+  const lang = localStorage.getItem('language') || 'zh';
+  return translations[lang] || translations['zh'];
 }
 
 interface RequestOptions extends RequestInit {
@@ -63,11 +72,13 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
     return;
   }
   
+  const translation = getCurrentTranslation();
+
   if (mode === 'modal') {
     // Use toast.custom to create a modal-like appearance
-    toast.custom((t) => (
+    toast.custom((toastInstance) => (
       <div
-        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        className={`${toastInstance.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
       >
         <div className="flex-1 w-0 p-4">
           <div className="flex items-start">
@@ -88,7 +99,7 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
             </div>
             <div className="ml-3 w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                操作成功
+                {translation.error.successTitle}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {message}
@@ -97,9 +108,9 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
             <div className="ml-4 flex-shrink-0 flex">
               <button
                 className="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
-                onClick={() => toast.dismiss(t.id)}
+                onClick={() => toast.dismiss(toastInstance.id)}
               >
-                <span className="sr-only">关闭</span>
+                <span className="sr-only">{translation.error.close}</span>
                 <svg
                   className="h-5 w-5"
                   viewBox="0 0 20 20"
@@ -120,7 +131,7 @@ function showSuccessMessage(message: string, mode?: 'modal' | 'message' | 'none'
       duration: 3000,
     });
   } else {
-    toast.success(message || '操作成功');
+    toast.success(message || translation.error.operationSuccess);
   }
 }
 
@@ -132,11 +143,13 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
     return;
   }
   
+  const translation = getCurrentTranslation();
+
   if (mode === 'modal') {
     // Use toast.custom to create a modal-like appearance
-    toast.custom((t) => (
+    toast.custom((toastInstance) => (
       <div
-        className={`${t.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
+        className={`${toastInstance.visible ? 'animate-enter' : 'animate-leave'} max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg pointer-events-auto flex ring-1 ring-black ring-opacity-5`}
       >
         <div className="flex-1 w-0 p-4">
           <div className="flex items-start">
@@ -157,7 +170,7 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
             </div>
             <div className="ml-3 w-0 flex-1">
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                错误提示
+                {translation.error.errorTitle}
               </p>
               <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 {message}
@@ -166,9 +179,9 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
             <div className="ml-4 flex-shrink-0 flex">
               <button
                 className="bg-white dark:bg-gray-800 rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none"
-                onClick={() => toast.dismiss(t.id)}
+                onClick={() => toast.dismiss(toastInstance.id)}
               >
-                <span className="sr-only">关闭</span>
+                <span className="sr-only">{translation.error.close}</span>
                 <svg
                   className="h-5 w-5"
                   viewBox="0 0 20 20"
@@ -441,7 +454,8 @@ function createRequestClient(
 
         // 如果后端返回了msg且不为空，使用后端的msg；否则使用默认成功消息
         if (!successMsg || successMsg.trim() === '') {
-          successMsg = '操作成功';
+          const t = getCurrentTranslation();
+          successMsg = t.error.operationSuccess;
         }
 
         // 根据successMessageMode显示成功消息
@@ -471,29 +485,17 @@ function createRequestClient(
 
       // Error handling
       if (code === 401) {
-        const authErrorMsg = '无效的会话，或者会话已过期，请重新登录。';
+        const t = getCurrentTranslation();
+        const authErrorMsg = t.error.sessionExpired;
         
-        // 显示401错误消息
-        if (!_skipErrorDisplay) {
-          showErrorMessage(authErrorMsg, errorMessageMode);
-        }
-        
-        // 防止多个请求同时触发登出流程
+        // 防止多个请求同时触发登出流程和重复显示错误消息
         if (!isLogoutProcessing) {
-          // isLogoutProcessing = true;
-          // const userStore = useAuthStore.getState();
-          // // Use store logout if possible, or just clear storage and redirect
-          // if (userStore.logout) {
-          //    await userStore.logout();
-          // } else {
-          //    localStorage.removeItem('token');
-          //    window.location.href = '/';
-          // }
-
-          // setTimeout(() => {
-          //   isLogoutProcessing = false;
-          // }, 1000);
           isLogoutProcessing = true;
+
+          // 显示401错误消息（只显示一次）
+          if (!_skipErrorDisplay) {
+            showErrorMessage(authErrorMsg, errorMessageMode);
+          }
           
           // 清除认证状态
           const userStore = useAuthStore.getState();
@@ -517,7 +519,8 @@ function createRequestClient(
       }
 
       // Handle other error codes
-      const errorMsg = msg || '未知错误';
+      const t = getCurrentTranslation();
+      const errorMsg = msg || t.error.unknownError;
 
       // Show error based on mode (统一使用showErrorMessage函数)
       if (!_skipErrorDisplay) {
@@ -538,15 +541,16 @@ function createRequestClient(
         throw error;
       }
 
-      let message = error.message || '未知错误';
       let skipErrorHint = false;
 
+      const t = getCurrentTranslation();
+      let message = error.message || t.error.unknownError;
       if (message === 'Network Error') {
-        message = '后端接口连接异常';
+        message = t.error.networkError;
       } else if (message.includes('timeout')) {
-        message = '系统接口请求超时';
+        message = t.error.timeout;
       } else if (message.includes('Request failed with status code')) {
-        message = '系统接口' + message.substr(message.length - 3) + '异常';
+        message = t.error.requestFailed + ': ' + message.substr(message.length - 3);
       } else if (error.name === 'AbortError') {
         // 检查是否是主动取消（通过 signal 上的 _isManualCancel 标记）
         // 使用 requestSignal（在请求开始时保存的 signal 引用）进行检查
@@ -589,6 +593,7 @@ function createRequestClient(
           // 超时：显示请求超时错误
           message = '请求超时';
         }
+        message = t.error.timeout;
       }
 
       // 对于网络错误等，也根据errorMessageMode显示

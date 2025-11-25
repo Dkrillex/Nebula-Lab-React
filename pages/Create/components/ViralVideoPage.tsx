@@ -12,6 +12,7 @@ import { viralVideoService, ProductAnalysis } from '../../../services/viralVideo
 import { videoGenerateService } from '../../../services/videoGenerateService';
 import toast from 'react-hot-toast';
 import BaseModal from '../../../components/BaseModal';
+import ImageEditModal from './ImageEditModal';
 import { mergeVideos, downloadVideo, formatDuration } from '../../../utils/videoUtils';
 
 interface ViralVideoPageProps {
@@ -72,6 +73,9 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const defaultModel = 'qwen-plus'; // 默认使用的AI模型
+  const MIN_IMAGES = 4;
+  const MAX_IMAGES = 10;
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // ==================== Step 2 处理函数 ====================
 
@@ -236,7 +240,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
     setIsUploading(true);
     try {
-      const uploadPromises = Array.from(files as FileList).map(async (file: File) => {
+      const remaining = Math.max(0, MAX_IMAGES - uploadedImages.length);
+      const selectedFiles = Array.from(files as FileList).slice(0, remaining);
+      if (Array.from(files as FileList).length > remaining) {
+        toast.error(`最多只能上传 ${MAX_IMAGES} 张图片，已自动截取前 ${remaining} 张`);
+      }
+      const uploadPromises = selectedFiles.map(async (file: File) => {
         // 验证文件类型
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} 不是有效的图片文件`);
@@ -257,12 +266,17 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       });
 
       const results = await Promise.all(uploadPromises);
-      setUploadedImages((prev) => [...prev, ...results]);
+      const newList = [...uploadedImages, ...results];
+      setUploadedImages(newList);
+      localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       toast.success(`成功上传 ${results.length} 张图片`);
       
       // 自动分析第一张图片
       if (results.length > 0 && !analysisResult) {
         await analyzeImage(results[0].url);
+      }
+      if (results.length > 0) {
+        setShowEditModal(true);
       }
     } catch (error: any) {
       console.error('上传失败:', error);
@@ -315,7 +329,14 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       return;
     }
 
-    setUploadedImages((prev) => [...prev, { url: imageUrl, id: asset.id?.toString() }]);
+    if (uploadedImages.length >= MAX_IMAGES) {
+      toast.error(`最多只能上传 ${MAX_IMAGES} 张图片`);
+      return;
+    }
+
+    const newList = [...uploadedImages, { url: imageUrl, id: asset.id?.toString() }];
+    setUploadedImages(newList);
+    localStorage.setItem('viralVideo_images', JSON.stringify(newList));
     setShowPortfolioModal(false);
     toast.success('已选择素材');
 
@@ -323,6 +344,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     if (uploadedImages.length === 0 && !analysisResult) {
       analyzeImage(imageUrl);
     }
+    setShowEditModal(true);
   };
 
   // 处理链接导入
@@ -349,7 +371,13 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
       // 上传到OSS
       const result = await uploadService.uploadByImageUrl(linkInput, extension);
-      setUploadedImages((prev) => [...prev, { url: result.url, id: result.ossId }]);
+      if (uploadedImages.length >= MAX_IMAGES) {
+        toast.error(`最多只能上传 ${MAX_IMAGES} 张图片`);
+        return;
+      }
+      const newList = [...uploadedImages, { url: result.url, id: result.ossId }];
+      setUploadedImages(newList);
+      localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       setLinkInput('');
       toast.success('图片导入成功');
 
@@ -357,6 +385,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       if (uploadedImages.length === 0 && !analysisResult) {
         await analyzeImage(result.url);
       }
+      setShowEditModal(true);
     } catch (error: any) {
       console.error('导入失败:', error);
       toast.error(error.message || '导入失败，请重试');
@@ -377,7 +406,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       
       // 保存到localStorage
       localStorage.setItem('viralVideo_analysis', JSON.stringify(result));
-      localStorage.setItem('viralVideo_images', JSON.stringify(uploadedImages));
     } catch (error: any) {
       console.error('分析失败:', error);
       toast.error(error.message || '图片分析失败，请重试');
@@ -730,8 +758,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   // 进入Step 2前检查
   const handleGoToStep2 = () => {
-    if (uploadedImages.length === 0) {
-      toast.error('请先上传至少一张图片');
+    if (uploadedImages.length < MIN_IMAGES) {
+      toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
       return;
     }
     if (!analysisResult) {
@@ -853,20 +881,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
              </div>
 
              <div className="w-full max-w-sm space-y-3">
-               {uploadedImages.length > 0 && !analysisResult && !isAnalyzing && (
-               <button 
-                   onClick={() => analyzeImage(uploadedImages[0].url)}
-                   className="w-full py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm transition-colors"
-                 >
-                   分析图片
-                 </button>
-               )}
-               {isAnalyzing && (
-                 <div className="w-full py-2 flex items-center justify-center gap-2 text-sm text-muted">
-                   <Loader className="animate-spin" size={16} />
-                   正在分析图片...
-                 </div>
-               )}
+              {isAnalyzing && (
+                <div className="w-full py-2 flex items-center justify-center gap-2 text-sm text-muted">
+                  <Loader className="animate-spin" size={16} />
+                  正在分析图片...
+                </div>
+              )}
                <button 
                  onClick={handleGoToStep2}
                  disabled={!analysisResult || uploadedImages.length === 0}
@@ -892,17 +912,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                 >
                   {t.tabs.upload}
                 </button>
-                <button 
-                  onClick={() => setActiveTab('link')}
-                  className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'link' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
-                >
-                  {t.tabs.link}
-                </button>
              </div>
 
              {/* Content */}
              <div className="p-6 md:p-10 flex-1 flex flex-col">
-                {activeTab === 'upload' ? (
+                {true ? (
                   <div className="flex-1 border-2 border-dashed border-border rounded-xl bg-background flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
                      {uploadedImages.length > 0 ? (
                        <div className="w-full space-y-4">
@@ -923,14 +937,20 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                              </div>
                            ))}
                          </div>
-                         <button
-                           onClick={handleLocalUpload}
-                           className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-                         >
-                           <Upload size={16} />
-                           继续上传
-                         </button>
-                       </div>
+                       <button
+                          onClick={handleLocalUpload}
+                          className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                        >
+                          <Upload size={16} />
+                          继续上传
+                        </button>
+                        <button
+                          onClick={() => setShowEditModal(true)}
+                          className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                        >
+                          修改视频拟合比例
+                        </button>
+                      </div>
                      ) : (
                        <>
                      <div className="mb-6 p-4 rounded-full bg-surface border border-border">
@@ -972,34 +992,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                        </>
                      )}
                   </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                     <div className="w-full max-w-md">
-                        <input 
-                          type="text" 
-                          placeholder="https://..." 
-                          value={linkInput}
-                          onChange={(e) => setLinkInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleLinkImport()}
-                          className="w-full p-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none mb-4"
-                        />
-                        <button 
-                          onClick={handleLinkImport}
-                          disabled={isUploading || !linkInput.trim()}
-                          className="w-full py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                           {isUploading ? (
-                             <>
-                               <Loader className="animate-spin" size={16} />
-                               导入中...
-                             </>
-                           ) : (
-                             'Import'
-                           )}
-                        </button>
-                     </div>
-                  </div>
-                )}
+                ) : null}
              </div>
           </div>
 
@@ -1576,6 +1569,15 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           )}
         </div>
       </BaseModal>
+      <ImageEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        images={uploadedImages}
+        onSubmit={(edited) => {
+          setUploadedImages(edited);
+          localStorage.setItem('viralVideo_images', JSON.stringify(edited));
+        }}
+      />
     </>
   );
 };

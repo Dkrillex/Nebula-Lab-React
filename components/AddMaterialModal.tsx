@@ -123,7 +123,10 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   const [showFolderSelector, setShowFolderSelector] = useState(false);
   const [folderSelectorType, setFolderSelectorType] = useState<'personal' | 'shared'>('personal');
   
-  // Reset form when modal opens
+  // 存储选中的文件（用于延迟上传）
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
       setIsFolderMode(initialIsFolder);
@@ -141,6 +144,15 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         assetPackageId: initialFolderId,
         teamId: (initialData as any)?.teamId,
       });
+      
+      // 重置选中的文件
+      setSelectedFile(null);
+    } else {
+      // 关闭弹窗时清理临时预览 URL
+      if (formData.assetUrl && formData.assetUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(formData.assetUrl);
+      }
+      setSelectedFile(null);
       
       // Initialize storage location based on initial data or default
       // 导入模式下固定为个人文件
@@ -192,6 +204,20 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
     }));
   };
 
+  const handleFileSelected = (file: File) => {
+    // 存储选中的文件，但不立即上传
+    setSelectedFile(file);
+    // 更新预览URL（使用本地预览）
+    const objectUrl = URL.createObjectURL(file);
+    setFormData(prev => ({
+      ...prev,
+      assetUrl: objectUrl, // 临时预览URL
+      assetId: '', // 清空 assetId，表示还未上传到 OSS
+      // If assetName is empty, use fileName (without extension)
+      assetName: prev.assetName || file.name.split('.').slice(0, -1).join('.'),
+    }));
+  };
+
   const handleSelectFolder = (type: 'personal' | 'shared') => {
     if (type === 'shared' && !selectedTeamId) {
       toast.error('请先选择团队');
@@ -223,7 +249,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       return;
     }
     // Validate file upload for types that require files (only for new files, not editing)
-    if (!isEdit && !isFolderMode && !formData.assetUrl) {
+    if (!isEdit && !isFolderMode && !formData.assetUrl && !selectedFile) {
       toast.error('请上传素材文件或确保素材链接存在');
         return;
     }
@@ -244,43 +270,71 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
 
     setLoading(true);
     try {
-      // Step 1: Upload to OSS if the URL is not already an OSS URL
+      // Step 1: Upload to OSS if we have a selected file (not yet uploaded)
       let finalAssetUrl = formData.assetUrl;
       let finalAssetId = formData.assetId;
       
-      // Check if the URL is from an external source or temp storage (not from OSS)
-      // OSS URLs typically contain specific domains or patterns
-      const needsOSSUpload = finalAssetUrl && !isEdit && (
-        finalAssetUrl.startsWith('http') && 
-        !finalAssetUrl.includes('aliyuncs.com') && // Typical OSS domain pattern
-        !finalAssetUrl.includes('oss-')
-      );
-      
-      if (needsOSSUpload) {
+      // 如果有选中的文件但还没有上传到 OSS，先上传到 OSS
+      if (selectedFile && !isEdit && !isFolderMode) {
         try {
-          toast.loading('正在上传素材到云端...', { id: 'upload-oss' });
+          toast.loading('正在上传文件...', { id: 'upload-oss' });
           
-          // Determine file type from URL
-          const urlExt = finalAssetUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
-          const isVideo = ['mp4', 'mov', 'avi', 'webm'].includes(urlExt);
+          // 上传文件到 OSS
+          const uploadResult = await uploadService.uploadFile(selectedFile);
           
-          // Upload based on type
-          let uploadResult;
-          if (isVideo) {
-            uploadResult = await uploadService.uploadByVideoUrl(finalAssetUrl, urlExt);
+          if (uploadResult && uploadResult.url && uploadResult.ossId) {
+            finalAssetUrl = uploadResult.url;
+            finalAssetId = uploadResult.ossId;
+            toast.success('文件上传成功', { id: 'upload-oss' });
+            
+            // 清理临时预览 URL
+            if (formData.assetUrl && formData.assetUrl.startsWith('blob:')) {
+              URL.revokeObjectURL(formData.assetUrl);
+            }
           } else {
-            uploadResult = await uploadService.uploadByImageUrl(finalAssetUrl, urlExt);
+            throw new Error('上传响应格式错误');
           }
-          
-          if (uploadResult.data) {
-            finalAssetUrl = uploadResult.data.url;
-            finalAssetId = uploadResult.data.ossId;
-            toast.success('素材上传成功', { id: 'upload-oss' });
-          }
-        } catch (uploadError) {
+        } catch (uploadError: any) {
           console.error('OSS upload error:', uploadError);
-          toast.error('素材上传失败，但将继续保存', { id: 'upload-oss' });
-          // Continue with original URL if upload fails
+          toast.error(uploadError?.message || '文件上传失败，请重试', { id: 'upload-oss' });
+          setLoading(false);
+          return; // 上传失败，不继续保存
+        }
+      } else if (finalAssetUrl && !isEdit && !finalAssetId) {
+        // 如果 URL 存在但没有 assetId，可能是外部 URL，尝试上传到 OSS
+        // Check if the URL is from an external source or temp storage (not from OSS)
+        // OSS URLs typically contain specific domains or patterns
+        const needsOSSUpload = finalAssetUrl.startsWith('http') && 
+          !finalAssetUrl.includes('aliyuncs.com') && // Typical OSS domain pattern
+          !finalAssetUrl.includes('oss-') &&
+          !finalAssetUrl.startsWith('blob:'); // 排除本地预览 URL
+        
+        if (needsOSSUpload) {
+          try {
+            toast.loading('正在上传素材...', { id: 'upload-oss' });
+            
+            // Determine file type from URL
+            const urlExt = finalAssetUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
+            const isVideo = ['mp4', 'mov', 'avi', 'webm'].includes(urlExt);
+            
+            // Upload based on type
+            let uploadResult;
+            if (isVideo) {
+              uploadResult = await uploadService.uploadByVideoUrl(finalAssetUrl, urlExt);
+            } else {
+              uploadResult = await uploadService.uploadByImageUrl(finalAssetUrl, urlExt);
+            }
+            
+            if (uploadResult && uploadResult.url && uploadResult.ossId) {
+              finalAssetUrl = uploadResult.url;
+              finalAssetId = uploadResult.ossId;
+              toast.success('素材上传成功', { id: 'upload-oss' });
+            }
+          } catch (uploadError) {
+            console.error('OSS upload error:', uploadError);
+            toast.error('素材上传失败，但将继续保存', { id: 'upload-oss' });
+            // Continue with original URL if upload fails
+          }
         }
       }
       
@@ -345,6 +399,9 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
 
         await Promise.all(requests);
       }
+      
+      // 清理选中的文件
+      setSelectedFile(null);
       
       onSuccess();
       onClose();
@@ -476,11 +533,14 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
               </label>
               <UploadComponent 
                 onUploadComplete={handleUploadComplete}
+                onFileSelected={handleFileSelected}
                 accept={getAcceptType()}
                 uploadType="oss" 
                 initialUrl={formData.assetUrl}
                 className="h-36"
                 disabled={isEdit || isImportMode} // 导入模式下禁用上传
+                showConfirmButton={false} // 不显示确认上传按钮，在点击确定时统一上传
+                immediate={false} // 不立即上传
               />
             </div>
           )}

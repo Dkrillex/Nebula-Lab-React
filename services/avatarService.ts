@@ -234,7 +234,91 @@ export interface ImageReplaceSubmitParams {
 export interface ImageReplaceQueryResult {
   taskId: string;
   status: string;
+  taskStatus?: string;
   resultImageUrl?: string;
+  bgRemovedImagePath?: string;
+  bgRemovedImageFileId?: string;
+  productReplaceResult?: Array<{
+    key: string;
+    url: string;
+  }>;
+  errorMsg?: string;
+}
+
+// V2版本图片替换参数
+export interface V2ImageReplaceSubmitParams {
+  generateImageMode: 'manual' | 'auto';
+  avatarId?: string;
+  templateImageFileId?: string;
+  productImageWithoutBackgroundFileId: string;
+  userFaceImageFileId?: string;
+  location?: [[number | string, number | string], [number | string, number | string], [number | string, number | string], [number | string, number | string]];
+}
+
+// V2版本图片替换查询结果
+export interface V2ImageReplaceQueryResult {
+  taskId: string;
+  status: string;
+  taskStatus?: string;
+  replaceProductResult?: Array<{
+    imageId: string;
+    url: string;
+    faceExistence?: boolean;
+  }>;
+  errorMsg?: string;
+}
+
+// 背景去除提交参数
+export interface RemoveBackgroundSubmitParams {
+  productImageFileId: string;
+}
+
+// 背景去除查询结果
+export interface RemoveBackgroundQueryResult {
+  taskId: string;
+  status: string;
+  bgRemovedImagePath?: string;
+  bgRemovedImageFileId?: string;
+  errorMsg?: string;
+}
+
+// 图片转视频提交参数(V1)
+export interface Image2VideoSubmitParams {
+  image2VideoPrompt: string;
+  mode: string; // 'lite' | 'pro' | 'avatar2'
+  productReplaceResultKey: string;
+  score: number;
+  ttsText: string;
+  voiceoverId: string;
+}
+
+// 图片转视频查询结果(V1)
+export interface Image2VideoQueryResult {
+  taskId: string;
+  status: string;
+  taskStatus?: string;
+  videoUrl?: string;
+  errorMsg?: string;
+}
+
+// 图片转视频提交参数(V2)
+export interface V2Image2VideoSubmitParams {
+  replaceProductTaskImageId: string;
+  mode: string; // 'lite' | 'pro' | 'avatar2'
+  scriptMode: 'text' | 'audio';
+  ttsText?: string;
+  voiceId?: string;
+  audioFileId?: string;
+  captionId?: string;
+  score: string;
+}
+
+// 图片转视频查询结果(V2)
+export interface V2Image2VideoQueryResult {
+  taskId: string;
+  status: string;
+  taskStatus?: string;
+  videoUrl?: string;
   errorMsg?: string;
 }
 
@@ -334,6 +418,50 @@ export const avatarService = {
   queryImageReplaceTask: (taskId: string) => {
     return request.get<ApiResponse<ImageReplaceQueryResult>>('/tp/v1/ImageReplaceQuery', {
       params: { taskId, needCloudFrontUrl: true },
+    });
+  },
+
+  // V2版本图片替换
+  submitV2ImageReplaceTask: (data: V2ImageReplaceSubmitParams) => {
+    return request.post<ApiResponse<{ taskId: string }>>('/tp/v2/image/replace/submit', data);
+  },
+
+  queryV2ImageReplaceTask: (taskId: string) => {
+    return request.get<ApiResponse<V2ImageReplaceQueryResult>>('/tp/v2/image/replace/query', {
+      params: { taskId },
+    });
+  },
+
+  // 背景去除
+  submitRemoveBackground: (data: RemoveBackgroundSubmitParams) => {
+    return request.post<ApiResponse<{ taskId: string }>>('/tp/v2/remove/background/submit', data);
+  },
+
+  queryRemoveBackground: (taskId: string) => {
+    return request.get<ApiResponse<RemoveBackgroundQueryResult>>('/tp/v2/remove/background/query', {
+      params: { taskId },
+    });
+  },
+
+  // 图片转视频(V1)
+  submitImage2Video: (data: Image2VideoSubmitParams) => {
+    return request.post<ApiResponse<{ taskId: string }>>('/tp/v1/Image2VideoSubmit', data);
+  },
+
+  queryImage2Video: (taskId: string) => {
+    return request.get<ApiResponse<Image2VideoQueryResult>>('/tp/v1/Image2VideoQuery', {
+      params: { taskId },
+    });
+  },
+
+  // 图片转视频(V2)
+  submitV2Image2Video: (data: V2Image2VideoSubmitParams) => {
+    return request.post<ApiResponse<{ taskId: string }>>('/tp/v2/image2video/submit', data);
+  },
+
+  queryV2Image2Video: (taskId: string) => {
+    return request.get<ApiResponse<V2Image2VideoQueryResult>>('/tp/v2/image2video/query', {
+      params: { taskId },
     });
   },
 
@@ -502,6 +630,14 @@ export const avatarService = {
       params,
       ...options,
     });
+  },
+
+  /**
+   * 扣除积分
+   * Endpoint: POST /tp/v1/deductPoints
+   */
+  deductPoints: (data: { deductPoints: number; systemId: number; userId: number | string | undefined }) => {
+    return request.post<ApiResponse<any>>('/tp/v1/deductPoints', data);
   },
 
   /**

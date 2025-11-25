@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/authStore';
 import { teamService } from '../../services/teamService';
 import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 
 interface ExpensesPageProps {
   t?: any;
@@ -693,6 +694,23 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 <span>可兑换积分:</span>
                 <span className="font-semibold text-gray-700 dark:text-zinc-200">{formatPoints(points)}</span>
               </div>
+              {/* 显示会员等级 Free会员｜Starter会员｜Business会员 */}
+              {quotaInfo?.memberLevel && (
+                <div className="flex items-center gap-2 mt-3 pt-3 border-t border-gray-100 dark:border-zinc-700">
+                  <span className="text-sm text-gray-500 dark:text-zinc-400">会员等级:</span>
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${
+                    quotaInfo.memberLevel.toLowerCase().includes('business') 
+                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-sm'
+                      : quotaInfo.memberLevel.toLowerCase().includes('starter')
+                      ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-zinc-700 text-gray-600 dark:text-zinc-300'
+                  }`}>
+                    {quotaInfo.memberLevel.toLowerCase().includes('business') && '👑 '}
+                    {quotaInfo.memberLevel.toLowerCase().includes('starter') && '⭐ '}
+                    {quotaInfo.memberLevel}
+                  </span>
+                </div>
+              )}
             </>
           </div>
 
@@ -712,16 +730,18 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
               >
                 余额
               </button>
-              <button
-                onClick={() => handleModeChange('points')}
-                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                  currentMode === 'points'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
-                }`}
-              >
-                积分
-              </button>
+              {CURRENT_SYSTEM !== SYSTEM_TYPE.MODEL_CENTER && (
+                <button
+                  onClick={() => handleModeChange('points')}
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                    currentMode === 'points'
+                      ? 'bg-purple-600 text-white'
+                      : 'bg-gray-200 dark:bg-zinc-700 text-gray-700 dark:text-zinc-300 hover:bg-gray-300 dark:hover:bg-zinc-600'
+                  }`}
+                >
+                  积分
+                </button>
+              )}
               {isShowTeamLogos && (
                 <button
                   onClick={() => handleModeChange('logos')}

@@ -61,6 +61,8 @@ export interface ScoreListQuery {
   score?: string;
   assetType?: number;
   status?: string;
+  startDate?: string; // 开始日期（YYYY-MM-DD格式）
+  endDate?: string; // 结束日期（YYYY-MM-DD格式）
   [key: string]: any;
 }
 
