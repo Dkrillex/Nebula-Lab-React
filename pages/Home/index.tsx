@@ -26,6 +26,12 @@ const Home: React.FC = () => {
           {/* <HomeFooter /> */}
         </>
       )}
+         {/* 分割线 显示备案信息 */}
+         <div className="border-t border-border"></div>
+          <div className="text-center text-[10px] text-muted">
+            <p>备案号：粤ICP备2022093288号-4</p>
+            <p>Copyright © 2025 Nebula Data (HK) Limited</p>
+          </div>
     </>
   );
 };
