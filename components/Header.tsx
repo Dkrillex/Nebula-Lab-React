@@ -98,6 +98,8 @@ const Header: React.FC<HeaderProps> = ({
           toolKey = 'ttsTool';
         } else if (tab.activeTool === '3dModel') {
           toolKey = 'glbViewer';
+        } else if (tab.activeTool === 'product-replace') {
+          toolKey = 'productReplace';
         }
         return sideMenuMap[toolKey] || tab.activeTool;
       }

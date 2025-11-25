@@ -1,11 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { SearchIcon, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal } from 'lucide-react';
+import { SearchIcon, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal, GitCompareArrows as Compare } from 'lucide-react';
+import { translations } from '@/translations';
 import { useNavigate } from 'react-router-dom';
 import { useAppOutletContext } from '@/router/context';
 import { modelService } from '@/services/modelService.ts';
 import { AIModel } from '@/types.ts';
 import toast from 'react-hot-toast';
 import FilterSelect, { FilterOption } from './components/FilterSelect';
+import ModelCompareModal from './components/ModelCompareModal';
 
 interface ModelSquarePageProps {
   t?: any;
@@ -58,6 +60,10 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
   // 详情抽屉
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedModel, setSelectedModel] = useState<AIModel | null>(null);
+  
+  // 模型对比弹窗
+  const [compareVisible, setCompareVisible] = useState(false);
+  const [compareModels, setCompareModels] = useState<(AIModel | null)[]>([null, null, null]);
 
   // 获取模型数据 (只在组件挂载时执行一次，后续为前端筛选)
   useEffect(() => {
@@ -732,9 +738,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
         {t.filterSearch}
       </div>
       
-      <div className={`space-y-6 ${isMobile ? '' : 'overflow-y-auto flex-1 pr-2 custom-scrollbar'}`}>
+      <div className={`space-y-2 ${isMobile ? '' : 'overflow-y-auto flex-1 pr-2 custom-scrollbar'}`}>
         {/* Model Name Search */}
-        <div className="space-y-2">
+        <div className="space-y-1">
           <label className="text-sm font-medium text-zinc-500 dark:text-zinc-400">{t.filters.nameLabel}</label>
           <div className="relative">
             <input 
@@ -849,17 +855,29 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
                 {t.filters.all} {filteredModels.length}
               </span> */}
            </div>
-           
-           <button 
-             onClick={toggleFilter}
-             className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors bg-white dark:bg-zinc-900 shadow-sm"
-           >
-             <SlidersHorizontal size={14} />
-             <span className="hidden sm:inline">
-               {showFilterPanel ? t.filters.hideFilters : '显示筛选'}
-             </span>
-             <span className="sm:hidden">{showFilterPanel ? '隐藏' : '筛选'}</span>
-           </button>
+           {/* 操作按钮组 */}
+           <div className="flex items-center gap-2">
+             {/* 模型对比按钮 */}
+             <button 
+               onClick={() => setCompareVisible(true)}
+               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors bg-white dark:bg-zinc-900 shadow-sm"
+             >
+               <Compare size={14} />
+               <span className="hidden sm:inline">模型对比</span>
+               <span className="sm:hidden">对比</span>
+             </button>
+             {/* 筛选按钮 */}
+             <button 
+               onClick={toggleFilter}
+               className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors bg-white dark:bg-zinc-900 shadow-sm"
+             >
+               <SlidersHorizontal size={14} />
+               <span className="hidden sm:inline">
+                 {showFilterPanel ? t.filters.hideFilters : '显示筛选'}
+               </span>
+               <span className="sm:hidden">{showFilterPanel ? '隐藏' : '筛选'}</span>
+             </button>
+           </div>
         </div>
 
         <div className="p-4 md:p-6 bg-zinc-50/50 dark:bg-zinc-900/50 min-h-[calc(100vh-64px)]">
@@ -960,6 +978,17 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
           onCopyName={copyModelName}
         />
       )}
+
+      {/* 模型对比弹窗 */}
+      <ModelCompareModal
+        visible={compareVisible}
+        onClose={() => setCompareVisible(false)}
+        models={models}
+        compareModels={compareModels}
+        setCompareModels={setCompareModels}
+        formatPrice={formatPrice}
+        formatPriceUnit={formatPriceUnit}
+      />
     </div>
   );
 };
@@ -1099,6 +1128,7 @@ const ModelDetailDrawer = ({
   calculateImageEditCost,
   formatDetailPrice,
   formatDetailPriceUnit,
+  onCopyName,
 }: {
   model: AIModel;
   visible: boolean;
