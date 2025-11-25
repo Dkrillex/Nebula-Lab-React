@@ -1142,7 +1142,7 @@ const AssetCard: React.FC<AssetCardProps> = ({
 
        {/* Thumbnail / Icon - 上方缩略图 */}
        <div 
-         className="flex-shrink-0 w-full aspect-video flex items-center justify-center bg-surface/30 rounded-lg overflow-hidden mb-2"
+         className="flex-shrink-0 w-full aspect-video flex items-center justify-center bg-surface/30 rounded-lg overflow-hidden mb-2 relative"
          onClick={!isFolder ? (e) => {
            e.stopPropagation();
            onPreview();
@@ -1155,33 +1155,84 @@ const AssetCard: React.FC<AssetCardProps> = ({
               <Folder size={40} className="text-orange-600 dark:text-orange-400" />
                 </div>
              </div>
-        ) : thumbnailUrl ? (
-          <img 
-            src={thumbnailUrl} 
-            alt={asset.assetName || 'Asset'} 
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
-            crossOrigin="anonymous"
-            referrerPolicy="no-referrer"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              // 如果 crossOrigin 失败，尝试不使用 crossOrigin
-              if (target.crossOrigin !== null) {
-                target.crossOrigin = null;
-                target.referrerPolicy = 'no-referrer';
-              } else {
-                // 如果还是失败，隐藏图片
-                target.style.display = 'none';
-              }
-            }}
-          />
-             ) : (
-               <div className="text-slate-400 w-full h-full flex items-center justify-center">
-            {fileType === 'audio' && <FileAudio size={40} />}
-            {fileType === 'video' && <Film size={40} />}
-            {fileType === 'image' && <ImageIcon size={40} />}
-            {fileType === 'folder' && <Folder size={40} />}
-               </div>
-          )}
+        ) : fileType === 'audio' ? (
+          // 音频类型：显示音乐图标（与旧系统保持一致）
+          <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 rounded-lg">
+            <div className="text-5xl">🎵</div>
+          </div>
+        ) : fileType === 'video' ? (
+          // 视频类型：显示视频预览
+          asset.assetUrl ? (
+            <>
+              <video 
+                src={asset.assetUrl} 
+                className="w-full h-full object-contain rounded-lg"
+                muted
+                playsInline
+                preload="metadata"
+                onMouseEnter={(e) => {
+                  const video = e.currentTarget;
+                  video.play().catch(() => {
+                    // 忽略自动播放错误
+                  });
+                }}
+                onMouseLeave={(e) => {
+                  const video = e.currentTarget;
+                  video.pause();
+                  video.currentTime = 0;
+                }}
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const video = e.currentTarget;
+                  if (video.crossOrigin !== null) {
+                    video.crossOrigin = null;
+                    video.referrerPolicy = 'no-referrer';
+                  }
+                }}
+              />
+              {/* 播放覆盖层 */}
+              <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-lg pointer-events-none">
+                <div className="text-white text-2xl">▶️</div>
+              </div>
+            </>
+          ) : (
+            <div className="text-slate-400 w-full h-full flex items-center justify-center">
+              <Film size={40} />
+            </div>
+          )
+        ) : fileType === 'image' ? (
+          // 图片类型：显示图片
+          thumbnailUrl ? (
+            <img 
+              src={thumbnailUrl} 
+              alt={asset.assetName || 'Asset'} 
+              className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
+              crossOrigin="anonymous"
+              referrerPolicy="no-referrer"
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                // 如果 crossOrigin 失败，尝试不使用 crossOrigin
+                if (target.crossOrigin !== null) {
+                  target.crossOrigin = null;
+                  target.referrerPolicy = 'no-referrer';
+                } else {
+                  // 如果还是失败，隐藏图片
+                  target.style.display = 'none';
+                }
+              }}
+            />
+          ) : (
+            <div className="text-slate-400 w-full h-full flex items-center justify-center">
+              <ImageIcon size={40} />
+            </div>
+          )
+        ) : (
+          // 默认情况：显示图标
+          <div className="text-slate-400 w-full h-full flex items-center justify-center">
+            <FileAudio size={40} />
+          </div>
+        )}
        </div>
 
        {/* Info - 下方信息 */}

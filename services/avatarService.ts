@@ -609,4 +609,12 @@ export const avatarService = {
       ...options,
     });
   },
+
+  /**
+   * 扣除积分
+   * Endpoint: POST /tp/v1/deductPoints
+   */
+  deductPoints: (data: { deductPoints: number; systemId: number; userId: number | string | undefined }) => {
+    return request.post<ApiResponse<any>>('/tp/v1/deductPoints', data);
+  },
 };

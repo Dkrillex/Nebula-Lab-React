@@ -3,6 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Loader, X, Play, Download, RotateCcw, Image as ImageIcon, Video, Upload, Check } from 'lucide-react';
 import { avatarService, Voice, Caption } from '../../../services/avatarService';
 import { useProductAvatarStore } from '../../../stores/productAvatarStore';
+import { useAuthStore } from '../../../stores/authStore';
 import VoiceModal from './VoiceModal';
 import CaptionModal from './CaptionModal';
 import ImagePreviewModal from './ImagePreviewModal';
@@ -40,6 +41,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const isV2 = searchParams.get('v2') === 'true';
   const productAvatarStore = useProductAvatarStore();
   const queryParams = productAvatarStore.getData(taskId);
+  const { user } = useAuthStore();
 
   // States
   const [pageLoading, setPageLoading] = useState(false);
@@ -227,6 +229,18 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
         setPageLoading(true);
         setTip(t?.tip1 || '合成视频中大约需要1~2分钟...');
 
+        // Update progress BEFORE querying (like old system)
+        setProgress(prev => {
+          if (prev < 80) {
+            const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 20) + 1);
+            return Math.min(prev + maxIncrement, 80);
+          } else if (prev < 90) {
+            const maxIncrement = Math.min(90 - prev, Math.floor(Math.random() * 10) + 1);
+            return Math.min(prev + maxIncrement, 90);
+          }
+          return prev; // Don't exceed 90
+        });
+
         let res: any;
         if (isV2) {
           res = await avatarService.queryV2Image2Video(videoTaskId);
@@ -238,15 +252,6 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
         const status = resultData?.taskStatus || resultData?.status;
 
         if (status === 'running' || status === 'init') {
-          // Update progress
-          if (progress < 80) {
-            const maxIncrement = Math.min(80 - progress, Math.floor(Math.random() * 20) + 1);
-            setProgress(prev => prev + maxIncrement);
-          } else if (progress < 90) {
-            const maxIncrement = Math.min(90 - progress, Math.floor(Math.random() * 10) + 1);
-            setProgress(prev => prev + maxIncrement);
-          }
-
           attempts++;
           if (attempts < maxAttempts) {
             loopTimerRef.current = setTimeout(check, interval);
@@ -269,6 +274,18 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
             assetUrl: videoUrl,
             assetId: videoTaskId,
           }));
+
+          // Deduct points after video generation success
+          try {
+            await avatarService.deductPoints({
+              deductPoints: pointsTip(),
+              systemId: 1,
+              userId: user?.userId,
+            });
+          } catch (error) {
+            console.error('Failed to deduct points:', error);
+            // Don't show error to user as video is already generated
+          }
         } else {
           toast.error(resultData.errorMsg || t?.errors?.generateFailed || '视频生成失败');
           setPageLoading(false);
@@ -492,14 +509,14 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   }, [taskId, isV2]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 md:p-6">
+    <div className="h-full min-h-screen bg-white dark:bg-gray-900 p-4 md:p-6 flex flex-col">
       {/* Header */}
       {!image2VideoResult && (
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4 drop-shadow-lg">
+        <div className="text-center mb-8 shrink-0">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-200 mb-4">
             {t?.pageTitle || '产品 + AI数字人合成'}
           </h1>
-          <p className="text-white/90 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
             {t?.pageDescription || 'AI正在为您生成专业的产品展示视频，请耐心等待精彩效果'}
           </p>
         </div>
@@ -507,7 +524,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       {/* Loading State */}
       {pageLoading && (
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
+        <div className="flex flex-col items-center justify-center flex-1 bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
           <div className="text-6xl mb-6">🎬</div>
           <div className="text-xl font-bold text-gray-800 mb-6">{tip}</div>
           <div className="w-full max-w-md">
@@ -524,7 +541,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       {/* Error State */}
       {!pageLoading && taskResult?.taskStatus === 'fail' && (
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
+        <div className="flex flex-col items-center justify-center flex-1 bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-xl">
           <div className="text-6xl mb-6">❌</div>
           <div className="text-xl font-bold text-gray-800 mb-6">{taskResult.errorMsg}</div>
           <button
@@ -538,7 +555,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       {/* Image Generation Success - Before Video */}
       {!pageLoading && taskResult?.taskStatus === 'success' && !image2VideoResult && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto flex-1 overflow-y-auto">
           {/* Left: Image Selection */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
             <div className="mb-6">
@@ -553,7 +570,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
                 <div
                   key={img.key}
                   onClick={() => handleSelectImage(img)}
-                  className={`relative aspect-[9/16] rounded-xl overflow-hidden cursor-pointer border-2 transition ${
+                  className={`relative aspect-[9/16] max-h-[400px] rounded-xl overflow-hidden cursor-pointer border-2 transition ${
                     selectImage?.key === img.key
                       ? 'border-indigo-500 ring-2 ring-indigo-500/20'
                       : 'border-gray-200 hover:border-indigo-300'
@@ -825,12 +842,12 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       {/* Video Result */}
       {image2VideoResult && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-7xl mx-auto flex-1 overflow-y-auto">
           {/* Left: Preview */}
           <div className="space-y-6">
             <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-6 shadow-xl">
               <h3 className="text-2xl font-bold text-gray-800 mb-4">{t?.originalMaterial || '原始素材'}</h3>
-              <div className="aspect-[9/16] rounded-xl overflow-hidden bg-gray-100">
+              <div className="aspect-[9/16] max-h-[400px] rounded-xl overflow-hidden bg-gray-100 mx-auto">
                 <img
                   src={taskResult?.productReplaceResult?.[0]?.url}
                   alt="Original"
@@ -867,11 +884,11 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
               <p className="text-gray-600">{t?.resultDescription || '您的专业产品展示视频已制作完成'}</p>
             </div>
 
-            <div className="aspect-video rounded-xl overflow-hidden bg-black mb-6">
+            <div className="aspect-[9/16] max-h-[600px] rounded-xl overflow-hidden bg-black mb-6 mx-auto">
               <video
                 src={image2VideoResult.previewVideoUrl}
                 controls
-                className="w-full h-full"
+                className="w-full h-full object-contain"
               />
             </div>
 
@@ -924,7 +941,10 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       <ImagePreviewModal
         isOpen={showImagePreview}
-        onClose={() => setShowImagePreview(false)}
+        onClose={() => {
+          setShowImagePreview(false);
+          setPreviewImageUrl(null);
+        }}
         imageUrl={previewImageUrl || ''}
       />
 

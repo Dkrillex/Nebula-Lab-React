@@ -379,7 +379,7 @@ interface Translation {
         instructionUploadProduct: string;
         instructionDrag: string;
         instructionRotate: string;
-        instructionScale: string;
+          instructionScale: string; // Should mention Alt(Option) for Mac compatibility
         resetPosition: string;
         removingBackground: string;
         waitBackgroundRemoval: string;
@@ -1219,7 +1219,7 @@ export const translations: Record<string, Translation> = {
           instructionUploadProduct: 'Please upload product image first',
           instructionDrag: 'Drag: Hold left mouse button to move product',
           instructionRotate: 'Rotate: Hold Shift + drag',
-          instructionScale: 'Scale: Hold Alt + drag up/down',
+          instructionScale: 'Scale: Hold Alt(Option) + drag up/down',
           resetPosition: 'Reset Position',
           removingBackground: 'Removing background...',
           waitBackgroundRemoval: 'Please wait for background removal to complete',
@@ -2108,7 +2108,7 @@ export const translations: Record<string, Translation> = {
           instructionUploadProduct: '请先上传产品图片',
           instructionDrag: '拖动：按住鼠标左键移动产品图片',
           instructionRotate: '旋转：按住Shift键+鼠标拖动',
-          instructionScale: '缩放：按住Alt键+鼠标上下拖动',
+          instructionScale: '缩放：按住Alt(Option)键+鼠标上下拖动',
           resetPosition: '重置图片位置',
           removingBackground: '正在去除背景...',
           waitBackgroundRemoval: '请等待背景去除完成',

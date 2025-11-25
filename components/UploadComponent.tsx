@@ -37,6 +37,8 @@ interface UploadComponentProps {
   onClear?: () => void;
   // Optional: Whether the component is disabled (for edit mode)
   disabled?: boolean;
+  // Optional: Whether to show the confirm upload button (default: true)
+  showConfirmButton?: boolean;
 }
 
 const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
@@ -52,7 +54,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onError,
   onFileSelected,
   onClear,
-  disabled = false
+  disabled = false,
+  showConfirmButton = true
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
@@ -374,7 +377,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             )}
             
             {/* If manual upload is required and not uploaded yet */}
-            {!disabled && !immediate && file && !uploading && !uploaded && (
+            {!disabled && !immediate && file && !uploading && !uploaded && showConfirmButton && (
                  <button 
                     onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
                     className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"

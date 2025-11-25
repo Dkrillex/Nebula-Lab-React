@@ -624,9 +624,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
       {/* Middle: Configuration & Results */}
       <div className="h-[calc(100vh-230px)] flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pb-32 mb-[80px]">
-          <div className="flex flex-col lg:flex-row gap-6 mb-6">
+          <div className="flex flex-col gap-6 mb-6">
               {/* Preview */}
-              <div className="flex-1">
+              <div className="w-full">
                   <h3 className="font-bold text-gray-800 dark:text-gray-200 mb-4">
                       {t?.rightPanel?.templatePreview || 'Avatar Preview'}
                   </h3>
@@ -672,7 +672,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                       </div>
                       <div className="flex items-start gap-2">
                         <span>🔍</span>
-                        <span>{t?.rightPanel?.instructionScale || 'Scale: Hold Alt + drag up/down'}</span>
+                        <span>{t?.rightPanel?.instructionScale || 'Scale: Hold Alt(Option) + drag up/down'}</span>
                       </div>
                     </div>
                   )}
@@ -720,21 +720,11 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                           </div>
                       )}
                       
-                      {/* Reset Button for Manual Mode */}
-                      {activeMode === 'highPrecision' && bgRemovedProductImage && (
-                        <button
-                          onClick={handleResetTransform}
-                          className="absolute top-2 right-2 z-30 px-3 py-1.5 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-white dark:hover:bg-gray-800 transition flex items-center gap-1 shadow-sm"
-                        >
-                          <RotateCcw size={14} />
-                          {t?.rightPanel?.resetPosition || 'Reset Position'}
-                        </button>
-                      )}
                   </div>
               </div>
 
               {/* Product Config */}
-              <div className="flex-1 flex flex-col gap-4">
+              <div className="w-full flex flex-col gap-4">
                   <h3 className="font-bold text-gray-800 dark:text-gray-200">
                       {t?.rightPanel?.productConfig || 'Product Config'}
                   </h3>

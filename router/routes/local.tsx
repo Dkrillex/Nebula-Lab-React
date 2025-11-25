@@ -144,7 +144,7 @@ export const localRoutes: AppRouteObject[] = [
                 t: t?.createPage?.productAvatar?.productReplace || {}
               })}
             />,
-            meta: { title: 'Product Replace', keepAlive: true }
+            meta: { title: '商品替换', keepAlive: true, keepAliveKey: '/create/product-replace' }
           }
         ]
       },

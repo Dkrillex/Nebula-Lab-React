@@ -278,10 +278,10 @@ const ProductCanvas = forwardRef<ProductCanvasRef, ProductCanvasProps>(({
       // Rotate based on horizontal movement
       transformRef.current.rotation += dx * 0.5;
     } else if (isScaling) {
-      // Scale based on vertical movement
-      const scaleDelta = dy * -0.005;
-      const scaleMultiplier = 1 + scaleDelta;
-      const newScale = Math.max(0.002, Math.min(10, transformRef.current.scale + (initialScaleRef.current * scaleMultiplier - initialScaleRef.current)));
+      // Scale based on vertical movement - fix scaling logic
+      const scaleDelta = dy * -0.01; // Increase sensitivity
+      const currentScale = transformRef.current.scale;
+      const newScale = Math.max(0.1, Math.min(5, currentScale * (1 + scaleDelta)));
       transformRef.current.scale = newScale;
     }
 
@@ -333,16 +333,6 @@ const ProductCanvas = forwardRef<ProductCanvasRef, ProductCanvasProps>(({
         onMouseLeave={handleMouseUp}
       />
       
-      {/* Instructions Overlay */}
-      {productImageUrl && (
-        <div className="absolute bottom-4 left-4 right-4 bg-white/90 dark:bg-black/80 backdrop-blur p-3 rounded-lg text-xs text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 pointer-events-none z-20 shadow-sm">
-          <div className="flex justify-between gap-2">
-            <span className="flex items-center gap-1"><span className="font-bold">拖动:</span> 左键</span>
-            <span className="flex items-center gap-1"><span className="font-bold">旋转:</span> Shift+拖动</span>
-            <span className="flex items-center gap-1"><span className="font-bold">缩放:</span> Alt+拖动</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 });
