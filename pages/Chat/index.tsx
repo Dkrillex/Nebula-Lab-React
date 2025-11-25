@@ -1984,18 +1984,21 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     return processedVideos;
   };
 
-  const handleSaveChat = async () => {
+  // 自动保存记录（后台静默保存，不显示toast提示）
+  const autoSaveChat = async (showToast: boolean = false) => {
     // 过滤掉欢迎消息
     const validMessages = messages.filter(msg => msg.id !== 'welcome');
     if (validMessages.length === 0) {
-      toast.error('没有可保存的消息');
+      if (showToast) {
+        toast.error('没有可保存的消息');
+      }
       return;
     }
 
     // 调试：检查保存前的消息 role
-    console.log('💾 保存前的消息列表:', validMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
+    console.log('💾 自动保存前的消息列表:', validMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
 
-    const saveToast = toast.loading('正在保存并处理图片/视频...');
+    const saveToast = showToast ? toast.loading('正在保存并处理图片/视频...') : null;
     
     try {
       // 处理图片和视频，转换为 OSS 链接
@@ -2121,8 +2124,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           ...apiTalkData,
           id: selectedRecordId,
         });
-        toast.dismiss(saveToast);
-        toast.success('对话记录已更新');
+        if (showToast && saveToast) {
+          toast.dismiss(saveToast);
+          toast.success('对话记录已更新');
+        }
         console.log('💾 对话记录已更新:', selectedRecordId);
       } else {
         // 新增记录
@@ -2131,26 +2136,36 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         const newId = (response as any)?.data?.id || (response as any)?.id || (response as any);
         if (newId) {
           setSelectedRecordId(newId);
-          toast.dismiss(saveToast);
-          toast.success('对话记录已保存');
+          if (showToast && saveToast) {
+            toast.dismiss(saveToast);
+            toast.success('对话记录已保存');
+          }
           console.log('💾 对话记录已保存，ID:', newId);
           // 刷新记录列表
           refreshRecords();
         } else {
           // 即使没有返回ID，如果接口调用成功（没有抛出异常），也认为保存成功
           // 参考Vue3实现：即使没有ID也不报错，只是不设置selectedRecordId
-          toast.dismiss(saveToast);
-          toast.success('对话记录已保存');
+          if (showToast && saveToast) {
+            toast.dismiss(saveToast);
+            toast.success('对话记录已保存');
+          }
           console.log('💾 对话记录已保存（未返回ID）');
           // 刷新记录列表，可能能从列表中获取到ID
           refreshRecords();
         }
       }
     } catch (error) {
-      toast.dismiss(saveToast);
-      toast.error('保存对话记录失败');
+      if (showToast && saveToast) {
+        toast.dismiss(saveToast);
+        toast.error('保存对话记录失败');
+      }
       console.error('❌ 保存对话记录失败:', error);
     }
+  };
+
+  const handleSaveChat = async () => {
+    await autoSaveChat(true);
   };
 
   // 停止生成
@@ -3186,6 +3201,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               }
               return newMessages;
             });
+
+              // 视频生成成功后自动保存历史记录
+              // 使用 setTimeout 确保消息状态已更新后再保存
+              setTimeout(() => {
+                console.log('💾 视频生成完成，开始自动保存历史记录...');
+                autoSaveChat(false).catch((error) => {
+                  console.error('❌ 视频生成后自动保存失败:', error);
+                  // 静默失败，不影响用户体验
+                });
+              }, 500);
+            
             return;
             }
 
@@ -3282,10 +3308,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </button>
         )}
 
-        <div className={`flex flex-col h-full overflow-y-auto custom-scrollbar p-5 ${!isSettingsOpen && 'hidden'}`}>
+        <div className={`flex flex-col h-full p-5 ${!isSettingsOpen && 'hidden'}`}>
           
           {/* Header */}
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between mb-6 flex-shrink-0">
             <h2 className="font-bold text-lg">{t.settingsTitle}</h2>
             <button 
               onClick={() => setIsSettingsOpen(false)}
@@ -3296,7 +3322,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
 
           {/* Mode Selector */}
-          <div className="mb-6">
+          <div className="mb-6 flex-shrink-0">
             <label className="text-sm font-medium text-muted mb-2 block">{t.functionMode?.title || '功能模式'}</label>
             <div className="grid grid-cols-3 gap-2">
               <button
@@ -3336,7 +3362,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
 
           {/* Model Selection */}
-          <div className="space-y-3 mb-8">
+          <div className="space-y-3 mb-4 flex-shrink-0">
             <label className="text-sm font-medium text-muted">{t.selectModel}</label>
             <ModelSelect
               value={selectedModel}
@@ -3348,8 +3374,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             />
           </div>
 
-          {/* Parameters */}
-          <div className="space-y-6 mb-8 border-b border-border pb-8">
+          {/* Parameters - 可滚动区域 */}
+          <div className="flex-shrink-0 max-h-[45%] min-h-0 mb-4 border-b border-border pb-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+            <div className="space-y-6">
             <h3 className="font-semibold">{t.paramsTitle}</h3>
             
             {/* 对话模式参数 */}
@@ -4084,6 +4111,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 )}
               </>
             )}
+            </div>
           </div>
 
           {/* History */}
