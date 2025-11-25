@@ -60,7 +60,7 @@ const AnnouncementModal: React.FC<AnnouncementModalProps> = ({ autoCheck = true 
             </div>
             <div>
               <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                🎉 NebulaLab {ANNOUNCEMENT_VERSION} 发布
+                🎉 NebulaLab 新版本发布
               </h2>
               <p className="text-sm text-gray-500 dark:text-gray-400">全新升级，更强大的 AI 体验</p>
             </div>
