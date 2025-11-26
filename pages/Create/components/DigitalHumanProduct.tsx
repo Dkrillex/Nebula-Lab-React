@@ -10,7 +10,8 @@ import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
-
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
 interface DigitalHumanProductProps {
   t: any;
   handleFileUpload: (file: File, type: 'image') => Promise<any>; 
@@ -60,6 +61,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   // Store and navigation
   const productAvatarStore = useProductAvatarStore();
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
 
   // 使用 useRef 来跟踪是否已经初始化，避免路由变化时重复执行
   // 这些 ref 在 KeepAlive 恢复时不会被重置，确保状态保持
@@ -69,6 +71,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   
   // 初始化逻辑：只在真正的首次挂载时执行
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     // 只在首次挂载时执行 fetchCategories，避免路由变化时重复刷新数据
     if (!categoriesFetchedRef.current) {
       fetchCategories();
@@ -102,6 +107,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   });
 
   useEffect(() => {
+      if (!isAuthenticated) {
+        return;
+      }
      fetchAvatars();
   }, [selectedCategory]);
 
@@ -137,6 +145,10 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
 
   // 初始加载
   useEffect(() => {
+    // 检查登录状态
+    if (!isAuthenticated) {
+      return;
+    }
     if (avatars.length > 0) {
         cursorRef.current = 0;
         setDisplayedAvatars([]);
@@ -311,7 +323,17 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (!productImage) {
         showError(t?.rightPanel?.uploadProductImg || 'Please upload product image');
         return;
@@ -390,7 +412,17 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     }
   };
 
-  const handleTrySample = async () => {
+  const handleTrySample = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     try {
         setLoadingSample(true);
         setProductImage(null);
@@ -721,14 +753,14 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-6 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
               <div className="flex gap-4">
                   <button 
-                    onClick={handleTrySample}
+                    onClick={(e) => handleTrySample(e)}
                     disabled={loadingSample || generating}
                     className="flex-1 py-3 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-bold hover:bg-gray-200 dark:hover:bg-gray-600 transition flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loadingSample ? <Loader className="animate-spin" size={18} /> : (t?.rightPanel?.trySample || 'Try Sample')}
                   </button>
                   <button 
-                    onClick={handleGenerate} 
+                    onClick={(e) => handleGenerate(e)} 
                     disabled={generating || !productImage || (activeMode === 'highPrecision' && (!bgRemovedProductImage || productLocation.length === 0))} 
                     className="flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                   >

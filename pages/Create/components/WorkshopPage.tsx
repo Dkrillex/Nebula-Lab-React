@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { Sparkles, Image, Video, Music, Box } from 'lucide-react';
 import { getToolsData, Tool } from '../data';
 import { translations } from '../../../translations';
+import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 
 interface WorkshopPageProps {
   t: any;
@@ -10,6 +12,7 @@ interface WorkshopPageProps {
 
 const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuthStore();
   const [activeCategory, setActiveCategory] = useState<'all' | 'image' | 'video' | 'audio' | 'other'>('all');
 
   // 根据翻译对象推断语言
@@ -51,7 +54,17 @@ const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
   }, [tools, activeCategory]);
 
   // 打开工具
-  const openTool = (tool: Tool) => {
+  const openTool = (tool: Tool, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (tool.route) {
       // 如果路由是绝对路径（以 /create/ 开头），直接导航
       // 否则使用 query 参数方式（兼容旧逻辑）
@@ -109,7 +122,7 @@ const WorkshopPage: React.FC<WorkshopPageProps> = ({ t }) => {
           {filteredTools.map((tool) => (
             <div
               key={tool.key}
-              onClick={() => openTool(tool)}
+              onClick={(e) => openTool(tool, e)}
               className="group relative bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1 h-[240px] flex flex-col items-center justify-center"
             >
               {/* 工具图标 */}

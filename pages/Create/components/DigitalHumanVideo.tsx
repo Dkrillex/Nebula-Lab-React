@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 import VoiceModal from './VoiceModal';
 import CaptionModal from './CaptionModal';
 import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
@@ -42,7 +43,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   setErrorMessage
 }) => {
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   const [scriptMode, setScriptMode] = useState<'text' | 'audio'>('text');
   const [mode, setMode] = useState<'mode1' | 'mode2'>('mode1'); // mode1: Avatar 1, mode2: Avatar 2
   const [text, setText] = useState('');
@@ -165,7 +166,17 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
     return t.rightPanel.buttonTip?.default || '1 point = 30s or 400 chars';
   })();
 
-  const trySample = async () => {
+  const trySample = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     try {
       setIsSampleLoading(true);
       
@@ -218,7 +229,17 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     try {
       setGenerating(true);
       setTaskStatus('running');
@@ -471,7 +492,6 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                   uploadType="tv"
                   accept=".mp4,.mov,.webm"
                   maxSize={200}
-                  disabled={!user}
                   immediate={true}
                   className="min-h-[300px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer group"
                   showPreview={false}
@@ -491,17 +511,41 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
         </div>
         <div>
           <div className="flex gap-3">
-              <button onClick={() => onShowAvatarModal(true)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
+              <button onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isAuthenticated) {
+                  showAuthModal();
+                  return;
+                }
+                onShowAvatarModal(true);
+              }} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
                   {t.leftPanel.personalTemplate}
               </button>
-              <button onClick={() => onShowAvatarModal(false)} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
+              <button onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isAuthenticated) {
+                  showAuthModal();
+                  return;
+                }
+                onShowAvatarModal(false);
+              }} className="flex-1 py-3 rounded-lg border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition">
                   {t.leftPanel.publicTemplate}
               </button>
           </div>
           
           <div className="mt-4">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">{t.leftPanel.customUpload}</label>
-              <button onClick={() => navigate('/create/uploadCustomAvatar')} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition">
+              <button onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isAuthenticated) {
+                  showAuthModal();
+                  return;
+                }
+                navigate('/create/uploadCustomAvatar');
+              }} className="w-full py-3 rounded-xl border border-indigo-200 text-indigo-600 text-sm font-bold hover:bg-indigo-50 transition">
                   {t.leftPanel.customUpload}
               </button>
           </div>
@@ -624,7 +668,15 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                                 )}
                                 
                                 <button 
-                                    onClick={() => setShowVoiceModal(true)} 
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      if (!isAuthenticated) {
+                                        showAuthModal();
+                                        return;
+                                      }
+                                      setShowVoiceModal(true);
+                                    }} 
                                     className="voice-select-btn px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:border-indigo-500 transition-colors hover:bg-gray-50"
                                 >
                                     {selectedVoice ? (t.rightPanel.selectVoice?.replace('Select', 'Change') || 'Change Voice') : (t.rightPanel.selectVoice || 'Select Voice')}
@@ -651,7 +703,15 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                             <button onClick={() => setUploadedAudio(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50"><X size={14} className="text-gray-600" /></button>
                          </div>
                     ) : (
-                        <button onClick={() => audioInputRef.current?.click()} disabled={uploading} className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition disabled:opacity-50">
+                        <button onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          if (!isAuthenticated) {
+                            showAuthModal();
+                            return;
+                          }
+                          audioInputRef.current?.click();
+                        }} disabled={uploading} className="w-full py-3 rounded-xl border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-sm font-medium hover:border-indigo-500 hover:text-indigo-600 transition disabled:opacity-50">
                             {uploading ? '上传中...' : '点击上传音频文件'}
                         </button>
                     )}
@@ -676,7 +736,15 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                            </div>
                        )}
                        <button 
-                           onClick={() => setShowCaptionModal(true)} 
+                           onClick={(e) => {
+                             e.preventDefault();
+                             e.stopPropagation();
+                             if (!isAuthenticated) {
+                               showAuthModal();
+                               return;
+                             }
+                             setShowCaptionModal(true);
+                           }} 
                            className="caption-select-btn px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:border-indigo-500 transition-colors hover:bg-gray-50"
                        >
                            {selectedCaption ? (t.rightPanel.selectSubtitleStyle?.replace('Select', 'Change') || 'Change Style') : (t.rightPanel.selectSubtitleStyle || 'Select Style')}

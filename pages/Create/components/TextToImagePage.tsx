@@ -6,6 +6,7 @@ import AddMaterialModal from '../../../components/AddMaterialModal';
 import UploadComponent from '../../../components/UploadComponent';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
@@ -105,7 +106,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { getData, setData } = useVideoGenerationStore();
-  const { token } = useAuthStore();
+  const { token, isAuthenticated } = useAuthStore();
   const [mode, setMode] = useState<'text' | 'image'>('text');
   const [selectedRatio, setSelectedRatio] = useState('2048x2048');
   const [selectedSize, setSelectedSize] = useState('2048x2048');
@@ -154,9 +155,14 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     }
   }, [selectedRatio]);
 
-  const handlePolishText = async () => {
-    if (!token) {
-      toast.error('Please login first');
+  const handlePolishText = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
       return;
     }
     if (!prompt) return;
@@ -218,9 +224,14 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     setReferenceImage(null);
   };
 
-  const handleGenerate = async () => {
-    if (!token) {
-      toast.error('Please login first');
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
       return;
     }
     if (!prompt || isGenerating) return;
@@ -427,7 +438,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
             <div className="flex justify-between items-center mb-3">
               <h3 className="font-bold text-foreground">{t.inputLabel}</h3>
               <button 
-                onClick={handlePolishText}
+                onClick={(e) => handlePolishText(e)}
                 disabled={isPolishing || !prompt || isGenerating}
                 className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
               >
@@ -474,7 +485,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
 
           <div className="mt-auto space-y-3">
             <button 
-              onClick={handleGenerate}
+              onClick={(e) => handleGenerate(e)}
               disabled={isGenerating || !prompt || (mode === 'image' && !referenceImage)}
               className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

@@ -8,6 +8,7 @@ import { useAuthStore } from '../stores/authStore';
 import toast from 'react-hot-toast';
 import React from 'react';
 import { translations } from '../translations';
+import { showAuthModal } from './authModalManager';
 
 // 全局加密开关（可以通过环境变量配置，默认启用）
 // 如果环境变量明确设置为 'false' 则禁用，否则启用
@@ -380,6 +381,8 @@ function createRequestClient(
     try {
       // Pre-request validation
       if (needsAuth && !token) {
+        // 显示登录弹窗
+        showAuthModal();
         const noTokenError = new Error('用户未登录, 需要登录注册');
         (noTokenError as any).code = 'NO_TOKEN';
         (noTokenError as any)._skipErrorHint = true;

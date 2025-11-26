@@ -13,6 +13,8 @@ import MaskCanvas, { MaskCanvasRef, ToolType, TextOptions } from './MaskCanvas';
 import UploadComponent from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
+import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
 
 interface StyleTransferPageProps {
@@ -78,6 +80,7 @@ interface GeneratedImage {
 const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const navigate = useNavigate();
   const { setData } = useVideoGenerationStore();
+  const { isAuthenticated } = useAuthStore();
   const [selectedMode, setSelectedMode] = useState<'standard' | 'creative' | 'clothing'>('standard');
   const [clothingType, setClothingType] = useState<'top' | 'bottom' | 'full'>('top');
   const [prompt, setPrompt] = useState('');
@@ -338,7 +341,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   };
 
   // 文本润色
-  const handlePolishText = async () => {
+  const handlePolishText = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (!prompt.trim()) return;
     try {
       // requestClient已经解包了最外层，直接返回data部分（字符串）
@@ -360,7 +373,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   };
 
   // 试用示例
-  const handleTryExample = async () => {
+  const handleTryExample = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     try {
       if (selectedMode === 'standard') {
         // 标准模式：使用 product.webp 和 template.png
@@ -510,7 +533,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   };
 
   // 提交生成任务
-  const handleGenerate = async () => {
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (isGenerating) return;
     
     setIsGenerating(true);
@@ -1328,13 +1361,13 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">{t.creative.promptTitle}</h3>
                             <div className="flex items-center gap-2">
                                 <button
-                                  onClick={handleTryExample}
+                                  onClick={(e) => handleTryExample(e)}
                                   className="px-3 py-1.5 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors"
                                 >
                                   试用示例
                                 </button>
                                 <button 
-                                   onClick={handlePolishText}
+                                   onClick={(e) => handlePolishText(e)}
                                    disabled={!prompt.trim()}
                                    className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
                                  >
@@ -1432,7 +1465,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
                 {/* Generate Button */}
                 <button 
-                  onClick={handleGenerate}
+                  onClick={(e) => handleGenerate(e)}
                   disabled={isGenerating || !productImage || !prompt.trim()}
                   className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -1726,7 +1759,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                {selectedMode === 'standard' && !productImage && (
                  <div className="mt-auto pt-4 flex justify-center">
                     <button
-                      onClick={handleTryExample}
+                      onClick={(e) => handleTryExample(e)}
                       className="px-6 py-2 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors w-full"
                     >
                       试用示例
@@ -1849,7 +1882,15 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 {selectedMode === 'standard' && (
                   <div className="mt-auto pt-4 space-y-2">
                     <button 
-                      onClick={() => setShowTemplateModal(true)}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isAuthenticated) {
+                          showAuthModal();
+                          return;
+                        }
+                        setShowTemplateModal(true);
+                      }}
                       disabled={isGenerating}
                       className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -1865,7 +1906,13 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                     )}
 
                     <button 
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isAuthenticated) {
+                          showAuthModal();
+                          return;
+                        }
                         setTemplateImage(null);
                         setSelectedTemplate(null);
                         if (templateInputRef.current) templateInputRef.current.value = '';
@@ -1879,7 +1926,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 )}
 
                 <button 
-                  onClick={handleGenerate}
+                  onClick={(e) => handleGenerate(e)}
                   disabled={isGenerating || 
                     (selectedMode === 'clothing' ? (garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)) : (!productImage || (!templateImage && !selectedTemplate)))}
                   className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"

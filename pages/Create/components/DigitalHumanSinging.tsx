@@ -1,9 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, Music, Image as ImageIcon, Loader, X, Play, CheckCircle, Trash2, Plus, Video, Download, Check } from 'lucide-react';
-import { avatarService } from '@/services/avatarService';
+import { Music, Image as ImageIcon, Loader, Play, CheckCircle, Trash2, Plus, Download, Check } from 'lucide-react';
+import { avatarService, UploadedFile } from '@/services/avatarService';
 import { uploadService } from '@/services/uploadService';
 import AddMaterialModal from '@/components/AddMaterialModal';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -51,20 +54,13 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   // History
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
 
-  // Drag and Drop states
-  const [isImageDragOver, setIsImageDragOver] = useState(false);
-  const [isAudioDragOver, setIsAudioDragOver] = useState(false);
-
   // Add Material Modal
   const [showMaterialModal, setShowMaterialModal] = useState(false);
 
-  // Upload Loading States
-  const [isImageUploading, setIsImageUploading] = useState(false);
-  const [isAudioUploading, setIsAudioUploading] = useState(false);
-
-  const imageInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  const imageUploadRef = useRef<UploadComponentRef>(null);
+  const audioUploadRef = useRef<UploadComponentRef>(null);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const { isAuthenticated } = useAuthStore();
 
   // Cleanup timer on unmount
   useEffect(() => {
@@ -73,68 +69,10 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     };
   }, []);
 
-  const onUpload = async (file: File, type: 'image' | 'audio') => {
-    if (file) {
-      try {
-        if (type === 'image') setIsImageUploading(true);
-        else setIsAudioUploading(true);
-
-        const uploaded = await handleFileUpload(file, type);
-        // 适配接口返回的 fileUrl 用于回显和提交
-        const fileData = {
-            ...uploaded,
-            url: uploaded.fileUrl || uploaded.url
-        };
-
-        if (type === 'image') setImageFile(fileData);
-        else setAudioFile(fileData);
-      } catch (error) {
-        // Handled by parent
-      } finally {
-        if (type === 'image') setIsImageUploading(false);
-        else setIsAudioUploading(false);
-      }
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'image' | 'audio') => {
-    const file = e.target.files?.[0];
-    if (file) onUpload(file, type);
-  };
-
-  // Drag and Drop Handlers
-  const handleDragOver = (e: React.DragEvent, type: 'image' | 'audio') => {
-    e.preventDefault();
-    if (type === 'image') setIsImageDragOver(true);
-    else setIsAudioDragOver(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent, type: 'image' | 'audio') => {
-    e.preventDefault();
-    if (type === 'image') setIsImageDragOver(false);
-    else setIsAudioDragOver(false);
-  };
-
-  const handleDrop = (e: React.DragEvent, type: 'image' | 'audio') => {
-    e.preventDefault();
-    if (type === 'image') setIsImageDragOver(false);
-    else setIsAudioDragOver(false);
-
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      if (type === 'image' && !file.type.startsWith('image/')) {
-        toast.error('请上传图片文件');
-        return;
-      }
-      if (type === 'audio' && !file.type.startsWith('audio/')) {
-        toast.error('请上传音频文件');
-        return;
-      }
-      onUpload(file, type);
-    }
-  };
 
   const clearAll = () => {
+    imageUploadRef.current?.clear();
+    audioUploadRef.current?.clear();
     setImageFile(null);
     setAudioFile(null);
     setResultVideoUrl(null);
@@ -147,7 +85,17 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     }
   };
 
-  const handleGenerate = async () => {
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (!imageFile || !audioFile) return;
 
     try {
@@ -288,101 +236,63 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
            {/* Image Upload */}
            <div className="space-y-3">
                <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传图片</h3>
-               <div 
-                   onClick={() => imageInputRef.current?.click()}
-                   onDragOver={(e) => handleDragOver(e, 'image')}
-                   onDragLeave={(e) => handleDragLeave(e, 'image')}
-                   onDrop={(e) => handleDrop(e, 'image')}
-                   className={`max-h-[500px] w-[100%] relative aspect-[9/16] border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
-                     ${imageFile 
-                        ? 'border-indigo-500 bg-gray-50 dark:bg-gray-900' 
-                        : isImageDragOver 
-                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02] shadow-md' 
-                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                     }
-                   `}
+               <UploadComponent
+                   ref={imageUploadRef}
+                   accept="image/*"
+                   onUploadComplete={(uploadedFile: UploadedFile) => {
+                       setImageFile({
+                           fileId: uploadedFile.fileId,
+                           url: uploadedFile.fileUrl
+                       });
+                   }}
+                   immediate={true}
+                   initialUrl={imageFile?.url || ''}
+                   uploadType="oss"
+                   className="max-h-[500px] w-[100%] aspect-[9/16]"
+                   showPreview={true}
+                   onClear={() => setImageFile(null)}
                >
-                   <input ref={imageInputRef} type="file" accept="image/*" onChange={(e) => handleFileChange(e, 'image')} className="hidden" />
-                   {isImageUploading ? (
-                       <div className="flex flex-col items-center justify-center text-gray-500">
-                           <Loader className="animate-spin mb-2 text-indigo-600" size={24} />
-                           <p className="text-sm font-medium">上传中...</p>
+                   <div className="text-center text-gray-500 p-6">
+                       <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
+                          <ImageIcon size={32} className="text-indigo-600 dark:text-indigo-400" />
                        </div>
-                   ) : imageFile ? (
-                       <div className="relative w-full h-full p-2 group">
-                           <img src={imageFile.url} className="w-full h-full object-contain rounded-lg" alt="Uploaded" />
-                           <button 
-                              onClick={(e) => { e.stopPropagation(); setImageFile(null); }} 
-                              className="absolute top-3 right-3 bg-red-500 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600 shadow-sm"
-                              title="删除图片"
-                           >
-                              <X size={16} />
-                           </button>
-                       </div>
-                   ) : (
-                       <div className="text-center text-gray-500 p-6">
-                           <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce">
-                              <ImageIcon size={32} className="text-indigo-600 dark:text-indigo-400" />
-                           </div>
-                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">点击或拖拽上传图片</p>
-                           <p className="text-xs text-gray-400">支持 PNG, JPG, WEBP • 建议正脸高清</p>
-                       </div>
-                   )}
-               </div>
+                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">点击或拖拽上传图片</p>
+                       <p className="text-xs text-gray-400">支持 PNG, JPG, WEBP • 建议正脸高清</p>
+                   </div>
+               </UploadComponent>
            </div>
 
            {/* Audio Upload */}
            <div className="space-y-3">
                <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传音频</h3>
-               <div 
-                   onClick={() => audioInputRef.current?.click()}
-                   onDragOver={(e) => handleDragOver(e, 'audio')}
-                   onDragLeave={(e) => handleDragLeave(e, 'audio')}
-                   onDrop={(e) => handleDrop(e, 'audio')}
-                   className={`relative h-32 border-2 border-dashed rounded-xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300
-                     ${audioFile 
-                        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
-                        : isAudioDragOver
-                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 scale-[1.02] shadow-md'
-                            : 'border-gray-300 dark:border-gray-600 hover:border-indigo-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                     }
-                   `}
+               <UploadComponent
+                   ref={audioUploadRef}
+                   accept="audio/*"
+                   onUploadComplete={(uploadedFile: UploadedFile) => {
+                       setAudioFile({
+                           fileId: uploadedFile.fileId,
+                           url: uploadedFile.fileUrl
+                       });
+                   }}
+                   immediate={true}
+                   initialUrl={audioFile?.url || ''}
+                   uploadType="oss"
+                   className="h-32"
+                   showPreview={true}
+                   onClear={() => setAudioFile(null)}
                >
-                   <input ref={audioInputRef} type="file" accept="audio/*" onChange={(e) => handleFileChange(e, 'audio')} className="hidden" />
-                   {isAudioUploading ? (
-                       <div className="flex flex-col items-center justify-center text-gray-500">
-                           <Loader className="animate-spin mb-2 text-indigo-600" size={24} />
-                           <p className="text-sm font-medium">上传中...</p>
-                       </div>
-                   ) : audioFile ? (
-                       <div className="w-full px-4 flex flex-col items-center">
-                           <div className="flex items-center justify-center gap-2 mb-2 text-indigo-600 dark:text-indigo-400">
-                               <Music size={24} className="animate-pulse" />
-                               <span className="font-medium truncate max-w-[200px] text-sm">{audioFile.fileId.split('/').pop() || 'Audio File'}</span>
-                           </div>
-                           <audio src={audioFile.url} controls className="w-full h-8 rounded-lg shadow-sm" />
-                           <button 
-                              onClick={(e) => { e.stopPropagation(); setAudioFile(null); }} 
-                              className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full hover:bg-red-600 shadow-sm"
-                              title="删除音频"
-                           >
-                              <X size={14} />
-                           </button>
-                       </div>
-                   ) : (
-                       <div className="text-center text-gray-500">
-                           <Music size={28} className="mx-auto mb-2 text-indigo-500/70" />
-                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">点击或拖拽上传音频</p>
-                           <p className="text-xs mt-1 text-gray-400">支持 MP3, WAV, M4A</p>
-                       </div>
-                   )}
-               </div>
+                   <div className="text-center text-gray-500">
+                       <Music size={28} className="mx-auto mb-2 text-indigo-500/70" />
+                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300">点击或拖拽上传音频</p>
+                       <p className="text-xs mt-1 text-gray-400">支持 MP3, WAV, M4A</p>
+                   </div>
+               </UploadComponent>
            </div>
 
            {/* Actions */}
            <div className="flex flex-col gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
                <button 
-                   onClick={handleGenerate} 
+                   onClick={(e) => handleGenerate(e)} 
                    disabled={generating || !imageFile || !audioFile}
                    className={`w-full py-3.5 rounded-xl font-bold text-white shadow-lg flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0
                      ${generating || !imageFile || !audioFile 

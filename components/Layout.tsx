@@ -3,13 +3,14 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
-import AuthModal from './AuthModal';
+import GlobalAuthModal from './GlobalAuthModal';
 import NotificationModal from './NotificationModal';
 import ConfirmDialog from './ConfirmDialog';
 import { Language, TabItem, View } from '../types';
 import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
 import { TOOLS_DATA } from '../pages/Create/data';
+import { showAuthModal } from '../lib/authModalManager';
 
 import MobileSidebar from './MobileSidebar';
 
@@ -18,7 +19,6 @@ import { AliveScope, useAliveController } from './KeepAlive';
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [lang, setLang] = useState<Language>('zh');
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
   
@@ -285,7 +285,7 @@ const Layout: React.FC = () => {
           toggleTheme={() => setIsDark(!isDark)} 
           lang={lang} 
           setLang={setLang} 
-          onSignIn={() => setIsAuthModalOpen(true)}
+          onSignIn={() => showAuthModal(() => fetchUserInfo())}
           onOpenNotification={() => setIsNotificationOpen(true)}
           onNavClick={handleNavClick}
           currentView={currentView}
@@ -300,7 +300,7 @@ const Layout: React.FC = () => {
         />
         
         <main className="flex-1">
-          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => setIsAuthModalOpen(true) }} />
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal(() => fetchUserInfo()) }} />
         </main>
         
         <MobileSidebar 
@@ -312,32 +312,13 @@ const Layout: React.FC = () => {
           user={useAuthStore.getState().user}
           onSignIn={() => {
             setIsMobileMenuOpen(false);
-            setIsAuthModalOpen(true);
+            showAuthModal(() => fetchUserInfo());
           }}
           logout={() => {
              useAuthStore.getState().logout();
              setIsMobileMenuOpen(false);
           }}
         />
-
-        <AuthModal 
-          isOpen={isAuthModalOpen}  
-          onClose={() => setIsAuthModalOpen(false)} 
-          onLoginSuccess={() => fetchUserInfo()}
-          lang={lang}
-          t={safeT.auth}
-        />
-
-      <AuthModal 
-        isOpen={isAuthModalOpen}  
-        onClose={() => setIsAuthModalOpen(false)} 
-        onLoginSuccess={() => {
-          // fetchUserInfo will be called automatically by useEffect when isAuthenticated changes
-          // No need to call it here to avoid duplicate calls
-        }}
-        lang={lang}
-        t={t.auth}
-      />
 
       {/* 首次登录提示对话框 - 在 Layout 层级显示，确保即使 AuthModal 关闭也能显示 */}
       <ConfirmDialog
@@ -360,6 +341,9 @@ const Layout: React.FC = () => {
         isOpen={isNotificationOpen} 
         onClose={() => setIsNotificationOpen(false)} 
       />
+
+      {/* 全局登录弹窗 - 用于 request.tsx 和其他地方通过全局方法调用 */}
+      <GlobalAuthModal />
       </div>
     </AliveScope>
   );

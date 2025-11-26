@@ -22,6 +22,7 @@ import {
 import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
 import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 import UploadComponent from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
@@ -177,7 +178,7 @@ const selectLanguageList = [
 ];
 
 const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
-  const { user } = useAuthStore();
+  const { user, isAuthenticated } = useAuthStore();
   
   // Page Mode: 'clone' | 'synthesis'
   const [pageMode, setPageMode] = useState<'clone' | 'synthesis'>('clone');
@@ -357,6 +358,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   };
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     if (pageMode === 'synthesis') {
       getVoiceList();
     }
@@ -373,6 +377,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   // Helper to trigger list refresh when filters change
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     if (pageMode === 'synthesis') {
        // Reset to page 1 on filter change
        // Note: getVoiceList handles the current state values
@@ -438,7 +445,17 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   // --- Recording ---
 
-  const startRecording = async () => {
+  const startRecording = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     try {
       setRecordStatus(t.micPermission);
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -720,7 +737,17 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (!canSubmit()) {
       toast.error(t.msgConfirm);
       return;
@@ -960,7 +987,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                                
                        <div className="flex gap-4 w-full">
                                    {!isRecording ? (
-                               <button onClick={startRecording} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm">
+                               <button onClick={(e) => startRecording(e)} className="flex-1 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 text-sm">
                                    <Mic size={16} /> {t.startRecording}
                                        </button>
                                    ) : (
@@ -1150,7 +1177,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
               {t.clearReset}
             </button>
             <button 
-              onClick={handleSubmit}
+              onClick={(e) => handleSubmit(e)}
               disabled={!canSubmit() || isPolling || submitLoading}
               className="flex-1 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >

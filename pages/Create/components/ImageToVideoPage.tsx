@@ -4,6 +4,8 @@ import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Plus, Settings2,
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
 import { textToImageService } from '../../../services/textToImageService';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
+import { useAuthStore } from '../../../stores/authStore';
+import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { AdsAssetsVO } from '../../../services/assetsService';
@@ -101,6 +103,7 @@ interface UploadedImage {
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const { getData } = useVideoGenerationStore();
+  const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
   
   const qualityOptions = [
@@ -308,7 +311,17 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   //   setAdvancedImages(prev => prev.filter((_, i) => i !== index));
   // };
 
-  const handleTextPolish = async () => {
+  const handleTextPolish = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     const textToPolish = prompt;
     if (!textToPolish.trim()) return;
     
@@ -413,7 +426,17 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   };
 
   // --- Submit ---
-  const handleGenerate = async () => {
+  const handleGenerate = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
     if (isGenerating) return;
     if (!prompt.trim()) {
       toast.error('Please enter a prompt');
@@ -665,7 +688,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
              <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-bold text-gray-900 dark:text-white">{t.prompt.label}</h3>
                 <button 
-                   onClick={handleTextPolish} 
+                   onClick={(e) => handleTextPolish(e)} 
                    disabled={isPolishing || !prompt || isGenerating}
                    className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
                 >
@@ -820,8 +843,12 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             )}
             {/* Generate Button */}
             <button 
-              onClick={handleGenerate}
-              disabled={isGenerating}
+              onClick={(e) => handleGenerate(e)}
+              disabled={
+                isGenerating || 
+                (activeTab === 'traditional' && (!startImage || !prompt.trim())) ||
+                (activeTab === 'startEnd' && (!startImage || !endImage))
+              }
               className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                {isGenerating ? (

@@ -10,9 +10,9 @@ import toast from 'react-hot-toast';
 import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
 import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
 import { useAuthStore } from '../../stores/authStore';
-import AuthModal from '../../components/AuthModal';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
+import { showAuthModal } from '../../lib/authModalManager';
 
 const CREATE_IMAGE_PAYLOAD_KEY = 'createImagePayload';
 const MAX_CREATE_UPLOAD_IMAGES = 4;
@@ -32,7 +32,6 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuthStore();
   const { setData } = useVideoGenerationStore();
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
@@ -333,7 +332,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     e.stopPropagation();
     
     if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
+      showAuthModal();
       return;
     }
 
@@ -431,8 +430,10 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     };
 
     if (!isAuthenticated) {
-      setIsAuthModalOpen(true);
       // 登录成功后执行跳转
+      showAuthModal(() => {
+        goToUrl();
+      });
       return;
     }
 
@@ -528,7 +529,12 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
     // 检查登录状态（除非跳过检查，比如登录成功后）
     if (!skipAuthCheck && !isAuthenticated) {
-      setIsAuthModalOpen(true);
+      showAuthModal(() => {
+        // 登录成功后自动发送（跳过登录检查）
+        if (inputValue.trim()) {
+          handleSend(true);
+        }
+      });
       return;
     }
 
@@ -786,21 +792,6 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
           />
         )}
 
-        {/* 登录弹窗 */}
-        {t.authModal && (
-          <AuthModal
-            isOpen={isAuthModalOpen}
-            onClose={() => setIsAuthModalOpen(false)}
-            onLoginSuccess={() => {
-              setIsAuthModalOpen(false);
-              // 登录成功后自动发送（跳过登录检查）
-              if (inputValue.trim()) {
-                handleSend(true);
-              }
-            }}
-            t={t.authModal}
-          />
-        )}
     </div>
   );
 };

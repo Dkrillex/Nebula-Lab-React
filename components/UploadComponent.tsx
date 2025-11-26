@@ -3,6 +3,8 @@ import { Upload, Loader, X, File as FileIcon } from 'lucide-react';
 import { avatarService, UploadedFile } from '../services/avatarService';
 import { uploadService } from '../services/uploadService';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../stores/authStore';
+import { showAuthModal } from '../lib/authModalManager';
 
 export interface UploadComponentRef {
   triggerUpload: () => Promise<void>;
@@ -64,6 +66,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   const [useIframe, setUseIframe] = useState(false); // 是否使用 iframe（遇到跨域问题时）
   const [isDragging, setIsDragging] = useState(false); // 拖拽状态
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { isAuthenticated } = useAuthStore();
 
   // Update preview URL when initialUrl changes
   React.useEffect(() => {
@@ -153,6 +156,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   // 处理文件选择的通用函数
   const processFile = async (selectedFile: File) => {
     if (!selectedFile) return;
+
+    // 检查登录状态
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
 
     // Format Validation
     if (!validateFileType(selectedFile)) {
@@ -298,6 +307,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // 检查登录状态
+    if (!isAuthenticated) {
+      return;
+    }
+    
     if (!disabled && !previewUrl) {
       setIsDragging(true);
     }
@@ -313,6 +328,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     e.preventDefault();
     e.stopPropagation();
     setIsDragging(false);
+
+    // 检查登录状态
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
 
     if (disabled || previewUrl) return;
 
@@ -351,7 +372,18 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   return (
     <div 
         className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'} ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500 ring-offset-2' : 'border-gray-300 dark:border-gray-600'} ${className}`}
-        onClick={() => !disabled && !previewUrl && fileInputRef.current?.click()}
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!disabled && !previewUrl) {
+            // 检查登录状态
+            if (!isAuthenticated) {
+              showAuthModal();
+              return;
+            }
+            fileInputRef.current?.click();
+          }
+        }}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
