@@ -66,6 +66,11 @@ export const RouteWrapper: React.FC<RouteWrapperProps> = ({
     return <div className="p-4 text-red-500">Error: Component failed to load</div>;
   }
 
+  // 调试信息
+  if (process.env.NODE_ENV === 'development') {
+    console.log('RouteWrapper - 渲染组件, translationKey:', translationKey, 'Component:', Component.name || 'Unknown', 'props.t:', !!props.t);
+  }
+
   return <Component {...props} />;
 };
 

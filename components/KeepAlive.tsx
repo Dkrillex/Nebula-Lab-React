@@ -56,13 +56,24 @@ export const KeepAliveBoundary: React.FC<KeepAliveBoundaryProps> = ({
   
   // 为 useTool 和 product-replace 路由根据查询参数生成不同的 cacheKey
   // 使用 searchParams.toString() 作为依赖项，确保查询参数变化时能正确更新
-  const searchParamsString = searchParams.toString();
+  // 但是排除 'expand' 参数，因为它只用于内部逻辑，不应该影响缓存 key
+  const filteredSearchParams = useMemo(() => {
+    const filtered = new URLSearchParams();
+    searchParams.forEach((value, key) => {
+      if (key !== 'expand') {
+        filtered.set(key, value);
+      }
+    });
+    return filtered;
+  }, [searchParams]);
   
-  // 生成包含所有查询参数的完整 key
+  const searchParamsString = filteredSearchParams.toString();
+  
+  // 生成包含所有查询参数的完整 key（排除 expand 参数）
   const generateKeyWithParams = (pathname: string): string => {
     if (searchParamsString) {
       // 对查询参数进行排序，确保相同参数的不同顺序生成相同的 key
-      const sortedParams = Array.from(searchParams.entries())
+      const sortedParams = Array.from(filteredSearchParams.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, value]) => `${key}=${value}`)
         .join('&');

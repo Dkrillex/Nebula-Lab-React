@@ -73,6 +73,22 @@ const Header: React.FC<HeaderProps> = ({
       return;
     }
     
+    // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，处理一级菜单点击
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+      // 点击"模型中心"时，导航到 /，显示模型中心首页，并使用 URL 参数来触发展开菜单
+      if (href === '/models') {
+        navigate('/?expand=modelCenter');
+        setShowUserMenu(false);
+        return;
+      }
+      // 点击"创作中心"时，使用 URL 参数来触发展开菜单
+      if (href === '/create') {
+        navigate('/create?expand=creationCenter');
+        setShowUserMenu(false);
+        return;
+      }
+    }
+    
     onNavClick(href);
     setShowUserMenu(false);
   };
@@ -83,43 +99,49 @@ const Header: React.FC<HeaderProps> = ({
   // Determine active menu item based on URL (same logic as Sidebar)
   const getTabLabel = (tab: TabItem) => {
     if (!sideMenuMap) return tab.view;
+    // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，不应该显示 'home' tab
+    if (tab.view === 'home' && CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+      return sideMenuMap.modelCenter;
+    }
     if (tab.view === 'home') return sideMenuMap.home;
     if (tab.view === 'create') {
-      if (tab.activeTool) {
-        // 首先尝试从 toolsData 中获取 title（根据当前语言）
-        const tool = toolsData.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
-        if (tool) {
-          let title = tool.title;
-          // 对于 product-replace，如果有 taskId，在标题后添加 taskId 的简短标识
-          if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
-            // 显示 taskId 的后 6 位作为标识
-            const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
-            title = `${title}`;
-          }
-          return title;
-        }
-        
-        // 如果找不到，尝试从翻译映射中获取
-        // 将 aiFaceSwap 映射到 faceSwap 的翻译，tts 映射到 ttsTool 的翻译，3dModel 映射到 glbViewer 的翻译
-        let toolKey = tab.activeTool;
-        if (tab.activeTool === 'aiFaceSwap') {
-          toolKey = 'faceSwap';
-        } else if (tab.activeTool === 'tts') {
-          toolKey = 'ttsTool';
-        } else if (tab.activeTool === '3dModel') {
-          toolKey = 'glbViewer';
-        } else if (tab.activeTool === 'product-replace') {
-          toolKey = 'productReplace';
-        }
-        let label = sideMenuMap[toolKey] || tab.activeTool;
-        // 对于 product-replace，如果有 taskId，在标签后添加 taskId 的简短标识
-        if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
-          const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
-          label = `${label}`;
-        }
-        return label;
+      // 当 view === 'create' 且没有 activeTool 时，不显示 tab（不显示"创作中心"）
+      if (!tab.activeTool) {
+        return ''; // 返回空字符串，这样这个 tab 就不会显示
       }
-      return sideMenuMap.creationCenter;
+      // 有 activeTool 时显示工具名称
+      // 首先尝试从 toolsData 中获取 title（根据当前语言）
+      const tool = toolsData.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
+      if (tool) {
+        let title = tool.title;
+        // 对于 product-replace，如果有 taskId，在标题后添加 taskId 的简短标识
+        if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
+          // 显示 taskId 的后 6 位作为标识
+          const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
+          title = `${title}`;
+        }
+        return title;
+      }
+      
+      // 如果找不到，尝试从翻译映射中获取
+      // 将 aiFaceSwap 映射到 faceSwap 的翻译，tts 映射到 ttsTool 的翻译，3dModel 映射到 glbViewer 的翻译
+      let toolKey = tab.activeTool;
+      if (tab.activeTool === 'aiFaceSwap') {
+        toolKey = 'faceSwap';
+      } else if (tab.activeTool === 'tts') {
+        toolKey = 'ttsTool';
+      } else if (tab.activeTool === '3dModel') {
+        toolKey = 'glbViewer';
+      } else if (tab.activeTool === 'product-replace') {
+        toolKey = 'productReplace';
+      }
+      let label = sideMenuMap[toolKey] || tab.activeTool;
+      // 对于 product-replace，如果有 taskId，在标签后添加 taskId 的简短标识
+      if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
+        const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
+        label = `${label}`;
+      }
+      return label;
     }
     if (tab.view === 'models') return sideMenuMap.modelSquare;
     if (tab.view === 'chat') return sideMenuMap.aiExperience;
@@ -172,7 +194,10 @@ const Header: React.FC<HeaderProps> = ({
 
   // Filter nav items based on CURRENT_SYSTEM
   const filteredNav = t.nav.filter(item => {
-    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) return true;
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+      // BOTH 模式时，显示所有三个导航项：模型中心、创作中心、个人中心
+      return true;
+    }
     if (item.href === '/profile') return true; // Always show profile
     
     if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) {
@@ -236,7 +261,15 @@ const Header: React.FC<HeaderProps> = ({
               ref={tabsContainerRef}
               className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             >
-            {visitedViews && visitedViews.map((tab, index) => {
+            {visitedViews && visitedViews
+              // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，过滤掉 'home' view
+              .filter(tab => !(CURRENT_SYSTEM === SYSTEM_TYPE.BOTH && tab.view === 'home'))
+              // 过滤掉标签为空的 tab（例如：create 视图且没有 activeTool）
+              .filter(tab => {
+                const label = getTabLabel(tab);
+                return label && label.trim() !== '';
+              })
+              .map((tab, index) => {
               // 动态获取当前 URL 的所有查询参数（排除 'tool'）
               const currentSearchParams: Record<string, string> = {};
               searchParams.forEach((value, key) => {

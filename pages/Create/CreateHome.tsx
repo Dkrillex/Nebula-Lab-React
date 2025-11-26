@@ -26,6 +26,11 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   // 2. 其次尝试从 context 获取 (需要手动定位到 createPage)
   // 3. 最后使用默认语言包
   const t = propT || contextT?.createPage || translations['zh'].createPage || {};
+  
+  // 调试信息
+  if (process.env.NODE_ENV === 'development') {
+    console.log('CreateHome - 组件渲染, t:', !!t, 'propT:', !!propT, 'contextT:', !!contextT);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [searchParams] = useSearchParams();

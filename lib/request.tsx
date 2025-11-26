@@ -65,6 +65,9 @@ export class ApiError extends Error {
 // Flags for state management
 let isLogoutProcessing = false;
 
+// WeakMap to track manually cancelled signals
+const manualCancelSignals = new WeakMap<AbortSignal, boolean>();
+
 /**
  * Show success message based on mode
  */

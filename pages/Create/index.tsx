@@ -1,10 +1,11 @@
 import React, { useEffect } from 'react';
-import { Outlet, useSearchParams, useNavigate } from 'react-router-dom';
+import { Outlet, useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { useAppOutletContext } from '../../router/context';
 
 const CreateLayout: React.FC = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
   
   // 优先使用 useAppOutletContext 以支持 KeepAlive 上下文
   // 移除所有人工延迟和加载状态，确保组件同步渲染，通过空值检查保证鲁棒性
@@ -14,6 +15,10 @@ const CreateLayout: React.FC = () => {
   // 这部分逻辑主要用于处理外部链接或旧版收藏夹进入的情况
   useEffect(() => {
     const tool = searchParams.get('tool');
+    // 调试信息
+    if (process.env.NODE_ENV === 'development') {
+      console.log('CreateLayout - path:', location.pathname, 'tool:', tool);
+    }
     if (tool && tool !== 'home') {
        const map: Record<string, string> = {
          'textToImage': 'textToImage',

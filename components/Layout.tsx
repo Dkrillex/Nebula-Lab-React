@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import Header from './Header';
 import Footer from './Footer';
@@ -15,12 +15,23 @@ import { showAuthModal } from '../lib/authModalManager';
 import MobileSidebar from './MobileSidebar';
 
 import { AliveScope, useAliveController } from './KeepAlive';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   const [lang, setLang] = useState<Language>('zh');
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
-  const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
+  
+  // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，不初始化任何 tab（初始状态不选中任何）
+  const getInitialVisitedViews = (): TabItem[] => {
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+      // BOTH 模式时，初始状态不添加任何 tab
+      return [];
+    }
+    return [{ view: 'home' }];
+  };
+  
+  const [visitedViews, setVisitedViews] = useState<TabItem[]>(getInitialVisitedViews());
   
   const location = useLocation();
   const navigate = useNavigate();
@@ -47,6 +58,12 @@ const Layout: React.FC = () => {
     }
   }, [isAuthenticated, user, loading, fetchUserInfo]);
 
+  // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 且访问根路径时，自动导航到创作中心首页
+  // 只在首次加载时执行，避免循环导航
+  // 但是如果有 expand 参数，说明是用户点击了一级菜单，不应该重定向
+  // 注意：重定向逻辑已移至 router/routes/core.tsx 中，使用 Navigate 组件处理
+  // 这样可以避免 React Router 和 KeepAlive 的冲突
+
   const t = translations[lang];
 
   // Helper to map path to View type and Tool
@@ -59,7 +76,16 @@ const Layout: React.FC = () => {
     const stateToolKey = (location.state as any)?.toolKey;
     
     // Map URL path to View type
+    // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 且路径为 '/' 时，返回 'models' view（模型中心首页）
     let view: View = 'home';
+    if (path === 'home' || path === '') {
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+        // BOTH 模式时，路径 '/' 对应模型中心首页
+        view = 'models';
+      } else {
+        view = 'home';
+      }
+    }
     let tool = params.get('tool') || undefined;
 
     // Handle new route structure for create
@@ -89,10 +115,10 @@ const Layout: React.FC = () => {
     else if (path === 'assets') view = 'assets';
     else if (path === 'profile') view = 'profile';
 
-    // 动态提取所有查询参数（排除 'tool'，因为它已经单独处理）
+    // 动态提取所有查询参数（排除 'tool' 和 'expand'，因为它们已经单独处理或用于内部逻辑）
     const searchParams: Record<string, string> = {};
     params.forEach((value, key) => {
-      if (key !== 'tool') {
+      if (key !== 'tool' && key !== 'expand') {
         searchParams[key] = value;
       }
     });
@@ -111,7 +137,24 @@ const Layout: React.FC = () => {
     return tool?.title;
   };
 
-  const { view: currentView, tool: activeTool, searchParams: currentSearchParams } = getCurrentViewAndTool();
+  // 使用 useMemo 缓存 getCurrentViewAndTool 的结果，避免每次渲染都创建新的对象引用
+  // 使用 location.pathname 和 location.search 作为依赖项，确保只在路径或查询参数改变时重新计算
+  const viewAndTool = useMemo(() => {
+    const result = getCurrentViewAndTool();
+    // 调试信息
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Layout - getCurrentViewAndTool - path:', location.pathname, 'result:', result);
+    }
+    return result;
+  }, [location.pathname, location.search]);
+  
+  const { view: currentView, tool: activeTool, searchParams: currentSearchParams } = viewAndTool;
+  
+  // 序列化 searchParams 用于依赖项比较，避免对象引用变化导致的无限循环
+  const searchParamsKey = useMemo(() => {
+    if (!currentSearchParams) return '';
+    return JSON.stringify(Object.keys(currentSearchParams).sort().map(key => `${key}=${currentSearchParams[key]}`).join('&'));
+  }, [currentSearchParams]);
 
   const { drop } = useAliveController();
 
@@ -127,8 +170,14 @@ const Layout: React.FC = () => {
 
   // Update Tabs History and Cache
   useEffect(() => {
+    
     setVisitedViews(prev => {
-      const exists = prev.some(t => {
+      // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，过滤掉 'home' view
+      const filteredPrev = CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 
+        ? prev.filter(t => t.view !== 'home')
+        : prev;
+      
+      const exists = filteredPrev.some(t => {
         if (t.view !== currentView) return false;
         if (t.view === 'create') {
           // For create view, check both activeTool and searchParams
@@ -139,26 +188,68 @@ const Layout: React.FC = () => {
         return true;
       });
       
-      if (exists) return prev;
+      // 调试信息
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Layout - visitedViews 更新 - currentView:', currentView, 'activeTool:', activeTool, 'currentSearchParams:', currentSearchParams, 'exists:', exists, 'filteredPrev.length:', filteredPrev.length);
+      }
+      
+      if (exists) return filteredPrev;
 
-      return [...prev, { 
+      // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，不允许添加 'home' view
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH && currentView === 'home') {
+        return filteredPrev;
+      }
+
+      // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，如果 view === 'create' 且没有 activeTool，不添加到 tab
+      // 但是，我们需要确保内容仍然可以渲染，所以不阻止添加到 visitedViews
+      // 只是不在 Header 中显示这个 tab（通过 getTabLabel 返回空字符串来实现）
+      // 因此，这里不再阻止添加到 visitedViews，让内容可以正常渲染
+      // if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH && currentView === 'create' && !activeTool) {
+      //   return filteredPrev;
+      // }
+
+      // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，如果 view === 'models' 且路径是 '/'，不添加到 tab（模型中心首页）
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH && currentView === 'models' && location.pathname === '/') {
+        return filteredPrev;
+      }
+
+      return [...filteredPrev, { 
         view: currentView, 
         activeTool: currentView === 'create' ? activeTool : undefined,
         searchParams: currentView === 'create' ? currentSearchParams : undefined
       }];
     });
-  }, [currentView, activeTool, currentSearchParams]);
+  }, [currentView, activeTool, searchParamsKey]); // 使用序列化的 searchParamsKey 而不是对象引用
 
   // 注意：缓存列表由 CachedOutlet 自动管理，这里不需要手动更新
   // 只在标签页关闭时清除对应的缓存
 
   // Navigation Handlers
   const handleNavClick = (href: string) => {
-    if (href === '#') navigate('/');
-    else if (href.startsWith('#')) {
+    if (href === '#') {
+      // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，导航到创作中心
+      if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+        navigate('/create');
+      } else {
+        navigate('/');
+      }
+    } else if (href.startsWith('#')) {
         const path = href.substring(1);
         navigate(path === 'home' ? '/' : `/${path}`);
     } else {
+        // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，处理一级菜单点击
+        if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+          // 点击"模型中心"时，导航到 /，显示模型中心首页，并使用 URL 参数来触发展开菜单
+          if (href === '/models') {
+            navigate('/?expand=modelCenter');
+            return;
+          }
+          // 点击"创作中心"时，使用 URL 参数来触发展开菜单
+          if (href === '/create') {
+            navigate('/create?expand=creationCenter');
+            return;
+          }
+        }
         navigate(href);
     }
   };
@@ -267,7 +358,12 @@ const Layout: React.FC = () => {
         const lastTab = newTabs[newTabs.length - 1];
         handleTabClick(lastTab);
       } else {
-        navigate('/');
+        // 当最后一个 tab 关闭时，导航到创作中心首页
+        if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+          navigate('/create', { replace: true });
+        } else {
+          navigate('/');
+        }
       }
     }
   };

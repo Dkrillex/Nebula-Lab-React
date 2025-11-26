@@ -49,7 +49,7 @@ export const localRoutes: AppRouteObject[] = [
         meta: {
           title: 'Create',
           icon: 'magic',
-          requiresAuth: true
+          requiresAuth: false // 修改为 false，允许未登录用户访问创作中心首页
         },
         children: [
           {

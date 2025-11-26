@@ -23,8 +23,33 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
   const [searchParams] = useSearchParams();
   const { isAuthenticated } = useAuthStore();
   
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['modelCenter', 'creationCenter', 'personalCenter']);
+  // 初始状态不展开任何二级菜单
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
   const [showPromo, setShowPromo] = useState(true);
+  
+  // 监听 URL 参数中的 expand 标记，用于展开菜单
+  useEffect(() => {
+    const expandParam = searchParams.get('expand');
+    if (expandParam && (expandParam === 'modelCenter' || expandParam === 'creationCenter')) {
+      // 如果菜单组未展开，则展开
+      if (!expandedGroups.includes(expandParam)) {
+        setExpandedGroups(prev => [...prev, expandParam]);
+      }
+      // 清除 URL 参数，避免重复触发
+      // 使用更长的延迟，确保所有状态更新完成后再清除
+      const timer = setTimeout(() => {
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('expand');
+        const newSearch = newSearchParams.toString();
+        const newUrl = newSearch ? `${location.pathname}?${newSearch}` : location.pathname;
+        // 只有在 URL 确实需要改变时才导航
+        if (newUrl !== location.pathname + (location.search || '')) {
+          navigate(newUrl, { replace: true });
+        }
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [searchParams, expandedGroups, navigate, location.pathname, location.search]);
 
   // Determine active menu item based on URL
   const getActiveId = () => {
@@ -176,16 +201,45 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     if (path.startsWith('/create')) return 'creationCenter';
     if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
     
+    // 当 CURRENT_SYSTEM === SYSTEM_TYPE.BOTH 时，根据路径判断
+    // 如果路径是 '/'，返回 'modelCenter'（模型中心首页）
+    if (CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) {
+      if (path === '/') return 'modelCenter';
+      // 默认根据路径判断，如果无法判断则返回创作中心
+      return 'creationCenter';
+    }
+    
     if (CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER) return 'modelCenter';
     return 'creationCenter';
   };
 
   const activeCategory = getActiveCategory();
+  
+  // 调试信息：检查 activeCategory 是否正确
+  if (process.env.NODE_ENV === 'development') {
+    console.log('Sidebar - getActiveCategory - path:', location.pathname, 'activeCategory:', activeCategory, 'CURRENT_SYSTEM:', CURRENT_SYSTEM);
+  }
 
+  // 根据当前路径自动展开对应的菜单组（但初始状态不展开）
+  // 只有当访问子页面（如 /create/digitalHuman, /chat, /models 等）时才自动展开
+  useEffect(() => {
+    const path = location.pathname;
+    // 如果路径不是首页（/create 或 /），且对应的菜单组未展开，则自动展开
+    if (path !== '/create' && path !== '/' && activeCategory && !expandedGroups.includes(activeCategory)) {
+      setExpandedGroups(prev => [...prev, activeCategory]);
+    }
+  }, [location.pathname, activeCategory, expandedGroups]);
+
+  // 只显示二级菜单（子菜单），不显示一级菜单
   const displayedItems = React.useMemo(() => {
      const categoryItem = menuStructure.find(item => item.id === activeCategory);
-     // If found category has children, return them. Otherwise return empty or the category itself (unlikely given structure)
-     return categoryItem?.children || [];
+     const children = categoryItem?.children || [];
+     // 调试信息：检查菜单项是否正确找到
+     if (process.env.NODE_ENV === 'development') {
+       console.log('Sidebar - activeCategory:', activeCategory, 'categoryItem:', categoryItem, 'children count:', children.length);
+     }
+     // 返回当前分类的子菜单项（二级菜单）
+     return children;
   }, [activeCategory, menuStructure]);
 
   return (
@@ -195,7 +249,10 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       }`}
     >
       <div className="p-4 space-y-1 overflow-y-auto flex-1 custom-scrollbar [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {displayedItems.map((item: any) => {
+        {displayedItems.length === 0 ? (
+          <div className="text-muted text-sm text-center py-4">暂无菜单项</div>
+        ) : (
+          displayedItems.map((item: any) => {
           const hasChildren = 'children' in item && item.children;
           const Icon = item.icon;
           const isExpanded = expandedGroups.includes(item.id);
@@ -315,7 +372,8 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
               {!isCollapsed && item.label}
             </button>
           );
-        })}
+        })
+        )}
       </div>
       
       <div className="p-2 border-t border-border bg-surface/30 flex flex-col gap-2">
