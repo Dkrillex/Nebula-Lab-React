@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus, Trash2, Download, Check, RotateCcw } from 'lucide-react';
+import { useActivate, useUnactivate } from 'react-activation';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
 import UploadComponent from '../../../components/UploadComponent';
 import ProductCanvas, { ProductCanvasRef } from './ProductCanvas';
@@ -60,11 +61,45 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const productAvatarStore = useProductAvatarStore();
   const navigate = useNavigate();
 
+  // 使用 useRef 来跟踪是否已经初始化，避免路由变化时重复执行
+  // 这些 ref 在 KeepAlive 恢复时不会被重置，确保状态保持
+  const initializedRef = useRef(false);
+  const categoriesFetchedRef = useRef(false);
+  const isFirstMountRef = useRef(true);
+  
+  // 初始化逻辑：只在真正的首次挂载时执行
   useEffect(() => {
-    fetchCategories();
-    // Initialize prompt with translated default
-    setPrompt(t?.rightPanel?.aiTextPlaceholder || '');
-  }, [t]);
+    // 只在首次挂载时执行 fetchCategories，避免路由变化时重复刷新数据
+    if (!categoriesFetchedRef.current) {
+      fetchCategories();
+      categoriesFetchedRef.current = true;
+    }
+    
+    // prompt 的初始化：只在首次挂载且 prompt 为空时设置
+    if (!initializedRef.current) {
+      const promptText = t?.rightPanel?.aiTextPlaceholder || '';
+      if (promptText && !prompt) {
+        setPrompt(promptText);
+      }
+      initializedRef.current = true;
+    }
+    
+    // 标记首次挂载完成
+    isFirstMountRef.current = false;
+  }, []); // 空依赖数组，只在组件挂载时执行一次
+  
+  // 使用 useActivate 处理 KeepAlive 恢复时的逻辑
+  useActivate(() => {
+    // 当组件从 KeepAlive 缓存中恢复时，不需要重新初始化
+    // 所有状态都会自动保持，因为 KeepAlive 会保留组件的完整状态
+    // 这里可以添加一些需要在恢复时执行的逻辑（如果需要）
+  });
+  
+  // 使用 useUnactivate 处理组件被缓存时的逻辑
+  useUnactivate(() => {
+    // 当组件被 KeepAlive 缓存时，可以在这里执行一些清理或保存操作
+    // 但通常不需要，因为 KeepAlive 会自动保存所有状态
+  });
 
   useEffect(() => {
      fetchAvatars();
@@ -300,7 +335,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     
     try {
         setGenerating(true);
-
         let params: any;
         
         if (activeMode === 'highPrecision') {
@@ -322,8 +356,6 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
             // Use navigate with replace: false to create a new tab in the tab system
             navigate(`/create/product-replace?taskId=${resultData.taskId}&v2=true`, { replace: false });
-            // Reset generating state after navigation
-            setGenerating(false);
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
           }
@@ -346,15 +378,15 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
             // Use navigate with replace: false to create a new tab in the tab system
             navigate(`/create/product-replace?taskId=${resultData.taskId}`, { replace: false });
-            // Reset generating state after navigation
-            setGenerating(false);
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
           }
         }
     } catch (error: any) {
         toast.error(error.message || 'Generation failed');
-        setGenerating(false);
+    } finally {
+      // Reset generating state after navigation
+      setGenerating(false);
     }
   };
 

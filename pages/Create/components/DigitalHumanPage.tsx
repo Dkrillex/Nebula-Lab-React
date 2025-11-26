@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useActivate, useUnactivate } from 'react-activation';
 import { PenTool, Mic, X, Check, Loader, Play, AlertCircle, Palette } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
@@ -55,13 +56,19 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
   
-  // 从 URL 参数读取初始 Tab
+  // 使用 useRef 保存 activeTab 状态，确保在 KeepAlive 恢复时能正确恢复
+  // 这样即使 URL 中没有 tab 参数，也能恢复到之前的 tab
+  const savedActiveTabRef = useRef<'video' | 'product' | 'singing'>('video');
+  
+  // 从 URL 参数读取初始 Tab，如果没有则使用保存的状态
   const getInitialTab = (): 'video' | 'product' | 'singing' => {
     const tabParam = searchParams.get('tab');
     if (tabParam === 'product' || tabParam === 'video' || tabParam === 'singing') {
+      savedActiveTabRef.current = tabParam;
       return tabParam;
     }
-    return 'video';
+    // 如果 URL 中没有 tab 参数，使用保存的状态（KeepAlive 恢复时）
+    return savedActiveTabRef.current;
   };
   
   const [activeTab, setActiveTab] = useState<'video' | 'product' | 'singing'>(getInitialTab);
@@ -73,8 +80,30 @@ const DigitalHumanPage: React.FC<DigitalHumanPageProps> = ({ t, productAvatarT }
     const tabParam = searchParams.get('tab');
     if (tabParam === 'product' || tabParam === 'video' || tabParam === 'singing') {
       setActiveTab(tabParam);
+      savedActiveTabRef.current = tabParam;
     }
   }, [searchParams]);
+  
+  // 当 activeTab 变化时，更新保存的状态
+  useEffect(() => {
+    savedActiveTabRef.current = activeTab;
+  }, [activeTab]);
+  
+  // 使用 useActivate 处理 KeepAlive 恢复时的逻辑
+  useActivate(() => {
+    // 当组件从 KeepAlive 缓存中恢复时，恢复 activeTab 状态
+    // 如果 URL 中没有 tab 参数，使用保存的状态
+    const tabParam = searchParams.get('tab');
+    if (!tabParam && savedActiveTabRef.current) {
+      setActiveTab(savedActiveTabRef.current);
+    }
+  });
+  
+  // 使用 useUnactivate 处理组件被缓存时的逻辑
+  useUnactivate(() => {
+    // 当组件被 KeepAlive 缓存时，保存当前 activeTab 状态
+    // 状态已经通过 useEffect 保存到 savedActiveTabRef 中，这里不需要额外操作
+  });
   
   // Video Tab Shared State
   const [avatarList, setAvatarList] = useState<AiAvatar[]>([]);
