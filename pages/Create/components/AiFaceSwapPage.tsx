@@ -16,6 +16,8 @@ import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 import VideoEditingModal, { VideoMarker } from './VideoEditingModal';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 // 积分图标组件 - 借鉴 Nebula1
 const SvgPointsIcon = ({ className }: { className?: string }) => (
@@ -32,6 +34,10 @@ const SvgPointsIcon = ({ className }: { className?: string }) => (
 );
 
 const AiFaceSwapPage: React.FC = () => {
+  const { t: rootT } = useAppOutletContext();
+  // 添加空值保护，防止页面崩溃
+  const t = rootT?.aiVideoFaceSwapPage || translations['en'].aiVideoFaceSwapPage;
+  
   // 视频状态
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -81,7 +87,7 @@ const AiFaceSwapPage: React.FC = () => {
     console.log("videoFile",videoFile);
     
     if (!file.fileId) {
-      setError('视频上传失败，缺少文件ID');
+      setError(t.errors.videoUploadFailed);
       setIsVideoUploading(false);
       return;
     }
@@ -97,7 +103,7 @@ const AiFaceSwapPage: React.FC = () => {
       });
 
       if (!taskSubmitResult.result?.taskId) {
-        throw new Error('提交视频处理任务失败');
+        throw new Error(t.errors.videoProcessTaskFailed);
       }
 
       const taskId = taskSubmitResult.result.taskId;
@@ -127,11 +133,11 @@ const AiFaceSwapPage: React.FC = () => {
               console.log('视频处理成功，准备打开编辑器，URL:', resizedVideoUrl, 'taskId:', taskId);
               setIsVideoEditorOpen(true);
             } else {
-              throw new Error('视频处理成功但未返回视频URL');
+              throw new Error(t.errors.videoUrlMissing);
             }
             break;
           } else if (queryResult.result?.status === 'failed') {
-            throw new Error('视频处理失败');
+            throw new Error(t.errors.videoProcessFailed);
           } else {
             // processing 或 pending 状态，继续轮询
             console.log('视频处理中，继续轮询...');
@@ -144,7 +150,7 @@ const AiFaceSwapPage: React.FC = () => {
       }
     } catch (err) {
       console.error('视频处理失败:', err);
-      setError(err instanceof Error ? err.message : '视频处理失败');
+      setError(err instanceof Error ? err.message : t.errors.videoProcessingFailed);
     } finally {
       setIsVideoUploading(false);
     }
@@ -153,7 +159,7 @@ const AiFaceSwapPage: React.FC = () => {
   // 处理图片上传完成 - 借鉴 Nebula1：先上传获取 fileId，然后验证，最后使用本地URL预览
   const handleImageUploadComplete = async (file: UploadedFile) => {
     if (!file.fileId) {
-      setError('图片上传失败，缺少文件ID');
+      setError(t.errors.imageUploadFailed);
       setIsImageUploading(false);
       return;
     }
@@ -175,7 +181,7 @@ const AiFaceSwapPage: React.FC = () => {
       // 验证文件大小：Base64不超过5MB（考虑Base64编码会增加约33%大小）
       const maxSize = 5 * 1024 * 1024 * 0.75; // 实际文件大小限制约3.75MB，对应Base64后约5MB
       if (imageFile.size > maxSize) {
-        setError('图片大小经Base64编码后不能超过5MB');
+        setError(t.errors.imageSizeExceeded);
         setIsImageUploading(false);
         return;
       }
@@ -197,12 +203,12 @@ const AiFaceSwapPage: React.FC = () => {
       const minResolution = 128;
       const maxResolution = 4096;
       if (imageInfo.width < minResolution || imageInfo.height < minResolution) {
-        setError('图片分辨率不能小于128*128');
+        setError(t.errors.imageResolutionTooSmall);
         setIsImageUploading(false);
         return;
       }
       if (imageInfo.width > maxResolution || imageInfo.height > maxResolution) {
-        setError('图片分辨率不能大于4096*4096');
+        setError(t.errors.imageResolutionTooLarge);
         setIsImageUploading(false);
         return;
       }
@@ -212,7 +218,7 @@ const AiFaceSwapPage: React.FC = () => {
       setImageUrl(localUrl);
     } catch (err) {
       console.error('图片验证失败:', err);
-      setError(err instanceof Error ? err.message : '图片验证失败');
+      setError(err instanceof Error ? err.message : t.errors.imageValidationFailed);
       setIsImageUploading(false);
       return;
     }
@@ -246,15 +252,13 @@ const AiFaceSwapPage: React.FC = () => {
       // 基本格式检查（不阻止上传）
       const allowedTypes = ['video/mp4', 'video/quicktime'];
       if (!allowedTypes.includes(file.type)) {
-        setError(
-          '视频格式仅支持MP4、MOV，建议使用MP4格式；其余格式暂不支持，后续将逐步开放。（不支持高动态范围（HDR）视频编码）',
-        );
+        setError(t.errors.videoFormatNotSupported);
       }
 
       // 基本大小检查（不阻止上传）
       const maxSize = 200 * 1024 * 1024; // 200MB（借鉴 Nebula1：实际是500MB，但这里用200MB）
       if (file.size > maxSize) {
-        setError('视频大小不能超过200MB');
+        setError(t.errors.videoSizeExceeded);
       }
 
       // 创建视频元素获取元数据（用于计算积分）- 借鉴 Nebula1
@@ -270,12 +274,12 @@ const AiFaceSwapPage: React.FC = () => {
         };
         const errorHandler = () => {
           videoElement.removeEventListener('error', errorHandler);
-          reject(new Error('视频元数据加载失败'));
+          reject(new Error(t.errors.videoMetadataLoadFailed));
         };
         videoElement.addEventListener('loadedmetadata', loadHandler);
         videoElement.addEventListener('error', errorHandler);
         setTimeout(() => {
-          reject(new Error('视频元数据加载超时'));
+          reject(new Error(t.errors.videoMetadataLoadTimeout));
         }, 10_000);
       });
 
@@ -284,7 +288,7 @@ const AiFaceSwapPage: React.FC = () => {
       
       // 验证视频时长（借鉴 Nebula1：不超过60秒）
       if (duration > 60) {
-        setError('视频时长不能超过60秒');
+        setError(t.errors.videoDurationExceeded);
       }
 
       // 借鉴 Nebula1：验证通过后计算积分
@@ -298,9 +302,7 @@ const AiFaceSwapPage: React.FC = () => {
       const shortSide = Math.min(width, height);
 
       if (longSide > maxLongSide || shortSide > maxShortSide) {
-        setError(
-          `视频分辨率不能超过1080P（最长边≤1920，最短边≤1080，支持横屏、竖屏及更低分辨率）`,
-        );
+        setError(t.errors.videoResolutionExceeded);
       }
 
       // 验证帧率（借鉴 Nebula1：不超过30fps）
@@ -321,7 +323,7 @@ const AiFaceSwapPage: React.FC = () => {
         (file.size > 1024 * 1024 && file.size / (duration * 30) < 1000);
 
       if (isFpsOverLimit) {
-        setError('视频帧率不能超过30fps');
+        setError(t.errors.videoFpsExceeded);
       }
 
       // 释放临时元数据URL
@@ -331,10 +333,7 @@ const AiFaceSwapPage: React.FC = () => {
       setError(
         err instanceof Error
           ? err.message
-          : '视频加载失败，请检查是否符合要求：\n' +
-            '1. 格式：MP4、MOV（建议MP4，不支持HDR）\n' +
-            '2. 时长≤60秒，帧率≤30fps，分辨率≤1080P（最长边≤1920，最短边≤1080）\n' +
-            '3. 大小≤200MB',
+          : t.errors.videoLoadFailed
       );
       // 即使验证失败，也允许继续上传（借鉴 Nebula1 的逻辑）
     }
@@ -371,18 +370,18 @@ const AiFaceSwapPage: React.FC = () => {
   const handleGenerate = async () => {
     // 借鉴 Nebula1：使用 videoMaskDrawingTaskId 而不是 videoProcessTaskId
     if (!videoMaskDrawingTaskId) {
-      setError('请先上传并处理参考视频，并完成视频掩码绘制');
+        setError(t.errors.videoMaskDrawingRequired);
       return;
     }
 
     if (!imageFileId) {
-      setError('请上传参考图片');
+      setError(t.errors.imageRequired);
       return;
     }
 
     setIsGenerating(true);
     setError(null);
-    setLoadingMessage('正在生成换脸视频...');
+    setLoadingMessage(t.buttons.generating);
     setProgress(0);
     setGeneratedVideoUrl(null);
 
@@ -406,7 +405,7 @@ const AiFaceSwapPage: React.FC = () => {
     } catch (err) {
       console.error('Video face swap error:', err);
       setError(
-        err instanceof Error ? err.message : '生成失败，请重试'
+        err instanceof Error ? err.message : t.errors.generateFailed
       );
       setLoadingMessage('');
       setProgress(0);
@@ -456,8 +455,8 @@ const AiFaceSwapPage: React.FC = () => {
                  WebkitTextFillColor: 'transparent',
                  backgroundClip: 'text'
                }}
-             >
-               AI 视频换脸
+               >
+               {t.title}
              </h2>
            </div>
            
@@ -467,14 +466,14 @@ const AiFaceSwapPage: React.FC = () => {
           {/* 视频上传区域 */}
           <div className="mb-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800">
-              上传参考视频
+              {t.uploadVideo.title}
             </h3>
             <div className="min-h-[200px] relative">
               {isVideoUploading && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center z-20 rounded-xl backdrop-blur-[1px]">
                   <div className="flex flex-col items-center justify-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">上传并处理视频中...</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{t.uploadVideo.uploading}</span>
                   </div>
                 </div>
               )}
@@ -499,12 +498,12 @@ const AiFaceSwapPage: React.FC = () => {
                 {!videoUrl && !videoUploadedUrl && !trackingVideoPath && (
                   <div className="text-center p-6">
                     <div className="text-4xl mb-2">🎬</div>
-                    <p className="text-gray-700 mb-2">点击或拖拽上传视频</p>
+                    <p className="text-gray-700 mb-2">{t.uploadVideo.clickOrDrag}</p>
                     <span className="text-gray-500 text-sm">
-                      MP4、MOV 格式<br />
-                      时长≤60秒，帧率≤30fps<br />
-                      分辨率≤1080P<br />
-                      大小≤200MB
+                      {t.uploadVideo.formats}<br />
+                      {t.uploadVideo.duration}<br />
+                      {t.uploadVideo.resolution}<br />
+                      {t.uploadVideo.size}
                     </span>
                   </div>
                 )}
@@ -514,7 +513,7 @@ const AiFaceSwapPage: React.FC = () => {
                 <button
                   onClick={() => setIsVideoEditorOpen(true)}
                   className="absolute -top-5 -right-5 w-9 h-9 rounded-full bg-indigo-600 border-2 border-white text-white flex items-center justify-center shadow-lg hover:bg-indigo-700 transition-all hover:scale-110 z-10"
-                  title="编辑视频"
+                  title={t.uploadVideo.editVideo}
                 >
                   <Edit3 size={18} />
                 </button>
@@ -525,14 +524,14 @@ const AiFaceSwapPage: React.FC = () => {
           {/* 图片上传区域 */}
           <div className="mb-6">
             <h3 className="mb-4 text-lg font-semibold text-gray-800">
-              上传参考图片
+              {t.uploadImage.title}
             </h3>
             <div className="min-h-[200px] relative">
               {isImageUploading && (
                 <div className="absolute inset-0 bg-white/80 dark:bg-black/80 flex items-center justify-center z-20 rounded-xl backdrop-blur-[1px]">
                   <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-4 rounded-lg shadow-lg">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">上传图片中...</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">{t.uploadImage.uploading}</span>
                   </div>
                 </div>
               )}
@@ -555,11 +554,11 @@ const AiFaceSwapPage: React.FC = () => {
                 {!imageUrl && (
                   <div className="text-center p-6">
                     <div className="text-4xl mb-2">🖼️</div>
-                    <p className="text-gray-700 mb-2">点击或拖拽上传图片</p>
+                    <p className="text-gray-700 mb-2">{t.uploadImage.clickOrDrag}</p>
                     <span className="text-gray-500 text-sm">
-                      jpg/jpeg、png 格式<br />
-                      分辨率 128*128 - 4096*4096<br />
-                      大小不超过 5MB
+                      {t.uploadImage.formats}<br />
+                      {t.uploadImage.resolution}<br />
+                      {t.uploadImage.size}
                     </span>
                   </div>
                 )}
@@ -585,14 +584,14 @@ const AiFaceSwapPage: React.FC = () => {
                  {isGenerating ? (
                    <>
                      <Sparkles className="h-5 w-5 animate-spin" />
-                     <span>生成中...</span>
+                     <span>{t.buttons.generating}</span>
                    </>
                  ) : (
                    <>
                      {/* 借鉴 Nebula1：显示积分图标和数值 */}
                      <SvgPointsIcon className="h-5 w-5 mr-1" />
                      <span>{countPoints === 0 ? points : countPoints}</span>
-                     <span className="ml-2">生成换脸视频</span>
+                     <span className="ml-2">{t.buttons.generateVideo}</span>
                    </>
                  )}
                </button>
@@ -607,7 +606,7 @@ const AiFaceSwapPage: React.FC = () => {
                    setImportStatus(false); // 清除导入状态
                  }}
                >
-                 清除结果
+                 {t.buttons.clearResult}
                </button>
              </div>
            </div>
@@ -627,7 +626,7 @@ const AiFaceSwapPage: React.FC = () => {
                   backgroundClip: 'text'
                 }}
               >
-                生成结果
+                {t.result.title}
               </h3>
             </div>
 
@@ -635,7 +634,7 @@ const AiFaceSwapPage: React.FC = () => {
             {!isGenerating && !generatedVideoUrl && (
               <div className="flex flex-col items-center justify-center h-[400px] text-gray-400">
                 <div className="text-6xl mb-4">🎨</div>
-                <p className="text-lg">生成的视频将显示在这里</p>
+                <p className="text-lg">{t.result.emptyState}</p>
               </div>
             )}
 
@@ -675,20 +674,20 @@ const AiFaceSwapPage: React.FC = () => {
                     download
                     className="flex-1 py-3 px-4 font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1 text-center"
                   >
-                    下载视频
+                    {t.result.downloadVideo}
                   </a>
                   <button 
                     onClick={() => {
                       // 借鉴 Nebula1：如果已导入，显示提示
                       if (importStatus) {
-                        toast.success('该视频已导入素材库');
+                        toast.success(t.result.importedToast);
                         return;
                       }
                       setIsAddMaterialModalOpen(true);
                     }}
                     className="flex-1 py-3 px-4 font-semibold rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:-translate-y-1"
                   >
-                    导入素材
+                    {t.result.importMaterial}
                   </button>
                 </div>
               </div>

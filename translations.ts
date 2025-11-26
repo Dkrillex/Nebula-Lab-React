@@ -954,6 +954,78 @@ interface Translation {
       indonesia: string;
     };
   };
+  aiVideoFaceSwapPage: {
+    title: string;
+    subtitle: string;
+    uploadVideo: {
+      title: string;
+      uploading: string;
+      clickOrDrag: string;
+      formats: string;
+      duration: string;
+      resolution: string;
+      size: string;
+      editVideo: string;
+    };
+    uploadImage: {
+      title: string;
+      uploading: string;
+      clickOrDrag: string;
+      formats: string;
+      resolution: string;
+      size: string;
+    };
+    buttons: {
+      generating: string;
+      generateVideo: string;
+      clearResult: string;
+    };
+    result: {
+      title: string;
+      emptyState: string;
+      downloadVideo: string;
+      importMaterial: string;
+      importedToast: string;
+    };
+    errors: {
+      videoProcessingFailed: string;
+      videoUploadFailed: string;
+      videoProcessTaskFailed: string;
+      videoProcessFailed: string;
+      videoUrlMissing: string;
+      imageUploadFailed: string;
+      imageSizeExceeded: string;
+      imageResolutionTooSmall: string;
+      imageResolutionTooLarge: string;
+      imageValidationFailed: string;
+      videoFormatNotSupported: string;
+      videoSizeExceeded: string;
+      videoDurationExceeded: string;
+      videoResolutionExceeded: string;
+      videoFpsExceeded: string;
+      videoMetadataLoadFailed: string;
+      videoMetadataLoadTimeout: string;
+      videoLoadFailed: string;
+      videoMaskDrawingRequired: string;
+      imageRequired: string;
+      generateFailed: string;
+    };
+    videoEditingModal: {
+      back: string;
+      title: string;
+      markModifyArea: string;
+      markProtectArea: string;
+      clear: string;
+      previewAllAreas: string;
+      cancel: string;
+      confirm: string;
+      loadingVideo: string;
+      renderingMarks: string;
+      generating: string;
+      processing: string;
+      videoLoadFailed: string;
+    };
+  };
   error: {
     sessionExpired: string;
     unknownError: string;
@@ -2184,6 +2256,78 @@ export const translations: Record<string, Translation> = {
         unpaid: 'Unpaid',
         failed: 'Failed',
         unknown: 'Unknown'
+      }
+    },
+    aiVideoFaceSwapPage: {
+      title: 'AI Video Face Swap',
+      subtitle: 'Upload video and reference image, let AI generate face swap video for you',
+      uploadVideo: {
+        title: 'Upload Reference Video',
+        uploading: 'Uploading and processing video...',
+        clickOrDrag: 'Click or drag to upload video',
+        formats: 'MP4, MOV format',
+        duration: 'Duration ≤60s, frame rate ≤30fps',
+        resolution: 'Resolution ≤1080P',
+        size: 'Size ≤200MB',
+        editVideo: 'Edit Video'
+      },
+      uploadImage: {
+        title: 'Upload Reference Image',
+        uploading: 'Uploading image...',
+        clickOrDrag: 'Click or drag to upload image',
+        formats: 'jpg/jpeg, png format',
+        resolution: 'Resolution 128*128 - 4096*4096',
+        size: 'Size not exceed 5MB'
+      },
+      buttons: {
+        generating: 'Generating...',
+        generateVideo: 'Generate Face Swap Video',
+        clearResult: 'Clear Result'
+      },
+      result: {
+        title: 'Generation Result',
+        emptyState: 'Generated video will be displayed here',
+        downloadVideo: 'Download Video',
+        importMaterial: 'Import Material',
+        importedToast: 'This video has been imported to material library'
+      },
+      errors: {
+        videoProcessingFailed: 'Video processing failed',
+        videoUploadFailed: 'Video upload failed, missing file ID',
+        videoProcessTaskFailed: 'Failed to submit video processing task',
+        videoProcessFailed: 'Video processing failed',
+        videoUrlMissing: 'Video processing succeeded but no video URL returned',
+        imageUploadFailed: 'Image upload failed, missing file ID',
+        imageSizeExceeded: 'Image size cannot exceed 5MB after Base64 encoding',
+        imageResolutionTooSmall: 'Image resolution cannot be smaller than 128*128',
+        imageResolutionTooLarge: 'Image resolution cannot be larger than 4096*4096',
+        imageValidationFailed: 'Image validation failed',
+        videoFormatNotSupported: 'Video format only supports MP4, MOV, MP4 format is recommended; other formats are not supported yet, will be gradually opened. (HDR video encoding is not supported)',
+        videoSizeExceeded: 'Video size cannot exceed 200MB',
+        videoDurationExceeded: 'Video duration cannot exceed 60 seconds',
+        videoResolutionExceeded: 'Video resolution cannot exceed 1080P (longest side ≤1920, shortest side ≤1080, supports landscape, portrait and lower resolutions)',
+        videoFpsExceeded: 'Video frame rate cannot exceed 30fps',
+        videoMetadataLoadFailed: 'Video metadata load failed',
+        videoMetadataLoadTimeout: 'Video metadata load timeout',
+        videoLoadFailed: 'Video load failed, please check if it meets requirements:\n1. Format: MP4, MOV (MP4 recommended, HDR not supported)\n2. Duration ≤60s, frame rate ≤30fps, resolution ≤1080P (longest side ≤1920, shortest side ≤1080)\n3. Size ≤200MB',
+        videoMaskDrawingRequired: 'Please upload and process reference video first, and complete video mask drawing',
+        imageRequired: 'Please upload reference image',
+        generateFailed: 'Generation failed, please try again'
+      },
+      videoEditingModal: {
+        back: 'Back',
+        title: 'Click on the video to mark areas to be modified and areas to be protected',
+        markModifyArea: 'Mark Modification Area',
+        markProtectArea: 'Mark Protection Area',
+        clear: 'Clear',
+        previewAllAreas: 'Preview All Selected Areas',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        loadingVideo: 'Loading video...',
+        renderingMarks: 'Rendering mark points, please wait...',
+        generating: 'Generating, please wait...',
+        processing: 'Processing...',
+        videoLoadFailed: 'Video load failed'
       }
     },
     pricingPage: {
@@ -3602,6 +3746,78 @@ export const translations: Record<string, Translation> = {
         unknown: '未知'
       }
     },
+    aiVideoFaceSwapPage: {
+      title: 'AI 视频换脸',
+      subtitle: '上传视频和参考图片，让 AI 为您生成换脸视频',
+      uploadVideo: {
+        title: '上传参考视频',
+        uploading: '上传并处理视频中...',
+        clickOrDrag: '点击或拖拽上传视频',
+        formats: 'MP4、MOV 格式',
+        duration: '时长≤60秒，帧率≤30fps',
+        resolution: '分辨率≤1080P',
+        size: '大小≤200MB',
+        editVideo: '编辑视频'
+      },
+      uploadImage: {
+        title: '上传参考图片',
+        uploading: '上传图片中...',
+        clickOrDrag: '点击或拖拽上传图片',
+        formats: 'jpg/jpeg、png 格式',
+        resolution: '分辨率 128*128 - 4096*4096',
+        size: '大小不超过 5MB'
+      },
+      buttons: {
+        generating: '生成中...',
+        generateVideo: '生成换脸视频',
+        clearResult: '清除结果'
+      },
+      result: {
+        title: '生成结果',
+        emptyState: '生成的视频将显示在这里',
+        downloadVideo: '下载视频',
+        importMaterial: '导入素材',
+        importedToast: '该视频已导入素材库'
+      },
+      errors: {
+        videoProcessingFailed: '视频处理失败',
+        videoUploadFailed: '视频上传失败，缺少文件ID',
+        videoProcessTaskFailed: '提交视频处理任务失败',
+        videoProcessFailed: '视频处理失败',
+        videoUrlMissing: '视频处理成功但未返回视频URL',
+        imageUploadFailed: '图片上传失败，缺少文件ID',
+        imageSizeExceeded: '图片大小经Base64编码后不能超过5MB',
+        imageResolutionTooSmall: '图片分辨率不能小于128*128',
+        imageResolutionTooLarge: '图片分辨率不能大于4096*4096',
+        imageValidationFailed: '图片验证失败',
+        videoFormatNotSupported: '视频格式仅支持MP4、MOV，建议使用MP4格式；其余格式暂不支持，后续将逐步开放。（不支持高动态范围（HDR）视频编码）',
+        videoSizeExceeded: '视频大小不能超过200MB',
+        videoDurationExceeded: '视频时长不能超过60秒',
+        videoResolutionExceeded: '视频分辨率不能超过1080P（最长边≤1920，最短边≤1080，支持横屏、竖屏及更低分辨率）',
+        videoFpsExceeded: '视频帧率不能超过30fps',
+        videoMetadataLoadFailed: '视频元数据加载失败',
+        videoMetadataLoadTimeout: '视频元数据加载超时',
+        videoLoadFailed: '视频加载失败，请检查是否符合要求：\n1. 格式：MP4、MOV（建议MP4，不支持HDR）\n2. 时长≤60秒，帧率≤30fps，分辨率≤1080P（最长边≤1920，最短边≤1080）\n3. 大小≤200MB',
+        videoMaskDrawingRequired: '请先上传并处理参考视频，并完成视频掩码绘制',
+        imageRequired: '请上传参考图片',
+        generateFailed: '生成失败，请重试'
+      },
+      videoEditingModal: {
+        back: '返回',
+        title: '点击视频标记需修改区域与需保护区域',
+        markModifyArea: '标记修改区域',
+        markProtectArea: '标记保护区域',
+        clear: '清除',
+        previewAllAreas: '预览所有已选区域',
+        cancel: '取消',
+        confirm: '确认',
+        loadingVideo: '加载视频中...',
+        renderingMarks: '正在渲染绘制标记点，请稍等...',
+        generating: '正在生成绘制,请等待...',
+        processing: '处理中...',
+        videoLoadFailed: '视频加载失败'
+      }
+    },
     pricingPage: {
       title: '定价列表',
       subtitle: '选择最适合您的AI创作服务套餐，开启智能内容创作之旅',
@@ -4587,6 +4803,78 @@ export const translations: Record<string, Translation> = {
         unpaid: 'Belum Dikurangi',
         failed: 'Gagal',
         unknown: 'Tidak Diketahui'
+      }
+    },
+    aiVideoFaceSwapPage: {
+      title: 'AI Video Face Swap',
+      subtitle: 'Upload video dan gambar referensi, biarkan AI menghasilkan video tukar wajah untuk Anda',
+      uploadVideo: {
+        title: 'Unggah Video Referensi',
+        uploading: 'Mengunggah dan memproses video...',
+        clickOrDrag: 'Klik atau seret untuk mengunggah video',
+        formats: 'Format MP4, MOV',
+        duration: 'Durasi ≤60s, frame rate ≤30fps',
+        resolution: 'Resolusi ≤1080P',
+        size: 'Ukuran ≤200MB',
+        editVideo: 'Edit Video'
+      },
+      uploadImage: {
+        title: 'Unggah Gambar Referensi',
+        uploading: 'Mengunggah gambar...',
+        clickOrDrag: 'Klik atau seret untuk mengunggah gambar',
+        formats: 'Format jpg/jpeg, png',
+        resolution: 'Resolusi 128*128 - 4096*4096',
+        size: 'Ukuran tidak melebihi 5MB'
+      },
+      buttons: {
+        generating: 'Menghasilkan...',
+        generateVideo: 'Hasilkan Video Tukar Wajah',
+        clearResult: 'Hapus Hasil'
+      },
+      result: {
+        title: 'Hasil Pembuatan',
+        emptyState: 'Video yang dihasilkan akan ditampilkan di sini',
+        downloadVideo: 'Unduh Video',
+        importMaterial: 'Impor Materi',
+        importedToast: 'Video ini telah diimpor ke perpustakaan materi'
+      },
+      errors: {
+        videoProcessingFailed: 'Pemrosesan video gagal',
+        videoUploadFailed: 'Pengunggahan video gagal, file ID tidak ada',
+        videoProcessTaskFailed: 'Gagal mengirim tugas pemrosesan video',
+        videoProcessFailed: 'Pemrosesan video gagal',
+        videoUrlMissing: 'Pemrosesan video berhasil tetapi tidak ada URL video yang dikembalikan',
+        imageUploadFailed: 'Pengunggahan gambar gagal, file ID tidak ada',
+        imageSizeExceeded: 'Ukuran gambar tidak boleh melebihi 5MB setelah encoding Base64',
+        imageResolutionTooSmall: 'Resolusi gambar tidak boleh lebih kecil dari 128*128',
+        imageResolutionTooLarge: 'Resolusi gambar tidak boleh lebih besar dari 4096*4096',
+        imageValidationFailed: 'Validasi gambar gagal',
+        videoFormatNotSupported: 'Format video hanya mendukung MP4, MOV, format MP4 direkomendasikan; format lain belum didukung, akan dibuka secara bertahap. (Encoding video HDR tidak didukung)',
+        videoSizeExceeded: 'Ukuran video tidak boleh melebihi 200MB',
+        videoDurationExceeded: 'Durasi video tidak boleh melebihi 60 detik',
+        videoResolutionExceeded: 'Resolusi video tidak boleh melebihi 1080P (sisi terpanjang ≤1920, sisi terpendek ≤1080, mendukung landscape, portrait dan resolusi lebih rendah)',
+        videoFpsExceeded: 'Frame rate video tidak boleh melebihi 30fps',
+        videoMetadataLoadFailed: 'Pemuatan metadata video gagal',
+        videoMetadataLoadTimeout: 'Timeout pemuatan metadata video',
+        videoLoadFailed: 'Pemuatan video gagal, harap periksa apakah memenuhi persyaratan:\n1. Format: MP4, MOV (MP4 direkomendasikan, HDR tidak didukung)\n2. Durasi ≤60s, frame rate ≤30fps, resolusi ≤1080P (sisi terpanjang ≤1920, sisi terpendek ≤1080)\n3. Ukuran ≤200MB',
+        videoMaskDrawingRequired: 'Harap unggah dan proses video referensi terlebih dahulu, dan selesaikan penggambaran masker video',
+        imageRequired: 'Harap unggah gambar referensi',
+        generateFailed: 'Pembuatan gagal, harap coba lagi'
+      },
+      videoEditingModal: {
+        back: 'Kembali',
+        title: 'Klik pada video untuk menandai area yang akan dimodifikasi dan area yang akan dilindungi',
+        markModifyArea: 'Tandai Area Modifikasi',
+        markProtectArea: 'Tandai Area Perlindungan',
+        clear: 'Hapus',
+        previewAllAreas: 'Pratinjau Semua Area yang Dipilih',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        loadingVideo: 'Memuat video...',
+        renderingMarks: 'Merender titik penanda, harap tunggu...',
+        generating: 'Menghasilkan, harap tunggu...',
+        processing: 'Memproses...',
+        videoLoadFailed: 'Gagal memuat video'
       }
     },
     pricingPage: {
