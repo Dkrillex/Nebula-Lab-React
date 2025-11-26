@@ -432,9 +432,16 @@ const AvatarModal: React.FC<{
 }) => {
   // 使用 useRef 存储每个卡片的定时器，避免互相影响
   const hoverTimeoutMapRef = React.useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  const [customVideoErrors, setCustomVideoErrors] = useState<Record<string, boolean>>({});
+  const customVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
 
   // 处理鼠标移入：添加延时，避免快速划过时触发大量视频加载
   const handleMouseEnter = (avatarId: string) => {
+    if (isCustom) {
+      const video = customVideoRefs.current[avatarId];
+      video?.play().catch(() => {});
+      return;
+    }
     const existingTimeout = hoverTimeoutMapRef.current[avatarId];
     if (existingTimeout) clearTimeout(existingTimeout);
 
@@ -445,6 +452,14 @@ const AvatarModal: React.FC<{
 
   // 处理鼠标移出：立即清除定时器并停止播放
   const handleMouseLeave = (avatarId: string) => {
+    if (isCustom) {
+      const video = customVideoRefs.current[avatarId];
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
+      return;
+    }
     const timeout = hoverTimeoutMapRef.current[avatarId];
     if (timeout) {
       clearTimeout(timeout);
@@ -460,6 +475,13 @@ const AvatarModal: React.FC<{
       hoverTimeoutMapRef.current = {} as Record<string, ReturnType<typeof setTimeout>>;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isCustom) {
+      setCustomVideoErrors({});
+      customVideoRefs.current = {};
+    }
+  }, [isCustom]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -507,6 +529,7 @@ const AvatarModal: React.FC<{
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                 {avatars.map(avatar => {
                   const avatarImageSrc = avatar.thumbnailUrl || avatar.coverUrl || nullAvatar;
+                  const shouldShowCustomVideo = isCustom && avatar.previewVideoUrl && !customVideoErrors[avatar.aiavatarId];
                   return (
                     <div
                       key={avatar.aiavatarId}
@@ -515,35 +538,61 @@ const AvatarModal: React.FC<{
                       onClick={() => onSelect(avatar)}
                       className={`relative aspect-[9/16] w-full rounded-lg overflow-hidden cursor-pointer transition hover:shadow-lg ${selected?.aiavatarId === avatar.aiavatarId ? 'ring-2 ring-offset-2 ring-indigo-500' : 'border-2 border-gray-200 dark:border-gray-700 hover:border-indigo-300'}`}
                     >
-                      <img
-                        src={avatarImageSrc}
-                        alt={avatar.aiavatarName}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement;
-                          target.onerror = null; // 防止循环触发
-                          target.src = nullAvatar;
-                        }}
-                      />
-                    {previewStates[avatar.aiavatarId] && avatar.previewVideoUrl && (
-                      <video 
-                        src={avatar.previewVideoUrl} 
-                        className="absolute inset-0 w-full h-full object-cover" 
-                        autoPlay 
-                        loop 
-                        muted 
-                        playsInline 
-                        crossOrigin="anonymous"
-                        referrerPolicy="no-referrer"
-                        onError={(e) => {
-                          const video = e.currentTarget;
-                          if (video.crossOrigin !== null) {
-                            video.crossOrigin = null;
-                            video.referrerPolicy = 'no-referrer';
-                          }
-                        }}
-                      />
-                    )}
+                      {shouldShowCustomVideo ? (
+                        <video
+                          ref={(el) => {
+                            customVideoRefs.current[avatar.aiavatarId] = el;
+                          }}
+                          src={avatar.previewVideoUrl}
+                          className="w-full h-full object-cover"
+                          loop
+                          muted
+                          playsInline
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const video = e.currentTarget;
+                            if (video.crossOrigin !== null) {
+                              video.crossOrigin = null;
+                              video.referrerPolicy = 'no-referrer';
+                            } else {
+                              setCustomVideoErrors(prev => ({ ...prev, [avatar.aiavatarId]: true }));
+                            }
+                          }}
+                        />
+                      ) : (
+                        <>
+                          <img
+                            src={avatarImageSrc}
+                            alt={avatar.aiavatarName}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.onerror = null; // 防止循环触发
+                              target.src = nullAvatar;
+                            }}
+                          />
+                          {!isCustom && previewStates[avatar.aiavatarId] && avatar.previewVideoUrl && (
+                            <video 
+                              src={avatar.previewVideoUrl} 
+                              className="absolute inset-0 w-full h-full object-cover" 
+                              autoPlay 
+                              loop 
+                              muted 
+                              playsInline 
+                              crossOrigin="anonymous"
+                              referrerPolicy="no-referrer"
+                              onError={(e) => {
+                                const video = e.currentTarget;
+                                if (video.crossOrigin !== null) {
+                                  video.crossOrigin = null;
+                                  video.referrerPolicy = 'no-referrer';
+                                }
+                              }}
+                            />
+                          )}
+                        </>
+                      )}
                     {selected?.aiavatarId === avatar.aiavatarId && (
                       <div className="absolute top-2 right-2 w-6 h-6 bg-indigo-600 rounded-full flex items-center justify-center">
                         <Check size={16} className="text-white" />

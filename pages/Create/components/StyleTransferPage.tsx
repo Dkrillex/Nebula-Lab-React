@@ -130,8 +130,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const productInputRef = useRef<HTMLInputElement>(null);
   const templateInputRef = useRef<HTMLInputElement>(null);
   const garmentInputRef = useRef<HTMLInputElement>(null);
-  const garmentTopInputRef = useRef<HTMLInputElement>(null); // 上衣上传
-  const garmentBottomInputRef = useRef<HTMLInputElement>(null); // 下衣上传
   const modelInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
@@ -1571,9 +1569,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 </button>
                               </div>
                             ) : (
-                              <div 
+                              <UploadComponent
+                                onFileSelected={(file) => handleImageUpload(file, 'garment')}
+                                onUploadComplete={() => {}}
+                                onError={(error) => toast.error(error.message)}
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                maxSize={10}
+                                immediate={false}
+                                showPreview={false}
+                                showConfirmButton={false}
+                                uploadType="oss"
                                 className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
-                                onClick={() => garmentTopInputRef.current?.click()}
                               >
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
                                   <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -1584,20 +1590,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                     {t.standard.support}
                                   </p>
                                 </div>
-                                <input
-                                  ref={garmentTopInputRef}
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleImageUpload(file, 'garment');
-                                    }
-                                    if (e.target) e.target.value = '';
-                                  }}
-                                  className="hidden"
-                                />
-                              </div>
+                              </UploadComponent>
                             )}
                           </div>
                           
@@ -1632,9 +1625,17 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 </button>
                               </div>
                             ) : (
-                              <div 
+                              <UploadComponent
+                                onFileSelected={(file) => handleImageUpload(file, 'garment')}
+                                onUploadComplete={() => {}}
+                                onError={(error) => toast.error(error.message)}
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                maxSize={10}
+                                immediate={false}
+                                showPreview={false}
+                                showConfirmButton={false}
+                                uploadType="oss"
                                 className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
-                                onClick={() => garmentBottomInputRef.current?.click()}
                               >
                                 <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
                                   <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
@@ -1645,20 +1646,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                     {t.standard.support}
                                   </p>
                                 </div>
-                                <input
-                                  ref={garmentBottomInputRef}
-                                  type="file"
-                                  accept="image/png,image/jpeg,image/jpg,image/webp"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      handleImageUpload(file, 'garment');
-                                    }
-                                    if (e.target) e.target.value = '';
-                                  }}
-                                  className="hidden"
-                                />
-                              </div>
+                              </UploadComponent>
                             )}
                           </div>
                         </div>

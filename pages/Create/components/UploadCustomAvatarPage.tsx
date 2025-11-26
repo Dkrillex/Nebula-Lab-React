@@ -146,10 +146,10 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       if (taskResult.status === 'running' || taskResult.status === 'init') {
         // Simulate progress
         if (progress < 90) {
-          setProgress(prev => Math.min(prev + Math.random() * 10, 90));
+          setProgress(prev => Math.min(prev + Math.random() * 5, 90));
         }
         // Poll again
-        setTimeout(() => queryResult(currentTaskId), 15000);
+        setTimeout(() => queryResult(currentTaskId), 10000);
       } else if (taskResult.status === 'success') {
         setProgress(100);
         toast.success(t?.script?.success?.s3 || '任务完成');
@@ -406,6 +406,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
         }}
         initialData={aiAvatar ? {
           assetName: aiAvatar.aiavatarName,
+          assetId: aiAvatar.aiavatarId,
           assetUrl: aiAvatar.previewVideoUrl,
           coverUrl: aiAvatar.coverUrl,
           assetType: 9, // 9 for AI Avatar based on vben code
