@@ -58,7 +58,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
       setChannelList(response.rows || []);
     } catch (error) {
       console.error('获取企业信息失败:', error);
-      toast.error('获取企业信息失败');
+      toast.error(t?.enterprise?.getChannelInfoFailed || '获取企业信息失败');
     } finally {
       setLoading(false);
     }
@@ -96,18 +96,18 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
   // 提交表单
   const handleSubmit = async () => {
     if (!formData.channelName?.trim()) {
-      toast.error('请输入企业名称');
+      toast.error(t?.enterprise?.enterChannelNameRequired || '请输入企业名称');
       return;
     }
 
     if (formData.isShare === undefined || formData.isShare === null) {
-      toast.error('请选择是否共享资产');
+      toast.error(t?.enterprise?.selectShareAssetsRequired || '请选择是否共享资产');
       return;
     }
 
     // 新增时验证是否有 channelId
     if (!isEditMode && !user?.channelId) {
-      toast.error('无法获取企业ID，请确认您有企业权限');
+      toast.error(t?.enterprise?.noChannelId || '无法获取企业ID，请确认您有企业权限');
       return;
     }
 
@@ -116,11 +116,11 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
       if (isEditMode) {
         // 编辑
         if (!formData.channelId) {
-          toast.error('缺少企业ID，无法编辑');
+          toast.error(t?.enterprise?.missingChannelId || '缺少企业ID，无法编辑');
           return;
         }
         await channelService.updateChannel(formData);
-        toast.success('企业信息编辑成功');
+        toast.success(t?.enterprise?.editSuccess || '企业信息编辑成功');
       } else {
         // 新增，自动填充用户信息
         const newChannelData: LabChannelForm = {
@@ -131,7 +131,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
           userName: user.username, // UserInfo 接口中使用的是 username
         };
         await channelService.createChannel(newChannelData);
-        toast.success('新增成功');
+        toast.success(t?.enterprise?.addSuccess || '新增成功');
       }
 
       setModalVisible(false);
@@ -148,7 +148,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
       }
     } catch (error: any) {
       console.error('操作失败:', error);
-      toast.error(error.message || (isEditMode ? '企业信息编辑失败' : '新增失败'));
+      toast.error(error.message || (isEditMode ? (t?.enterprise?.editFailed || '企业信息编辑失败') : (t?.enterprise?.addFailed || '新增失败')));
     } finally {
       setSubmitting(false);
     }
@@ -168,8 +168,8 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <AlertCircle className="text-yellow-500 mb-4" size={48} />
-        <h3 className="text-lg font-semibold text-foreground mb-2">暂不支持该功能</h3>
-        <p className="text-muted">请联系管理员开通企业权限</p>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{t?.enterprise?.notSupported || '暂不支持该功能'}</h3>
+        <p className="text-muted">{t?.enterprise?.contactAdmin || '请联系管理员开通企业权限'}</p>
       </div>
     );
   }
@@ -181,14 +181,14 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border">
           <div className="p-6 border-b border-border flex justify-between items-center">
             <h3 className="text-lg font-semibold text-foreground">
-              企业信息：{channelInfo.channelName}
+              {t?.enterprise?.channelInfo || '企业信息'}：{channelInfo.channelName}
             </h3>
             <button
               onClick={() => handleEdit(channelInfo)}
               className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 text-sm"
             >
               <Edit2 size={16} />
-              编辑
+              {t?.enterprise?.edit || '编辑'}
             </button>
           </div>
 
@@ -200,25 +200,25 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
             ) : (
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-1">企业名称：</label>
+                  <label className="block text-sm font-medium text-muted mb-1">{t?.enterprise?.channelName || '企业名称'}：</label>
                   <div className="text-foreground">{channelInfo.channelName}</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-1">是否共享资产：</label>
+                  <label className="block text-sm font-medium text-muted mb-1">{t?.enterprise?.shareAssets || '是否共享资产'}：</label>
                   <span className={`text-xs px-2 py-1 rounded ${
                     channelInfo.isShare === 1 
                       ? 'bg-green-100 text-green-700' 
                       : 'bg-red-100 text-red-700'
                   }`}>
-                    {channelInfo.isShare === 1 ? '是' : '否'}
+                    {channelInfo.isShare === 1 ? (t?.enterprise?.yes || '是') : (t?.enterprise?.no || '否')}
                   </span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-1">创建时间：</label>
+                  <label className="block text-sm font-medium text-muted mb-1">{t?.enterprise?.createTime || '创建时间'}：</label>
                   <div className="text-foreground">{channelInfo.createTime || '-'}</div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-muted mb-1">更新时间：</label>
+                  <label className="block text-sm font-medium text-muted mb-1">{t?.enterprise?.updateTime || '更新时间'}：</label>
                   <div className="text-foreground">{channelInfo.updateTime || '-'}</div>
                 </div>
               </div>
@@ -229,13 +229,13 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
         // 无企业信息时显示空状态
         <div className="flex flex-col items-center justify-center py-16">
           <AlertCircle className="text-gray-400 mb-4" size={48} />
-          <p className="text-muted mb-6">暂无企业信息</p>
+          <p className="text-muted mb-6">{t?.enterprise?.noChannelInfo || '暂无企业信息'}</p>
           <button
             onClick={handleAddChannel}
             className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
           >
             <Plus size={16} />
-            新增用户企业关联
+            {t?.enterprise?.addRelation || '新增用户企业关联'}
           </button>
         </div>
       ) : (
@@ -250,7 +250,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4">
             <div className="p-6 border-b border-border flex justify-between items-center">
               <h3 className="text-lg font-semibold text-foreground">
-                {isEditMode ? '编辑用户企业关联' : '新增用户企业关联'}
+                {isEditMode ? (t?.enterprise?.editRelation || '编辑用户企业关联') : (t?.enterprise?.addRelationTitle || '新增用户企业关联')}
               </h3>
               <button
                 onClick={() => {
@@ -266,20 +266,20 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
             <div className="p-6 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  企业名称 <span className="text-red-500">*</span>
+                  {t?.enterprise?.channelName || '企业名称'} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.channelName || ''}
                   onChange={(e) => setFormData(prev => ({ ...prev, channelName: e.target.value }))}
-                  placeholder="请输入企业名称"
+                  placeholder={t?.enterprise?.enterChannelName || '请输入企业名称'}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  是否共享资产 <span className="text-red-500">*</span>
+                  {t?.enterprise?.shareAssets || '是否共享资产'} <span className="text-red-500">*</span>
                 </label>
                 <div className="flex gap-4">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -290,7 +290,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
                       onChange={() => setFormData(prev => ({ ...prev, isShare: 1 }))}
                       className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-foreground">是</span>
+                    <span className="text-foreground">{t?.enterprise?.yes || '是'}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -300,7 +300,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
                       onChange={() => setFormData(prev => ({ ...prev, isShare: 0 }))}
                       className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-foreground">否</span>
+                    <span className="text-foreground">{t?.enterprise?.no || '否'}</span>
                   </label>
                 </div>
               </div>
@@ -314,7 +314,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
                 }}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                取消
+                {t?.enterprise?.cancel || '取消'}
               </button>
               <button
                 onClick={handleSubmit}
@@ -322,7 +322,7 @@ const ChannelManagement: React.FC<ChannelManagementProps> = ({ t }) => {
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {submitting && <Loader2 className="animate-spin" size={16} />}
-                确定
+                {t?.enterprise?.confirm || '确定'}
               </button>
             </div>
           </div>

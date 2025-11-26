@@ -16,7 +16,7 @@ interface AuthState {
   isAuthenticated: boolean;
   firstLoginInfo: FirstLoginInfo | null; // 首次登录信息，用于全局显示提示
   login: (params: { username?: string; password?: string; code?: string; uuid?: string; channelId?: string; teamId?: string; inviteCode?: string }) => Promise<FirstLoginInfo | null>;
-  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string; channelId?: string; teamId?: string; inviteCode?: string }) => Promise<FirstLoginInfo | null>;
+  phoneLogin: (params: { phonenumber: string; smsCode: string; countryCode?: string; channelId?: string; teamId?: string; inviteCode?: string; registerTag?: string }) => Promise<FirstLoginInfo | null>;
   logout: () => Promise<void>;
   fetchUserInfo: () => Promise<UserInfo | null>;
   setUserInfo: (userInfo: UserInfo | null) => void;
@@ -164,6 +164,7 @@ export const useAuthStore = create<AuthState>()(
         channelId: params.channelId,
         teamId: params.teamId,
         inviteCode: params.inviteCode,
+        registerTag: params.registerTag,
       });
       console.log('Phone login response:', loginData);
       
