@@ -1742,6 +1742,41 @@ export const translations: Record<string, Translation> = {
           RUSSIAN: 'Russian'
         }
       },
+      threeDModelPage: {
+        title: '3D Model',
+        description: 'Transform your photo into a 3D render',
+        uploadImage: 'Click or drag to upload image',
+        generate: 'Generate 3D Model',
+        generating: 'Generating...',
+        resultTitle: 'Result',
+        emptyState: 'Generated results will be displayed here',
+        loadingMessages: {
+          uploading: 'Uploading image...',
+          generating: 'Generating 3D model...',
+          waiting: 'Waiting for generation to complete...',
+          downloading: 'Downloading file...',
+          parsing: 'Parsing model file...',
+          default: 'Generating...'
+        },
+        loadingHint: 'Please wait',
+        errors: {
+          uploadImage: 'Please upload image',
+          imageUploadFailed: 'Image upload failed',
+          createTaskFailed: 'Task creation failed',
+          downloadFailed: 'Download failed: Resource URL does not exist',
+          getDownloadUrlFailed: 'Failed to get download link: No url field in returned data',
+          parseGlbFailed: 'Failed to parse GLB file',
+          taskFailed: '3D task failed',
+          generateFailed: 'Failed to generate 3D effect',
+          downloadError: 'Download failed',
+          noGlbFile: 'No .glb file in the archive',
+          testFailed: 'Test failed'
+        },
+        testResult: {
+          success: '✅ Test successful! GLB file extracted and loaded.',
+          failure: '❌ Test failed'
+        }
+      },
       workshop: {
         title: 'Creation Workshop',
         description: 'What can I help you create?',
@@ -3304,6 +3339,41 @@ export const translations: Record<string, Translation> = {
           RUSSIAN: '俄语'
         }
       },
+      threeDModelPage: {
+        title: '3D 模型',
+        description: '将您的照片变成一份3D效果图',
+        uploadImage: '点击或拖拽上传图片',
+        generate: '生成 3D 模型',
+        generating: '生成中...',
+        resultTitle: '结果',
+        emptyState: '生成的结果将显示在这里',
+        loadingMessages: {
+          uploading: '正在上传图片...',
+          generating: '正在生成 3D 模型...',
+          waiting: '正在等待生成完成...',
+          downloading: '正在下载文件...',
+          parsing: '正在解析模型文件...',
+          default: '正在生成...'
+        },
+        loadingHint: '请稍候',
+        errors: {
+          uploadImage: '请上传图片',
+          imageUploadFailed: '图片上传失败',
+          createTaskFailed: '创建任务失败',
+          downloadFailed: '下载失败：资源URL不存在',
+          getDownloadUrlFailed: '获取下载链接失败：返回数据中没有 url 字段',
+          parseGlbFailed: '解析 GLB 文件失败',
+          taskFailed: '3D 任务失败',
+          generateFailed: '生成3D效果失败',
+          downloadError: '下载失败',
+          noGlbFile: '压缩包中没有 .glb 文件',
+          testFailed: '测试失败'
+        },
+        testResult: {
+          success: '✅ 测试成功！GLB 文件已提取并加载。',
+          failure: '❌ 测试失败'
+        }
+      },
       workshop: {
         title: '创作工坊',
         description: '我能帮你创造什么?',
@@ -4832,6 +4902,41 @@ export const translations: Record<string, Translation> = {
           KOREAN: 'Korea',
           FRENCH: 'Prancis',
           RUSSIAN: 'Rusia'
+        }
+      },
+      threeDModelPage: {
+        title: 'Model 3D',
+        description: 'Ubah foto Anda menjadi render 3D',
+        uploadImage: 'Klik atau seret untuk mengunggah gambar',
+        generate: 'Hasilkan Model 3D',
+        generating: 'Menghasilkan...',
+        resultTitle: 'Hasil',
+        emptyState: 'Hasil yang dihasilkan akan ditampilkan di sini',
+        loadingMessages: {
+          uploading: 'Mengunggah gambar...',
+          generating: 'Menghasilkan model 3D...',
+          waiting: 'Menunggu pembuatan selesai...',
+          downloading: 'Mengunduh file...',
+          parsing: 'Mengurai file model...',
+          default: 'Menghasilkan...'
+        },
+        loadingHint: 'Harap tunggu',
+        errors: {
+          uploadImage: 'Silakan unggah gambar',
+          imageUploadFailed: 'Pengunggahan gambar gagal',
+          createTaskFailed: 'Pembuatan tugas gagal',
+          downloadFailed: 'Pengunduhan gagal: URL sumber tidak ada',
+          getDownloadUrlFailed: 'Gagal mendapatkan tautan unduhan: Tidak ada bidang url dalam data yang dikembalikan',
+          parseGlbFailed: 'Gagal mengurai file GLB',
+          taskFailed: 'Tugas 3D gagal',
+          generateFailed: 'Gagal menghasilkan efek 3D',
+          downloadError: 'Pengunduhan gagal',
+          noGlbFile: 'Tidak ada file .glb di arsip',
+          testFailed: 'Tes gagal'
+        },
+        testResult: {
+          success: '✅ Tes berhasil! File GLB diekstrak dan dimuat.',
+          failure: '❌ Tes gagal'
         }
       },
       workshop: {
