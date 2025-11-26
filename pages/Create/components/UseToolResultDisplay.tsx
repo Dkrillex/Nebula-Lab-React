@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Download, Maximize2, FolderPlus, Check, ChevronsLeftRight, RefreshCw } from 'lucide-react';
+import { Download, Maximize2, FolderPlus, Check, ChevronsLeftRight } from 'lucide-react';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { uploadService } from '../../../services/uploadService';
 
@@ -7,7 +7,6 @@ interface UseToolResultDisplayProps {
   imageUrl: string;
   originalImageUrl?: string | null;
   onImageClick?: (imageUrl: string) => void;
-  onRegenerate?: () => void;
 }
 
 type ViewMode = 'result' | 'side-by-side' | 'slider';
@@ -16,7 +15,6 @@ const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
   imageUrl,
   originalImageUrl,
   onImageClick,
-  onRegenerate,
 }) => {
   const [viewMode, setViewMode] = useState<ViewMode>('result');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -303,15 +301,6 @@ const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
                     <FolderPlus className="h-5 w-5 text-gray-700" />
                   )}
                 </button>
-                {onRegenerate && (
-                  <button
-                    onClick={onRegenerate}
-                    className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
-                    title="重新生成"
-                  >
-                    <RefreshCw className="h-5 w-5 text-gray-700" />
-                  </button>
-                )}
               </div>
             </div>
           )}

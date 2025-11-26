@@ -955,6 +955,78 @@ interface Translation {
       indonesia: string;
     };
   };
+  aiVideoFaceSwapPage: {
+    title: string;
+    subtitle: string;
+    uploadVideo: {
+      title: string;
+      uploading: string;
+      clickOrDrag: string;
+      formats: string;
+      duration: string;
+      resolution: string;
+      size: string;
+      editVideo: string;
+    };
+    uploadImage: {
+      title: string;
+      uploading: string;
+      clickOrDrag: string;
+      formats: string;
+      resolution: string;
+      size: string;
+    };
+    buttons: {
+      generating: string;
+      generateVideo: string;
+      clearResult: string;
+    };
+    result: {
+      title: string;
+      emptyState: string;
+      downloadVideo: string;
+      importMaterial: string;
+      importedToast: string;
+    };
+    errors: {
+      videoProcessingFailed: string;
+      videoUploadFailed: string;
+      videoProcessTaskFailed: string;
+      videoProcessFailed: string;
+      videoUrlMissing: string;
+      imageUploadFailed: string;
+      imageSizeExceeded: string;
+      imageResolutionTooSmall: string;
+      imageResolutionTooLarge: string;
+      imageValidationFailed: string;
+      videoFormatNotSupported: string;
+      videoSizeExceeded: string;
+      videoDurationExceeded: string;
+      videoResolutionExceeded: string;
+      videoFpsExceeded: string;
+      videoMetadataLoadFailed: string;
+      videoMetadataLoadTimeout: string;
+      videoLoadFailed: string;
+      videoMaskDrawingRequired: string;
+      imageRequired: string;
+      generateFailed: string;
+    };
+    videoEditingModal: {
+      back: string;
+      title: string;
+      markModifyArea: string;
+      markProtectArea: string;
+      clear: string;
+      previewAllAreas: string;
+      cancel: string;
+      confirm: string;
+      loadingVideo: string;
+      renderingMarks: string;
+      generating: string;
+      processing: string;
+      videoLoadFailed: string;
+    };
+  };
   error: {
     sessionExpired: string;
     unknownError: string;
@@ -1598,6 +1670,80 @@ export const translations: Record<string, Translation> = {
         resultTitle: 'Translation Result',
         emptyState: 'Upload images to open a new canvas',
       },
+      ttsPage: {
+        title: 'Text to Speech',
+        description: 'Convert text to natural, fluent speech with multiple voices and languages',
+        inputText: 'Input Text',
+        inputPlaceholder: 'Enter the text you want AI to voice here, e.g.: Welcome to our product showcase, let me introduce our latest features in detail...',
+        voice: 'Voice',
+        language: 'Language',
+        generate: 'Generate Speech',
+        generating: 'Generating...',
+        resultTitle: 'Generation Result',
+        emptyState: 'Configure parameters and start generation, results will be displayed here',
+        generatingState: 'Generating speech...',
+        downloadAudio: 'Download Audio',
+        importToMaterials: 'Import to Material Library',
+        importedToMaterials: 'Imported to Material Library',
+        errors: {
+          pleaseLogin: 'Please login first',
+          enterText: 'Please enter text content',
+          generateFailed: 'Generation failed',
+          noAudioToImport: 'No audio available to import',
+          alreadyImported: 'Already imported to material library',
+          importFailed: 'Import failed',
+          uploadFailed: 'Upload failed'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: 'Sweet Female',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: 'Mature Male',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: 'Neutral Voice',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: 'Professional Female',
+          RYAN: 'Ryan',
+          RYAN_DESC: 'Young Male',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: 'Elegant Female',
+          ELIAS: 'Elias',
+          ELIAS_DESC: 'Warm Male',
+          JADA: 'Jada',
+          JADA_DESC: 'Lively Female',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: 'Steady Male',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: 'Sunny Female',
+          LI: 'Li',
+          LI_DESC: 'Chinese Male',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: 'Magnetic Male',
+          ROY: 'Roy',
+          ROY_DESC: 'Rich Male',
+          PETER: 'Peter',
+          PETER_DESC: 'Clear Male',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: 'Rough Male',
+          KIKI: 'Kiki',
+          KIKI_DESC: 'Cute Female',
+          ERIC: 'Eric',
+          ERIC_DESC: 'Standard Male'
+        },
+        languages: {
+          AUTO: 'Auto Detect',
+          CHINESE: 'Chinese',
+          ENGLISH: 'English',
+          GERMAN: 'German',
+          ITALIAN: 'Italian',
+          PORTUGUESE: 'Portuguese',
+          SPANISH: 'Spanish',
+          JAPANESE: 'Japanese',
+          KOREAN: 'Korean',
+          FRENCH: 'French',
+          RUSSIAN: 'Russian'
+        }
+      },
       workshop: {
         title: 'Creation Workshop',
         description: 'What can I help you create?',
@@ -2186,6 +2332,78 @@ export const translations: Record<string, Translation> = {
         unpaid: 'Unpaid',
         failed: 'Failed',
         unknown: 'Unknown'
+      }
+    },
+    aiVideoFaceSwapPage: {
+      title: 'AI Video Face Swap',
+      subtitle: 'Upload video and reference image, let AI generate face swap video for you',
+      uploadVideo: {
+        title: 'Upload Reference Video',
+        uploading: 'Uploading and processing video...',
+        clickOrDrag: 'Click or drag to upload video',
+        formats: 'MP4, MOV format',
+        duration: 'Duration ≤60s, frame rate ≤30fps',
+        resolution: 'Resolution ≤1080P',
+        size: 'Size ≤200MB',
+        editVideo: 'Edit Video'
+      },
+      uploadImage: {
+        title: 'Upload Reference Image',
+        uploading: 'Uploading image...',
+        clickOrDrag: 'Click or drag to upload image',
+        formats: 'jpg/jpeg, png format',
+        resolution: 'Resolution 128*128 - 4096*4096',
+        size: 'Size not exceed 5MB'
+      },
+      buttons: {
+        generating: 'Generating...',
+        generateVideo: 'Generate Face Swap Video',
+        clearResult: 'Clear Result'
+      },
+      result: {
+        title: 'Generation Result',
+        emptyState: 'Generated video will be displayed here',
+        downloadVideo: 'Download Video',
+        importMaterial: 'Import Material',
+        importedToast: 'This video has been imported to material library'
+      },
+      errors: {
+        videoProcessingFailed: 'Video processing failed',
+        videoUploadFailed: 'Video upload failed, missing file ID',
+        videoProcessTaskFailed: 'Failed to submit video processing task',
+        videoProcessFailed: 'Video processing failed',
+        videoUrlMissing: 'Video processing succeeded but no video URL returned',
+        imageUploadFailed: 'Image upload failed, missing file ID',
+        imageSizeExceeded: 'Image size cannot exceed 5MB after Base64 encoding',
+        imageResolutionTooSmall: 'Image resolution cannot be smaller than 128*128',
+        imageResolutionTooLarge: 'Image resolution cannot be larger than 4096*4096',
+        imageValidationFailed: 'Image validation failed',
+        videoFormatNotSupported: 'Video format only supports MP4, MOV, MP4 format is recommended; other formats are not supported yet, will be gradually opened. (HDR video encoding is not supported)',
+        videoSizeExceeded: 'Video size cannot exceed 200MB',
+        videoDurationExceeded: 'Video duration cannot exceed 60 seconds',
+        videoResolutionExceeded: 'Video resolution cannot exceed 1080P (longest side ≤1920, shortest side ≤1080, supports landscape, portrait and lower resolutions)',
+        videoFpsExceeded: 'Video frame rate cannot exceed 30fps',
+        videoMetadataLoadFailed: 'Video metadata load failed',
+        videoMetadataLoadTimeout: 'Video metadata load timeout',
+        videoLoadFailed: 'Video load failed, please check if it meets requirements:\n1. Format: MP4, MOV (MP4 recommended, HDR not supported)\n2. Duration ≤60s, frame rate ≤30fps, resolution ≤1080P (longest side ≤1920, shortest side ≤1080)\n3. Size ≤200MB',
+        videoMaskDrawingRequired: 'Please upload and process reference video first, and complete video mask drawing',
+        imageRequired: 'Please upload reference image',
+        generateFailed: 'Generation failed, please try again'
+      },
+      videoEditingModal: {
+        back: 'Back',
+        title: 'Click on the video to mark areas to be modified and areas to be protected',
+        markModifyArea: 'Mark Modification Area',
+        markProtectArea: 'Mark Protection Area',
+        clear: 'Clear',
+        previewAllAreas: 'Preview All Selected Areas',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        loadingVideo: 'Loading video...',
+        renderingMarks: 'Rendering mark points, please wait...',
+        generating: 'Generating, please wait...',
+        processing: 'Processing...',
+        videoLoadFailed: 'Video load failed'
       }
     },
     pricingPage: {
@@ -3015,6 +3233,80 @@ export const translations: Record<string, Translation> = {
         resultTitle: '翻译结果',
         emptyState: '上传图片开始图像翻译',
       },
+      ttsPage: {
+        title: '文本转语音',
+        description: '将文本转换为自然流畅的语音，支持多种音色和语言',
+        inputText: '输入文本',
+        inputPlaceholder: '在此输入需要AI配音的文本，例如：欢迎来到我们的产品展示，让我为您详细介绍我们最新的功能特点...',
+        voice: '音色',
+        language: '语言',
+        generate: '生成语音',
+        generating: '生成中...',
+        resultTitle: '生成结果',
+        emptyState: '配置参数并开始生成，结果将显示在这里',
+        generatingState: '正在生成语音...',
+        downloadAudio: '下载音频',
+        importToMaterials: '导入素材库',
+        importedToMaterials: '已导入素材库',
+        errors: {
+          pleaseLogin: '请先登录',
+          enterText: '请输入文本内容',
+          generateFailed: '生成失败',
+          noAudioToImport: '没有可导入的音频',
+          alreadyImported: '已导入素材库',
+          importFailed: '导入失败',
+          uploadFailed: '上传失败'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: '甜美女性',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: '成熟男性',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: '中性声音',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: '专业女性',
+          RYAN: 'Ryan',
+          RYAN_DESC: '年轻男性',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: '优雅女性',
+          ELIAS: 'Elias',
+          ELIAS_DESC: '温暖男性',
+          JADA: 'Jada',
+          JADA_DESC: '活泼女性',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: '沉稳男性',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: '阳光女性',
+          LI: 'Li',
+          LI_DESC: '中文男声',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: '磁性男声',
+          ROY: 'Roy',
+          ROY_DESC: '浑厚男声',
+          PETER: 'Peter',
+          PETER_DESC: '清晰男声',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: '粗犷男声',
+          KIKI: 'Kiki',
+          KIKI_DESC: '可爱女声',
+          ERIC: 'Eric',
+          ERIC_DESC: '标准男声'
+        },
+        languages: {
+          AUTO: '自动检测',
+          CHINESE: '中文',
+          ENGLISH: '英文',
+          GERMAN: '德语',
+          ITALIAN: '意大利语',
+          PORTUGUESE: '葡萄牙语',
+          SPANISH: '西班牙语',
+          JAPANESE: '日语',
+          KOREAN: '韩语',
+          FRENCH: '法语',
+          RUSSIAN: '俄语'
+        }
+      },
       workshop: {
         title: '创作工坊',
         description: '我能帮你创造什么?',
@@ -3603,6 +3895,78 @@ export const translations: Record<string, Translation> = {
         unpaid: '未扣款',
         failed: '失败',
         unknown: '未知'
+      }
+    },
+    aiVideoFaceSwapPage: {
+      title: 'AI 视频换脸',
+      subtitle: '上传视频和参考图片，让 AI 为您生成换脸视频',
+      uploadVideo: {
+        title: '上传参考视频',
+        uploading: '上传并处理视频中...',
+        clickOrDrag: '点击或拖拽上传视频',
+        formats: 'MP4、MOV 格式',
+        duration: '时长≤60秒，帧率≤30fps',
+        resolution: '分辨率≤1080P',
+        size: '大小≤200MB',
+        editVideo: '编辑视频'
+      },
+      uploadImage: {
+        title: '上传参考图片',
+        uploading: '上传图片中...',
+        clickOrDrag: '点击或拖拽上传图片',
+        formats: 'jpg/jpeg、png 格式',
+        resolution: '分辨率 128*128 - 4096*4096',
+        size: '大小不超过 5MB'
+      },
+      buttons: {
+        generating: '生成中...',
+        generateVideo: '生成换脸视频',
+        clearResult: '清除结果'
+      },
+      result: {
+        title: '生成结果',
+        emptyState: '生成的视频将显示在这里',
+        downloadVideo: '下载视频',
+        importMaterial: '导入素材',
+        importedToast: '该视频已导入素材库'
+      },
+      errors: {
+        videoProcessingFailed: '视频处理失败',
+        videoUploadFailed: '视频上传失败，缺少文件ID',
+        videoProcessTaskFailed: '提交视频处理任务失败',
+        videoProcessFailed: '视频处理失败',
+        videoUrlMissing: '视频处理成功但未返回视频URL',
+        imageUploadFailed: '图片上传失败，缺少文件ID',
+        imageSizeExceeded: '图片大小经Base64编码后不能超过5MB',
+        imageResolutionTooSmall: '图片分辨率不能小于128*128',
+        imageResolutionTooLarge: '图片分辨率不能大于4096*4096',
+        imageValidationFailed: '图片验证失败',
+        videoFormatNotSupported: '视频格式仅支持MP4、MOV，建议使用MP4格式；其余格式暂不支持，后续将逐步开放。（不支持高动态范围（HDR）视频编码）',
+        videoSizeExceeded: '视频大小不能超过200MB',
+        videoDurationExceeded: '视频时长不能超过60秒',
+        videoResolutionExceeded: '视频分辨率不能超过1080P（最长边≤1920，最短边≤1080，支持横屏、竖屏及更低分辨率）',
+        videoFpsExceeded: '视频帧率不能超过30fps',
+        videoMetadataLoadFailed: '视频元数据加载失败',
+        videoMetadataLoadTimeout: '视频元数据加载超时',
+        videoLoadFailed: '视频加载失败，请检查是否符合要求：\n1. 格式：MP4、MOV（建议MP4，不支持HDR）\n2. 时长≤60秒，帧率≤30fps，分辨率≤1080P（最长边≤1920，最短边≤1080）\n3. 大小≤200MB',
+        videoMaskDrawingRequired: '请先上传并处理参考视频，并完成视频掩码绘制',
+        imageRequired: '请上传参考图片',
+        generateFailed: '生成失败，请重试'
+      },
+      videoEditingModal: {
+        back: '返回',
+        title: '点击视频标记需修改区域与需保护区域',
+        markModifyArea: '标记修改区域',
+        markProtectArea: '标记保护区域',
+        clear: '清除',
+        previewAllAreas: '预览所有已选区域',
+        cancel: '取消',
+        confirm: '确认',
+        loadingVideo: '加载视频中...',
+        renderingMarks: '正在渲染绘制标记点，请稍等...',
+        generating: '正在生成绘制,请等待...',
+        processing: '处理中...',
+        videoLoadFailed: '视频加载失败'
       }
     },
     pricingPage: {
@@ -4400,6 +4764,80 @@ export const translations: Record<string, Translation> = {
         resultTitle: 'Hasil Terjemahan',
         emptyState: 'Unggah gambar untuk memulai',
       },
+      ttsPage: {
+        title: 'Teks ke Ucapan',
+        description: 'Ubah teks menjadi ucapan alami dan lancar dengan berbagai suara dan bahasa',
+        inputText: 'Masukkan Teks',
+        inputPlaceholder: 'Masukkan teks yang ingin diubah menjadi suara oleh AI di sini, misalnya: Selamat datang di pameran produk kami, izinkan saya memperkenalkan fitur terbaru kami secara detail...',
+        voice: 'Suara',
+        language: 'Bahasa',
+        generate: 'Hasilkan Ucapan',
+        generating: 'Menghasilkan...',
+        resultTitle: 'Hasil Pembuatan',
+        emptyState: 'Konfigurasi parameter dan mulai pembuatan, hasil akan ditampilkan di sini',
+        generatingState: 'Sedang menghasilkan ucapan...',
+        downloadAudio: 'Unduh Audio',
+        importToMaterials: 'Impor ke Perpustakaan Materi',
+        importedToMaterials: 'Diimpor ke Perpustakaan Materi',
+        errors: {
+          pleaseLogin: 'Silakan login terlebih dahulu',
+          enterText: 'Silakan masukkan konten teks',
+          generateFailed: 'Pembuatan gagal',
+          noAudioToImport: 'Tidak ada audio yang tersedia untuk diimpor',
+          alreadyImported: 'Sudah diimpor ke perpustakaan materi',
+          importFailed: 'Impor gagal',
+          uploadFailed: 'Unggah gagal'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: 'Perempuan Manis',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: 'Pria Dewasa',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: 'Suara Netral',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: 'Perempuan Profesional',
+          RYAN: 'Ryan',
+          RYAN_DESC: 'Pria Muda',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: 'Perempuan Elegan',
+          ELIAS: 'Elias',
+          ELIAS_DESC: 'Pria Hangat',
+          JADA: 'Jada',
+          JADA_DESC: 'Perempuan Lincah',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: 'Pria Stabil',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: 'Perempuan Cerah',
+          LI: 'Li',
+          LI_DESC: 'Pria Cina',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: 'Pria Magnetis',
+          ROY: 'Roy',
+          ROY_DESC: 'Pria Kuat',
+          PETER: 'Peter',
+          PETER_DESC: 'Pria Jelas',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: 'Pria Kasar',
+          KIKI: 'Kiki',
+          KIKI_DESC: 'Perempuan Lucu',
+          ERIC: 'Eric',
+          ERIC_DESC: 'Pria Standar'
+        },
+        languages: {
+          AUTO: 'Deteksi Otomatis',
+          CHINESE: 'Cina',
+          ENGLISH: 'Inggris',
+          GERMAN: 'Jerman',
+          ITALIAN: 'Italia',
+          PORTUGUESE: 'Portugis',
+          SPANISH: 'Spanyol',
+          JAPANESE: 'Jepang',
+          KOREAN: 'Korea',
+          FRENCH: 'Prancis',
+          RUSSIAN: 'Rusia'
+        }
+      },
       workshop: {
         title: 'Workshop Kreatif',
         description: 'Jelajahi alat AI kreatif',
@@ -4591,6 +5029,78 @@ export const translations: Record<string, Translation> = {
         unpaid: 'Belum Dikurangi',
         failed: 'Gagal',
         unknown: 'Tidak Diketahui'
+      }
+    },
+    aiVideoFaceSwapPage: {
+      title: 'AI Video Face Swap',
+      subtitle: 'Upload video dan gambar referensi, biarkan AI menghasilkan video tukar wajah untuk Anda',
+      uploadVideo: {
+        title: 'Unggah Video Referensi',
+        uploading: 'Mengunggah dan memproses video...',
+        clickOrDrag: 'Klik atau seret untuk mengunggah video',
+        formats: 'Format MP4, MOV',
+        duration: 'Durasi ≤60s, frame rate ≤30fps',
+        resolution: 'Resolusi ≤1080P',
+        size: 'Ukuran ≤200MB',
+        editVideo: 'Edit Video'
+      },
+      uploadImage: {
+        title: 'Unggah Gambar Referensi',
+        uploading: 'Mengunggah gambar...',
+        clickOrDrag: 'Klik atau seret untuk mengunggah gambar',
+        formats: 'Format jpg/jpeg, png',
+        resolution: 'Resolusi 128*128 - 4096*4096',
+        size: 'Ukuran tidak melebihi 5MB'
+      },
+      buttons: {
+        generating: 'Menghasilkan...',
+        generateVideo: 'Hasilkan Video Tukar Wajah',
+        clearResult: 'Hapus Hasil'
+      },
+      result: {
+        title: 'Hasil Pembuatan',
+        emptyState: 'Video yang dihasilkan akan ditampilkan di sini',
+        downloadVideo: 'Unduh Video',
+        importMaterial: 'Impor Materi',
+        importedToast: 'Video ini telah diimpor ke perpustakaan materi'
+      },
+      errors: {
+        videoProcessingFailed: 'Pemrosesan video gagal',
+        videoUploadFailed: 'Pengunggahan video gagal, file ID tidak ada',
+        videoProcessTaskFailed: 'Gagal mengirim tugas pemrosesan video',
+        videoProcessFailed: 'Pemrosesan video gagal',
+        videoUrlMissing: 'Pemrosesan video berhasil tetapi tidak ada URL video yang dikembalikan',
+        imageUploadFailed: 'Pengunggahan gambar gagal, file ID tidak ada',
+        imageSizeExceeded: 'Ukuran gambar tidak boleh melebihi 5MB setelah encoding Base64',
+        imageResolutionTooSmall: 'Resolusi gambar tidak boleh lebih kecil dari 128*128',
+        imageResolutionTooLarge: 'Resolusi gambar tidak boleh lebih besar dari 4096*4096',
+        imageValidationFailed: 'Validasi gambar gagal',
+        videoFormatNotSupported: 'Format video hanya mendukung MP4, MOV, format MP4 direkomendasikan; format lain belum didukung, akan dibuka secara bertahap. (Encoding video HDR tidak didukung)',
+        videoSizeExceeded: 'Ukuran video tidak boleh melebihi 200MB',
+        videoDurationExceeded: 'Durasi video tidak boleh melebihi 60 detik',
+        videoResolutionExceeded: 'Resolusi video tidak boleh melebihi 1080P (sisi terpanjang ≤1920, sisi terpendek ≤1080, mendukung landscape, portrait dan resolusi lebih rendah)',
+        videoFpsExceeded: 'Frame rate video tidak boleh melebihi 30fps',
+        videoMetadataLoadFailed: 'Pemuatan metadata video gagal',
+        videoMetadataLoadTimeout: 'Timeout pemuatan metadata video',
+        videoLoadFailed: 'Pemuatan video gagal, harap periksa apakah memenuhi persyaratan:\n1. Format: MP4, MOV (MP4 direkomendasikan, HDR tidak didukung)\n2. Durasi ≤60s, frame rate ≤30fps, resolusi ≤1080P (sisi terpanjang ≤1920, sisi terpendek ≤1080)\n3. Ukuran ≤200MB',
+        videoMaskDrawingRequired: 'Harap unggah dan proses video referensi terlebih dahulu, dan selesaikan penggambaran masker video',
+        imageRequired: 'Harap unggah gambar referensi',
+        generateFailed: 'Pembuatan gagal, harap coba lagi'
+      },
+      videoEditingModal: {
+        back: 'Kembali',
+        title: 'Klik pada video untuk menandai area yang akan dimodifikasi dan area yang akan dilindungi',
+        markModifyArea: 'Tandai Area Modifikasi',
+        markProtectArea: 'Tandai Area Perlindungan',
+        clear: 'Hapus',
+        previewAllAreas: 'Pratinjau Semua Area yang Dipilih',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        loadingVideo: 'Memuat video...',
+        renderingMarks: 'Merender titik penanda, harap tunggu...',
+        generating: 'Menghasilkan, harap tunggu...',
+        processing: 'Memproses...',
+        videoLoadFailed: 'Gagal memuat video'
       }
     },
     pricingPage: {

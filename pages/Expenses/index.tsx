@@ -8,6 +8,7 @@ import { teamService } from '../../services/teamService';
 import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
+import DailySummaryTable, { BalanceDailySummary, PointsDailySummary } from './components/DailySummaryTable';
 
 interface ExpensesPageProps {
   t?: any;
@@ -86,6 +87,13 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     total: 0,
   });
   
+  // 日汇总数据状态
+  const [dailySummary, setDailySummary] = useState<BalanceDailySummary[]>([]);
+  const [pointsDailySummary, setPointsDailySummary] = useState<PointsDailySummary[]>([]);
+  
+  // 明细列表展开状态
+  const [detailExpanded, setDetailExpanded] = useState(false);
+  
   // 导入模态框状态
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
@@ -158,6 +166,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           current: page,
           total: res.total || logs.length,
         }));
+        // 计算日汇总数据
+        calculateDailySummary(logs);
       }
     } catch (error) {
       console.error('获取费用记录失败:', error);
@@ -225,6 +235,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           current: page,
           total: res.total || scores.length,
         }));
+        // 计算积分日汇总数据
+        calculatePointsDailySummary(scores);
       }
     } catch (error) {
       console.error('获取积分流水失败:', error);
@@ -668,6 +680,103 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     return Number(points).toFixed(2);
   };
 
+  // 计算余额日汇总数据
+  const calculateDailySummary = (logs: ExpenseLog[]) => {
+    const dailyMap = new Map<string, {
+      totalConsumption: number;
+      totalRecharge: number;
+      usageCount: number;
+      totalTokens: number;
+    }>();
+
+    logs.forEach(log => {
+      // 提取日期部分
+      let dateKey = '';
+      if (log.createTime) {
+        dateKey = log.createTime.split(' ')[0];
+      } else if (log.createdAt) {
+        const timestamp = typeof log.createdAt === 'number' 
+          ? (log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000)
+          : Date.now();
+        const date = new Date(timestamp);
+        dateKey = formatDateToLocalString(date);
+      }
+      
+      if (!dateKey) return;
+
+      const existing = dailyMap.get(dateKey) || {
+        totalConsumption: 0,
+        totalRecharge: 0,
+        usageCount: 0,
+        totalTokens: 0,
+      };
+
+      const isConsumption = String(log.type) === '2';
+      const amount = Math.abs(Number(log.quotaRmb || log.quota || 0));
+      const tokens = (Number(log.promptTokens) || 0) + (Number(log.completionTokens) || 0);
+
+      if (isConsumption) {
+        existing.totalConsumption += amount;
+        existing.usageCount += 1;
+        existing.totalTokens += tokens;
+      } else {
+        existing.totalRecharge += amount;
+      }
+
+      dailyMap.set(dateKey, existing);
+    });
+
+    // 转换为数组并排序（按日期降序）
+    const summary = Array.from(dailyMap.entries()).map(([date, data]) => ({
+      date,
+      totalConsumption: data.totalConsumption,
+      totalRecharge: data.totalRecharge,
+      netAmount: data.totalRecharge - data.totalConsumption,
+      usageCount: data.usageCount,
+      totalTokens: data.totalTokens,
+    })).sort((a, b) => b.date.localeCompare(a.date));
+
+    setDailySummary(summary);
+  };
+
+  // 计算积分日汇总数据
+  const calculatePointsDailySummary = (scores: ScoreRecord[]) => {
+    const dailyMap = new Map<string, {
+      totalDeduct: number;
+      usageCount: number;
+    }>();
+
+    scores.forEach(score => {
+      // 提取日期部分
+      let dateKey = '';
+      if (score.createTime) {
+        dateKey = score.createTime.split(' ')[0];
+      }
+      
+      if (!dateKey) return;
+
+      const existing = dailyMap.get(dateKey) || {
+        totalDeduct: 0,
+        usageCount: 0,
+      };
+
+      const scoreValue = Math.abs(Number(score.score) || 0);
+      existing.totalDeduct += scoreValue;
+      existing.usageCount += 1;
+
+      dailyMap.set(dateKey, existing);
+    });
+
+    // 转换为数组并排序（按日期降序）
+    const summary = Array.from(dailyMap.entries()).map(([date, data]) => ({
+      date,
+      totalDeduct: data.totalDeduct,
+      usageCount: data.usageCount,
+    })).sort((a, b) => b.date.localeCompare(a.date));
+
+    setPointsDailySummary(summary);
+  };
+
   const convertLogToExpenseRecord = (log: ExpenseLog) => {
     let timeStr = log.createTime || '-';
     if (!timeStr && log.createdAt) {
@@ -837,7 +946,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         {/* Usage List - 按照图片布局 */}
         <div className="bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700 overflow-hidden">
           <div className="p-6">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-semibold text-gray-800 dark:text-zinc-100">
                 {currentMode === 'logos' ? '日志/账单' : t.recordsTitle}
               </h2>
@@ -912,7 +1021,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
             {/* 余额/积分模式：日期选择器 */}
             {(currentMode === 'balance' || currentMode === 'points') && (
-              <div className="mb-6 p-4 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700">
+              <div className="mb-4 p-4 bg-white dark:bg-zinc-800 rounded-lg border border-gray-200 dark:border-zinc-700">
                 <div className="flex items-center gap-4">
                   <label className="text-sm font-medium text-gray-700 dark:text-zinc-300 whitespace-nowrap">时间范围：</label>
                   <div className="flex items-center gap-2 flex-1">
@@ -972,6 +1081,34 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* 余额模式：日汇总表格 */}
+            {currentMode === 'balance' && (
+              <DailySummaryTable mode="balance" data={dailySummary} />
+            )}
+
+            {/* 积分模式：日汇总表格 */}
+            {currentMode === 'points' && (
+              <DailySummaryTable mode="points" data={pointsDailySummary} />
+            )}
+
+            {/* 查看明细按钮 - 余额/积分模式 */}
+            {(currentMode === 'balance' || currentMode === 'points') && (
+              <button
+                onClick={() => setDetailExpanded(!detailExpanded)}
+                className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-700 dark:hover:text-zinc-200 transition-colors mb-4"
+              >
+                <svg 
+                  className={`w-4 h-4 transition-transform ${detailExpanded ? 'rotate-180' : ''}`} 
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+                <span>{detailExpanded ? '收起明细' : '查看明细'}</span>
+              </button>
             )}
 
             {/* 日志/账单模式：筛选条件 - 按照 Nebula1 设计 */}
@@ -1269,30 +1406,35 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 ) : (
                   /* 余额/积分模式：列表展示 - 按照图片布局 */
                   <>
-                    {(currentMode === 'balance' ? expenseLogs : scoreList).length === 0 ? (
-                      <div className="py-16 text-center">
-                        <div className="text-6xl mb-4 opacity-50">📊</div>
-                        <div className="text-gray-500 dark:text-zinc-400 text-lg font-medium">暂无记录</div>
-                        <div className="text-gray-400 dark:text-zinc-500 text-sm mt-2">
-                          {currentMode === 'balance' ? '暂无使用记录' : '暂无积分流水'}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {currentMode === 'balance' ? (
-                          expenseLogs.map((log) => (
-                            <ExpenseListItem key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
-                          ))
+                    {/* 明细列表 - 根据 detailExpanded 状态显示 */}
+                    {detailExpanded && (
+                      <>
+                        {(currentMode === 'balance' ? expenseLogs : scoreList).length === 0 ? (
+                          <div className="py-16 text-center">
+                            <div className="text-6xl mb-4 opacity-50">📊</div>
+                            <div className="text-gray-500 dark:text-zinc-400 text-lg font-medium">暂无记录</div>
+                            <div className="text-gray-400 dark:text-zinc-500 text-sm mt-2">
+                              {currentMode === 'balance' ? '暂无使用记录' : '暂无积分流水'}
+                            </div>
+                          </div>
                         ) : (
-                          scoreList.map((score) => (
-                            <ScoreListItem key={score.id} score={score} t={t} />
-                          ))
+                          <div className="space-y-2">
+                            {currentMode === 'balance' ? (
+                              expenseLogs.map((log) => (
+                                <ExpenseListItem key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
+                              ))
+                            ) : (
+                              scoreList.map((score) => (
+                                <ScoreListItem key={score.id} score={score} t={t} />
+                              ))
+                            )}
+                          </div>
                         )}
-                      </div>
+                      </>
                     )}
 
                     {/* Pagination Footer - 按照图片布局 */}
-                    {!loading && pagination.total > 0 && (
+                    {detailExpanded && !loading && pagination.total > 0 && (
                       <div className="flex items-center justify-center gap-4 pt-6 mt-6 border-t border-gray-200 dark:border-zinc-700">
                         <button
                           onClick={() => currentMode === 'balance' ? fetchExpenseLogs(pagination.current - 1) : fetchScoreList(pagination.current - 1)}

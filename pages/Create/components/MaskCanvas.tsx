@@ -18,6 +18,7 @@ interface MaskCanvasProps {
   mode?: 'mask' | 'draw';
   enableZoom?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
 export interface MaskCanvasRef {
@@ -56,7 +57,8 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   textOptions = { fontFamily: 'Arial', fontSize: 20, fontWeight: 'normal', fontStyle: 'normal' },
   mode = 'mask', // 'mask' | 'draw'
   enableZoom = true,
-  className = ''
+  className = '',
+  disabled = false
 }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const mainCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -334,6 +336,8 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   };
 
   const startDraw = (e: React.MouseEvent | React.TouchEvent) => {
+    if (disabled) return;
+    
     if (enableZoom && isSpacePressedRef.current) {
       isPanningRef.current = true;
       const { x, y } = getCoords(e);
@@ -383,7 +387,13 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
 
   const moveDraw = (e: React.MouseEvent | React.TouchEvent) => {
     const { x, y } = getCoords(e);
-    setCursor({ x, y, visible: true });
+    
+    // 只有在未禁用时才显示画笔光标
+    if (!disabled) {
+      setCursor({ x, y, visible: true });
+    } else {
+      setCursor({ x, y, visible: false });
+    }
 
     if (isPanningRef.current) {
       const dx = x - lastPanRef.current.x;
@@ -704,7 +714,13 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
   return (
     <div 
       ref={containerRef} 
-      className={`relative w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden select-none touch-none ${className} ${enableZoom && isSpacePressedRef.current ? 'cursor-grab active:cursor-grabbing' : 'cursor-crosshair'}`}
+      className={`relative w-full h-full bg-slate-100 dark:bg-slate-800 rounded-xl overflow-hidden select-none touch-none ${className} ${
+        disabled 
+          ? 'cursor-default' 
+          : enableZoom && isSpacePressedRef.current 
+            ? 'cursor-grab active:cursor-grabbing' 
+            : 'cursor-crosshair'
+      }`}
       onMouseDown={startDraw}
       onMouseMove={moveDraw}
       onMouseUp={endDraw}
@@ -717,7 +733,7 @@ const MaskCanvas = forwardRef<MaskCanvasRef, MaskCanvasProps>(({
       <canvas ref={maskCanvasRef} className={`absolute top-0 left-0 w-full h-full pointer-events-none ${mode === 'mask' ? 'opacity-70' : 'opacity-100'}`} />
       
       {/* Cursor for brush */}
-      {cursor.visible && !isSpacePressedRef.current && (tool === 'pencil' || tool === 'eraser') && (
+      {!disabled && cursor.visible && !isSpacePressedRef.current && (tool === 'pencil' || tool === 'eraser') && (
         <div 
           className="pointer-events-none fixed z-50 rounded-full border-2"
           style={{
