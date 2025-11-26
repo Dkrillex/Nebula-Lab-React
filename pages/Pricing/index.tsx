@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useOutletContext } from 'react-router-dom';
-import { HelpCircle, Check, Loader2 } from 'lucide-react';
+import { Check, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
 import { orderService, OrderInfo } from '../../services/orderService';
@@ -10,6 +10,9 @@ import InvoiceForm, { InvoiceFormRef } from '../../components/InvoiceForm';
 import { UserInvoiceForm } from '../../services/invoiceService';
 import toast from 'react-hot-toast';
 import { translations } from '../../translations';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
+import PricingCard from './components/PricingCard';
+import ModelCenterCard from './components/ModelCenterCard';
 
 interface PricingPageProps {}
 
@@ -178,16 +181,19 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         return;
       }
       
-      // 检查最低金额限制
-      const minAmountRmb = getMinAmount(item);
-      const minAmount = paymentType === 'wechat' 
-        ? minAmountRmb 
-        : Number((minAmountRmb / 7.3).toFixed(2));
-      const currency = paymentType === 'wechat' ? '元' : '美元';
-      
-      if (amount < minAmount) {
-        toast.error(`${item.productName}版本最低金额为${minAmount}${currency}`);
-        return;
+      // MODEL_CENTER 模式下不检查最低金额限制（由 ModelCenterCard 组件自行控制）
+      if (CURRENT_SYSTEM !== SYSTEM_TYPE.MODEL_CENTER) {
+        // 检查最低金额限制
+        const minAmountRmb = getMinAmount(item);
+        const minAmount = paymentType === 'wechat' 
+          ? minAmountRmb 
+          : Number((minAmountRmb / 7.3).toFixed(2));
+        const currency = paymentType === 'wechat' ? '元' : '美元';
+        
+        if (amount < minAmount) {
+          toast.error(`${item.productName}版本最低金额为${minAmount}${currency}`);
+          return;
+        }
       }
     }
 
@@ -436,10 +442,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
   return (
     <div className="bg-surface/30 pb-12 font-sans">
-      <div className="container mx-auto px-4 max-w-6xl pt-12">
+      <div className="container mx-auto px-4 max-w-6xl pt-2">
         
         {/* Configuration Bar */}
-        <div className="bg-background rounded-xl shadow-sm border border-border p-4 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="bg-background rounded-xl shadow-sm border border-border p-4 mb-4  mt-4 flex flex-col md:flex-row items-center justify-between gap-4">
            <div className="flex items-center gap-4">
              {/* <h2 className="font-bold text-lg text-foreground">{t.paymentCycle}</h2> */}
              {/* <a href="#" className="text-xs text-primary hover:underline flex items-center gap-1">
@@ -535,12 +541,56 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         </div>
 
         {/* Pricing Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className={`grid grid-cols-1 ${CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'} gap-6`}>
           {loading ? (
              <div className="col-span-full flex justify-center py-12">
                 <Loader2 className="animate-spin text-primary" />
              </div>
+          ) : CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? (
+            // MODEL_CENTER 模式：显示充值卡片和企业版
+            <>
+              {/* 找一个 Business 类型的 item 用于充值卡片 */}
+              {priceList.filter(item => item.productName === 'Business').slice(0, 1).map((item) => (
+                <ModelCenterCard
+                  key={`model-center-${item.id}`}
+                  item={{
+                    ...item,
+                    productQuantity: 6, // 强制使用自定义金额模式
+                  }}
+                  paymentType={paymentType}
+                  invoiceEnabled={invoiceEnabled}
+                  onCustomAmountChange={(amount) => handleCustomAmountChange(item.id, amount)}
+                  onBuy={() => handlePayment({
+                    ...item,
+                    productQuantity: 6,
+                    totalAmount: item.totalAmount,
+                  })}
+                  loading={payLoading}
+                  labels={t.labels}
+                  t={t}
+                />
+              ))}
+              {/* Enterprise 卡片 */}
+              {priceList.filter(item => Number(item.productPrice) === 9999).map((item) => (
+                <PricingCard 
+                  key={item.id}
+                  item={item}
+                  isEnterprise={true}
+                  paymentType={paymentType}
+                  invoiceEnabled={invoiceEnabled}
+                  onQuantityChange={(q) => handleQuantityChange(item.id, q)}
+                  onCustomAmountChange={(amount) => handleCustomAmountChange(item.id, amount)}
+                  onBuy={() => handlePayment(item)}
+                  loading={payLoading}
+                  labels={t.labels}
+                  t={t}
+                  borderColor="border-indigo-400 dark:border-indigo-600"
+                  btnColor="bg-indigo-600 hover:bg-indigo-700"
+                />
+              ))}
+            </>
           ) : (
+            // 其他模式：显示所有卡片
             priceList.map((item) => {
               const price = Number(item.productPrice);
               const isEnterprise = price === 9999;
@@ -562,7 +612,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
               }
 
               return (
-          <PricingCard 
+                <PricingCard 
                   key={item.id}
                   item={item}
                   isEnterprise={isEnterprise}
@@ -583,7 +633,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         </div>
 
         {/* 服务优势 和 需要帮助 */}
-        <div className="mt-12 pt-8 border-t border-border">
+        <div className="mt-4 pt-2 border-t border-border">
           <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-16">
             {/* 服务优势 */}
             <div className="flex-1">
@@ -821,212 +871,6 @@ const PricingPage: React.FC<PricingPageProps> = () => {
           setInvoiceFormOpen(false);
         }}
       />
-    </div>
-  );
-};
-
-interface PricingCardProps {
-  item: PriceListVO;
-  isEnterprise: boolean;
-  paymentType: string;
-  invoiceEnabled: boolean;
-  onQuantityChange: (quantity: number) => void;
-  onCustomAmountChange: (amount: number) => void;
-  onBuy: () => void;
-  loading: boolean;
-  labels: any;
-  t: any;
-  borderColor: string;
-  btnColor: string;
-}
-
-const PricingCard: React.FC<PricingCardProps> = ({ 
-  item, isEnterprise, paymentType, invoiceEnabled, onQuantityChange, onCustomAmountChange, onBuy, loading, labels, t, borderColor, btnColor 
-}) => {
-  const steps = [1, 2, 3, 4, 5, 6]; // 6 is Custom
-  const price = Number(item.productPrice);
-  const quantity = item.productQuantity || 1;
-  const isCustom = quantity === 6;
-  const isWechat = paymentType === 'wechat';
-  const currencyUnit = isWechat ? '￥' : '$';
-  const exchangeRate = 7.3; // 人民币对美元汇率
-  
-  // Calculate points and price
-  let totalPrice = price * quantity;
-  let totalPoints = Number(item.productScore) * quantity;
-
-  if (isCustom) {
-    const customAmount = Number(item.totalAmount) || 0;
-    // 如果是自定义金额且非微信支付，用户输入的是美元，需要转换为人民币来计算积分
-    const actualAmount = (isCustom && !isWechat && customAmount) ? customAmount * exchangeRate : customAmount;
-    totalPrice = customAmount; // 显示用户输入的金额（始终显示原价，不含税）
-    
-    // 计算积分：根据产品类型确定积分比例
-    let pointsRatio = 2; // 默认比例
-    if (item.productName === 'Starter') {
-      pointsRatio = 1.72;
-    } else if (item.productName === 'Business') {
-      pointsRatio = 1.592;
-    }
-    
-    // 计算积分
-    const rmbAmount = actualAmount;
-    totalPoints = Number((rmbAmount / pointsRatio).toFixed(2));
-  } else {
-    // 非自定义金额：根据支付方式转换价格显示
-    if (!isWechat) {
-      // 非微信支付：将人民币价格转换为美元显示
-      totalPrice = Number((totalPrice / exchangeRate).toFixed(2));
-      
-      // 计算积分：直接使用人民币金额，不再按汇率折算
-      const rmbAmount = price * quantity;
-      let pointsRatio = 2;
-      if (item.productName === 'Starter') {
-        pointsRatio = 1.72;
-      } else if (item.productName === 'Business') {
-        pointsRatio = 1.592;
-      }
-      totalPoints = Number((rmbAmount / pointsRatio).toFixed(2));
-    } else {
-      // 微信支付：保持人民币价格（始终显示原价，不含税）
-      // 积分基于原始价格计算
-      let pointsRatio = 2;
-      if (item.productName === 'Starter') {
-        pointsRatio = 1.72;
-      } else if (item.productName === 'Business') {
-        pointsRatio = 1.592;
-      }
-      totalPoints = Number((totalPrice / pointsRatio).toFixed(2));
-    }
-  }
-
-  return (
-    <div className={`bg-background border ${borderColor} rounded-2xl p-6 md:p-8 flex flex-col shadow-sm hover:shadow-md transition-shadow ${isEnterprise ? 'relative overflow-hidden' : ''}`}>
-      
-      <div className="text-center mb-2 relative z-10">
-        <h3 className="text-xl font-bold text-foreground">{isEnterprise ? 'Enterprise' : item.productName}</h3>
-        {/* {isEnterprise && <div className="text-sm text-muted mt-1">{item.productDescription}</div>} */}
-      </div>
-
-      <div className="text-center mb-2 relative z-10">
-        <div className="text-4xl font-bold text-primary h-16 flex items-center justify-center">
-          {isEnterprise ? "Let's talk!" : (
-             isCustom ? (
-               <div className="flex items-center justify-center">
-                 <span className="text-2xl mr-1">{currencyUnit}</span>
-                 <style>
-                   {`
-                     input[type=number]::-webkit-inner-spin-button, 
-                     input[type=number]::-webkit-outer-spin-button { 
-                       -webkit-appearance: none; 
-                       margin: 0; 
-                     }
-                     input[type=number] {
-                       -moz-appearance: textfield;
-                     }
-                   `}
-                 </style>
-                 <input 
-                   type="number" 
-                   className="w-32 text-4xl font-bold text-primary bg-transparent border-b-2 border-primary/30 focus:border-primary outline-none text-center appearance-none"
-                   value={item.totalAmount || ''}
-                   placeholder="0"
-                   onChange={(e) => onCustomAmountChange(Number(e.target.value))}
-                   min="1"
-                   step={isWechat ? 50 : 10}
-                 />
-               </div>
-             ) : (
-               `${currencyUnit} ${totalPrice.toFixed(2)}`
-             )
-          )}
-        </div>
-        {!isEnterprise && (
-        <div className="text-sm text-muted mt-1">
-            {labels.credits} {totalPoints.toFixed(2)}
-        </div>
-        )}
-      </div>
-
-      <div className="my-6 border-t border-border relative z-10"></div>
-
-      {!isEnterprise && (
-        <div className="pt-0 border-t border-transparent mb-6">
-         <div className="text-xs text-muted font-medium mb-4">{labels.quantity}</div>
-         
-         {/* Custom Slider */}
-         <div className="relative mb-8 px-1">
-            {/* Track */}
-            <div className="absolute top-1/2 left-0 right-0 h-1 bg-secondary/20 -translate-y-1/2 rounded-full"></div>
-            
-            {/* Progress - 6个步骤：1, 2, 3, 4, 5, 自定义 */}
-            <div 
-              className="absolute top-1/2 left-0 h-1 bg-primary -translate-y-1/2 rounded-full transition-all duration-300"
-              style={{ width: `${((quantity - 1) / 5) * 100}%` }}
-            ></div>
-
-            {/* Steps */}
-            <div className="relative flex justify-between">
-              {steps.slice(0, 5).map((step) => (
-                  <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
-                    <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
-                    <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {step}倍
-                  </span>
-                </div>
-              ))}
-                <div className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(6)}>
-                   <div className={`w-3 h-3 rounded-full border-2 transition-all ${quantity === 6 ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
-                   <span className={`text-[10px] ${quantity === 6 ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {labels.custom}
-                 </span>
-              </div>
-            </div>
-         </div>
-      </div>
-      )}
-
-      <div className="flex-1 space-y-3 mb-8 relative z-10">
-         {item.productName === 'Starter' && t.starter?.features && (
-            <ul className="space-y-2 flex flex-col items-start">
-              {t.starter.features.map((feature: string, index: number) => (
-                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
-                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-         )}
-         {item.productName === 'Business' && t.business?.features && (
-            <ul className="space-y-2 flex flex-col items-start">
-              {t.business.features.map((feature: string, index: number) => (
-                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
-                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-         )}
-         {isEnterprise && t.enterprise?.features && (
-            <ul className="space-y-2 flex flex-col items-center">
-              {t.enterprise.features.map((feature: string, index: number) => (
-                <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
-                  <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>
-                  {feature}
-                </li>
-              ))}
-            </ul>
-         )}
-      </div>
-
-      <button
-        onClick={onBuy}
-        disabled={loading}
-        className={`w-full py-3 rounded-lg ${btnColor} text-white font-bold transition-colors shadow-md relative z-10 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed`}
-      >
-        {loading && <Loader2 size={18} className="animate-spin" />}
-        {isEnterprise ? labels.contact : labels.buy}
-      </button>
     </div>
   );
 };
