@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useActivate, useUnactivate } from 'react-activation';
 import { Loader, X, Play, Download, RotateCcw, Image as ImageIcon, Video, Upload, Check } from 'lucide-react';
 import { avatarService, Voice, Caption } from '../../../services/avatarService';
 import { useProductAvatarStore } from '../../../stores/productAvatarStore';
@@ -85,6 +86,10 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const hasCheckedTaskIdRef = useRef(false);
+  // 跟踪是否已经初始化过，避免 KeepAlive 恢复时重复执行
+  const hasInitializedRef = useRef(false);
+  // 跟踪当前正在轮询的 taskId，避免重复轮询
+  const pollingTaskIdRef = useRef<string | null>(null);
 
   // Calculate points
   const pointsTip = () => {
@@ -546,7 +551,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     }
   };
 
-  // Warn once if taskId is missing
+  // Warn once if taskId is missing (只在首次挂载时检查)
   useEffect(() => {
     if (hasCheckedTaskIdRef.current) return;
     hasCheckedTaskIdRef.current = true;
@@ -558,16 +563,65 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   }, [taskId, navigate]);
 
   // Initialize polling while taskId exists
+  // 只在首次挂载或 taskId 真正变化时执行，避免 KeepAlive 恢复时重复执行
   useEffect(() => {
     if (!taskId) return;
+    
+    // 如果 taskId 没有变化且已经初始化过，不重复执行
+    if (hasInitializedRef.current && pollingTaskIdRef.current === taskId) {
+      return;
+    }
+
+    // 标记为已初始化
+    hasInitializedRef.current = true;
+    pollingTaskIdRef.current = taskId;
 
     pollTask(taskId);
 
     return () => {
+      // 清理定时器（只在组件真正卸载时执行）
       if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
       if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, [taskId, isV2]);
+
+  // 使用 useActivate 处理 KeepAlive 恢复时的逻辑
+  useActivate(() => {
+    // 当组件从 KeepAlive 缓存中恢复时，检查是否需要继续轮询
+    if (!taskId) return;
+    
+    // 如果 taskId 变化了，需要重新初始化
+    if (pollingTaskIdRef.current !== taskId) {
+      hasInitializedRef.current = false;
+      pollingTaskIdRef.current = taskId;
+      pollTask(taskId);
+      return;
+    }
+    
+    // 如果 taskId 没有变化，检查任务状态
+    // 如果任务已经完成（success 或 fail），不需要重新轮询
+    const taskStatus = taskResult?.taskStatus || taskResult?.status;
+    if (taskStatus === 'success' || taskStatus === 'completed' || taskStatus === 'fail' || taskStatus === 'failed') {
+      // 任务已完成，不需要重新轮询
+      return;
+    }
+    
+    // 如果任务还在进行中，且没有活动的定时器，重新启动轮询
+    // 注意：这里不直接调用 pollTask，因为 pollTask 会重置状态
+    // 如果任务还在进行中，定时器应该还在运行（KeepAlive 会保持状态）
+    // 但如果定时器被清理了，需要重新启动
+    if (!loopTimerRef.current && !pageLoading && taskStatus !== 'success' && taskStatus !== 'completed') {
+      // 定时器被清理了，但任务还在进行中，重新启动轮询
+      pollTask(taskId);
+    }
+  });
+
+  // 使用 useUnactivate 处理组件被缓存时的逻辑
+  useUnactivate(() => {
+    // 当组件被 KeepAlive 缓存时，不清理定时器
+    // 因为组件只是被缓存，不是卸载，定时器应该继续运行
+    // 这样当切换回来时，轮询可以继续进行
+  });
 
   return (
     <div className="h-full min-h-screen bg-white dark:bg-gray-900 p-4 md:p-6 flex flex-col">

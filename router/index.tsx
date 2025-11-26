@@ -77,8 +77,19 @@ function processRoutes(routes: AppRouteObject[], parentPath = ''): any[] {
       // 包裹 KeepAlive
       if (route.meta?.keepAlive) {
         const cacheName = route.meta.keepAliveKey || fullPath || '/';
+        // 判断是否需要动态 key：
+        // 如果没有设置 keepAliveKey，让 KeepAliveBoundary 自动判断（根据查询参数）
+        // 这样任何带查询参数的路由都能自动使用动态 key，无需硬编码路由路径
+        const needsDynamicKey = !route.meta.keepAliveKey;
+        // 对于需要动态 key 的路由，不传固定的 name（传 undefined），
+        // 让 KeepAliveBoundary 根据查询参数动态生成 key
+        const keepAliveName = needsDynamicKey ? undefined : (route.meta.keepAliveKey || cacheName);
+        // 对于动态路由，使用 pathname 作为 React key，确保 React 能正确识别组件
+        // KeepAliveBoundary 内部会根据查询参数生成最终的 cache key
+        // 注意：这里传入的 key 是 React 的 key prop，用于组件识别，不是 KeepAlive 的 cache key
+        const keepAliveKey = needsDynamicKey ? fullPath : cacheName;
         innerElement = (
-          <KeepAliveBoundary key={cacheName} name={route.meta.keepAliveKey} keepAlive={true}>
+          <KeepAliveBoundary key={keepAliveKey} name={keepAliveName} keepAlive={true}>
             {innerElement}
           </KeepAliveBoundary>
         );

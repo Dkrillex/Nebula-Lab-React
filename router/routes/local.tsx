@@ -144,7 +144,7 @@ export const localRoutes: AppRouteObject[] = [
                 t: t?.createPage?.productAvatar?.productReplace || {}
               })}
             />,
-            meta: { title: '产品数字人视频生成', keepAlive: true, keepAliveKey: '/create/product-replace' }
+            meta: { title: '产品数字人视频生成', keepAlive: true }
           },
           {
             path: 'uploadCustomAvatar',

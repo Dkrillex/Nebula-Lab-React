@@ -72,7 +72,7 @@ export interface Asset {
   name: string;
   type: 'folder' | 'image' | 'video' | 'audio';
   date: string;
-  tag?: string; 
+  tag?: string;
   description?: string;
   thumbnail?: string;
 }
@@ -121,6 +121,7 @@ export type View = 'home' | 'create' | 'keys' | 'chat' | 'models' | 'expenses' |
 export interface TabItem {
   view: View;
   activeTool?: string; // Only for 'create' view
+  searchParams?: Record<string, string>; // Dynamic URL query parameters (excluding 'tool')
 }
 
 // --- Ruoyi API Response Interfaces ---
