@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Maximize2, FolderPlus, Check, ChevronsLeftRight } from 'lucide-react';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 interface FaceSwapResultDisplayProps {
   imageUrl: string;
   originalImageUrl?: string | null;
   onUseAsInput?: (imageUrl: string) => void;
   onImageClick?: (imageUrl: string) => void;
+  t?: any;
 }
 
 type ViewMode = 'result' | 'side-by-side' | 'slider';
@@ -16,7 +19,10 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
   originalImageUrl,
   onUseAsInput,
   onImageClick,
+  t: propT,
 }) => {
+  const { t: rootT } = useAppOutletContext();
+  const t = propT || (rootT?.createPage as any)?.imageTranslation || (translations['zh'].createPage as any).imageTranslation;
   const [viewMode, setViewMode] = useState<ViewMode>('result');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [importedStatus, setImportedStatus] = useState(false);
@@ -142,9 +148,9 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
 
   const getModeLabel = (mode: ViewMode): string => {
     const labels: Record<ViewMode, string> = {
-      result: '结果',
-      'side-by-side': '并排',
-      slider: '滑块',
+      result: t.tabs?.result || '结果',
+      'side-by-side': t.tabs?.sideBySide || '并排',
+      slider: t.tabs?.slider || '滑块',
     };
     return labels[mode];
   };
@@ -197,14 +203,14 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                 <button
                   onClick={handlePreview}
                   className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
-                  title="预览"
+                  title={t.labels?.preview || '预览'}
                 >
                   <Maximize2 className="h-5 w-5 text-gray-700" />
                 </button>
                 <button
                   onClick={handleDownload}
                   className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
-                  title="下载"
+                  title={t.labels?.download || '下载'}
                 >
                   <Download className="h-5 w-5 text-gray-700" />
                 </button>
@@ -215,7 +221,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                       ? 'bg-green-500 text-white'
                       : 'bg-white/90 hover:bg-white'
                   }`}
-                  title="添加到素材库"
+                  title={t.labels?.addToMaterials || '添加到素材库'}
                 >
                   {importedStatus ? (
                     <Check className="h-5 w-5" />
@@ -246,7 +252,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
-                  原图
+                  {t.labels?.original || '原图'}
                 </div>
               </div>
               <div className="relative flex items-center justify-center overflow-hidden rounded-lg border border-[rgba(0,0,0,0.1)] bg-white">
@@ -265,7 +271,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
-                  结果
+                  {t.labels?.result || '结果'}
                 </div>
               </div>
             </div>
@@ -352,9 +358,9 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
           setIsAddModalOpen(false);
         }}
         initialData={{
-          assetName: '换脸结果',
-          assetTag: '换脸结果',
-          assetDesc: '换脸结果',
+          assetName: t.labels?.result || '换脸结果',
+          assetTag: t.labels?.result || '换脸结果',
+          assetDesc: t.labels?.result || '换脸结果',
           assetUrl: imageUrl,
           assetType: 6, // 图片类型
         }}

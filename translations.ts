@@ -623,11 +623,37 @@ interface Translation {
       title: string;
       subtitle: string;
       primaryLabel: string;
+      primaryDescription: string;
       referenceLabel: string;
+      referenceDescription: string;
+      promptLabel: string;
       promptPlaceholder: string;
+      promptDefault: string;
       generate: string;
+      generating: string;
+      generateButton: string;
       resultTitle: string;
       emptyState: string;
+      generatingMessage: string;
+      tabs: {
+        result: string;
+        sideBySide: string;
+        slider: string;
+      };
+      labels: {
+        original: string;
+        result: string;
+        preview: string;
+        download: string;
+        addToMaterials: string;
+      };
+      errors: {
+        uploadPrimaryImage: string;
+        uploadReferenceImage: string;
+        enterPrompt: string;
+        generateFailed: string;
+        useImageFailed: string;
+      };
     };
     workshop: {
       title: string;
@@ -1741,14 +1767,40 @@ export const translations: Record<string, Translation> = {
         downloadAll: 'Download All'
       },
       imageTranslation: {
-        title: 'Image Translation',
-        subtitle: 'Use AI to swap faces or styles between two images',
-        primaryLabel: 'Primary Image',
-        referenceLabel: 'Reference Image',
-        promptPlaceholder: 'Describe how to translate the reference style onto the primary image',
+        title: 'AI Image Face Swap',
+        subtitle: 'Upload main image and reference image, let AI generate face swap images for you',
+        primaryLabel: 'Upload Main Image',
+        primaryDescription: 'Upload the main image for face swap',
+        referenceLabel: 'Upload Reference Image',
+        referenceDescription: 'Upload the reference image providing the face',
+        promptLabel: 'Prompt',
+        promptPlaceholder: 'Please enter face swap prompt...',
+        promptDefault: 'Please replace the face of the character in the reference image onto the face of the character in the main image, retaining the main image\'s hairstyle, posture, and lighting, only replacing facial features and skin tone, to make the synthesized image natural with no obvious stitching marks, while maintaining the facial expression and details of the character in the reference image',
         generate: 'Generate',
-        resultTitle: 'Translation Result',
-        emptyState: 'Upload images to open a new canvas',
+        generating: 'Generating...',
+        generateButton: '0.3 Generate Face Swap Image',
+        resultTitle: 'Generation Result',
+        emptyState: 'The generated image will be displayed here',
+        generatingMessage: 'Generating face swap image...',
+        tabs: {
+          result: 'Result',
+          sideBySide: 'Side-by-side',
+          slider: 'Slider'
+        },
+        labels: {
+          original: 'Original',
+          result: 'Result',
+          preview: 'Preview',
+          download: 'Download',
+          addToMaterials: 'Add to Materials'
+        },
+        errors: {
+          uploadPrimaryImage: 'Please upload main image',
+          uploadReferenceImage: 'Please upload reference image',
+          enterPrompt: 'Please enter prompt',
+          generateFailed: 'Generation failed, please try again',
+          useImageFailed: 'Failed to use image as input'
+        }
       },
       ttsPage: {
         title: 'Text to Speech',
@@ -3419,14 +3471,40 @@ export const translations: Record<string, Translation> = {
         downloadAll: '批量下载'
       },
       imageTranslation: {
-        title: '图像翻译',
-        subtitle: '使用 AI 在两张图片之间交换风格或面部',
-        primaryLabel: '主图',
-        referenceLabel: '参考图',
-        promptPlaceholder: '描述期望的风格或换脸效果',
+        title: 'AI 图片换脸',
+        subtitle: '上传主图和参考图，让 AI 为您生成换脸图片',
+        primaryLabel: '上传主图',
+        primaryDescription: '上传需要换脸的主图片',
+        referenceLabel: '上传参考图',
+        referenceDescription: '上传提供脸部的参考图片',
+        promptLabel: '提示词',
+        promptPlaceholder: '请输入换脸提示词...',
+        promptDefault: '请将参考图像中的人物脸部替换到主图像人物的脸上，保留主图像的发型、姿势和光影，只替换面部特征与肤色，使合成后的画面自然、无明显拼接痕迹，同时保持参考图像人物的面部表情与细节',
         generate: '生成',
-        resultTitle: '翻译结果',
-        emptyState: '上传图片开始图像翻译',
+        generating: '生成中...',
+        generateButton: '0.3 生成换脸图片',
+        resultTitle: '生成结果',
+        emptyState: '生成的图片将显示在这里',
+        generatingMessage: '正在生成换脸图片...',
+        tabs: {
+          result: '结果',
+          sideBySide: '并排',
+          slider: '滑块'
+        },
+        labels: {
+          original: '原图',
+          result: '结果',
+          preview: '预览',
+          download: '下载',
+          addToMaterials: '添加到素材库'
+        },
+        errors: {
+          uploadPrimaryImage: '请上传主图',
+          uploadReferenceImage: '请上传参考图',
+          enterPrompt: '请输入提示词',
+          generateFailed: '生成失败，请重试',
+          useImageFailed: '使用图片作为输入失败'
+        }
       },
       ttsPage: {
         title: '文本转语音',
@@ -5092,14 +5170,40 @@ export const translations: Record<string, Translation> = {
         downloadAll: 'Unduh Semua'
       },
       imageTranslation: {
-        title: 'Terjemahan Gambar',
-        subtitle: 'Gunakan AI untuk menukar wajah atau gaya antar gambar',
-        primaryLabel: 'Gambar Utama',
-        referenceLabel: 'Gambar Referensi',
-        promptPlaceholder: 'Jelaskan gaya atau wajah yang ingin Anda terjemahkan',
+        title: 'AI Tukar Wajah Gambar',
+        subtitle: 'Unggah gambar utama dan gambar referensi, biarkan AI menghasilkan gambar tukar wajah untuk Anda',
+        primaryLabel: 'Unggah Gambar Utama',
+        primaryDescription: 'Unggah gambar utama untuk tukar wajah',
+        referenceLabel: 'Unggah Gambar Referensi',
+        referenceDescription: 'Unggah gambar referensi yang menyediakan wajah',
+        promptLabel: 'Prompt',
+        promptPlaceholder: 'Silakan masukkan prompt tukar wajah...',
+        promptDefault: 'Ganti wajah karakter dalam gambar referensi ke wajah karakter dalam gambar utama, pertahankan gaya rambut, pose, dan pencahayaan gambar utama, hanya ganti fitur wajah dan warna kulit, untuk membuat gambar yang disintesis terlihat alami tanpa bekas jahitan yang jelas, sambil mempertahankan ekspresi wajah dan detail karakter dalam gambar referensi',
         generate: 'Hasilkan',
-        resultTitle: 'Hasil Terjemahan',
-        emptyState: 'Unggah gambar untuk memulai',
+        generating: 'Menghasilkan...',
+        generateButton: '0.3 Hasilkan Gambar Tukar Wajah',
+        resultTitle: 'Hasil Pembuatan',
+        emptyState: 'Gambar yang dihasilkan akan ditampilkan di sini',
+        generatingMessage: 'Sedang menghasilkan gambar tukar wajah...',
+        tabs: {
+          result: 'Hasil',
+          sideBySide: 'Bersebelahan',
+          slider: 'Slider'
+        },
+        labels: {
+          original: 'Asli',
+          result: 'Hasil',
+          preview: 'Pratinjau',
+          download: 'Unduh',
+          addToMaterials: 'Tambahkan ke Perpustakaan Materi'
+        },
+        errors: {
+          uploadPrimaryImage: 'Silakan unggah gambar utama',
+          uploadReferenceImage: 'Silakan unggah gambar referensi',
+          enterPrompt: 'Silakan masukkan prompt',
+          generateFailed: 'Pembuatan gagal, silakan coba lagi',
+          useImageFailed: 'Gagal menggunakan gambar sebagai input'
+        }
       },
       ttsPage: {
         title: 'Teks ke Ucapan',
@@ -5230,8 +5334,8 @@ export const translations: Record<string, Translation> = {
           uploadPrimaryImage: 'Silakan unggah gambar utama',
           enterPrompt: 'Silakan masukkan prompt',
           uploadReferenceImage: 'Silakan unggah gambar referensi',
-          generateFailed: 'Pembuatan gagal: Tidak ada URL gambar yang valid dikembalikan',
-          unknownError: 'Terjadi kesalahan yang tidak diketahui'
+          generateFailed: 'Pembuatan gagal, silakan coba lagi',
+          useImageFailed: 'Gagal menggunakan gambar sebagai input'
         }
       },
       workshop: {
