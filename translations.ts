@@ -1066,13 +1066,21 @@ interface Translation {
   profilePage: {
     title: string;
     subtitle: string;
+    tabs: {
+      basic: string;
+      security: string;
+      enterprise: string;
+      invite: string;
+    };
     basicInfo: string;
     accountSecurity: string;
     enterpriseManagement?: string;
     avatar: string;
     uploadAvatar: string;
     labels: {
+      accountName: string;
       nickname: string;
+      nicknameRequired: string;
       phone: string;
       email: string;
       gender: string;
@@ -1080,11 +1088,19 @@ interface Translation {
       role: string;
       dept: string;
       password: string;
+      oldPassword: string;
+      newPassword: string;
+      confirmPassword: string;
+      notBound: string;
     };
     placeholders: {
+      accountName: string;
       nickname: string;
       phone: string;
       email: string;
+      oldPassword: string;
+      newPassword: string;
+      confirmPassword: string;
     };
     gender: {
       male: string;
@@ -1093,8 +1109,85 @@ interface Translation {
     };
     buttons: {
       save: string;
+      cancel: string;
+      edit: string;
       reset: string;
       changePassword: string;
+      retry: string;
+    };
+    messages: {
+      loadFailed: string;
+      updateSuccess: string;
+      updateFailed: string;
+      passwordChangeSuccess: string;
+      passwordChangeFailed: string;
+      allFieldsRequired: string;
+      passwordMinLength: string;
+      passwordMismatch: string;
+      passwordSame: string;
+      emailInvalid: string;
+      phoneInvalid: string;
+      accountNameLength: string;
+      accountNameStart: string;
+      accountNameFormat: string;
+      inviteCodeCopied: string;
+      inviteLinkCopied: string;
+      copyFailed: string;
+    };
+    enterprise: {
+      management: string;
+      teamManagement: string;
+      channelInfo: string;
+      channelName: string;
+      shareAssets: string;
+      yes: string;
+      no: string;
+      createTime: string;
+      updateTime: string;
+      edit: string;
+      addRelation: string;
+      noChannelInfo: string;
+      notSupported: string;
+      contactAdmin: string;
+      enterChannelName: string;
+      selectShareAssets: string;
+      editRelation: string;
+      addRelationTitle: string;
+      cancel: string;
+      confirm: string;
+      enterChannelNameRequired: string;
+      selectShareAssetsRequired: string;
+      getChannelInfoFailed: string;
+      editSuccess: string;
+      editFailed: string;
+      addSuccess: string;
+      addFailed: string;
+      operationFailed: string;
+      noChannelId: string;
+      missingChannelId: string;
+    };
+    invite: {
+      title: string;
+      subtitle: string;
+      inviteCode: string;
+      inviteLink: string;
+      copyLink: string;
+      copied: string;
+      noRecords: string;
+      tableHeaders: {
+        inviteCode: string;
+        invitedUser: string;
+        registerTime: string;
+      };
+      pagination: {
+        total: string;
+        page: string;
+        firstPage: string;
+        prevPage: string;
+        nextPage: string;
+        lastPage: string;
+      };
+      fetchFailed: string;
     };
     enterprisePage?: any;
   };
@@ -2914,24 +3007,40 @@ export const translations: Record<string, Translation> = {
     profilePage: {
       title: 'Personal Center',
       subtitle: 'Manage your account information and security settings',
+      tabs: {
+        basic: 'Basic Settings',
+        security: 'Security Settings',
+        enterprise: 'Enterprise Management',
+        invite: 'Invitation Records'
+      },
       basicInfo: 'Basic Information',
       accountSecurity: 'Account Security',
       avatar: 'Avatar',
       uploadAvatar: 'Change Avatar',
       labels: {
+        accountName: 'Account Name',
         nickname: 'Nickname',
+        nicknameRequired: 'Account Nickname',
         phone: 'Phone Number',
         email: 'Email',
         gender: 'Gender',
         createTime: 'Registration Time',
         role: 'Role',
         dept: 'Department',
-        password: 'Password'
+        password: 'Password',
+        oldPassword: 'Old Password',
+        newPassword: 'New Password',
+        confirmPassword: 'Confirm Password',
+        notBound: 'Not Bound'
       },
       placeholders: {
+        accountName: 'Enter account name (2-30 characters, must start with non-digit)',
         nickname: 'Enter your nickname',
-        phone: 'Enter your phone number',
-        email: 'Enter your email'
+        phone: 'Enter phone number',
+        email: 'Enter email',
+        oldPassword: 'Enter old password',
+        newPassword: 'Enter new password (at least 6 characters)',
+        confirmPassword: 'Enter new password again'
       },
       gender: {
         male: 'Male',
@@ -2939,9 +3048,86 @@ export const translations: Record<string, Translation> = {
         unknown: 'Unknown'
       },
       buttons: {
-        save: 'Save Changes',
+        save: 'Save',
+        cancel: 'Cancel',
+        edit: 'Edit',
         reset: 'Reset',
-        changePassword: 'Change Password'
+        changePassword: 'Change Password',
+        retry: 'Retry'
+      },
+      messages: {
+        loadFailed: 'Failed to load personal information',
+        updateSuccess: 'Information updated successfully',
+        updateFailed: 'Information update failed',
+        passwordChangeSuccess: 'Password changed successfully',
+        passwordChangeFailed: 'Password change failed, please check if the old password is correct',
+        allFieldsRequired: 'Please fill in all password fields',
+        passwordMinLength: 'New password must be at least 6 characters',
+        passwordMismatch: 'The two new passwords do not match',
+        passwordSame: 'New password cannot be the same as old password',
+        emailInvalid: 'Please enter a valid email format',
+        phoneInvalid: 'Please enter a valid phone number (6-15 digits)',
+        accountNameLength: 'Account name must be between 2-30 characters',
+        accountNameStart: 'Account name must start with a non-digit',
+        accountNameFormat: 'Account name can only contain Chinese characters, letters, numbers, or underscores',
+        inviteCodeCopied: 'Invitation code copied',
+        inviteLinkCopied: 'Invitation link copied',
+        copyFailed: 'Copy failed'
+      },
+      enterprise: {
+        management: 'Enterprise Management',
+        teamManagement: 'Team Management',
+        channelInfo: 'Enterprise Information',
+        channelName: 'Channel Name',
+        shareAssets: 'Share Assets',
+        yes: 'Yes',
+        no: 'No',
+        createTime: 'Create Time',
+        updateTime: 'Update Time',
+        edit: 'Edit',
+        addRelation: 'Add User Enterprise Relation',
+        noChannelInfo: 'No channel information',
+        notSupported: 'Feature Not Supported',
+        contactAdmin: 'Please contact administrator to enable enterprise permissions',
+        enterChannelName: 'Please enter channel name',
+        selectShareAssets: 'Please select whether to share assets',
+        editRelation: 'Edit User Enterprise Relation',
+        addRelationTitle: 'Add User Enterprise Relation',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        enterChannelNameRequired: 'Please enter channel name',
+        selectShareAssetsRequired: 'Please select whether to share assets',
+        getChannelInfoFailed: 'Failed to get channel information',
+        editSuccess: 'Enterprise information edited successfully',
+        editFailed: 'Enterprise information edit failed',
+        addSuccess: 'Added successfully',
+        addFailed: 'Add failed',
+        operationFailed: 'Operation failed',
+        noChannelId: 'Unable to get channel ID, please confirm you have enterprise permissions',
+        missingChannelId: 'Missing channel ID, cannot edit'
+      },
+      invite: {
+        title: 'Invitation Records',
+        subtitle: 'View user records registered through your invitation code',
+        inviteCode: 'Invitation Code',
+        inviteLink: 'Invitation Link',
+        copyLink: 'Copy Link',
+        copied: 'Copied',
+        noRecords: 'No invitation records',
+        tableHeaders: {
+          inviteCode: 'Invitation Code',
+          invitedUser: 'Invited User Account',
+          registerTime: 'Registration Time'
+        },
+        pagination: {
+          total: 'Total {total} records',
+          page: 'Page {current} / {total}',
+          firstPage: 'First Page',
+          prevPage: 'Previous Page',
+          nextPage: 'Next Page',
+          lastPage: 'Last Page'
+        },
+        fetchFailed: 'Failed to get invitation records'
       }
     },
     footer: {
@@ -4714,25 +4900,41 @@ export const translations: Record<string, Translation> = {
     profilePage: {
       title: '个人中心',
       subtitle: '管理您的账户信息和安全设置',
+      tabs: {
+        basic: '基本设置',
+        security: '安全设置',
+        enterprise: '企业管理',
+        invite: '推广邀请记录'
+      },
       basicInfo: '基本资料',
       accountSecurity: '账号安全',
       enterpriseManagement: '企业管理',
       avatar: '头像',
       uploadAvatar: '更换头像',
       labels: {
-        nickname: '用户昵称',
-        phone: '手机号码',
-        email: '用户邮箱',
+        accountName: '账号名称',
+        nickname: '账号昵称',
+        nicknameRequired: '账号昵称',
+        phone: '手机号',
+        email: '邮箱',
         gender: '性别',
         createTime: '注册时间',
         role: '角色',
         dept: '所属部门',
-        password: '用户密码'
+        password: '用户密码',
+        oldPassword: '旧密码',
+        newPassword: '新密码',
+        confirmPassword: '确认密码',
+        notBound: '未绑定'
       },
       placeholders: {
+        accountName: '请输入账号名称（2-30个字符，必须以非数字开头）',
         nickname: '请输入用户昵称',
-        phone: '请输入手机号码',
-        email: '请输入邮箱地址'
+        phone: '请输入手机号',
+        email: '请输入邮箱',
+        oldPassword: '请输入旧密码',
+        newPassword: '请输入新密码（至少6位）',
+        confirmPassword: '请再次输入新密码'
       },
       gender: {
         male: '男',
@@ -4740,9 +4942,86 @@ export const translations: Record<string, Translation> = {
         unknown: '未知'
       },
       buttons: {
-        save: '保存配置',
+        save: '保存',
+        cancel: '取消',
+        edit: '编辑',
         reset: '重置',
-        changePassword: '修改密码'
+        changePassword: '修改密码',
+        retry: '重试'
+      },
+      messages: {
+        loadFailed: '无法加载个人信息',
+        updateSuccess: '信息更新成功',
+        updateFailed: '信息更新失败',
+        passwordChangeSuccess: '密码修改成功',
+        passwordChangeFailed: '密码修改失败，请检查旧密码是否正确',
+        allFieldsRequired: '请填写所有密码字段',
+        passwordMinLength: '新密码长度至少为6位',
+        passwordMismatch: '两次输入的新密码不一致',
+        passwordSame: '新密码不能与旧密码相同',
+        emailInvalid: '请输入正确的邮箱格式',
+        phoneInvalid: '请输入正确的手机号码（6-15位数字）',
+        accountNameLength: '账号名称长度必须在2-30个字符之间',
+        accountNameStart: '账号名称必须以非数字开头',
+        accountNameFormat: '账号名称只能包含中文字符、字母、数字或下划线',
+        inviteCodeCopied: '邀请码已复制',
+        inviteLinkCopied: '邀请链接已复制',
+        copyFailed: '复制失败'
+      },
+      enterprise: {
+        management: '企业管理',
+        teamManagement: '团队管理',
+        channelInfo: '企业信息',
+        channelName: '企业名称',
+        shareAssets: '是否共享资产',
+        yes: '是',
+        no: '否',
+        createTime: '创建时间',
+        updateTime: '更新时间',
+        edit: '编辑',
+        addRelation: '新增用户企业关联',
+        noChannelInfo: '暂无企业信息',
+        notSupported: '暂不支持该功能',
+        contactAdmin: '请联系管理员开通企业权限',
+        enterChannelName: '请输入企业名称',
+        selectShareAssets: '请选择是否共享资产',
+        editRelation: '编辑用户企业关联',
+        addRelationTitle: '新增用户企业关联',
+        cancel: '取消',
+        confirm: '确定',
+        enterChannelNameRequired: '请输入企业名称',
+        selectShareAssetsRequired: '请选择是否共享资产',
+        getChannelInfoFailed: '获取企业信息失败',
+        editSuccess: '企业信息编辑成功',
+        editFailed: '企业信息编辑失败',
+        addSuccess: '新增成功',
+        addFailed: '新增失败',
+        operationFailed: '操作失败',
+        noChannelId: '无法获取企业ID，请确认您有企业权限',
+        missingChannelId: '缺少企业ID，无法编辑'
+      },
+      invite: {
+        title: '推广邀请记录',
+        subtitle: '查看通过您的邀请码注册的用户记录',
+        inviteCode: '邀请码',
+        inviteLink: '邀请链接',
+        copyLink: '复制链接',
+        copied: '已复制',
+        noRecords: '暂无邀请记录',
+        tableHeaders: {
+          inviteCode: '邀请码',
+          invitedUser: '受邀用户账号',
+          registerTime: '注册时间'
+        },
+        pagination: {
+          total: '共 {total} 条记录',
+          page: '第 {current} / {total} 页',
+          firstPage: '首页',
+          prevPage: '上一页',
+          nextPage: '下一页',
+          lastPage: '末页'
+        },
+        fetchFailed: '获取邀请记录失败'
       },
       enterprisePage: {
         title: '企业管理',
@@ -6058,24 +6337,40 @@ export const translations: Record<string, Translation> = {
     profilePage: {
       title: 'Pusat Pribadi',
       subtitle: 'Kelola informasi akun dan pengaturan keamanan Anda',
+      tabs: {
+        basic: 'Pengaturan Dasar',
+        security: 'Pengaturan Keamanan',
+        enterprise: 'Manajemen Perusahaan',
+        invite: 'Catatan Undangan'
+      },
       basicInfo: 'Informasi Dasar',
       accountSecurity: 'Keamanan Akun',
       avatar: 'Avatar',
       uploadAvatar: 'Ubah Avatar',
       labels: {
+        accountName: 'Nama Akun',
         nickname: 'Nama Panggilan',
+        nicknameRequired: 'Nama Panggilan Akun',
         phone: 'Nomor Telepon',
         email: 'Email',
         gender: 'Jenis Kelamin',
         createTime: 'Waktu Pendaftaran',
         role: 'Peran',
         dept: 'Departemen',
-        password: 'Kata Sandi'
+        password: 'Kata Sandi',
+        oldPassword: 'Kata Sandi Lama',
+        newPassword: 'Kata Sandi Baru',
+        confirmPassword: 'Konfirmasi Kata Sandi',
+        notBound: 'Tidak Terikat'
       },
       placeholders: {
+        accountName: 'Masukkan nama akun (2-30 karakter, harus dimulai dengan non-digit)',
         nickname: 'Masukkan nama panggilan Anda',
-        phone: 'Masukkan nomor telepon Anda',
-        email: 'Masukkan email Anda'
+        phone: 'Masukkan nomor telepon',
+        email: 'Masukkan email',
+        oldPassword: 'Masukkan kata sandi lama',
+        newPassword: 'Masukkan kata sandi baru (minimal 6 karakter)',
+        confirmPassword: 'Masukkan kata sandi baru lagi'
       },
       gender: {
         male: 'Pria',
@@ -6083,9 +6378,86 @@ export const translations: Record<string, Translation> = {
         unknown: 'Tidak Diketahui'
       },
       buttons: {
-        save: 'Simpan Perubahan',
+        save: 'Simpan',
+        cancel: 'Batal',
+        edit: 'Edit',
         reset: 'Reset',
-        changePassword: 'Ubah Kata Sandi'
+        changePassword: 'Ubah Kata Sandi',
+        retry: 'Coba Lagi'
+      },
+      messages: {
+        loadFailed: 'Gagal memuat informasi pribadi',
+        updateSuccess: 'Informasi berhasil diperbarui',
+        updateFailed: 'Gagal memperbarui informasi',
+        passwordChangeSuccess: 'Kata sandi berhasil diubah',
+        passwordChangeFailed: 'Gagal mengubah kata sandi, harap periksa apakah kata sandi lama benar',
+        allFieldsRequired: 'Harap isi semua field kata sandi',
+        passwordMinLength: 'Kata sandi baru minimal 6 karakter',
+        passwordMismatch: 'Dua kata sandi baru tidak cocok',
+        passwordSame: 'Kata sandi baru tidak boleh sama dengan kata sandi lama',
+        emailInvalid: 'Harap masukkan format email yang valid',
+        phoneInvalid: 'Harap masukkan nomor telepon yang valid (6-15 digit)',
+        accountNameLength: 'Nama akun harus antara 2-30 karakter',
+        accountNameStart: 'Nama akun harus dimulai dengan non-digit',
+        accountNameFormat: 'Nama akun hanya boleh berisi karakter Cina, huruf, angka, atau garis bawah',
+        inviteCodeCopied: 'Kode undangan disalin',
+        inviteLinkCopied: 'Tautan undangan disalin',
+        copyFailed: 'Gagal menyalin'
+      },
+      enterprise: {
+        management: 'Manajemen Perusahaan',
+        teamManagement: 'Manajemen Tim',
+        channelInfo: 'Informasi Perusahaan',
+        channelName: 'Nama Perusahaan',
+        shareAssets: 'Bagikan Aset',
+        yes: 'Ya',
+        no: 'Tidak',
+        createTime: 'Waktu Pembuatan',
+        updateTime: 'Waktu Pembaruan',
+        edit: 'Edit',
+        addRelation: 'Tambahkan Relasi Perusahaan Pengguna',
+        noChannelInfo: 'Tidak ada informasi perusahaan',
+        notSupported: 'Fitur Tidak Didukung',
+        contactAdmin: 'Harap hubungi administrator untuk mengaktifkan izin perusahaan',
+        enterChannelName: 'Harap masukkan nama perusahaan',
+        selectShareAssets: 'Harap pilih apakah akan berbagi aset',
+        editRelation: 'Edit Relasi Perusahaan Pengguna',
+        addRelationTitle: 'Tambahkan Relasi Perusahaan Pengguna',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        enterChannelNameRequired: 'Harap masukkan nama perusahaan',
+        selectShareAssetsRequired: 'Harap pilih apakah akan berbagi aset',
+        getChannelInfoFailed: 'Gagal mendapatkan informasi perusahaan',
+        editSuccess: 'Informasi perusahaan berhasil diedit',
+        editFailed: 'Gagal mengedit informasi perusahaan',
+        addSuccess: 'Berhasil ditambahkan',
+        addFailed: 'Gagal menambahkan',
+        operationFailed: 'Operasi gagal',
+        noChannelId: 'Tidak dapat mendapatkan ID perusahaan, harap konfirmasi Anda memiliki izin perusahaan',
+        missingChannelId: 'ID perusahaan hilang, tidak dapat mengedit'
+      },
+      invite: {
+        title: 'Catatan Undangan',
+        subtitle: 'Lihat catatan pengguna yang terdaftar melalui kode undangan Anda',
+        inviteCode: 'Kode Undangan',
+        inviteLink: 'Tautan Undangan',
+        copyLink: 'Salin Tautan',
+        copied: 'Disalin',
+        noRecords: 'Tidak ada catatan undangan',
+        tableHeaders: {
+          inviteCode: 'Kode Undangan',
+          invitedUser: 'Akun Pengguna yang Diundang',
+          registerTime: 'Waktu Pendaftaran'
+        },
+        pagination: {
+          total: 'Total {total} catatan',
+          page: 'Halaman {current} / {total}',
+          firstPage: 'Halaman Pertama',
+          prevPage: 'Halaman Sebelumnya',
+          nextPage: 'Halaman Berikutnya',
+          lastPage: 'Halaman Terakhir'
+        },
+        fetchFailed: 'Gagal mendapatkan catatan undangan'
       }
     },
     footer: {

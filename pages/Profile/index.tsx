@@ -67,10 +67,10 @@ const ProfilePage: React.FC = () => {
     try {
       await navigator.clipboard.writeText(inviteCode);
       setCodeCopied(true);
-      toast.success('邀请码已复制');
+      toast.success(t.messages.inviteCodeCopied);
       setTimeout(() => setCodeCopied(false), 2000);
     } catch {
-      toast.error('复制失败');
+      toast.error(t.messages.copyFailed);
     }
   };
 
@@ -80,10 +80,10 @@ const ProfilePage: React.FC = () => {
     try {
       await navigator.clipboard.writeText(inviteUrl);
       setLinkCopied(true);
-      toast.success('邀请链接已复制');
+      toast.success(t.messages.inviteLinkCopied);
       setTimeout(() => setLinkCopied(false), 2000);
     } catch {
-      toast.error('复制失败');
+      toast.error(t.messages.copyFailed);
     }
   };
 
@@ -178,22 +178,22 @@ const ProfilePage: React.FC = () => {
 
     // 验证
     if (!passwordForm.oldPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
-      toast.error('请填写所有密码字段');
+      toast.error(t.messages.allFieldsRequired);
       return;
     }
 
     if (passwordForm.newPassword.length < 6) {
-      toast.error('新密码长度至少为6位');
+      toast.error(t.messages.passwordMinLength);
       return;
     }
 
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error('两次输入的新密码不一致');
+      toast.error(t.messages.passwordMismatch);
       return;
     }
 
     if (passwordForm.oldPassword === passwordForm.newPassword) {
-      toast.error('新密码不能与旧密码相同');
+      toast.error(t.messages.passwordSame);
       return;
     }
 
@@ -203,14 +203,14 @@ const ProfilePage: React.FC = () => {
         oldPassword: passwordForm.oldPassword,
         newPassword: passwordForm.newPassword
       });
-      toast.success('密码修改成功');
+      toast.success(t.messages.passwordChangeSuccess);
       setPasswordForm({
         oldPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
     } catch (error: any) {
-      toast.error(error.message || '密码修改失败，请检查旧密码是否正确');
+      toast.error(error.message || t.messages.passwordChangeFailed);
     } finally {
       setPasswordLoading(false);
     }
@@ -230,14 +230,14 @@ const ProfilePage: React.FC = () => {
     
     // 验证邮箱格式
     if (profileForm.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profileForm.email)) {
-      toast.error('请输入正确的邮箱格式');
+      toast.error(t.messages.emailInvalid);
       return;
     }
 
     // 验证手机号格式（如果填写了）
     // 支持国际号码：6-15位数字（与注册/登录页面保持一致）
     if (profileForm.phonenumber && !/^\d{6,15}$/.test(profileForm.phonenumber)) {
-      toast.error('请输入正确的手机号码（6-15位数字）');
+      toast.error(t.messages.phoneInvalid);
       return;
     }
 
@@ -245,15 +245,15 @@ const ProfilePage: React.FC = () => {
     // 2到30个字符，中文字符、字母、数字或下划线，且必须以非数字开头
     if (profileForm.userName) {
       if (profileForm.userName.length < 2 || profileForm.userName.length > 30) {
-        toast.error('账号名称长度必须在2-30个字符之间');
+        toast.error(t.messages.accountNameLength);
         return;
       }
       if (!/^[^\d]/.test(profileForm.userName)) {
-        toast.error('账号名称必须以非数字开头');
+        toast.error(t.messages.accountNameStart);
         return;
       }
       if (!/^[^\d][\u4e00-\u9fa5a-zA-Z0-9_]*$/.test(profileForm.userName)) {
-        toast.error('账号名称只能包含中文字符、字母、数字或下划线');
+        toast.error(t.messages.accountNameFormat);
         return;
       }
     }
@@ -270,12 +270,12 @@ const ProfilePage: React.FC = () => {
         sex: profileForm.sex,
         phonenumber: profileForm.phonenumber
       });
-      toast.success('信息更新成功');
+      toast.success(t.messages.updateSuccess);
       setIsEditing(false);
       await fetchUserInfo();
       await loadProfile();
     } catch (error: any) {
-      toast.error(error.message || '信息更新失败');
+      toast.error(error.message || t.messages.updateFailed);
     } finally {
       setProfileFormLoading(false);
     }
@@ -324,8 +324,8 @@ const ProfilePage: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-8 max-w-7xl min-h-[500px]">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-2">个人中心</h1>
-        <p className="text-muted">管理您的个人信息和账户设置</p>
+        <h1 className="text-2xl font-bold text-foreground mb-2">{t.title}</h1>
+        <p className="text-muted">{t.subtitle}</p>
       </div>
 
       {/* Tabs */}
@@ -341,7 +341,7 @@ const ProfilePage: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <User size={18} />
-              基本设置
+              {t.tabs.basic}
             </div>
           </button>
           <button
@@ -354,7 +354,7 @@ const ProfilePage: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Shield size={18} />
-              安全设置
+              {t.tabs.security}
             </div>
           </button>
           <button
@@ -367,7 +367,7 @@ const ProfilePage: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Building2 size={18} />
-              企业管理
+              {t.tabs.enterprise}
             </div>
           </button>
           <button
@@ -380,7 +380,7 @@ const ProfilePage: React.FC = () => {
           >
             <div className="flex items-center gap-2">
               <Gift size={18} />
-              推广邀请记录
+              {t.tabs.invite}
             </div>
           </button>
         </div>
@@ -400,8 +400,8 @@ const ProfilePage: React.FC = () => {
             {/* 错误状态或空状态 */}
             {!loading && !profile && (
               <div className="flex flex-col items-center justify-center h-48 text-muted">
-                <p>无法加载个人信息</p>
-                <button onClick={loadProfile} className="mt-2 text-indigo-600 hover:underline">重试</button>
+                <p>{t.messages.loadFailed}</p>
+                <button onClick={loadProfile} className="mt-2 text-indigo-600 hover:underline">{t.buttons.retry}</button>
               </div>
             )}
 
@@ -431,7 +431,7 @@ const ProfilePage: React.FC = () => {
                       )}
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-medium">
                         <Upload size={16} className="mr-1" />
-                        更换头像
+                        {t.uploadAvatar}
                       </div>
                     </div>
                     <input 
@@ -450,7 +450,7 @@ const ProfilePage: React.FC = () => {
                     {/* 账号名称（只读） */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
-                        账号名称
+                        {t.labels.accountName}
                       </label>
                       {isEditing ? (
                         <input
@@ -458,7 +458,7 @@ const ProfilePage: React.FC = () => {
                           name="userName"
                           value={profileForm.userName}
                           onChange={handleProfileFormChange}
-                          placeholder="请输入账号名称（2-30个字符，必须以非数字开头）"
+                          placeholder={t.placeholders.accountName}
                           className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                         />
                       ) : (
@@ -469,7 +469,7 @@ const ProfilePage: React.FC = () => {
                     {/* 昵称（可编辑） */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
-                        账号昵称 <span className="text-red-500">*</span>
+                        {t.labels.nicknameRequired} <span className="text-red-500">*</span>
                       </label>
                       {isEditing ? (
                         <input
@@ -489,7 +489,7 @@ const ProfilePage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
                         <Mail className="inline mr-1" size={14} />
-                        邮箱
+                        {t.labels.email}
                       </label>
                       {isEditing ? (
                         <input
@@ -497,7 +497,7 @@ const ProfilePage: React.FC = () => {
                           name="email"
                           value={profileForm.email}
                           onChange={handleProfileFormChange}
-                          placeholder="请输入邮箱"
+                          placeholder={t.placeholders.email}
                           className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                         />
                       ) : (
@@ -509,7 +509,7 @@ const ProfilePage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
                         <Phone className="inline mr-1" size={14} />
-                        手机号
+                        {t.labels.phone}
                       </label>
                       {isEditing ? (
                         <input
@@ -517,18 +517,18 @@ const ProfilePage: React.FC = () => {
                           name="phonenumber"
                           value={profileForm.phonenumber}
                           onChange={handleProfileFormChange}
-                          placeholder="请输入手机号"
+                          placeholder={t.placeholders.phone}
                           className="w-full px-3 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                         />
                       ) : (
-                        <div className="text-foreground">{profile.user.phonenumber || '未绑定'}</div>
+                        <div className="text-foreground">{profile.user.phonenumber || t.labels.notBound}</div>
                       )}
                     </div>
 
                     {/* 性别（可编辑） */}
                     <div>
                       <label className="block text-sm font-medium text-foreground mb-1">
-                        性别
+                        {t.labels.gender}
                       </label>
                       {isEditing ? (
                         <div className="flex gap-2">
@@ -541,7 +541,7 @@ const ProfilePage: React.FC = () => {
                                 : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            男
+                            {t.gender.male}
                           </button>
                           <button
                             type="button"
@@ -552,7 +552,7 @@ const ProfilePage: React.FC = () => {
                                 : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            女
+                            {t.gender.female}
                           </button>
                           <button
                             type="button"
@@ -563,12 +563,12 @@ const ProfilePage: React.FC = () => {
                                 : 'bg-gray-100 dark:bg-gray-700 text-foreground hover:bg-gray-200 dark:hover:bg-gray-600'
                             }`}
                           >
-                            未知
+                            {t.gender.unknown}
                           </button>
                         </div>
                       ) : (
                         <div className="text-foreground">
-                          {profile.user.sex === '0' ? '男' : profile.user.sex === '1' ? '女' : '未知'}
+                          {profile.user.sex === '0' ? t.gender.male : profile.user.sex === '1' ? t.gender.female : t.gender.unknown}
                         </div>
                       )}
                     </div>
@@ -577,7 +577,7 @@ const ProfilePage: React.FC = () => {
                     <div>
                       <label className="block text-sm font-medium text-muted mb-1">
                         <Calendar className="inline mr-1" size={14} />
-                        注册时间
+                        {t.labels.createTime}
                       </label>
                       <div className="text-foreground">{profile.user.createTime}</div>
                     </div>
@@ -593,7 +593,7 @@ const ProfilePage: React.FC = () => {
                           disabled={profileFormLoading}
                           className="px-6 py-2 border border-border rounded-lg font-medium hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
                         >
-                          取消
+                          {t.buttons.cancel}
                         </button>
                         <button
                           type="submit"
@@ -601,7 +601,7 @@ const ProfilePage: React.FC = () => {
                           className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
                           {profileFormLoading && <Loader2 className="animate-spin" size={16} />}
-                          保存
+                          {t.buttons.save}
                         </button>
                       </>
                     ) : (
@@ -610,7 +610,7 @@ const ProfilePage: React.FC = () => {
                         onClick={() => setIsEditing(true)}
                         className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors"
                       >
-                        编辑
+                        {t.buttons.edit}
                       </button>
                     )}
                   </div>
@@ -628,14 +628,14 @@ const ProfilePage: React.FC = () => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-border p-6">
             <div className="flex items-center gap-2 mb-6 pb-4 border-b border-border">
               <Shield size={20} className="text-green-600" />
-              <h3 className="text-lg font-bold text-foreground">修改密码</h3>
+              <h3 className="text-lg font-bold text-foreground">{t.buttons.changePassword}</h3>
             </div>
             
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               {/* 旧密码 */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  旧密码 <span className="text-red-500">*</span>
+                  {t.labels.oldPassword} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
@@ -644,7 +644,7 @@ const ProfilePage: React.FC = () => {
                     name="oldPassword"
                     value={passwordForm.oldPassword}
                     onChange={handlePasswordChange}
-                    placeholder="请输入旧密码"
+                    placeholder={t.placeholders.oldPassword}
                     className="w-full pl-10 pr-10 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   />
                   <button
@@ -660,7 +660,7 @@ const ProfilePage: React.FC = () => {
               {/* 新密码 */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  新密码 <span className="text-red-500">*</span>
+                  {t.labels.newPassword} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
@@ -669,7 +669,7 @@ const ProfilePage: React.FC = () => {
                     name="newPassword"
                     value={passwordForm.newPassword}
                     onChange={handlePasswordChange}
-                    placeholder="请输入新密码（至少6位）"
+                    placeholder={t.placeholders.newPassword}
                     className="w-full pl-10 pr-10 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   />
                   <button
@@ -685,7 +685,7 @@ const ProfilePage: React.FC = () => {
               {/* 确认密码 */}
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  确认密码 <span className="text-red-500">*</span>
+                  {t.labels.confirmPassword} <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={16} />
@@ -694,7 +694,7 @@ const ProfilePage: React.FC = () => {
                     name="confirmPassword"
                     value={passwordForm.confirmPassword}
                     onChange={handlePasswordChange}
-                    placeholder="请再次输入新密码"
+                    placeholder={t.placeholders.confirmPassword}
                     className="w-full pl-10 pr-10 py-2 rounded-lg border border-border bg-background focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                   />
                   <button
@@ -729,7 +729,7 @@ const ProfilePage: React.FC = () => {
                   className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
                   {passwordLoading && <Loader2 className="animate-spin" size={16} />}
-                  修改密码
+                  {t.buttons.changePassword}
                 </button>
               </div>
             </form>
@@ -753,7 +753,7 @@ const ProfilePage: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Building2 size={18} />
-                  企业管理
+                  {t.enterprise.management}
                 </div>
               </button>
               <button
@@ -766,7 +766,7 @@ const ProfilePage: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Users size={18} />
-                  团队管理
+                  {t.enterprise.teamManagement}
                 </div>
               </button>
             </div>
@@ -790,9 +790,9 @@ const ProfilePage: React.FC = () => {
               <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 {/* 邀请码 */}
                 <div className="flex items-center gap-3 flex-1">
-                  <span className="text-sm text-muted whitespace-nowrap">邀请码:</span>
+                  <span className="text-sm text-muted whitespace-nowrap">{t.invite.inviteCode}:</span>
                   <span className="font-bold font-mono text-foreground">{inviteCode}</span>
-                  <button onClick={handleCopyCode} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title="复制邀请码">
+                  <button onClick={handleCopyCode} className="p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors" title={t.invite.inviteCode}>
                     {codeCopied ? <Check size={14} className="text-green-500" /> : <Copy size={14} className="text-muted" />}
                   </button>
                 </div>
@@ -801,7 +801,7 @@ const ProfilePage: React.FC = () => {
                   <span className="text-xs text-muted truncate max-w-[200px] hidden md:inline">{inviteUrl}</span>
                   <button onClick={handleCopyLink} className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition-colors text-sm font-medium">
                     {linkCopied ? <Check size={14} /> : <Link size={14} />}
-                    {linkCopied ? '已复制' : '复制链接'}
+                    {linkCopied ? t.invite.copied : t.invite.copyLink}
                   </button>
                   {/* <button
                     onClick={() => {
