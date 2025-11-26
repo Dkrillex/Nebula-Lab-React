@@ -962,7 +962,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                 {uploadMethod === 'file' ? (
                    <UploadComponent
                       uploadType="tv"
-                      accept="audio/mpeg,audio/mp3,audio/wav,audio/x-m4a,audio/m4a,.mp3,.wav,.m4a"
+                      accept=".mp3,.wav,.m4a"
                       initialUrl={audioFile?.fileUrl}
                       immediate={true}
                       onFileSelected={(file) => setTempFile(file)}

@@ -1064,8 +1064,8 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     // 创意模式的产品图和参考图只支持 PNG, JPG, JPEG
     // 其他情况支持 PNG, JPG, JPEG, WEBP
     const acceptTypes = (selectedMode === 'creative' && (type === 'product' || type === 'reference'))
-      ? "image/png,image/jpeg,image/jpg"
-      : "image/png,image/jpeg,image/jpg,image/webp";
+      ? ".png,.jpg,.jpeg"
+      : ".png,.jpg,.jpeg,.webp";
     
     // 获取文件格式提示文本
     const getFormatText = () => {
@@ -1448,7 +1448,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                   onError={(error) => toast.error(error.message)}
                                   uploadType="oss"
                                   immediate={false}
-                                  accept="image/png,image/jpeg,image/jpg"
+                                  accept=".png,.jpg,.jpeg,.webp"
                                   className="absolute inset-0 border-none bg-transparent"
                                   showPreview={false} 
                                 >
@@ -1607,7 +1607,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 onFileSelected={(file) => handleImageUpload(file, 'garment')}
                                 onUploadComplete={() => {}}
                                 onError={(error) => toast.error(error.message)}
-                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                accept=".png,.jpg,.jpeg,.webp"
                                 maxSize={10}
                                 immediate={false}
                                 showPreview={false}
@@ -1663,7 +1663,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                 onFileSelected={(file) => handleImageUpload(file, 'garment')}
                                 onUploadComplete={() => {}}
                                 onError={(error) => toast.error(error.message)}
-                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                accept=".png,.jpg,.jpeg,.webp"
                                 maxSize={10}
                                 immediate={false}
                                 showPreview={false}

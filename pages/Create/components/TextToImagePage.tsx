@@ -415,7 +415,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                 onFileSelected={handleFileSelected}
                 onClear={handleClear}
                 uploadType="oss"
-                accept="image/png, image/jpeg, image/jpg"
+                 accept=".png,.jpg,.jpeg,.webp"
                 maxSize={10}
                 immediate={true}
                 showPreview={true}

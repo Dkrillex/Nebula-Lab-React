@@ -630,7 +630,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                           onClear={handleStartClear}
                           onError={handleUploadError}
                           uploadType="oss"
-                          accept="image/png, image/jpeg, image/jpg"
+                          accept=".png,.jpg,.jpeg,.webp"
                           maxSize={10}
                           immediate={true}
                           initialUrl={startImage?.fileUrl || ''}
@@ -656,7 +656,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                              onClear={handleEndClear}
                              onError={handleUploadError}
                              uploadType="oss"
-                             accept="image/png, image/jpeg, image/jpg"
+                             accept=".png,.jpg,.jpeg,.webp"
                              maxSize={10}
                              immediate={true}
                              initialUrl={endImage?.fileUrl || ''}

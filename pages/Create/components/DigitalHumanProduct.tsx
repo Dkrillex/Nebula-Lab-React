@@ -511,6 +511,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             <div className="w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(20%-10px)] aspect-[9/16]">
             <UploadComponent
                 uploadType="tv"
+                accept=".png,.jpg,.jpeg,.webp"
                 immediate={true}
                 onUploadComplete={(file) => {
                     setCustomAvatarImage({ fileId: file.fileId, url: file.fileUrl || '' });
@@ -640,6 +641,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                                   ) : (
                                       <UploadComponent
                                           uploadType="tv"
+                                          accept=".png,.jpg,.jpeg,.webp"
                                           immediate={true}
                                           showPreview={false}
                                           onUploadComplete={(file) => setUserFaceImage({ fileId: file.fileId, url: file.fileUrl || '' })}
@@ -689,6 +691,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   ) : (
                     <UploadComponent
                         uploadType="tv"
+                        accept=".png,.jpg,.jpeg,.webp"
                         immediate={true}
                         onUploadComplete={(file) => handleProductImageUpload({ fileId: file.fileId, fileUrl: file.fileUrl || '' })}
                         className="h-40"
