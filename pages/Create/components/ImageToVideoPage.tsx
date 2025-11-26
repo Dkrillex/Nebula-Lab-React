@@ -956,7 +956,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         isOpen={showMaterialModal}
         onClose={() => setShowMaterialModal(false)}
         onSuccess={() => {
-           toast.success('Saved to materials');
         }}
         initialData={materialData}
         disableAssetTypeSelection={true}

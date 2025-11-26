@@ -2730,43 +2730,47 @@ export const translations: Record<string, Translation> = {
       starter: {
         title: 'Starter',
         features: [
-          '¥ 1.72 / 1 Credit',
-          'Flexible AI integration',
-          'Out-of-the-box Large Model API+',
-          'Multi-modal capabilities, covering multiple scenarios',
-          'Unlimited video previews',
-          '500+ digital humans and voices',
-          'Unlimited preservation of digital assets',
-          'Talking photo max video length 180s',
+          '100+ Large Model APIs',
+          '500+ Digital Human Templates',
+          'Talking Photo up to 180s',
           'No Watermark',
-          'Faster rendering speed'
+          'Credit price ¥1.72/credit'
+        ],
+        modelFeatures: [
+          '100+ Large Model APIs',
+          'Standard Channel'
+        ],
+        createFeatures: [
+          'Credit price ¥1.72/credit',
+          'Access all Creation Center features'
         ]
       },
       business: {
         title: 'Business',
         features: [
-          '¥ 1.59 / 1 Credit',
-          'Flexible AI integration, Priority Channels',
-          'Out-of-the-box Large Model API+',
-          'Multi-modal capabilities, covering multiple scenarios',
-          'Unlimited video previews',
-          '500+ digital humans and voices',
-          'Unlimited preservation of digital assets',
-          'Talking photo max video length 1800s',
-          'No Watermark',
-          'Highest priority rendering speed'
+          '100+ Large Model APIs (Priority)',
+          '500+ Digital Human Templates',
+          'Talking Photo up to 1800s',
+          'No Watermark · Top Priority Rendering',
+          'Credit price ¥1.59/credit'
+        ],
+        modelFeatures: [
+          '100+ Large Model APIs',
+          'Priority Channel'
+        ],
+        createFeatures: [
+          'Credit price ¥1.59/credit',
+          'Access all Creation Center features'
         ]
       },
       enterprise: {
         title: 'Enterprise',
         slogan: "Let's talk!",
         features: [
-          'Custom team seats',
-          'Custom credit limits',
-          'Custom digital humans',
-          'Custom AI voices',
-          'Custom functions',
-          'Customized feature development'
+          'Custom Enterprise Account Management',
+          'Custom Channel Management',
+          'Lower Credit Conversion Rate',
+          'Custom AI Feature Development'
         ]
       },
       labels: {
@@ -4443,43 +4447,47 @@ export const translations: Record<string, Translation> = {
       starter: {
         title: 'Starter会员',
         features: [
-          '¥ 1.72元/1积分',
-          '提供灵活的AI集成',
-          '开箱即用的大模型 API+',
-          '提供多模态模型能力，覆盖多场景',
-          '无限视频预览',
-          '500+数字人和配音',
-          '无限保存产品数字人',
-          '照片说话每个视频最长180秒',
-          '无水印',
-          '更快的渲染速度'
+          '100+ 大模型 API',
+          '500+ 数字人模板',
+          '照片说话最长 180秒',
+          '无水印导出',
+          '积分单价 ¥1.72/积分'
+        ],
+        modelFeatures: [
+          '100+ 大模型 API',
+          '标准通道'
+        ],
+        createFeatures: [
+          '积分单价 ¥1.72/积分',
+          '享受创作中心全部功能'
         ]
       },
       business: {
         title: 'Business会员',
         features: [
-          '¥ 1.59元/1积分',
-          '提供灵活的AI集成，更优先的渠道',
-          '开箱即用的大模型 API+',
-          '提供多模态模型能力，覆盖多场景',
-          '无限视频预览',
-          '500+数字人和配音',
-          '无限保存产品数字人',
-          '照片说话每个视频最长1800秒',
-          '无水印',
-          '最高优先会级渲染速度'
+          '100+ 大模型 API（优先通道）',
+          '500+ 数字人模板',
+          '照片说话最长 1800秒',
+          '无水印 · 最高优先渲染',
+          '积分单价 ¥1.59/积分'
+        ],
+        modelFeatures: [
+          '100+ 大模型 API',
+          '优先通道'
+        ],
+        createFeatures: [
+          '积分单价 ¥1.59/积分',
+          '享受创作中心全部功能'
         ]
       },
       enterprise: {
         title: 'Enterprise',
         slogan: "Let's talk!",
         features: [
-          '自定义团队席位',
-          '自定义积分额度',
-          '自定义数字人',
-          '自定义AI音色',
-          '自定义功能',
-          '定制化功能开发'
+          '自定义企业账号管理',
+          '自定义渠道管理',
+          '更低积分转换额度',
+          '定制化AI功能开发'
         ]
       },
       labels: {
@@ -5866,43 +5874,47 @@ export const translations: Record<string, Translation> = {
       starter: {
         title: 'Starter',
         features: [
-          '¥ 1.72 / 1 Kredit',
-          'Integrasi AI yang fleksibel',
-          'Large Model API+ siap pakai',
-          'Kemampuan multi-modal, mencakup berbagai skenario',
-          'Pratinjau video tidak terbatas',
-          '500+ manusia digital dan suara',
-          'Pelestarian aset digital tidak terbatas',
-          'Foto berbicara panjang video maks 180s',
+          '100+ API Model Besar',
+          '500+ Template Manusia Digital',
+          'Foto Berbicara hingga 180d',
           'Tanpa Watermark',
-          'Kecepatan rendering lebih cepat'
+          'Harga kredit ¥1.72/kredit'
+        ],
+        modelFeatures: [
+          '100+ API Model Besar',
+          'Saluran Standar'
+        ],
+        createFeatures: [
+          'Harga kredit ¥1.72/kredit',
+          'Akses semua fitur Pusat Kreasi'
         ]
       },
       business: {
         title: 'Business',
         features: [
-          '¥ 1.59 / 1 Kredit',
-          'Integrasi AI yang fleksibel, Saluran Prioritas',
-          'Large Model API+ siap pakai',
-          'Kemampuan multi-modal, mencakup berbagai skenario',
-          'Pratinjau video tidak terbatas',
-          '500+ manusia digital dan suara',
-          'Pelestarian aset digital tidak terbatas',
-          'Foto berbicara panjang video maks 1800s',
-          'Tanpa Watermark',
-          'Kecepatan rendering prioritas tertinggi'
+          '100+ API Model Besar (Prioritas)',
+          '500+ Template Manusia Digital',
+          'Foto Berbicara hingga 1800d',
+          'Tanpa Watermark · Rendering Prioritas',
+          'Harga kredit ¥1.59/kredit'
+        ],
+        modelFeatures: [
+          '100+ API Model Besar',
+          'Saluran Prioritas'
+        ],
+        createFeatures: [
+          'Harga kredit ¥1.59/kredit',
+          'Akses semua fitur Pusat Kreasi'
         ]
       },
       enterprise: {
         title: 'Enterprise',
         slogan: "Mari berbicara!",
         features: [
-          'Kursi tim kustom',
-          'Batas kredit kustom',
-          'Manusia digital kustom',
-          'Suara AI kustom',
-          'Fungsi kustom',
-          'Pengembangan fitur yang disesuaikan'
+          'Manajemen Akun Perusahaan Kustom',
+          'Manajemen Saluran Kustom',
+          'Tingkat Konversi Kredit Lebih Rendah',
+          'Pengembangan Fitur AI Kustom'
         ]
       },
       labels: {
