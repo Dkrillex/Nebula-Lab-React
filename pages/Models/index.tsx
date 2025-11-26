@@ -538,6 +538,58 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
     return `${symbol}${formatNumber(finalPrice)}`;
   };
 
+  // 获取视频音频价格
+  const getVideoAudioPrice = (
+    model: AIModel,
+    priceKey: 'noAudio' | 'audio',
+    type: 'discount' | 'origin' = 'discount',
+  ) => {
+    try {
+      const pricingData =
+        type === 'discount'
+          ? JSON.parse((model as any).videoAudioPricing || '{}')
+          : JSON.parse((model as any).originVideoAudioPricing || '{}');
+      const value = pricingData[priceKey];
+      if (typeof value === 'number') {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        return Number.parseFloat(value);
+      }
+      return undefined;
+    } catch (e) {
+      return undefined;
+    }
+  };
+
+  // 检查是否有视频音频价格
+  const hasVideoAudioPricing = (model: AIModel) => {
+    return (
+      getVideoAudioPrice(model, 'noAudio', 'discount') !== undefined ||
+      getVideoAudioPrice(model, 'audio', 'discount') !== undefined
+    );
+  };
+
+  // 格式化视频音频价格
+  const formatVideoAudioPrice = (
+    model: AIModel,
+    priceKey: 'noAudio' | 'audio',
+    type: 'discount' | 'origin' = 'discount',
+  ) => {
+    const value = getVideoAudioPrice(model, priceKey, type);
+    if (value === undefined) {
+      return '-';
+    }
+
+    let finalPrice = value;
+    if (currency === 'CNY') {
+      finalPrice = value * exchangeRate;
+    }
+
+    const symbol = currency === 'USD' ? '$' : '¥';
+    return `${symbol}${formatNumber(finalPrice)}`;
+  };
+
   const formatMultiModalPrice = (model: AIModel, priceKey: string, type: 'discount' | 'origin' = 'discount') => {
     try {
       const pricingData = type === 'discount' 
@@ -975,6 +1027,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
           calculateImageEditCost={calculateImageEditCost}
           formatDetailPrice={formatDetailPrice}
           formatDetailPriceUnit={formatDetailPriceUnit}
+          hasVideoAudioPricing={hasVideoAudioPricing}
+          getVideoAudioPrice={getVideoAudioPrice}
+          formatVideoAudioPrice={formatVideoAudioPrice}
           onCopyName={copyModelName}
         />
       )}
@@ -1128,6 +1183,9 @@ const ModelDetailDrawer = ({
   calculateImageEditCost,
   formatDetailPrice,
   formatDetailPriceUnit,
+  hasVideoAudioPricing,
+  getVideoAudioPrice,
+  formatVideoAudioPrice,
   onCopyName,
 }: {
   model: AIModel;
@@ -1146,6 +1204,9 @@ const ModelDetailDrawer = ({
   calculateImageEditCost: (quality: string, size: string, model: AIModel) => string;
   formatDetailPrice: (model: AIModel, type: 'cacheInput' | 'cacheOutput' | 'call' | 'input' | 'output', priceType?: 'discount' | 'origin') => string;
   formatDetailPriceUnit: () => string;
+  hasVideoAudioPricing: (model: AIModel) => boolean;
+  getVideoAudioPrice: (model: AIModel, priceKey: 'noAudio' | 'audio', type?: 'discount' | 'origin') => number | undefined;
+  formatVideoAudioPrice: (model: AIModel, priceKey: 'noAudio' | 'audio', type?: 'discount' | 'origin') => string;
   onCopyName: (model: AIModel, event?: React.MouseEvent) => void;
 }) => {
 
@@ -1298,6 +1359,45 @@ const ModelDetailDrawer = ({
             ) : (model as any).quotaType === 3 ? (
               /* 按秒计费 */
               <div className="space-y-2 text-sm">
+                 {/* 音频选项价格 */}
+                 {hasVideoAudioPricing(model) && (
+                   <div className="mb-3">
+                     <div className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">音频选项价格</div>
+                     {getVideoAudioPrice(model, 'noAudio') !== undefined && (
+                       <div className="flex justify-between items-center mb-1">
+                         <span className="text-zinc-500">不含音频:</span>
+                         <div>
+                           <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                             {formatVideoAudioPrice(model, 'noAudio')}
+                           </span>
+                           {getVideoAudioPrice(model, 'noAudio', 'origin') !== undefined && (
+                             <span className="ml-2 text-xs text-zinc-400 line-through decoration-zinc-400/60">
+                               {formatVideoAudioPrice(model, 'noAudio', 'origin')}
+                             </span>
+                           )}
+                           <span className="text-xs text-zinc-400 ml-1">/ 秒</span>
+                         </div>
+                       </div>
+                     )}
+                     {getVideoAudioPrice(model, 'audio') !== undefined && (
+                       <div className="flex justify-between items-center mb-1">
+                         <span className="text-zinc-500">含音频:</span>
+                         <div>
+                           <span className="text-indigo-600 dark:text-indigo-400 font-medium">
+                             {formatVideoAudioPrice(model, 'audio')}
+                           </span>
+                           {getVideoAudioPrice(model, 'audio', 'origin') !== undefined && (
+                             <span className="ml-2 text-xs text-zinc-400 line-through decoration-zinc-400/60">
+                               {formatVideoAudioPrice(model, 'audio', 'origin')}
+                             </span>
+                           )}
+                           <span className="text-xs text-zinc-400 ml-1">/ 秒</span>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+                 {/* 分辨率价格表 */}
                  {(model as any).videoResolutionPricing ? (
                    <>
                     <div className="font-medium mb-2 text-zinc-700 dark:text-zinc-300">分辨率价格表</div>
@@ -1321,7 +1421,7 @@ const ModelDetailDrawer = ({
                       );
                     })}
                    </>
-                 ) : (
+                 ) : !hasVideoAudioPricing(model) ? (
                    <div className="flex justify-between items-center py-1">
                      <span className="text-zinc-500">单秒价格:</span>
                      <div>
@@ -1334,7 +1434,7 @@ const ModelDetailDrawer = ({
                         <span className="text-xs text-zinc-400 ml-1">/ 秒</span>
                      </div>
                    </div>
-                 )}
+                 ) : null}
               </div>
             ) : (model as any).quotaType === 2 ? (
               /* 按资源类型 (图像Token表) */
