@@ -238,7 +238,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传图片</h3>
                <UploadComponent
                    ref={imageUploadRef}
-                   accept=".png,.jpg,.jpeg,.webp,.bmp"
+                   accept=".png,.jpg,.jpeg,.webp"
                    onUploadComplete={(uploadedFile: UploadedFile) => {
                        setImageFile({
                            fileId: uploadedFile.fileId,
@@ -257,7 +257,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                           <ImageIcon size={32} className="text-indigo-600 dark:text-indigo-400" />
                        </div>
                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">点击或拖拽上传图片</p>
-                       <p className="text-xs text-gray-400">支持 PNG, JPG, JPEG, BMP, WEBP • 建议正脸高清</p>
+                       <p className="text-xs text-gray-400">支持 PNG, JPG, JPEG, WEBP • 建议正脸高清</p>
                    </div>
                </UploadComponent>
            </div>
