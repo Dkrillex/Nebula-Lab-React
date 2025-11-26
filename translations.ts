@@ -775,20 +775,48 @@ interface Translation {
     subtitle: string;
     balanceLabel: string;
     convertPoints: string;
+    memberLevel: string;
+    quickActions: string;
     buttons: {
       points: string;
       balance: string;
-      freeMember: string;
+      logs: string;
       refresh: string;
+      refreshPoints: string;
+      refreshLogs: string;
     };
     recordsTitle: string;
     refreshData: string;
+    export: string;
+    exportBill: string;
+    totalRecords: string;
+    timeRange: string;
+    to: string;
+    query: string;
+    search: string;
+    reset: string;
+    loading: string;
+    noData: string;
+    noRecords: string;
+    noUsageRecords: string;
+    noPointsRecords: string;
+    viewDetails: string;
+    collapseDetails: string;
+    date: string;
+    times: string;
+    token: string;
+    consumption: string;
+    recharge: string;
+    netAmount: string;
+    total: string;
+    consumedPoints: string;
     record: {
       type: string;
       duration: string;
       input: string;
       output: string;
       consumption: string;
+      recharge: string;
     };
     status: {
       paid: string; // 已扣款
@@ -796,6 +824,34 @@ interface Translation {
       failed: string; // 失败
       unknown: string; // 未知
     };
+    teamLogs: {
+      title: string;
+      team: string;
+      member: string;
+      expenseType: string;
+      time: string;
+      pleaseSelect: string;
+      teamName: string;
+      userName: string;
+      tokenName: string;
+      modelName: string;
+      cost: string;
+      expenseTypeLabel: string;
+      createdAt: string;
+      promptTokens: string;
+      completionTokens: string;
+      addRecharge: string;
+      addConsumption: string;
+      firstPage: string;
+      prevPage: string;
+      nextPage: string;
+      lastPage: string;
+      recordsPerPage: string;
+    };
+    exportError: string;
+    exportSuccess: string;
+    selectTeamFirst: string;
+    unknownService: string;
   };
   pricingPage: {
     title: string;
@@ -2345,29 +2401,85 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Credits/Balance Center',
       subtitle: 'View and manage your credit balance, understand credit usage',
-      balanceLabel: 'Balance',
-      convertPoints: 'Convertible Points',
+      balanceLabel: 'Available Balance (CNY)',
+      convertPoints: 'Convertible Points:',
+      memberLevel: 'Member Level:',
+      quickActions: 'Quick Actions',
       buttons: {
         points: 'Points',
         balance: 'Balance',
-        freeMember: 'Free Member',
-        refresh: 'Refresh',
+        logs: 'Logs/Bills',
+        refresh: 'Refresh Balance',
+        refreshPoints: 'Refresh Points',
+        refreshLogs: 'Refresh Logs',
       },
       recordsTitle: 'Usage Records',
-      refreshData: 'Refresh Data',
+      refreshData: 'Data synchronization may be delayed',
+      export: 'Export',
+      exportBill: 'Export Bill',
+      totalRecords: 'Total {count} records',
+      timeRange: 'Time Range:',
+      to: 'to',
+      query: 'Query',
+      search: 'Search',
+      reset: 'Reset',
+      loading: 'Loading...',
+      noData: 'No Data',
+      noRecords: 'No Records',
+      noUsageRecords: 'No usage records',
+      noPointsRecords: 'No points records',
+      viewDetails: 'View Details',
+      collapseDetails: 'Collapse Details',
+      date: 'Date',
+      times: 'Times',
+      token: 'Token',
+      consumption: 'Consumption',
+      recharge: 'Recharge',
+      netAmount: 'Net Amount',
+      total: 'Total',
+      consumedPoints: 'Consumed Points',
       record: {
         type: 'Type',
-        duration: 'Time',
-        input: 'Input',
-        output: 'Output',
-        consumption: 'Consumption'
+        duration: 'Duration',
+        input: 'Input Token',
+        output: 'Output Token',
+        consumption: 'Consumption',
+        recharge: 'Recharge',
       },
       status: {
         paid: 'Paid',
         unpaid: 'Unpaid',
         failed: 'Failed',
         unknown: 'Unknown'
-      }
+      },
+      teamLogs: {
+        title: 'Logs/Bills',
+        team: 'Team',
+        member: 'Member',
+        expenseType: 'Expense Type',
+        time: 'Time',
+        pleaseSelect: 'Please Select',
+        teamName: 'Team Name',
+        userName: 'User Name',
+        tokenName: 'Creation/Token',
+        modelName: 'Function/Model',
+        cost: 'Cost(¥)',
+        expenseTypeLabel: 'Expense Type',
+        createdAt: 'Time',
+        promptTokens: 'Input(Tokens)',
+        completionTokens: 'Completion(Tokens)',
+        addRecharge: '+ Recharge',
+        addConsumption: '+ Consumption',
+        firstPage: 'First Page',
+        prevPage: 'Previous Page',
+        nextPage: 'Next Page',
+        lastPage: 'Last Page',
+        recordsPerPage: 'records/page',
+      },
+      exportError: 'Export failed, please try again later',
+      exportSuccess: 'Export successful',
+      selectTeamFirst: 'Please select a team first',
+      unknownService: 'Unknown Service',
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -4163,6 +4275,89 @@ export const translations: Record<string, Translation> = {
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
     },
+    expensesPage: {
+      title: '费用中心',
+      subtitle: '查看和管理您的余额和积分，了解使用情况',
+      balanceLabel: '可用余额 (CNY)',
+      convertPoints: '可转换积分:',
+      memberLevel: '会员等级:',
+      quickActions: '快捷操作',
+      buttons: {
+        points: '积分',
+        balance: '余额',
+        logs: '日志/账单',
+        refresh: '刷新余额',
+        refreshPoints: '刷新积分',
+        refreshLogs: '刷新日志',
+      },
+      recordsTitle: '使用记录',
+      refreshData: '数据同步可能存在延迟',
+      export: '导出',
+      exportBill: '导出账单',
+      totalRecords: '共 {count} 条记录',
+      timeRange: '时间范围：',
+      to: '至',
+      query: '查询',
+      search: '搜索',
+      reset: '重置',
+      loading: '加载中...',
+      noData: '暂无数据',
+      noRecords: '暂无记录',
+      noUsageRecords: '暂无使用记录',
+      noPointsRecords: '暂无积分流水',
+      viewDetails: '查看明细',
+      collapseDetails: '收起明细',
+      date: '日期',
+      times: '次数',
+      token: 'Token',
+      consumption: '消费',
+      recharge: '充值',
+      netAmount: '净额',
+      total: '合计',
+      consumedPoints: '消耗积分',
+      record: {
+        type: '类型',
+        duration: '用时',
+        input: '输入token',
+        output: '输出token',
+        consumption: '消费',
+        recharge: '充值',
+      },
+      status: {
+        paid: '已扣款',
+        unpaid: '未扣款',
+        failed: '失败',
+        unknown: '未知',
+      },
+      teamLogs: {
+        title: '日志/账单',
+        team: '团队',
+        member: '成员',
+        expenseType: '费用类型',
+        time: '时间',
+        pleaseSelect: '请选择',
+        teamName: '团队名称',
+        userName: '用户名',
+        tokenName: '创作/令牌',
+        modelName: '功能/模型',
+        cost: '费用(¥)',
+        expenseTypeLabel: '费用类型',
+        createdAt: '时间',
+        promptTokens: '输入(Tokens)',
+        completionTokens: '完成(Tokens)',
+        addRecharge: '+ 充值',
+        addConsumption: '+ 消费',
+        firstPage: '第一页',
+        prevPage: '上一页',
+        nextPage: '下一页',
+        lastPage: '最后一页',
+        recordsPerPage: '条/页',
+      },
+      exportError: '导出失败，请稍后重试',
+      exportSuccess: '导出成功',
+      selectTeamFirst: '请先选择团队',
+      unknownService: '未知服务',
+    },
     profilePage: {
       title: '个人中心',
       subtitle: '管理您的账户信息和安全设置',
@@ -5112,29 +5307,85 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Pusat Kredit/Saldo',
       subtitle: 'Lihat dan kelola saldo kredit Anda, pahami penggunaan kredit',
-      balanceLabel: 'Saldo',
-      convertPoints: 'Poin yang Dapat Dikonversi',
+      balanceLabel: 'Saldo Tersedia (CNY)',
+      convertPoints: 'Poin yang Dapat Dikonversi:',
+      memberLevel: 'Level Anggota:',
+      quickActions: 'Tindakan Cepat',
       buttons: {
         points: 'Poin',
         balance: 'Saldo',
-        freeMember: 'Anggota Gratis',
-        refresh: 'Segarkan',
+        logs: 'Log/Tagihan',
+        refresh: 'Segarkan Saldo',
+        refreshPoints: 'Segarkan Poin',
+        refreshLogs: 'Segarkan Log',
       },
       recordsTitle: 'Catatan Penggunaan',
-      refreshData: 'Segarkan Data',
+      refreshData: 'Sinkronisasi data mungkin tertunda',
+      export: 'Ekspor',
+      exportBill: 'Ekspor Tagihan',
+      totalRecords: 'Total {count} catatan',
+      timeRange: 'Rentang Waktu:',
+      to: 'hingga',
+      query: 'Kueri',
+      search: 'Cari',
+      reset: 'Reset',
+      loading: 'Memuat...',
+      noData: 'Tidak Ada Data',
+      noRecords: 'Tidak Ada Catatan',
+      noUsageRecords: 'Tidak ada catatan penggunaan',
+      noPointsRecords: 'Tidak ada catatan poin',
+      viewDetails: 'Lihat Detail',
+      collapseDetails: 'Tutup Detail',
+      date: 'Tanggal',
+      times: 'Kali',
+      token: 'Token',
+      consumption: 'Konsumsi',
+      recharge: 'Isi Ulang',
+      netAmount: 'Jumlah Bersih',
+      total: 'Total',
+      consumedPoints: 'Poin yang Dikonsumsi',
       record: {
         type: 'Jenis',
-        duration: 'Waktu',
-        input: 'Input',
-        output: 'Output',
-        consumption: 'Konsumsi'
+        duration: 'Durasi',
+        input: 'Token Input',
+        output: 'Token Output',
+        consumption: 'Konsumsi',
+        recharge: 'Isi Ulang',
       },
       status: {
         paid: 'Telah Dikurangi',
         unpaid: 'Belum Dikurangi',
         failed: 'Gagal',
         unknown: 'Tidak Diketahui'
-      }
+      },
+      teamLogs: {
+        title: 'Log/Tagihan',
+        team: 'Tim',
+        member: 'Anggota',
+        expenseType: 'Jenis Biaya',
+        time: 'Waktu',
+        pleaseSelect: 'Silakan Pilih',
+        teamName: 'Nama Tim',
+        userName: 'Nama Pengguna',
+        tokenName: 'Kreasi/Token',
+        modelName: 'Fungsi/Model',
+        cost: 'Biaya(¥)',
+        expenseTypeLabel: 'Jenis Biaya',
+        createdAt: 'Waktu',
+        promptTokens: 'Input(Tokens)',
+        completionTokens: 'Selesai(Tokens)',
+        addRecharge: '+ Isi Ulang',
+        addConsumption: '+ Konsumsi',
+        firstPage: 'Halaman Pertama',
+        prevPage: 'Halaman Sebelumnya',
+        nextPage: 'Halaman Berikutnya',
+        lastPage: 'Halaman Terakhir',
+        recordsPerPage: 'catatan/halaman',
+      },
+      exportError: 'Ekspor gagal, silakan coba lagi nanti',
+      exportSuccess: 'Ekspor berhasil',
+      selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
+      unknownService: 'Layanan Tidak Diketahui',
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
