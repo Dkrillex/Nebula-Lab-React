@@ -85,12 +85,24 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
     return countryCodeOptions[0]?.value ?? '+86';
   }, [countryCodeOptions]);
 
+  // 渠道来源选项
+  const channelSourceOptions = [
+    { value: 'wechat_official', label: '公众号' },
+    { value: 'wechat_video', label: '视频号' },
+    { value: 'douyin', label: '抖音' },
+    { value: 'xiaohongshu', label: '小红书' },
+    { value: 'kuaishou', label: '快手' },
+    { value: 'community', label: '社区文章' },
+    { value: 'other', label: '其他' },
+  ];
+
   // Form States
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [countryCode, setCountryCode] = useState(defaultCountryCode);
+  const [registerTag, setRegisterSource] = useState('other'); // 默认其他
 
   // Reset state when opening
   useEffect(() => {
@@ -106,6 +118,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
       setCode('');
       // 重置为当前语言对应的默认国家代码
       setCountryCode(defaultCountryCode);
+      setRegisterSource('other'); // 重置渠道来源
     }
   }, [isOpen, defaultCountryCode]);
 
@@ -211,6 +224,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
         channelId: channelId,
         teamId: teamId,
         inviteCode: inviteCode,
+        registerTag: registerTag,
       });
       
       // 注意：URL 参数清除已在 authStore.phoneLogin 中处理，这里不需要重复清除
@@ -453,6 +467,27 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
                     </button>
                   </div>
                 </div>
+                {/* 渠道来源选择 */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted">您是从哪里了解到我们的？</label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {channelSourceOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => setRegisterSource(option.value)}
+                        className={`px-2 py-1.5 text-xs rounded-full border transition-all text-center ${
+                          registerTag === option.value
+                            ? 'bg-primary text-white border-primary'
+                            : 'bg-background text-muted border-border hover:border-primary/50'
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="flex items-start gap-2">
                   <input
                     type="checkbox"

@@ -60,7 +60,7 @@ export const authService = {
    * Phone Login (SMS Code)
    * Endpoint: /auth/login
    */
-  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string; channelId?: string; teamId?: string; inviteCode?: string }) => {
+  phoneLogin: (data: { phonenumber: string; smsCode: string; countryCode?: string; tenantId?: string; channelId?: string; teamId?: string; inviteCode?: string; registerTag?: string }) => {
     const loginData = {
       ...data,
       clientId: CLIENT_ID,

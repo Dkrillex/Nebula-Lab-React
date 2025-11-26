@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useActivate, useUnactivate } from 'react-activation';
 import { Loader, X, Play, Download, RotateCcw, Image as ImageIcon, Video, Upload, Check } from 'lucide-react';
@@ -90,6 +90,8 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const hasInitializedRef = useRef(false);
   // 跟踪当前正在轮询的 taskId，避免重复轮询
   const pollingTaskIdRef = useRef<string | null>(null);
+  // 标记组件是否处于 KeepAlive 缓存状态
+  const isKeepAliveInactiveRef = useRef(false);
 
   // Calculate points
   const pointsTip = () => {
@@ -146,10 +148,10 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           // Update progress - ensure it doesn't exceed 99%
           setProgress(prev => {
             if (prev < 80) {
-              const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 20) + 1);
+              const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 5) + 1);
               return Math.min(prev + maxIncrement, 80);
             } else if (prev < 99) {
-              const maxIncrement = Math.min(99 - prev, Math.floor(Math.random() * 10) + 1);
+              const maxIncrement = Math.min(99 - prev, Math.floor(Math.random() * 3) + 1);
               return Math.min(prev + maxIncrement, 99);
             }
             return prev; // Don't exceed 99
@@ -256,6 +258,19 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
     check();
   };
+
+  const resumePollingIfNeeded = useCallback(() => {
+    if (!taskId) return;
+
+    const taskStatus = taskResult?.taskStatus || taskResult?.status;
+    if (taskStatus === 'success' || taskStatus === 'completed' || taskStatus === 'fail' || taskStatus === 'failed' || taskStatus === 'error') {
+      return;
+    }
+
+    if (!loopTimerRef.current) {
+      pollTask(taskId);
+    }
+  }, [taskId, taskResult]);
 
   // Poll video generation task
   const pollImage2Video = async (videoTaskId: string) => {
@@ -579,14 +594,22 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     pollTask(taskId);
 
     return () => {
-      // 清理定时器（只在组件真正卸载时执行）
-      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      // 清理定时器（只在组件真正卸载或 taskId 变化时执行）
+      if (isKeepAliveInactiveRef.current) return;
+      if (loopTimerRef.current) {
+        clearTimeout(loopTimerRef.current);
+        loopTimerRef.current = null;
+      }
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     };
   }, [taskId, isV2]);
 
   // 使用 useActivate 处理 KeepAlive 恢复时的逻辑
   useActivate(() => {
+    isKeepAliveInactiveRef.current = false;
     // 当组件从 KeepAlive 缓存中恢复时，检查是否需要继续轮询
     if (!taskId) return;
     
@@ -598,26 +621,12 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
       return;
     }
     
-    // 如果 taskId 没有变化，检查任务状态
-    // 如果任务已经完成（success 或 fail），不需要重新轮询
-    const taskStatus = taskResult?.taskStatus || taskResult?.status;
-    if (taskStatus === 'success' || taskStatus === 'completed' || taskStatus === 'fail' || taskStatus === 'failed') {
-      // 任务已完成，不需要重新轮询
-      return;
-    }
-    
-    // 如果任务还在进行中，且没有活动的定时器，重新启动轮询
-    // 注意：这里不直接调用 pollTask，因为 pollTask 会重置状态
-    // 如果任务还在进行中，定时器应该还在运行（KeepAlive 会保持状态）
-    // 但如果定时器被清理了，需要重新启动
-    if (!loopTimerRef.current && !pageLoading && taskStatus !== 'success' && taskStatus !== 'completed') {
-      // 定时器被清理了，但任务还在进行中，重新启动轮询
-      pollTask(taskId);
-    }
+    resumePollingIfNeeded();
   });
 
   // 使用 useUnactivate 处理组件被缓存时的逻辑
   useUnactivate(() => {
+    isKeepAliveInactiveRef.current = true;
     // 当组件被 KeepAlive 缓存时，不清理定时器
     // 因为组件只是被缓存，不是卸载，定时器应该继续运行
     // 这样当切换回来时，轮询可以继续进行

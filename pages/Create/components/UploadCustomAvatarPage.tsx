@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Upload, Loader2, CheckCircle, AlertCircle, Info, Copy, Video, FileVideo } from 'lucide-react';
 import { avatarService, UploadedFile, CustomAvatarTaskResult } from '../../../services/avatarService';
@@ -11,6 +11,9 @@ import toast from 'react-hot-toast';
 interface UploadCustomAvatarPageProps {
   t?: any;
 }
+
+const POLLING_INTERVAL = 10000;
+const MAX_POLL_ATTEMPTS = 60;
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg
@@ -47,6 +50,15 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<CustomAvatarTaskResult | null>(null);
   const [queryLoading, setQueryLoading] = useState(false);
+  const pollingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastQueriedTaskIdRef = useRef<string>('');
+  const pollAttemptRef = useRef(0);
+  const clearPollingTimer = useCallback(() => {
+    if (pollingTimerRef.current) {
+      clearTimeout(pollingTimerRef.current);
+      pollingTimerRef.current = null;
+    }
+  }, []);
 
   // Result State
   const [previewVideoUrl, setPreviewVideoUrl] = useState('');
@@ -57,11 +69,21 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
 
   useEffect(() => {
     const queryTaskId = searchParams.get('taskId');
-    if (queryTaskId) {
+    if (!queryTaskId || queryTaskId === taskId) {
+      return () => clearPollingTimer();
+    }
+
+    if (queryTaskId !== lastQueriedTaskIdRef.current) {
       setTaskId(queryTaskId);
+      clearPollingTimer();
+      pollAttemptRef.current = 0;
       queryResult(queryTaskId);
     }
-  }, [searchParams]);
+
+    return () => {
+      clearPollingTimer();
+    };
+  }, [searchParams, taskId, clearPollingTimer]);
 
   const validateForm = () => {
     if (!formData.avatarName.trim()) {
@@ -115,6 +137,8 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
         // Update URL without reloading
         navigate(`?taskId=${newTaskId}`, { replace: true });
         // Start querying
+        clearPollingTimer();
+        pollAttemptRef.current = 0;
         queryResult(newTaskId);
       } else {
         throw new Error(res.message || '提交失败');
@@ -130,6 +154,20 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
 
   const queryResult = async (currentTaskId: string) => {
     if (!currentTaskId) return;
+    if (currentTaskId !== lastQueriedTaskIdRef.current) {
+      lastQueriedTaskIdRef.current = currentTaskId;
+      pollAttemptRef.current = 0;
+    }
+    if (pollAttemptRef.current >= MAX_POLL_ATTEMPTS) {
+      clearPollingTimer();
+      toast.error(t?.script?.errors?.timeout || '查询超时，请稍后重试');
+      if (taskStatus !== 'success') {
+        setTaskStatus('fail');
+      }
+      setQueryLoading(false);
+      return;
+    }
+    pollAttemptRef.current += 1;
 
     try {
       setQueryLoading(true);
@@ -144,13 +182,15 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       setTaskStatus(taskResult.status);
 
       if (taskResult.status === 'running' || taskResult.status === 'init') {
-        // Simulate progress
-        if (progress < 90) {
-          setProgress(prev => Math.min(prev + Math.random() * 5, 90));
-        }
-        // Poll again
-        setTimeout(() => queryResult(currentTaskId), 10000);
+        setProgress(prev => {
+          if (prev >= 90) return prev;
+          return Math.min(prev + Math.random() * 5, 90);
+        });
+        clearPollingTimer();
+        pollingTimerRef.current = setTimeout(() => queryResult(currentTaskId), POLLING_INTERVAL);
       } else if (taskResult.status === 'success') {
+        clearPollingTimer();
+        pollAttemptRef.current = 0;
         setProgress(100);
         toast.success(t?.script?.success?.s3 || '任务完成');
         
@@ -182,6 +222,8 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
              }
         }
       } else if (taskResult.status === 'fail') {
+        clearPollingTimer();
+        pollAttemptRef.current = 0;
         if (taskResult.errorMsg === 'no face detected') {
              toast.error(t?.script?.errors?.e7 || '未检测到人脸');
         } else {
@@ -190,6 +232,13 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       }
     } catch (error) {
       console.error('Query failed:', error);
+      if (pollAttemptRef.current < MAX_POLL_ATTEMPTS) {
+        clearPollingTimer();
+        pollingTimerRef.current = setTimeout(() => queryResult(currentTaskId), POLLING_INTERVAL);
+      } else {
+        toast.error(t?.script?.errors?.timeout || '查询超时，请稍后重试');
+        setTaskStatus(prev => (prev === 'success' ? prev : 'fail'));
+      }
     } finally {
       setQueryLoading(false);
     }
@@ -209,6 +258,9 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
     setPreviewVideoUrl('');
     setAiAvatar(null);
     setProgress(0);
+    lastQueriedTaskIdRef.current = '';
+    pollAttemptRef.current = 0;
+    clearPollingTimer();
     navigate('/create/uploadCustomAvatar', { replace: true });
     toast.success(t?.script?.success?.s4 || '表单已重置');
   };
