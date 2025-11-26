@@ -8,9 +8,15 @@ import { threeDModelService } from '../../../services/threeDModelService';
 import { uploadService } from '../../../services/uploadService';
 import { assetsService } from '../../../services/assetsService';
 import JSZip from 'jszip';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 const ThreeDModelPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t: rootT } = useAppOutletContext();
+  // 添加空值保护，防止页面崩溃
+  const t = (rootT?.createPage as any)?.threeDModelPage || (translations['en'].createPage as any).threeDModelPage;
+  
   const [primaryFile, setPrimaryFile] = useState<File | null>(null);
   const [primaryImageBase64, setPrimaryImageBase64] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -66,14 +72,14 @@ const ThreeDModelPage: React.FC = () => {
     console.log("zipUrl",zipUrl);
     
     const response = await fetch(zipUrl);
-     if (!response.ok) throw new Error('下载失败');
+     if (!response.ok) throw new Error(t.errors.downloadError);
 
      const arrayBuffer = await response.arrayBuffer();
      const zip = await JSZip.loadAsync(arrayBuffer);
      const glbEntry = Object.values(zip.files as Record<string, JSZip.JSZipObject>).find(
        (file) => file.name.endsWith('.glb'),
      );
-     if (!glbEntry) throw new Error('压缩包中没有 .glb 文件');
+     if (!glbEntry) throw new Error(t.errors.noGlbFile);
 
      const glbArrayBuffer = await glbEntry.async('arraybuffer');
      const blob = new Blob([glbArrayBuffer], { type: 'model/gltf-binary' });
@@ -105,14 +111,14 @@ const ThreeDModelPage: React.FC = () => {
       modelUrlRef.current = objectUrl;
       setModelUrl(objectUrl);
       setFileUrl(testZipUrl);
-      setTestResult('✅ 测试成功！GLB 文件已提取并加载。');
+      setTestResult(t.testResult.success);
       setGeneratedContent({ imageUrl: '' }); // 设置一个占位内容以显示查看器
       
       console.log('=== 测试完成 ===');
     } catch (error: any) {
       console.error('测试失败:', error);
-      const errorMsg = error.message || '测试失败';
-      setTestResult(`❌ 测试失败: ${errorMsg}`);
+      const errorMsg = error.message || t.errors.testFailed;
+      setTestResult(`${t.testResult.failure}: ${errorMsg}`);
       toast.error(errorMsg);
     } finally {
       setIsTestingZip(false);
@@ -122,7 +128,7 @@ const ThreeDModelPage: React.FC = () => {
   // 生成 3D 模型
   const handleGenerateImage = async () => {
     if (!primaryImageBase64) {
-      toast.error('请上传图片');
+      toast.error(t.errors.uploadImage);
       return;
     }
 
@@ -133,21 +139,21 @@ const ThreeDModelPage: React.FC = () => {
     try {
       const primaryMimeType = primaryImageBase64.split(';')[0].split(':')[1].split('/')[1] ?? 'png';
 
-      setLoadingMessage('正在上传图片...');
+      setLoadingMessage(t.loadingMessages.uploading);
 
       // 上传图片到 OSS
       const uploadRes = await uploadService.uploadByBase64(
         primaryImageBase64,
-        '3D模型-原始图片',
+        `${t.title}-原始图片`,
         primaryMimeType
       );
 
       const imageUrl = (uploadRes as any).data?.url || (uploadRes as any).url;
       if (!imageUrl) {
-        throw new Error('图片上传失败');
+        throw new Error(t.errors.imageUploadFailed);
       }
 
-      setLoadingMessage('正在生成 3D 模型...');
+      setLoadingMessage(t.loadingMessages.generating);
 
       // 创建 3D 任务
       const dataList = {
@@ -170,10 +176,10 @@ const ThreeDModelPage: React.FC = () => {
       const taskRes = await threeDModelService.createThreeDTask(dataList);
       const taskId = (taskRes as any).data?.id || (taskRes as any).id;
       if (!taskId) {
-        throw new Error('创建任务失败');
+        throw new Error(t.errors.createTaskFailed);
       }
 
-      setLoadingMessage('正在等待生成完成...');
+      setLoadingMessage(t.loadingMessages.waiting);
 
       // 轮询查询任务状态
       const terminalStatuses = new Set(['succeeded', 'failed', 'cancelled']);
@@ -197,15 +203,15 @@ const ThreeDModelPage: React.FC = () => {
           if (status === 'succeeded') {
             const assetUrl = taskResult?.content?.fileUrl;
             if (!assetUrl) {
-              throw new Error('下载失败：资源URL不存在');
+              throw new Error(t.errors.downloadFailed);
             }
 
-            setLoadingMessage('正在下载文件...');
+            setLoadingMessage(t.loadingMessages.downloading);
 
             // 下载素材
             const downloadRes = await assetsService.downloadAssets({
               assetFileType: 'zip',
-              assetName: '3D测试',
+              assetName: `${t.title}测试`,
               assetUrl
             });
 
@@ -216,12 +222,12 @@ const ThreeDModelPage: React.FC = () => {
             const zipUrl = (downloadRes as any)?.url;
             if (!zipUrl) {
               console.error('downloadRes 结构:', downloadRes);
-              throw new Error('获取下载链接失败：返回数据中没有 url 字段');
+              throw new Error(t.errors.getDownloadUrlFailed);
             }
 
             console.log('获取到 ZIP 下载链接:', zipUrl);
             setFileUrl(zipUrl);
-            setLoadingMessage('正在解析模型文件...');
+            setLoadingMessage(t.loadingMessages.parsing);
 
             // 从 ZIP 中提取 GLB
             try {
@@ -235,10 +241,10 @@ const ThreeDModelPage: React.FC = () => {
               setModelUrl(objectUrl);
             } catch (error: any) {
               console.error('解析 GLB 失败：', error);
-              throw new Error(error.message || '解析 GLB 文件失败');
+              throw new Error(error.message || t.errors.parseGlbFailed);
             }
           } else if (status === 'failed') {
-            throw new Error('3D 任务失败');
+            throw new Error(t.errors.taskFailed);
           }
           break;
         }
@@ -252,7 +258,7 @@ const ThreeDModelPage: React.FC = () => {
       });
     } catch (error: any) {
       console.error(error);
-      toast.error(error.message || '生成3D效果失败');
+      toast.error(error.message || t.errors.generateFailed);
     } finally {
       setIsLoading(false);
       setLoadingMessage('');
@@ -269,7 +275,7 @@ const ThreeDModelPage: React.FC = () => {
           <div>
             <div className="mb-4">
               <div className="mb-4">
-                <h2 className="page-title">3D 模型</h2>
+                <h2 className="page-title">{t.title}</h2>
               </div>
             </div>
 
@@ -277,6 +283,7 @@ const ThreeDModelPage: React.FC = () => {
               <UploadComponent
                 onFileSelected={handlePrimaryImageSelect}
                 onClear={handleClearPrimaryImage}
+                onUploadComplete={() => {}}
                 uploadType="oss"
                 accept="image/*"
                 className="h-64 w-full"
@@ -286,7 +293,7 @@ const ThreeDModelPage: React.FC = () => {
               >
                 <div className="text-center p-4">
                   <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">点击或拖拽上传图片</p>
+                  <p className="text-sm text-gray-600">{t.uploadImage}</p>
                 </div>
               </UploadComponent>
             </div>
@@ -299,7 +306,7 @@ const ThreeDModelPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <Loader2 className="h-5 w-5 animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.generating}</span>
                 </>
               ) : (
                 <>
@@ -308,7 +315,7 @@ const ThreeDModelPage: React.FC = () => {
                     <Check className="absolute -top-1 -right-1 h-3 w-3" />
                   </div>
                   <span className="text-sm font-semibold">3</span>
-                  <span>生成 3D 模型</span>
+                  <span>{t.generate}</span>
                 </>
               )}
             </button>
@@ -327,13 +334,13 @@ const ThreeDModelPage: React.FC = () => {
 
         {/* 右侧：结果展示 */}
         <div className="flex flex-col rounded-xl border border-[rgba(0,0,0,0.1)] bg-[rgba(255,255,255,0.6)] p-6 shadow-2xl shadow-black/20 backdrop-blur-lg result result-right">
-          <h2 className="result-title">结果</h2>
+          <h2 className="result-title">{t.resultTitle}</h2>
           {isLoading ? (
             <div className="flex flex-grow items-center justify-center">
               <div className="flex flex-col items-center justify-center gap-4 text-[#111827]">
                 <Loader2 className="h-10 w-10 animate-spin text-[hsl(var(--primary))]" />
-                <p className="text-lg font-medium">{loadingMessage || '正在生成...'}</p>
-                <p className="text-sm text-[#4b5563]">请稍候</p>
+                <p className="text-lg font-medium">{loadingMessage || t.loadingMessages.default}</p>
+                <p className="text-sm text-[#4b5563]">{t.loadingHint}</p>
               </div>
             </div>
           ) : generatedContent && modelUrl ? (
@@ -345,7 +352,7 @@ const ThreeDModelPage: React.FC = () => {
           ) : (
             <div className="flex flex-grow flex-col items-center justify-center text-center text-[#6b7280]">
               <div className="empty-icon">🎨</div>
-              <p className="mt-2">生成的结果将显示在这里</p>
+              <p className="mt-2">{t.emptyState}</p>
             </div>
           )}
         </div>
