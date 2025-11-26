@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Trash2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
+import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
-import { uploadService } from '../../../services/uploadService';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import UploadComponent from '../../../components/UploadComponent';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import { useAuthStore } from '../../../stores/authStore';
 import toast from 'react-hot-toast';
@@ -117,8 +117,6 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   
   const [referenceImage, setReferenceImage] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -182,18 +180,8 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    // Validate file size (10MB)
-    const maxSize = 10 * 1024 * 1024;
-    if (file.size > maxSize) {
-      toast.error(t.tips.imageSizeLimit);
-      if (fileInputRef.current) fileInputRef.current.value = '';
-      return;
-    }
-
+  // 处理文件选择，验证宽高比
+  const handleFileSelected = async (file: File) => {
     // Validate aspect ratio [1/3, 3]
     try {
       const img = new Image();
@@ -208,35 +196,26 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       if (ratio < 1/3 || ratio > 3) {
         toast.error(`${t.tips.imageRatioLimit} (Current: ${ratio.toFixed(2)})`);
         URL.revokeObjectURL(objectUrl);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-        return;
+        throw new Error('Invalid aspect ratio');
       }
       URL.revokeObjectURL(objectUrl);
     } catch (error) {
+      if (error instanceof Error && error.message === 'Invalid aspect ratio') {
+        throw error;
+      }
       console.error('Image validation failed:', error);
     }
-    
-    try {
-      setUploading(true);
-      const res = await uploadService.uploadFile(file);
-      // Handle different response structures
-      const data = (res as any).data || res;
-      if (data && (data.url || data.fileUrl)) {
-        setReferenceImage(data.url || data.fileUrl);
-        toast.success(t.tips.uploadSuccess);
-      } else {
-        console.error('Upload failed:', res);
-        toast.error(t.tips.uploadFailed);
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error(t.tips.uploadFailed);
-    } finally {
-      setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
+  };
+
+  // 处理上传完成
+  const handleUploadComplete = (uploadedFile: { fileId: string; fileName: string; fileUrl: string; format: string }) => {
+    setReferenceImage(uploadedFile.fileUrl);
+    toast.success(t.tips.uploadSuccess);
+  };
+
+  // 处理清除
+  const handleClear = () => {
+    setReferenceImage(null);
   };
 
   const handleGenerate = async () => {
@@ -420,42 +399,27 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
             <div className="mb-6">
               <h3 className="font-bold text-foreground mb-3">{t.imageToImage.uploadTitle}</h3>
               
-              <input 
-                type="file" 
-                ref={fileInputRef}
-                onChange={handleUpload} 
-                className="hidden" 
+              <UploadComponent
+                onUploadComplete={handleUploadComplete}
+                onFileSelected={handleFileSelected}
+                onClear={handleClear}
+                uploadType="oss"
                 accept="image/png, image/jpeg, image/jpg"
-              />
-              
-              {referenceImage ? (
-                <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group">
-                  <img src={referenceImage} alt="Reference" className="w-full h-40 object-contain bg-black/5" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <button 
-                      onClick={() => setReferenceImage(null)}
-                      className="p-2 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors"
-                    >
-                      <Trash2 size={18} />
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div 
-                  onClick={() => !uploading && fileInputRef.current?.click()}
-                  className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                    uploading ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {uploading ? (
-                    <Loader2 size={24} className="animate-spin text-indigo-600 mb-2" />
-                  ) : (
-                    <Upload size={24} className="text-slate-400 mb-2" />
-                  )}
-                  <p className="text-sm font-medium text-foreground">{uploading ? 'Uploading...' : t.imageToImage.uploadDesc}</p>
+                maxSize={10}
+                immediate={true}
+                showPreview={true}
+                initialUrl={referenceImage || ''}
+                className="h-40"
+                onError={(error) => {
+                  toast.error(error.message || t.tips.uploadFailed);
+                }}
+              >
+                <div className="text-center text-gray-500 p-4">
+                  <Upload size={24} className="mx-auto mb-2 text-gray-400" />
+                  <p className="text-sm font-medium text-foreground">{t.imageToImage.uploadDesc}</p>
                   <p className="text-xs text-muted mt-1">{t.imageToImage.uploadHint}</p>
                 </div>
-              )}
+              </UploadComponent>
             </div>
           )}
 

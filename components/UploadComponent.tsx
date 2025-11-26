@@ -62,6 +62,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false); // 是否已上传成功
   const [useIframe, setUseIframe] = useState(false); // 是否使用 iframe（遇到跨域问题时）
+  const [isDragging, setIsDragging] = useState(false); // 拖拽状态
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Update preview URL when initialUrl changes
@@ -89,9 +90,77 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     file: file
   }));
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
+  // 验证文件格式是否符合 accept 要求
+  const validateFileType = (file: File): boolean => {
+    if (!accept || accept === '*') return true;
+
+    const acceptList = accept.split(',').map(item => item.trim());
+    const fileName = file.name.toLowerCase();
+    const fileType = file.type.toLowerCase();
+    
+    // 扩展名到 MIME 类型的映射（用于双向验证）
+    const extToMime: Record<string, string[]> = {
+      '.png': ['image/png'],
+      '.jpg': ['image/jpeg', 'image/jpg'],
+      '.jpeg': ['image/jpeg', 'image/jpg'],
+      '.gif': ['image/gif'],
+      '.webp': ['image/webp'],
+      '.mp4': ['video/mp4'],
+      '.mov': ['video/quicktime'],
+      '.avi': ['video/x-msvideo'],
+      '.webm': ['video/webm'],
+      '.mp3': ['audio/mpeg', 'audio/mp3'],
+      '.wav': ['audio/wav'],
+      '.m4a': ['audio/mp4'],
+    };
+    
+    // 获取文件扩展名
+    const fileExt = '.' + fileName.split('.').pop()?.toLowerCase();
+    const fileMimeTypes = fileExt && fileExt !== '.' ? extToMime[fileExt] : [];
+
+    for (const acceptItem of acceptList) {
+      // 检查 MIME 类型（如 image/png, image/*）
+      if (acceptItem.includes('/')) {
+        if (acceptItem.endsWith('/*')) {
+          // 通配符匹配，如 image/*
+          const prefix = acceptItem.split('/')[0];
+          if (fileType.startsWith(prefix + '/')) {
+            return true;
+          }
+          // 也检查文件扩展名对应的 MIME 类型
+          if (fileMimeTypes && fileMimeTypes.some(mime => mime.startsWith(prefix + '/'))) {
+            return true;
+          }
+        } else if (fileType === acceptItem) {
+          // 精确匹配 MIME 类型
+          return true;
+        } else if (fileMimeTypes && fileMimeTypes.includes(acceptItem)) {
+          // 文件扩展名对应的 MIME 类型匹配
+          return true;
+        }
+      } else {
+        // 检查文件扩展名（如 .png, .jpg）
+        const ext = acceptItem.startsWith('.') ? acceptItem : '.' + acceptItem;
+        if (fileName.endsWith(ext.toLowerCase())) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  };
+
+  // 处理文件选择的通用函数
+  const processFile = async (selectedFile: File) => {
     if (!selectedFile) return;
+
+    // Format Validation
+    if (!validateFileType(selectedFile)) {
+        const acceptFormats = accept.split(',').map(f => f.trim()).join('、');
+        const error = new Error(`文件格式不正确，仅支持：${acceptFormats}`);
+        onError ? onError(error) : toast.error(error.message);
+        return;
+    }
 
     // Size Validation
     if (selectedFile.size > maxSize * 1024 * 1024) {
@@ -116,6 +185,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    await processFile(selectedFile!);
+  };
+
   const uploadFile = async (fileToUpload: File, localPreviewUrl?: string) => {
     console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
@@ -125,15 +199,18 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       if (uploadType === 'oss') {
         console.log('使用 OSS 上传方式');
         const res = await uploadService.uploadFile(fileToUpload);
-        if (res.code === 200 && res.data) {
+        // uploadService.uploadFile 直接返回 data 部分: { url, fileName, ossId }
+        // 但也可能返回包装结构 { code, data, msg }
+        const data = (res as any).data || res;
+        if (data && (data.url || data.fileUrl) && data.ossId) {
           uploadedFile = {
-            fileId: res.data.ossId,
-            fileName: res.data.fileName,
-            fileUrl: res.data.url,
+            fileId: data.ossId,
+            fileName: data.fileName,
+            fileUrl: data.url || data.fileUrl,
             format: fileToUpload.name.split('.').pop() || '',
           };
         } else {
-            throw new Error(res.msg || 'Upload failed');
+            throw new Error((res as any).msg || 'Upload failed');
         }
       } else {
         console.log('使用 TV OSS 上传方式');
@@ -217,6 +294,36 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       if (onClear) onClear();
   };
 
+  // 拖拽事件处理
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!disabled && !previewUrl) {
+      setIsDragging(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragging(false);
+
+    if (disabled || previewUrl) return;
+
+    const droppedFiles = e.dataTransfer.files;
+    if (droppedFiles.length > 0) {
+      const droppedFile = droppedFiles[0];
+      // processFile 中已经包含格式验证，直接调用即可
+      await processFile(droppedFile);
+    }
+  };
+
   // Helper function to determine file type from accept string
   const getFileTypeFromAccept = (acceptStr: string): 'video' | 'audio' | 'image' => {
     const acceptLower = acceptStr.toLowerCase();
@@ -243,8 +350,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
   return (
     <div 
-        className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'} ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : 'border-gray-300 dark:border-gray-600'} ${className}`}
+        className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'} ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500 ring-offset-2' : 'border-gray-300 dark:border-gray-600'} ${className}`}
         onClick={() => !disabled && !previewUrl && fileInputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
     >
       <input 
           ref={fileInputRef} 
@@ -389,8 +499,10 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       ) : (
         children || (
             <div className="text-center text-gray-500 p-4">
-                <Upload size={24} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-xs font-medium">点击上传文件</p>
+                <Upload size={24} className={`mx-auto mb-2 ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
+                <p className={`text-xs font-medium ${isDragging ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
+                  {isDragging ? '松开以上传文件' : '点击或拖拽文件到此处上传'}
+                </p>
                 <p className="text-[10px] text-gray-400 mt-1">支持 {accept.replace(/image\/|video\/|audio\//g, '').toUpperCase()}</p>
             </div>
         )

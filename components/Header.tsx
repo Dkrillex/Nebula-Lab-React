@@ -116,7 +116,7 @@ const Header: React.FC<HeaderProps> = ({
         }
         return label;
       }
-      return sideMenuMap.home;
+      return sideMenuMap.creationCenter;
     }
     if (tab.view === 'models') return sideMenuMap.modelSquare;
     if (tab.view === 'chat') return sideMenuMap.aiExperience;
