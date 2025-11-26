@@ -618,6 +618,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     }
   }, []);
 
+  // 处理关闭模态框（清除标记点和遮罩层）
+  const handleClose = useCallback(() => {
+    // 清除所有标记点和遮罩层
+    clearAllMarksAndMasks();
+    // 关闭模态框
+    onClose();
+  }, [clearAllMarksAndMasks, onClose]);
+
   // 将画布坐标转换为视频原始尺寸坐标
   const convertCanvasToVideoCoordinates = useCallback((canvasX: number, canvasY: number): [number, number] => {
     if (!videoRef.current) {
@@ -1267,7 +1275,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         {/* 顶部导航栏 */}
         <div className="flex items-center justify-between px-6 py-4 bg-[#2a2a2a] border-b border-[#3a3a3a]">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="flex items-center gap-2 px-4 py-2 text-white hover:bg-[#3a3a3a] rounded transition-colors"
           >
             <svg
@@ -1523,7 +1531,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         {/* 底部操作栏 */}
         <div className="flex justify-center items-center px-6 py-4 bg-[#2a2a2a] border-t border-[#3a3a3a]">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isSubmittingMask}
             className="px-8 py-2 bg-[#3a3a3a] text-white rounded-md text-sm font-medium hover:bg-[#4a4a4a] transition-all mx-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
