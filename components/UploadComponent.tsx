@@ -373,11 +373,11 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     <div 
         className={`relative border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition ${disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800'} ${previewUrl ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' : isDragging ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 ring-2 ring-indigo-500 ring-offset-2' : 'border-gray-300 dark:border-gray-600'} ${className}`}
         onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
           if (!disabled && !previewUrl) {
             // 检查登录状态
             if (!isAuthenticated) {
+              e.preventDefault();
+              e.stopPropagation();
               showAuthModal();
               return;
             }
