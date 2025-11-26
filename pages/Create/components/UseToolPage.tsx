@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, Edit3, X } from 'lucide-react';
-import { TOOLS_DATA, Tool } from '../data';
+import { getToolsData, Tool } from '../data';
 import UploadComponent from '../../../components/UploadComponent';
 import { aiToolService } from '../../../services/aiToolService';
 import { UploadedFile } from '../../../services/avatarService';
 import MaskCanvas, { MaskCanvasRef } from './MaskCanvas';
 import UseToolResultDisplay from './UseToolResultDisplay';
 import ImagePreviewModal from './ImagePreviewModal';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 interface UseToolPageProps {
   // t?: any; 
@@ -17,6 +19,43 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { t: rootT } = useAppOutletContext();
+  const t = (rootT?.createPage as any)?.useToolPage || (translations['zh'].createPage as any).useToolPage;
+  
+  // 根据翻译对象推断语言
+  const lang = useMemo(() => {
+    // 从根翻译对象检查语言（更可靠）
+    const workshopT = (rootT?.createPage as any)?.workshop;
+    if (workshopT) {
+      // 检查是否是中文
+      if (workshopT.allTools === '全部工具' || workshopT.title === '创作工坊') {
+        return 'zh';
+      }
+      // 检查是否是英文
+      if (workshopT.allTools === 'All Tools' || workshopT.title === 'Creation Workshop') {
+        return 'en';
+      }
+      // 检查是否是印尼语
+      if (workshopT.allTools === 'Semua Alat' || workshopT.title?.includes('Workshop')) {
+        return 'id';
+      }
+    }
+    // 从 useToolPage 翻译检查
+    if (t?.errors?.uploadPrimaryImage === '请上传主图像') {
+      return 'zh';
+    }
+    if (t?.errors?.uploadPrimaryImage === 'Please upload primary image') {
+      return 'en';
+    }
+    if (t?.errors?.uploadPrimaryImage === 'Silakan unggah gambar utama') {
+      return 'id';
+    }
+    // 默认返回中文
+    return 'zh';
+  }, [rootT, t]);
+  
+  // 根据语言获取工具数据
+  const toolsData = useMemo(() => getToolsData(lang), [lang]);
   
   // State
   const [activeTool, setActiveTool] = useState<Tool | null>(null);
@@ -43,17 +82,17 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
     
     // 1. Try from query param first (most reliable for URL-based navigation)
     if (toolKeyFromQuery) {
-      tool = TOOLS_DATA.find(t => t.key === toolKeyFromQuery);
+      tool = toolsData.find(t => t.key === toolKeyFromQuery);
     }
     
     // 2. Try from state (passed from WorkshopPage)
     if (!tool && location.state?.toolKey) {
-      tool = TOOLS_DATA.find(t => t.key === location.state.toolKey);
+      tool = toolsData.find(t => t.key === location.state.toolKey);
     }
 
     // 3. Fallback to generic Custom Prompt tool
     if (!tool) {
-      tool = TOOLS_DATA.find(t => t.key === 'customPrompt');
+      tool = toolsData.find(t => t.key === 'customPrompt');
     }
 
     if (tool) {
@@ -65,7 +104,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, searchParams]);
+  }, [location.state, searchParams, toolsData]);
 
   // Handle File Selection
   const handlePrimarySelect = async (file: File) => {
@@ -106,18 +145,18 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
   const handleGenerate = async () => {
     if (!activeTool) return;
     if (!primaryImageBase64) {
-      setError('请上传主图像');
+      setError(t.errors.uploadPrimaryImage);
       return;
     }
     
     const promptToUse = activeTool.prompt === 'CUSTOM' ? customPrompt : activeTool.prompt;
     if (!promptToUse?.trim()) {
-        setError('请输入提示词');
+        setError(t.errors.enterPrompt);
         return;
     }
 
     if (activeTool.isMultiImage && !activeTool.isSecondaryOptional && !secondaryImageBase64) {
-        setError('请上传参考图像');
+        setError(t.errors.uploadReferenceImage);
         return;
     }
 
@@ -177,11 +216,11 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
       if (result.imageUrl) {
         setResultUrl(result.imageUrl);
       } else {
-        throw new Error('生成失败：未返回有效的图片URL');
+        throw new Error(t.errors.generateFailed);
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || '发生未知错误');
+      setError(err.message || t.errors.unknownError);
     } finally {
       setGenerating(false);
     }
@@ -220,7 +259,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     onChange={(e) => setCustomPrompt(e.target.value)}
                     rows={3}
                     className="w-full p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
-                    placeholder="描述你想要的效果，例如：一只雄伟的狮子在日落时分的岩石上咆哮..."
+                    placeholder={t.promptPlaceholder}
                 />
               </div>
             )}
@@ -229,7 +268,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
             <div className="space-y-6">
                 <div>
                     <label className="block text-sm font-medium mb-2">
-                        {activeTool.primaryUploaderTitle || '原始图像'}
+                        {activeTool.primaryUploaderTitle || t.primaryImageLabel}
                         <span className="ml-2 text-xs text-gray-500 font-normal">
                             {activeTool.primaryUploaderDescription}
                         </span>
@@ -245,7 +284,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                         >
                             <div className="text-center p-4">
                                 <ImageIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                <p className="text-sm text-gray-600">点击或拖拽上传图片</p>
+                                <p className="text-sm text-gray-600">{t.uploadHint}</p>
                             </div>
                         </UploadComponent>
                     ) : (
@@ -263,7 +302,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                         <button
                                             onClick={handleClearPrimaryImage}
                                             className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
-                                            title="清除图片"
+                                            title={t.clearImage}
                                         >
                                             <X size={16} />
                                         </button>
@@ -285,7 +324,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                         <button
                                             onClick={handleClearPrimaryImage}
                                             className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
-                                            title="清除图片"
+                                            title={t.clearImage}
                                         >
                                             <X size={16} />
                                         </button>
@@ -305,13 +344,13 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                             }`}
                                         >
                                             <Edit3 size={16} />
-                                            {isMaskToolActive ? '退出蒙版编辑' : '绘制蒙版'}
+                                            {isMaskToolActive ? t.exitMaskEdit : t.drawMask}
                                         </button>
                                     </div>
                                     {isMaskToolActive && (
                                         <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                             <label className="block text-xs font-medium mb-2 text-gray-700 dark:text-gray-300">
-                                                画笔大小: {brushSize}px
+                                                {t.brushSize}: {brushSize}px
                                             </label>
                                             <input
                                                 type="range"
@@ -326,7 +365,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                                     onClick={() => maskCanvasRef.current?.undoLastAction()}
                                                     className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                                 >
-                                                    撤销
+                                                    {t.undo}
                                                 </button>
                                                 <button
                                                     onClick={() => {
@@ -335,7 +374,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                                     }}
                                                     className="flex-1 px-3 py-1.5 text-xs rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
                                                 >
-                                                    清除蒙版
+                                                    {t.clearMask}
                                                 </button>
                                             </div>
                                         </div>
@@ -349,10 +388,10 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                 {activeTool.isMultiImage && (
                     <div>
                         <label className="block text-sm font-medium mb-2">
-                            {activeTool.secondaryUploaderTitle || '参考图像'}
+                            {activeTool.secondaryUploaderTitle || t.referenceImageLabel}
                             <span className="ml-2 text-xs text-gray-500 font-normal">
                                 {activeTool.secondaryUploaderDescription}
-                                {activeTool.isSecondaryOptional && ' (可选)'}
+                                {activeTool.isSecondaryOptional && t.optional}
                             </span>
                         </label>
                         <UploadComponent 
@@ -377,12 +416,12 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                 {generating ? (
                     <>
                         <Loader2 className="animate-spin" />
-                        生成中...
+                        {t.generating}
                     </>
                 ) : (
                     <>
                         <Wand2 size={18} />
-                        0.3 生成效果
+                        {t.generateButton}
                     </>
                 )}
             </button>
@@ -399,7 +438,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
             {generating ? (
                 <div className="text-center">
                     <Loader2 className="animate-spin h-12 w-12 text-indigo-600 mx-auto mb-4" />
-                    <p className="text-gray-500">正在施展魔法...</p>
+                    <p className="text-gray-500">{t.generatingMagic}</p>
                 </div>
             ) : resultUrl ? (
                 <UseToolResultDisplay
@@ -410,7 +449,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
             ) : (
                 <div className="text-center text-gray-400">
                     <ImageIcon className="h-16 w-16 mx-auto mb-4 opacity-20" />
-                    <p>生成的结果将显示在这里</p>
+                    <p>{t.resultPlaceholder}</p>
                 </div>
             )}
         </div>

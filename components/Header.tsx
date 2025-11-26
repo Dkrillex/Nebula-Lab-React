@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Moon, Sun, Menu, Globe, X, Home, User as UserIcon, User, LogOut, Settings, CreditCard, Box, Sparkles, Grid, Key, FileText, Layers, Scissors, Film, Image, Repeat, Mic, Hammer, UserCircle, Folder, DollarSign, ChevronDown, ChevronRight, ExternalLink, ChevronLeft, ChevronRight as ChevronRightIcon, Bell } from 'lucide-react';
 import { Language, NavItem, View, TabItem } from '../types';
 import { useAuthStore } from '../stores/authStore';
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import MobileSidebar from './MobileSidebar';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
-import { TOOLS_DATA } from '../pages/Create/data';
+import { getToolsData } from '../pages/Create/data';
 
 interface HeaderProps {
   isDark: boolean;
@@ -77,14 +77,17 @@ const Header: React.FC<HeaderProps> = ({
     setShowUserMenu(false);
   };
 
+  // 根据当前语言获取工具数据
+  const toolsData = useMemo(() => getToolsData(lang), [lang]);
+
   // Determine active menu item based on URL (same logic as Sidebar)
   const getTabLabel = (tab: TabItem) => {
     if (!sideMenuMap) return tab.view;
     if (tab.view === 'home') return sideMenuMap.home;
     if (tab.view === 'create') {
       if (tab.activeTool) {
-        // 首先尝试从 TOOLS_DATA 中获取 title
-        const tool = TOOLS_DATA.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
+        // 首先尝试从 toolsData 中获取 title（根据当前语言）
+        const tool = toolsData.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
         if (tool) {
           let title = tool.title;
           // 对于 product-replace，如果有 taskId，在标题后添加 taskId 的简短标识

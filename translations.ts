@@ -699,6 +699,30 @@ interface Translation {
         };
       };
     };
+    useToolPage: {
+      promptPlaceholder: string;
+      primaryImageLabel: string;
+      referenceImageLabel: string;
+      optional: string;
+      uploadHint: string;
+      clearImage: string;
+      drawMask: string;
+      exitMaskEdit: string;
+      brushSize: string;
+      undo: string;
+      clearMask: string;
+      generating: string;
+      generateButton: string;
+      generatingMagic: string;
+      resultPlaceholder: string;
+      errors: {
+        uploadPrimaryImage: string;
+        enterPrompt: string;
+        uploadReferenceImage: string;
+        generateFailed: string;
+        unknownError: string;
+      };
+    };
   };
   rankPage: {
     title: string;
@@ -1833,6 +1857,30 @@ export const translations: Record<string, Translation> = {
         testResult: {
           success: '✅ Test successful! GLB file extracted and loaded.',
           failure: '❌ Test failed'
+        }
+      },
+      useToolPage: {
+        promptPlaceholder: 'Describe the effect you want, for example: A majestic lion roaring on a rock at sunset...',
+        primaryImageLabel: 'Original Image',
+        referenceImageLabel: 'Reference Image',
+        optional: ' (Optional)',
+        uploadHint: 'Click or drag to upload image',
+        clearImage: 'Clear Image',
+        drawMask: 'Draw Mask',
+        exitMaskEdit: 'Exit Mask Edit',
+        brushSize: 'Brush Size',
+        undo: 'Undo',
+        clearMask: 'Clear Mask',
+        generating: 'Generating...',
+        generateButton: '0.3 Generate Effect',
+        generatingMagic: 'Working magic...',
+        resultPlaceholder: 'Generated results will be displayed here',
+        errors: {
+          uploadPrimaryImage: 'Please upload primary image',
+          enterPrompt: 'Please enter prompt',
+          uploadReferenceImage: 'Please upload reference image',
+          generateFailed: 'Generation failed: No valid image URL returned',
+          unknownError: 'Unknown error occurred'
         }
       },
       workshop: {
@@ -3489,6 +3537,30 @@ export const translations: Record<string, Translation> = {
           failure: '❌ 测试失败'
         }
       },
+      useToolPage: {
+        promptPlaceholder: '描述你想要的效果，例如：一只雄伟的狮子在日落时分的岩石上咆哮...',
+        primaryImageLabel: '原始图像',
+        referenceImageLabel: '参考图像',
+        optional: ' (可选)',
+        uploadHint: '点击或拖拽上传图片',
+        clearImage: '清除图片',
+        drawMask: '绘制蒙版',
+        exitMaskEdit: '退出蒙版编辑',
+        brushSize: '画笔大小',
+        undo: '撤销',
+        clearMask: '清除蒙版',
+        generating: '生成中...',
+        generateButton: '0.3 生成效果',
+        generatingMagic: '正在施展魔法...',
+        resultPlaceholder: '生成的结果将显示在这里',
+        errors: {
+          uploadPrimaryImage: '请上传主图像',
+          enterPrompt: '请输入提示词',
+          uploadReferenceImage: '请上传参考图像',
+          generateFailed: '生成失败：未返回有效的图片URL',
+          unknownError: '发生未知错误'
+        }
+      },
       workshop: {
         title: '创作工坊',
         description: '我能帮你创造什么?',
@@ -5136,6 +5208,30 @@ export const translations: Record<string, Translation> = {
         testResult: {
           success: '✅ Tes berhasil! File GLB diekstrak dan dimuat.',
           failure: '❌ Tes gagal'
+        }
+      },
+      useToolPage: {
+        promptPlaceholder: 'Jelaskan efek yang Anda inginkan, misalnya: Seekor singa megah mengaum di atas batu saat matahari terbenam...',
+        primaryImageLabel: 'Gambar Utama',
+        referenceImageLabel: 'Gambar Referensi',
+        optional: ' (Opsional)',
+        uploadHint: 'Klik atau seret untuk mengunggah gambar',
+        clearImage: 'Hapus Gambar',
+        drawMask: 'Gambar Mask',
+        exitMaskEdit: 'Keluar dari Edit Mask',
+        brushSize: 'Ukuran Kuas',
+        undo: 'Batal',
+        clearMask: 'Hapus Mask',
+        generating: 'Menghasilkan...',
+        generateButton: '0.3 Hasilkan Efek',
+        generatingMagic: 'Sedang melakukan keajaiban...',
+        resultPlaceholder: 'Hasil yang dihasilkan akan ditampilkan di sini',
+        errors: {
+          uploadPrimaryImage: 'Silakan unggah gambar utama',
+          enterPrompt: 'Silakan masukkan prompt',
+          uploadReferenceImage: 'Silakan unggah gambar referensi',
+          generateFailed: 'Pembuatan gagal: Tidak ada URL gambar yang valid dikembalikan',
+          unknownError: 'Terjadi kesalahan yang tidak diketahui'
         }
       },
       workshop: {
