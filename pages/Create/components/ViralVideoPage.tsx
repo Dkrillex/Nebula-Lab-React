@@ -72,7 +72,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [portfolioAssets, setPortfolioAssets] = useState<AdsAssetsVO[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const defaultModel = 'qwen-plus'; // 默认使用的AI模型
+  const defaultModel = 'qwen3-omni-flash'; // 默认使用的AI模型
   const MIN_IMAGES = 4;
   const MAX_IMAGES = 10;
   const [showEditModal, setShowEditModal] = useState(false);
@@ -271,10 +271,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       toast.success(`成功上传 ${results.length} 张图片`);
       
-      // 自动分析第一张图片
-      if (results.length > 0 && !analysisResult) {
-        await analyzeImage(results[0].url);
-      }
+      // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
       if (results.length > 0) {
         setShowEditModal(true);
       }
@@ -340,10 +337,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setShowPortfolioModal(false);
     toast.success('已选择素材');
 
-    // 自动分析第一张图片
-    if (uploadedImages.length === 0 && !analysisResult) {
-      analyzeImage(imageUrl);
-    }
+    // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
     setShowEditModal(true);
   };
 
@@ -381,10 +375,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       setLinkInput('');
       toast.success('图片导入成功');
 
-      // 自动分析
-      if (uploadedImages.length === 0 && !analysisResult) {
-        await analyzeImage(result.url);
-      }
+      // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
       setShowEditModal(true);
     } catch (error: any) {
       console.error('导入失败:', error);
@@ -394,20 +385,41 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
   };
 
-  // 分析图片
+  // 分析单张图片
   const analyzeImage = async (imageUrl: string) => {
-    if (isAnalyzing) return;
-
-    setIsAnalyzing(true);
     try {
       const result = await viralVideoService.analyzeProductImage(imageUrl, defaultModel);
+      return result;
+    } catch (error: any) {
+      console.error('分析失败:', error);
+      throw error;
+    }
+  };
+
+  // 一次性分析所有图片（传入所有图片给AI综合分析）
+  const analyzeAllImages = async () => {
+    if (isAnalyzing) return;
+    if (uploadedImages.length < MIN_IMAGES) {
+      toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    
+    try {
+      // 提取所有图片的URL
+      const imageUrls = uploadedImages.map(img => img.url);
+      
+      // 一次性传入所有图片给AI进行综合分析
+      const result = await viralVideoService.analyzeProductImages(imageUrls, defaultModel);
+      
       setAnalysisResult(result);
-      toast.success('图片分析完成');
+      toast.success(`成功分析 ${uploadedImages.length} 张图片`);
       
       // 保存到localStorage
       localStorage.setItem('viralVideo_analysis', JSON.stringify(result));
     } catch (error: any) {
-      console.error('分析失败:', error);
+      console.error('图片分析失败:', error);
       toast.error(error.message || '图片分析失败，请重试');
     } finally {
       setIsAnalyzing(false);
@@ -882,10 +894,21 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
              <div className="w-full max-w-sm space-y-3">
               {isAnalyzing && (
-                <div className="w-full py-2 flex items-center justify-center gap-2 text-sm text-muted">
+                <div className="w-full py-2 flex flex-col items-center justify-center gap-2 text-sm text-muted">
                   <Loader className="animate-spin" size={16} />
-                  正在分析图片...
+                  <div>正在分析 {uploadedImages.length} 张图片...</div>
+                  <div className="text-xs">AI正在综合分析所有图片</div>
                 </div>
+              )}
+              {/* 完成提交按钮 - 当图片数量>=4时显示 */}
+              {uploadedImages.length >= MIN_IMAGES && !analysisResult && !isAnalyzing && (
+                <button 
+                  onClick={analyzeAllImages}
+                  disabled={isAnalyzing || uploadedImages.length < MIN_IMAGES}
+                  className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  完成提交
+                </button>
               )}
                <button 
                  onClick={handleGoToStep2}

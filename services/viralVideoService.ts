@@ -42,13 +42,13 @@ export interface Storyboard {
 
 export const viralVideoService = {
   /**
-   * 分析商品图片，提取素材和卖点
+   * 分析商品图片，提取素材和卖点（单张图片）
    * @param imageUrl 图片URL（OSS URL）
    * @param model 使用的AI模型
    */
   analyzeProductImage: async (
     imageUrl: string,
-    model: string = 'qwen-plus'
+    model: string = 'qwen3-omni-flash'
   ): Promise<ProductAnalysis> => {
     const systemPrompt = `你是一个专业的商品分析专家。请分析这张商品图片，提取以下信息：
 1. 商品名称（简洁准确）
@@ -149,13 +149,133 @@ export const viralVideoService = {
   },
 
   /**
+   * 综合分析多张商品图片，提取素材和卖点
+   * @param imageUrls 图片URL数组（OSS URL）
+   * @param model 使用的AI模型
+   */
+  analyzeProductImages: async (
+    imageUrls: string[],
+    model: string = 'qwen3-omni-flash'
+  ): Promise<ProductAnalysis> => {
+    if (!imageUrls || imageUrls.length === 0) {
+      throw new Error('请至少提供一张图片');
+    }
+
+    const systemPrompt = `你是一个专业的商品分析专家。请综合分析这些商品图片（共${imageUrls.length}张），提取以下信息：
+1. 商品名称（简洁准确，综合所有图片得出）
+2. 主要卖点（5-8个，综合所有图片的特点，用分号分隔）
+3. 适用场景（3-5个，综合所有图片展示的场景，用分号分隔）
+4. 商品类别（如：服装、鞋靴、配饰等）
+5. 风格特点（如：简约、复古、运动等）
+
+请仔细观察所有图片，综合分析：
+- 从不同角度、不同场景的图片中提取完整的商品信息
+- 合并所有图片中展示的卖点和特点
+- 确保分析结果全面、准确
+
+请以JSON格式返回，格式如下：
+{
+  "productName": "商品名称",
+  "sellingPoints": ["卖点1", "卖点2", "卖点3", "卖点4", "卖点5"],
+  "scenes": ["场景1", "场景2", "场景3"],
+  "category": "类别",
+  "style": "风格"
+}
+
+只返回JSON，不要其他文字说明。`;
+
+    const userPrompt = `请综合分析这${imageUrls.length}张商品图片，提取商品名称、卖点、场景等信息：`;
+
+    // 构建包含所有图片的content数组
+    const content: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }> = [
+      {
+        type: 'text',
+        text: userPrompt,
+      },
+      // 添加所有图片
+      ...imageUrls.map(url => ({
+        type: 'image_url' as const,
+        image_url: {
+          url,
+        },
+      })),
+    ];
+
+    const requestData: ChatRequest = {
+      model,
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content,
+        },
+      ],
+      temperature: 0.3,
+    };
+
+    try {
+      const response = await chatService.chatCompletions(requestData);
+      
+      if (response.code !== 200 || !response.data?.choices?.[0]?.message?.content) {
+        throw new Error('AI分析失败，请重试');
+      }
+
+      const responseContent = response.data.choices[0].message.content.trim();
+      
+      // 尝试提取JSON（可能包含markdown代码块）
+      let jsonStr = responseContent;
+      const jsonMatch = responseContent.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[1];
+      } else {
+        // 尝试直接提取大括号内容
+        const braceMatch = responseContent.match(/\{[\s\S]*\}/);
+        if (braceMatch) {
+          jsonStr = braceMatch[0];
+        }
+      }
+
+      const analysis = JSON.parse(jsonStr) as any;
+      
+      // 验证和规范化数据
+      const sellingPointsRaw = analysis.sellingPoints;
+      const sellingPoints = Array.isArray(sellingPointsRaw)
+        ? sellingPointsRaw
+        : typeof sellingPointsRaw === 'string'
+        ? sellingPointsRaw.split(/[;；]/).map((s: string) => s.trim()).filter(Boolean)
+        : [];
+      
+      const scenesRaw = analysis.scenes;
+      const scenes = Array.isArray(scenesRaw)
+        ? scenesRaw
+        : typeof scenesRaw === 'string'
+        ? scenesRaw.split(/[;；]/).map((s: string) => s.trim()).filter(Boolean)
+        : [];
+
+      return {
+        productName: analysis.productName || '未知商品',
+        sellingPoints: sellingPoints as string[],
+        scenes: scenes as string[],
+        category: analysis.category || '',
+        style: analysis.style || '',
+      };
+    } catch (error: any) {
+      console.error('商品分析失败:', error);
+      throw new Error(error.message || '商品分析失败，请重试');
+    }
+  },
+
+  /**
    * 基于分析结果生成脚本选项
    * @param analysis 商品分析结果
    * @param model 使用的AI模型
    */
   generateScripts: async (
     analysis: ProductAnalysis,
-    model: string = 'qwen-plus'
+    model: string = 'qwen3-omni-flash'
   ): Promise<ScriptOption[]> => {
     const systemPrompt = `你是一个专业的短视频营销脚本创作专家。基于商品信息，生成3-5个营销脚本模板。
 
@@ -260,7 +380,7 @@ export const viralVideoService = {
     script: ScriptOption,
     analysis: ProductAnalysis,
     uploadedImages: string[],
-    model: string = 'qwen-plus'
+    model: string = 'qwen3-omni-flash'
   ): Promise<Storyboard> => {
     const systemPrompt = `你是一个专业的视频分镜创作专家。为给定的营销脚本生成详细的分镜方案。
 

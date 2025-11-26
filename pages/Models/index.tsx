@@ -1460,8 +1460,8 @@ const ModelDetailDrawer = ({
             )}
           </div>
 
-          {/* Cache Price Info (如果适用) */}
-          {(model as any).quotaType !== 1 && (model as any).quotaType !== 5 && (model as any).createCacheRatio !== undefined && (model as any).cacheRatio !== undefined && (
+          {/* Cache Price Info (如果适用) - 只有CacheRatio配置中存在的claude模型才显示 */}
+          {(model as any).quotaType !== 1 && (model as any).quotaType !== 5 && (model as any).createCacheRatio != null && (model as any).cacheRatio != null && (
             <div>
               <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">缓存价格</h4>
               <div className="space-y-3 text-sm">
