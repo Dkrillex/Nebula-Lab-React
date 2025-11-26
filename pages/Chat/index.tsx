@@ -179,6 +179,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 导入素材模态框状态
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
+  const [isExportingMaterial, setIsExportingMaterial] = useState(false);
   const [selectedMaterial, setSelectedMaterial] = useState<{
     type: 'image' | 'video';
     url: string;
@@ -1842,6 +1843,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 导入素材
   const handleExportMaterial = async (type: 'image' | 'video', url: string, prompt?: string) => {
+    // 如果正在导入，直接返回
+    if (isExportingMaterial) {
+      return;
+    }
+    
+    setIsExportingMaterial(true);
     try {
       let finalUrl = url;
       
@@ -1869,6 +1876,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           finalUrl = ossResult.url;
         } else {
           toast.error('图片上传到 OSS 失败', { id: 'upload-oss' });
+          setIsExportingMaterial(false);
           return;
         }
       } else {
@@ -1899,6 +1907,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           toast.success('视频上传成功', { id: 'upload-oss' });
         } else {
           toast.error('视频上传到 OSS 失败', { id: 'upload-oss' });
+          setIsExportingMaterial(false);
           return;
         }
       }
@@ -1917,6 +1926,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     } catch (error) {
       console.error('导入素材失败:', error);
       toast.error('导入素材失败，请重试', { id: 'upload-oss' });
+      setIsExportingMaterial(false);
     }
   };
 
@@ -4442,6 +4452,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               onDownloadImage={handleDownloadImage}
               onDownloadVideo={handleDownloadVideo}
               onExportMaterial={handleExportMaterial}
+              isExportingMaterial={isExportingMaterial}
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
@@ -4648,10 +4659,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           onClose={() => {
             setIsAddMaterialModalOpen(false);
             setSelectedMaterial(null);
+            setIsExportingMaterial(false);
           }}
           onSuccess={() => {
             setIsAddMaterialModalOpen(false);
             setSelectedMaterial(null);
+            setIsExportingMaterial(false);
             toast.success('素材导入成功');
           }}
           initialData={{
@@ -4679,6 +4692,7 @@ interface MessageBubbleProps {
   onDownloadImage?: (url: string) => void;
   onDownloadVideo?: (url: string) => void;
   onExportMaterial?: (type: 'image' | 'video', url: string, prompt?: string) => void;
+  isExportingMaterial?: boolean; // 是否正在导入素材
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
@@ -4740,6 +4754,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onDownloadImage,
   onDownloadVideo,
   onExportMaterial,
+  isExportingMaterial = false,
   progress = 0,
   onQuote,
   onResend,
@@ -4917,8 +4932,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 e.stopPropagation();
                                 onExportMaterial?.('video', video.url, video.prompt);
                               }}
-                              className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title="导入素材"
+                              disabled={isExportingMaterial}
+                              className={`p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md transition-transform backdrop-blur-sm ${
+                                isExportingMaterial 
+                                  ? 'opacity-50 cursor-not-allowed' 
+                                  : 'hover:scale-105 cursor-pointer'
+                              }`}
+                              title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
                             >
                               <svg 
                                 className="w-4 h-4 text-gray-700 dark:text-gray-300" 
@@ -5002,8 +5022,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       e.stopPropagation();
                       onExportMaterial?.('image', img.url, img.prompt);
                     }}
-                    className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title="导入素材"
+                    disabled={isExportingMaterial}
+                    className={`p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md transition-transform backdrop-blur-sm ${
+                      isExportingMaterial 
+                        ? 'opacity-50 cursor-not-allowed' 
+                        : 'hover:scale-105 cursor-pointer'
+                    }`}
+                    title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
                   >
                     <svg 
                       className="w-4 h-4 text-gray-700 dark:text-gray-300" 

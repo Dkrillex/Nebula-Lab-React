@@ -147,7 +147,7 @@ export const MODELS: AIModel[] = [
     capabilities: ['对话', '思考'],
     billingType: 'token'
   },
-   {
+  {
     id: 'wan/wan2.5-t2v-preview',
     name: 'wan2.5-t2v-preview',
     description: '通义万相2.5-文生视频-Preview，全新升级技术架构，支持与画面同步的声音生成。',
@@ -173,7 +173,7 @@ export const MODELS: AIModel[] = [
     capabilities: ['文生视频'],
     billingType: 'time'
   },
-   {
+  {
     id: 'google/veo-3.1-fast-generate-preview',
     name: 'veo-3.1-fast-generate-preview',
     description: 'Google Veo 3.1 Fast 专注于快速生成视频，适用于快速迭代和预览。',
