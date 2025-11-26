@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Maximize2, FolderPlus, Check, ChevronsLeftRight, RefreshCw } from 'lucide-react';
 import AddMaterialModal from '../../../components/AddMaterialModal';
+import { uploadService } from '../../../services/uploadService';
 
 interface UseToolResultDisplayProps {
   imageUrl: string;
@@ -63,19 +64,62 @@ const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
     document.body.removeChild(link);
   };
 
+  // 将 Blob 转换为 Base64 data URL
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result as string));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
   const handleDownloadComparison = async () => {
     if (!originalImageUrl || !imageUrl) return;
 
     try {
-      // 加载两张图片
-      const loadImage = (url: string): Promise<HTMLImageElement> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = url;
-        });
+      // 加载图片的辅助函数，借鉴 Nebula1 的方式
+      // 通过 uploadByImageUrl 上传到 OSS，然后获取 blob，转换为 base64，避免跨域问题
+      const loadImage = async (url: string): Promise<HTMLImageElement> => {
+        // 如果是 data URL，直接使用
+        if (url.startsWith('data:')) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
+
+        try {
+          // 借鉴 Nebula1：通过 uploadByImageUrl 上传到 OSS，获取新的 OSS URL
+          const { url: ossUrl } = await uploadService.uploadByImageUrl(url, 'png');
+          
+          // 通过 fetch 获取 OSS URL 的 blob
+          const res = await fetch(ossUrl);
+          const blob = await res.blob();
+          
+          // 将 Blob 转换为 Base64 data URL
+          const dataUrl = await blobToBase64(blob);
+          
+          // 使用 data URL 加载图片，不会有跨域问题
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = dataUrl;
+          });
+        } catch (error) {
+          console.warn('通过 OSS 加载失败，尝试直接加载:', error);
+          // 如果上传到 OSS 失败，尝试直接加载（可能会失败）
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
       };
 
       const [originalImg, resultImg] = await Promise.all([
@@ -86,10 +130,15 @@ const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
       // 创建画布
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        throw new Error('无法创建画布上下文');
+      }
 
-      const totalWidth = originalImg.width + resultImg.width;
+      // 计算画布尺寸：每张图片各占一半宽度
+      const maxWidth = Math.max(originalImg.width, resultImg.width);
       const maxHeight = Math.max(originalImg.height, resultImg.height);
+      const halfWidth = maxWidth; // 每张图片占据的宽度（使用最大宽度）
+      const totalWidth = halfWidth * 2; // 总宽度为两倍
 
       canvas.width = totalWidth;
       canvas.height = maxHeight;
@@ -98,25 +147,54 @@ const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 绘制原图
-      ctx.drawImage(originalImg, 0, (maxHeight - originalImg.height) / 2);
-      // 绘制结果图
-      ctx.drawImage(resultImg, originalImg.width, (maxHeight - resultImg.height) / 2);
+      // 计算缩放比例，使图片适应各自的一半空间
+      const originalScale = Math.min(
+        halfWidth / originalImg.width,
+        maxHeight / originalImg.height
+      );
+      const resultScale = Math.min(
+        halfWidth / resultImg.width,
+        maxHeight / resultImg.height
+      );
 
-      // 下载
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `comparison-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      });
+      const originalScaledWidth = originalImg.width * originalScale;
+      const originalScaledHeight = originalImg.height * originalScale;
+      const resultScaledWidth = resultImg.width * resultScale;
+      const resultScaledHeight = resultImg.height * resultScale;
+
+      // 绘制原图（在左半部分居中）
+      const originalX = (halfWidth - originalScaledWidth) / 2;
+      const originalY = (maxHeight - originalScaledHeight) / 2;
+      ctx.drawImage(
+        originalImg,
+        originalX,
+        originalY,
+        originalScaledWidth,
+        originalScaledHeight
+      );
+
+      // 绘制结果图（在右半部分居中）
+      const resultX = halfWidth + (halfWidth - resultScaledWidth) / 2;
+      const resultY = (maxHeight - resultScaledHeight) / 2;
+      ctx.drawImage(
+        resultImg,
+        resultX,
+        resultY,
+        resultScaledWidth,
+        resultScaledHeight
+      );
+
+      // 转换为 data URL 并下载（借鉴 Nebula1 使用 toDataURL）
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `comparison-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('下载对比图失败:', error);
+      // 移除 alert 弹窗，只在控制台输出错误
     }
   };
 
