@@ -7,14 +7,6 @@
   <link rel="icon" type="image/png" href="/img/lab.png" />
   <title>Nebula Lab</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module">
-    import { CURRENT_SYSTEM, SYSTEM_TYPE } from './constants.ts';
-
-    const appTitle =
-      CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab';
-
-    document.title = appTitle;
-  </script>
   <script>
     tailwind.config = {
       darkMode: 'class',
