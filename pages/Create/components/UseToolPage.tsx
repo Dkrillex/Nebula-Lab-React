@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, RefreshCw, Edit3, X } from 'lucide-react';
+import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, Edit3, X } from 'lucide-react';
 import { TOOLS_DATA, Tool } from '../data';
 import UploadComponent from '../../../components/UploadComponent';
 import { aiToolService } from '../../../services/aiToolService';
@@ -382,7 +382,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                 ) : (
                     <>
                         <Wand2 size={18} />
-                        生成效果
+                        0.3 生成效果
                     </>
                 )}
             </button>
@@ -406,7 +406,6 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     imageUrl={resultUrl}
                     originalImageUrl={primaryImageBase64}
                     onImageClick={(url) => setPreviewImageUrl(url)}
-                    onRegenerate={() => setResultUrl(null)}
                 />
             ) : (
                 <div className="text-center text-gray-400">
