@@ -430,11 +430,12 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         
         if (status === 'running' || status === 'init' || status === 'in_queue' || status === 'generating') {
           // 任务进行中,更新进度
-          if (progress < 80) {
-            setProgress(prev => Math.min(80, prev + Math.floor(Math.random() * 10) + 5));
-          } else if (progress < 90) {
-            setProgress(prev => Math.min(90, prev + Math.floor(Math.random() * 5) + 1));
-          }
+          setProgress(prev => {
+            if (prev < 95) {
+              return Math.min(95, prev + Math.floor(Math.random() * 3) + 1);
+            }
+            return prev; // keep at 95% until task completes
+          });
           // 继续轮询
         } else if (status === 'success' || status === 'succeeded' || status === 'done') {
           // 任务成功完成
@@ -1858,7 +1859,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                     {selectedTemplate && (
                       <div className="p-2 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
                         <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                          已选择: {selectedTemplate.templateName}
+                          已选择: {selectedTemplate.templateCategoryList[0]?.categoryName || selectedTemplate.templateId}
                         </p>
                       </div>
                     )}
