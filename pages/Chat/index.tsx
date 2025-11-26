@@ -184,6 +184,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     url: string;
     prompt?: string;
     assetType: number;
+    assetName?: string;
+    assetDesc?: string;
   } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1849,19 +1851,26 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         
         // 如果已经是 OSS 链接，直接使用
         if (imageType === 'oss') {
+          const dateStr = new Date().toISOString().slice(0, 10);
           setSelectedMaterial({
             type,
             url: finalUrl,
             prompt,
             assetType: 7, // AI生图
+            assetName: `AI生图_${dateStr}`,
+            assetDesc: `AI生图_${dateStr}`,
           });
           setIsAddMaterialModalOpen(true);
           return;
         }
         
+        // 需要上传到 OSS
+        toast.loading('正在上传图片到 OSS...', { id: 'upload-oss' });
+        
         const ossResult = await processImageToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
+          toast.success('图片上传成功', { id: 'upload-oss' });
         } else {
           toast.error('图片上传到 OSS 失败', { id: 'upload-oss' });
           return;
@@ -1872,11 +1881,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         
         // 如果已经是 OSS 链接，直接使用
         if (videoType === 'oss') {
+          const dateStr = new Date().toISOString().slice(0, 10);
           setSelectedMaterial({
             type,
             url: finalUrl,
             prompt,
             assetType: 14, // AI视频生成
+            assetName: `AI生成视频_${dateStr}`,
+            assetDesc: `AI生成视频_${dateStr}`,
           });
           setIsAddMaterialModalOpen(true);
           return;
@@ -1896,11 +1908,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       }
       
       // 使用 OSS 返回的 URL
+      const dateStr = new Date().toISOString().slice(0, 10);
       setSelectedMaterial({
         type,
         url: finalUrl,
         prompt,
         assetType: type === 'image' ? 7 : 14, // 7: AI生图, 14: AI视频生成
+        assetName: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
+        assetDesc: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
       });
       setIsAddMaterialModalOpen(true);
     } catch (error) {
@@ -4645,12 +4660,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           }}
           initialData={{
             assetUrl: selectedMaterial.url,
-            assetName: selectedMaterial.prompt 
-              ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频'}-${selectedMaterial.prompt.slice(0, 10)}`
-              : selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频',
+            assetName: selectedMaterial.assetName || (selectedMaterial.prompt 
+              ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'}-${selectedMaterial.prompt.slice(0, 10)}`
+              : selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'),
             assetType: selectedMaterial.assetType,
             assetTag: selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频生成',
-            assetDesc: selectedMaterial.prompt || (selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频生成'),
+            assetDesc: selectedMaterial.assetDesc || selectedMaterial.prompt || (selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'),
           }}
           disableAssetTypeSelection={true}
           isImportMode={true}
