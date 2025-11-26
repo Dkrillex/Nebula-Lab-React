@@ -339,6 +339,7 @@ interface Translation {
         previewGeneratingTip?: string;
         generatingLabel?: string;
         loadingStatus?: string;
+        awaitWorking?: string;
         buttonTip?: {
           text: string;
           audio: string;
@@ -1307,6 +1308,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: 'Generating your video...',
           generatingLabel: 'Generating...',
           loadingStatus: 'Generating',
+          awaitWorking: 'Start Generating',
           buttonTip: {
             text: 'Please enter text.',
             audio: 'Please select an audio file.',
@@ -2723,6 +2725,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: '正在生成您的视频...',
           generatingLabel: '生成中...',
           loadingStatus: '正在生成',
+          awaitWorking: '开始生成',
           buttonTip: {
             text: '请输入文本。',
             audio: '请选择上传一个音频文件。',
@@ -4171,6 +4174,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: 'Sedang membuat video Anda...',
           generatingLabel: 'Sedang membuat...',
           loadingStatus: 'Sedang membuat',
+          awaitWorking: 'Mulai membuat',
           buttonTip: {
             text: 'Silakan masukkan teks.',
             audio: 'Silakan pilih file audio.',

@@ -543,6 +543,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+      setRecordTime(0);
       if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
     }
   };
