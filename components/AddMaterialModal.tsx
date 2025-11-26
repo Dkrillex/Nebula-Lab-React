@@ -328,7 +328,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
             if (uploadResult && uploadResult.url && uploadResult.ossId) {
               finalAssetUrl = uploadResult.url;
               finalAssetId = uploadResult.ossId;
-              toast.success('素材上传成功', { id: 'upload-oss' });
+              // toast.success('素材上传成功', { id: 'upload-oss' });
             }
           } catch (uploadError) {
             console.error('OSS upload error:', uploadError);
