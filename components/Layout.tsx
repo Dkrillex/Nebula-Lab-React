@@ -255,9 +255,12 @@ const Layout: React.FC = () => {
     drop(cacheKey);
 
     // If closing active tab, navigate to last available
-    const isActive = targetTab.view === currentView && 
-                     (targetTab.view !== 'create' || (targetTab.activeTool === activeTool && 
-                      compareSearchParams(targetTab.searchParams, currentSearchParams)));
+    const isActive = targetTab.view === currentView && (
+      targetTab.view !== 'create'
+        ? true
+        : (targetTab.activeTool === activeTool &&
+           compareSearchParams(targetTab.searchParams, currentSearchParams))
+    );
 
     if (isActive) {
       if (newTabs.length > 0) {

@@ -58,6 +58,7 @@ interface ExtendedChatMessage extends ChatMessage {
 }
 
 type Mode = 'chat' | 'image' | 'video';
+const CREATE_IMAGE_PAYLOAD_KEY = 'createImagePayload';
 
 interface ChatPageProps {
   t?: any;
@@ -834,20 +835,45 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 注意：model_name参数的处理已经在fetchAllModels中完成，这里不需要重复处理
   }, [searchParams, getData]);
 
-  // 处理 content 参数的自动发送（单独的 useEffect 避免依赖问题）
+  // 处理 Create 页面图片缓存 + content 自动发送
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const cached = sessionStorage.getItem(CREATE_IMAGE_PAYLOAD_KEY);
+      if (cached) {
+        sessionStorage.removeItem(CREATE_IMAGE_PAYLOAD_KEY);
+        try {
+          const payload = JSON.parse(cached);
+          const images = Array.isArray(payload?.images) ? payload.images.filter(Boolean) : [];
+
+          if (images.length > 0) {
+            setCurrentMode('image');
+            setUploadedImages((prev) => [...images, ...prev]);
+          }
+
+          if (!searchParams.get('content') && typeof payload?.content === 'string') {
+            setInputValue(payload.content);
+          }
+        } catch (error) {
+          console.error('解析 Create 页面图片数据失败:', error);
+        }
+      }
+    }
+
     const content = searchParams.get('content');
+    let autoSendTimer: ReturnType<typeof setTimeout> | undefined;
+
     if (content && contentProcessedRef.current && inputValue.trim() && selectedModel && !isLoading) {
-      // 延迟自动发送，确保页面已完全加载
-      const autoSendTimer = setTimeout(() => {
+      autoSendTimer = setTimeout(() => {
         if (inputValue.trim() && selectedModel && !isLoading) {
           handleSend();
-          contentProcessedRef.current = false; // 发送后重置，避免重复发送
+          contentProcessedRef.current = false;
         }
-      }, 1500); // 延迟1.5秒，确保模型选择完成
-      
-      return () => clearTimeout(autoSendTimer);
+      }, 1500);
     }
+
+    return () => {
+      if (autoSendTimer) clearTimeout(autoSendTimer);
+    };
   }, [inputValue, selectedModel, isLoading, searchParams]);
 
   // 获取历史对话记录

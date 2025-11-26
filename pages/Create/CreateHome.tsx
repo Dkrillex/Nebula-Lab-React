@@ -14,6 +14,10 @@ import AuthModal from '../../components/AuthModal';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
 
+const CREATE_IMAGE_PAYLOAD_KEY = 'createImagePayload';
+const MAX_CREATE_UPLOAD_IMAGES = 4;
+const MAX_CREATE_UPLOAD_SIZE_MB = 10;
+
 const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const { t: contextT, handleNavClick } = useAppOutletContext();
   
@@ -30,6 +34,8 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const { setData } = useVideoGenerationStore();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [inputValue, setInputValue] = useState('');
+  const [pendingImages, setPendingImages] = useState<string[]>([]);
+  const [isUploadingImages, setIsUploadingImages] = useState(false);
   
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +43,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const [templateName, setTemplateName] = useState('');
   const [params, setParams] = useState<LabTemplateQuery>({
     pageNum: 1,
-    pageSize: 30 // 增加初始 pageSize，确保第一次加载更多数据
+    pageSize: 12 // 增加初始 pageSize，确保第一次加载更多数据
   });
 
   // 模板详情弹窗
@@ -48,6 +54,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const masonryRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
+  const imageInputRef = useRef<HTMLInputElement | null>(null);
   
   // 滚动位置保存
   const scrollTopRef = useRef<number>(0);
@@ -451,10 +458,73 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     }
   };
 
+  const readFileAsDataURL = (file: File) => {
+    return new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const triggerImagePicker = () => {
+    imageInputRef.current?.click();
+  };
+
+  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { files } = event.target;
+    if (!files || files.length === 0) return;
+
+    const remainingSlots = MAX_CREATE_UPLOAD_IMAGES - pendingImages.length;
+    if (remainingSlots <= 0) {
+      toast.error(`最多上传 ${MAX_CREATE_UPLOAD_IMAGES} 张图片`);
+      event.target.value = '';
+      return;
+    }
+
+    const imageFiles = Array.from(files)
+      .filter((file) => file.type.startsWith('image/'))
+      .slice(0, remainingSlots);
+
+    if (imageFiles.length === 0) {
+      toast.error('请选择图片文件');
+      event.target.value = '';
+      return;
+    }
+
+    const oversizeFile = imageFiles.find(
+      (file) => file.size > MAX_CREATE_UPLOAD_SIZE_MB * 1024 * 1024
+    );
+    if (oversizeFile) {
+      toast.error(`单张图片不能超过 ${MAX_CREATE_UPLOAD_SIZE_MB}MB`);
+      event.target.value = '';
+      return;
+    }
+
+    setIsUploadingImages(true);
+    try {
+      const base64Images = await Promise.all(imageFiles.map(readFileAsDataURL));
+      setPendingImages((prev) => [...prev, ...base64Images]);
+    } catch (error) {
+      console.error('读取图片失败:', error);
+      toast.error('图片读取失败，请重试');
+    } finally {
+      setIsUploadingImages(false);
+      event.target.value = '';
+    }
+  };
+
+  const clearPendingImages = () => {
+    setPendingImages([]);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
+  };
+
   // 处理发送消息
   const handleSend = (skipAuthCheck = false) => {
     const messageContent = inputValue.trim();
-    if (!messageContent) return;
+    if (!messageContent && pendingImages.length === 0) return;
 
     // 检查登录状态（除非跳过检查，比如登录成功后）
     if (!skipAuthCheck && !isAuthenticated) {
@@ -462,8 +532,32 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       return;
     }
 
+    if (typeof window !== 'undefined') {
+      if (pendingImages.length > 0) {
+        sessionStorage.setItem(
+          CREATE_IMAGE_PAYLOAD_KEY,
+          JSON.stringify({
+            images: pendingImages,
+            content: messageContent,
+            timestamp: Date.now(),
+          })
+        );
+      } else {
+        sessionStorage.removeItem(CREATE_IMAGE_PAYLOAD_KEY);
+      }
+    }
+
+    const search = new URLSearchParams({ mode: 'image' });
+    if (messageContent) {
+      search.set('content', messageContent);
+    }
+
     // 跳转到聊天页面（图片生成模式）
-    navigate(`/chat?mode=image&content=${encodeURIComponent(messageContent)}`);
+    navigate(`/chat?${search.toString()}`);
+    setPendingImages([]);
+    if (imageInputRef.current) {
+      imageInputRef.current.value = '';
+    }
   };
 
   // 处理按钮点击（包装 handleSend 以匹配事件处理器签名）
@@ -493,18 +587,48 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
                   />
                   <div className="flex items-center justify-between px-4 py-3 bg-background/50 border-t border-border/50">
                     <div className="flex items-center gap-2">
-                      <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors">
-                        <Upload size={16} />
+                      <input
+                        ref={imageInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        onChange={handleImageSelection}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={triggerImagePicker}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium text-muted hover:bg-background hover:text-foreground transition-colors"
+                      >
+                        {isUploadingImages ? (
+                          <Loader2 size={16} className="animate-spin" />
+                        ) : (
+                          <Upload size={16} />
+                        )}
                         {t.upload || 'Upload'}
                       </button>
+                      {pendingImages.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-indigo-500">
+                          <span>
+                            {pendingImages.length}/{MAX_CREATE_UPLOAD_IMAGES}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={clearPendingImages}
+                            className="text-muted hover:text-foreground"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted hidden sm:inline">{t.keyboardHint || 'Enter to send · Shift + Enter for new line'}</span>
                       <button 
                         onClick={handleSendClick}
-                        disabled={!inputValue.trim()}
+                        disabled={!inputValue.trim() && pendingImages.length === 0}
                         className={`h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md ${
-                          inputValue.trim()
+                          inputValue.trim() || pendingImages.length > 0
                             ? 'bg-primary text-white hover:bg-primary/90 shadow-primary/20 cursor-pointer'
                             : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                         }`}
