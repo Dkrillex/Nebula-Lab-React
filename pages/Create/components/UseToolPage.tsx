@@ -269,16 +269,27 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                                         </button>
                                     </>
                                 ) : (
-                                    <MaskCanvas
-                                        ref={maskCanvasRef}
-                                        imageUrl={primaryImageBase64}
-                                        tool={isMaskToolActive ? 'pencil' : 'pencil'}
-                                        brushSize={brushSize}
-                                        brushColor="rgba(113, 102, 240, 0.7)"
-                                        mode="mask"
-                                        enableZoom={true}
-                                        className="w-full h-full"
-                                    />
+                                    <>
+                                        <MaskCanvas
+                                            ref={maskCanvasRef}
+                                            imageUrl={primaryImageBase64}
+                                            tool="pencil"
+                                            brushSize={brushSize}
+                                            brushColor="rgba(113, 102, 240, 0.7)"
+                                            mode="mask"
+                                            enableZoom={true}
+                                            className="w-full h-full"
+                                            disabled={!isMaskToolActive}
+                                        />
+                                        {/* 右上角关闭按钮 */}
+                                        <button
+                                            onClick={handleClearPrimaryImage}
+                                            className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
+                                            title="清除图片"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </>
                                 )}
                             </div>
                             {/* 自定义提示和姿势参考工具不显示绘制蒙版按钮 */}
