@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Send, Shield, Trash2, Eye } from 'lucide-react';
 import { videoMaskDrawingService, imageMaskDrawingService } from '../../../services/faceSwapService';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 // 视频标记点类型定义
 export interface VideoMarker {
@@ -39,6 +41,10 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   onSave,
   onVideoMaskSuccess,
 }) => {
+  const { t: rootT } = useAppOutletContext();
+  // 添加空值保护，防止页面崩溃
+  const t = rootT?.aiVideoFaceSwapPage?.videoEditingModal || translations['en'].aiVideoFaceSwapPage.videoEditingModal;
+  
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoContainerRef = useRef<HTMLDivElement>(null);
   const timelineTrackRef = useRef<HTMLDivElement>(null);
@@ -120,7 +126,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
           };
           const onError = () => {
             video.removeEventListener('error', onError);
-            reject(new Error('视频加载失败'));
+            reject(new Error(t.videoLoadFailed));
           };
           video.addEventListener('loadedmetadata', onLoadedMetadata, { once: true });
           video.addEventListener('error', onError, { once: true });
@@ -1253,7 +1259,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-[1px]">
           <div className="flex flex-col items-center justify-center bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
-            <span className="text-sm font-medium text-white">正在生成绘制,请等待...</span>
+            <span className="text-sm font-medium text-white">{t.generating}</span>
           </div>
         </div>
       )}
@@ -1278,10 +1284,10 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               <path d="m12 19-7-7 7-7" />
               <path d="M19 12H5" />
             </svg>
-            <span>返回</span>
+            <span>{t.back}</span>
           </button>
           <h2 className="flex-1 text-center text-base font-medium text-white">
-            点击视频标记需修改区域与需保护区域
+            {t.title}
           </h2>
           <div className="w-20"></div> {/* 占位符，保持居中 */}
         </div>
@@ -1299,14 +1305,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
           >
             {isLoading && (
               <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-30 rounded-lg">
-                <div className="text-white text-lg">加载视频中...</div>
+                <div className="text-white text-lg">{t.loadingVideo}</div>
               </div>
             )}
             {isSubmittingMask && (
               <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-30 rounded-lg backdrop-blur-[1px]">
                 <div className="flex flex-col items-center justify-center bg-[#2a2a2a] p-4 rounded-lg shadow-lg">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-2"></div>
-                  <span className="text-sm font-medium text-white">正在渲染绘制标记点，请稍等...</span>
+                  <span className="text-sm font-medium text-white">{t.renderingMarks}</span>
                 </div>
               </div>
             )}
@@ -1473,7 +1479,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Send className="w-4.5 h-4.5" />
-            <span>标记修改区域</span>
+            <span>{t.markModifyArea}</span>
           </button>
           <button
             onClick={() => setMarkingMode('protect')}
@@ -1485,7 +1491,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             } disabled:opacity-50 disabled:cursor-not-allowed`}
           >
             <Shield className="w-4.5 h-4.5" />
-            <span>标记保护区域</span>
+            <span>{t.markProtectArea}</span>
           </button>
           <button
             onClick={clearAllMarks}
@@ -1493,7 +1499,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             className="flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium bg-[#3a3a3a] border border-[#4a4a4a] text-white hover:bg-[#4a4a4a] hover:border-[#5a5a5a] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Trash2 className="w-4.5 h-4.5" />
-            <span>清除</span>
+            <span>{t.clear}</span>
           </button>
           <button
             onClick={() => handlePreviewAll(false)}
@@ -1503,12 +1509,12 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             {previewAllLoading ? (
               <>
                 <div className="animate-spin rounded-full h-4.5 w-4.5 border-b-2 border-white"></div>
-                <span>处理中...</span>
+                <span>{t.processing}</span>
               </>
             ) : (
               <>
                 <Eye className="w-4.5 h-4.5" />
-                <span>预览所有已选区域</span>
+                <span>{t.previewAllAreas}</span>
               </>
             )}
           </button>
@@ -1521,14 +1527,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
             disabled={isSubmittingMask}
             className="px-8 py-2 bg-[#3a3a3a] text-white rounded-md text-sm font-medium hover:bg-[#4a4a4a] transition-all mx-4 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            取消
+            {t.cancel}
           </button>
           <button
             onClick={handleConfirm}
             disabled={previewAllLoading || previewAllDisabled || !videoProcessTaskId || isSubmittingMask}
             className="px-8 py-2 bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white rounded-md text-sm font-medium hover:from-[#5a67d8] hover:to-[#6b46c1] hover:-translate-y-px hover:shadow-lg hover:shadow-indigo-500/40 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
           >
-            {previewAllLoading ? '处理中...' : '确认'}
+            {previewAllLoading ? t.processing : t.confirm}
           </button>
         </div>
       </div>
