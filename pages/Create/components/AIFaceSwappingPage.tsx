@@ -6,8 +6,16 @@ import FaceSwapResultDisplay from './FaceSwapResultDisplay';
 import LoadingSpinner from './LoadingSpinner';
 import ErrorMessage from './ErrorMessage';
 import ImagePreviewModal from './ImagePreviewModal';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
-const AIFaceSwappingPage: React.FC = () => {
+interface AIFaceSwappingPageProps {
+  t?: any;
+}
+
+const AIFaceSwappingPage: React.FC<AIFaceSwappingPageProps> = ({ t: propT }) => {
+  const { t: rootT } = useAppOutletContext();
+  const t = propT || (rootT?.createPage as any)?.imageTranslation || (translations['zh'].createPage as any).imageTranslation;
   // 图片状态
   const [primaryImageUrl, setPrimaryImageUrl] = useState<string | null>(null);
   const [primaryFile, setPrimaryFile] = useState<File | null>(null);
@@ -25,7 +33,7 @@ const AIFaceSwappingPage: React.FC = () => {
 
   // 提示词
   const [prompt, setPrompt] = useState(
-    '请将参考图像中的人物脸部替换到主图像人物的脸上，保留主图像的发型、姿势和光影，只替换面部特征与肤色，使合成后的画面自然、无明显拼接痕迹，同时保持参考图像人物的面部表情与细节'
+    'Please replace the face of the character in the reference image onto the face of the character in the main image, retaining the main image\'s hairstyle, posture, and lighting, only replacing facial features and skin tone, to make the synthesized image natural with no obvious stitching marks, while maintaining the facial expression and details of the character in the reference image'
   );
 
   // 处理主图选择
@@ -67,23 +75,23 @@ const AIFaceSwappingPage: React.FC = () => {
   // 生成换脸图片
   const handleGenerate = async () => {
     if (!primaryImageUrl) {
-      setError('请上传主图');
+      setError(t.errors.uploadPrimaryImage);
       return;
     }
 
     if (!secondaryImageUrl) {
-      setError('请上传参考图');
+      setError(t.errors.uploadReferenceImage);
       return;
     }
 
     if (!prompt.trim()) {
-      setError('请输入提示词');
+      setError(t.errors.enterPrompt);
       return;
     }
 
     setIsGenerating(true);
     setError(null);
-    setLoadingMessage('正在生成换脸图片...');
+    setLoadingMessage(t.generatingMessage);
     setGeneratedImageUrl(null);
 
     try {
@@ -104,7 +112,7 @@ const AIFaceSwappingPage: React.FC = () => {
     } catch (err) {
       console.error('Face swap error:', err);
       setError(
-        err instanceof Error ? err.message : '生成失败，请重试'
+        err instanceof Error ? err.message : t.errors.generateFailed
       );
       setLoadingMessage('');
     } finally {
@@ -130,7 +138,7 @@ const AIFaceSwappingPage: React.FC = () => {
       reader.readAsDataURL(blob);
     } catch (err) {
       console.error('Failed to use image as input:', err);
-      setError('使用图片作为输入失败');
+      setError(t.errors.useImageFailed);
     }
   };
 
@@ -160,10 +168,10 @@ const AIFaceSwappingPage: React.FC = () => {
           WebkitTextFillColor: 'transparent',
           backgroundClip: 'text'
         }}>
-          AI 图片换脸
+          {t.title}
         </h1>
         <p className="text-muted-foreground">
-          上传主图和参考图，让 AI 为您生成换脸图片
+          {t.subtitle}
         </p>
       </div>
 
@@ -177,7 +185,7 @@ const AIFaceSwappingPage: React.FC = () => {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text'
             }}>
-              AI 图片换脸
+              {t.title}
             </h2>
 
             {/* 图片上传 */}
@@ -189,27 +197,26 @@ const AIFaceSwappingPage: React.FC = () => {
                 secondaryImageUrl={secondaryImageUrl}
                 onClearPrimary={handleClearPrimaryImage}
                 onClearSecondary={handleClearSecondaryImage}
-                primaryTitle="上传主图"
-                primaryDescription="上传需要换脸的主图片"
-                secondaryTitle="上传参考图"
-                secondaryDescription="上传提供脸部的参考图片"
+                primaryTitle={t.primaryLabel}
+                primaryDescription={t.primaryDescription}
+                secondaryTitle={t.referenceLabel}
+                secondaryDescription={t.referenceDescription}
               />
             </div>
 
             {/* 提示词输入 */}
-            <div className="mb-4">
+            {/* <div className="mb-4">
               <label className="mb-2 block text-sm font-semibold text-[#111827]">
-                提示词
+                {t.promptLabel}
               </label>
               <textarea
                 disabled  
                 value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="请输入换脸提示词..."
+                placeholder={t.promptPlaceholder}
                 rows={4}
                 className="w-full rounded-lg border border-[rgba(0,0,0,0.1)] bg-[#f3f4f6] p-3 placeholder-[#6b7280] transition-colors focus:border-primary focus:ring-2 focus:ring-primary"
               />
-            </div>
+            </div> */}
 
             {/* 生成按钮 */}
             <button
@@ -220,7 +227,7 @@ const AIFaceSwappingPage: React.FC = () => {
               {isGenerating ? (
                 <>
                   <Sparkles className="h-5 w-5 animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.generating}</span>
                 </>
               ) : (
                 <>
@@ -228,8 +235,8 @@ const AIFaceSwappingPage: React.FC = () => {
                     <Gem className="h-5 w-5" />
                     <Check className="absolute -top-1 -right-1 h-3 w-3" />
                   </div>
-                  <span className="text-sm font-semibold">0.3</span>
-                  <span>生成换脸图片</span>
+                  {/* <span className="text-sm font-semibold">0.3</span> */}
+                  <span>{t.generateButton}</span>
                 </>
               )}
             </button>
@@ -244,7 +251,7 @@ const AIFaceSwappingPage: React.FC = () => {
             WebkitTextFillColor: 'transparent',
             backgroundClip: 'text'
           }}>
-            生成结果
+            {t.resultTitle}
           </h2>
           <div className="mb-4 h-px w-full bg-gray-200"></div>
 
@@ -256,6 +263,7 @@ const AIFaceSwappingPage: React.FC = () => {
               originalImageUrl={primaryImageUrl}
               onUseAsInput={handleUseImageAsInput}
               onImageClick={handleOpenPreview}
+              t={t}
             />
           ) : (
             <div className="flex flex-grow flex-col items-center justify-center text-center text-[#6b7280]">
@@ -266,7 +274,7 @@ const AIFaceSwappingPage: React.FC = () => {
                   <div className="mb-4 h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center">
                     <Sparkles className="h-12 w-12 text-gray-400" />
                   </div>
-                  <p className="mt-2">生成的图片将显示在这里</p>
+                  <p className="mt-2">{t.emptyState}</p>
                 </>
               )}
             </div>
@@ -276,6 +284,7 @@ const AIFaceSwappingPage: React.FC = () => {
 
       {/* 图片预览模态框 */}
       <ImagePreviewModal
+        isOpen={!!previewImageUrl}
         imageUrl={previewImageUrl}
         onClose={handleClosePreview}
       />

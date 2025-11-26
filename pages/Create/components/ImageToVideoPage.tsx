@@ -1,13 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Trash2, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
+import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
 import { textToImageService } from '../../../services/textToImageService';
-import { uploadService } from '../../../services/uploadService';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { AdsAssetsVO } from '../../../services/assetsService';
+import UploadComponent from '../../../components/UploadComponent';
+import { UploadedFile } from '../../../services/avatarService';
 
 import demoProduct from '../../../assets/demo/1111.png';
 
@@ -116,8 +117,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   // --- Traditional / StartEnd Inputs ---
   const [startImage, setStartImage] = useState<UploadedImage | null>(null);
   const [endImage, setEndImage] = useState<UploadedImage | null>(null);
-  const [uploadingStart, setUploadingStart] = useState(false);
-  const [uploadingEnd, setUploadingEnd] = useState(false);
   const [quality, setQuality] = useState<'lite' | 'plus' | 'pro' | 'best'>('lite');
   const [duration, setDuration] = useState<number>(5);
   const [generatingCount, setGeneratingCount] = useState<number>(1);
@@ -139,8 +138,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [materialData, setMaterialData] = useState<Partial<AdsAssetsVO>>({});
 
   // --- Refs ---
-  const startFileInputRef = useRef<HTMLInputElement>(null);
-  const endFileInputRef = useRef<HTMLInputElement>(null);
   // const advancedFileInputRef = useRef<HTMLInputElement>(null); // Advanced Mode not open to public yet
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
@@ -285,43 +282,26 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'start' | 'end') => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const mapUploadedFile = (uploadedFile: UploadedFile): UploadedImage => ({
+    fileId: uploadedFile.fileId,
+    fileName: uploadedFile.fileName,
+    fileUrl: uploadedFile.fileUrl || ''
+  });
 
-    if (type === 'start') {
-      setUploadingStart(true);
-    } else {
-      setUploadingEnd(true);
-    }
-
-    try {
-      const file = files[0];
-      const res: any = await uploadService.uploadFile(file);
-      // request client usually unwraps the response to return 'data' directly
-      // But we handle both cases just to be safe
-      const data = (res && res.code === 200 && res.data) ? res.data : res;
-
-      if (data && (data.url || data.ossId || data.id)) {
-        const newImage: UploadedImage = {
-          fileId: data.ossId || data.id,
-          fileName: data.fileName || data.originalName || file.name,
-          fileUrl: data.url || URL.createObjectURL(file),
-          file: file
-        };
-
-        if (type === 'start') setStartImage(newImage);
-        else if (type === 'end') setEndImage(newImage);
-      }
-    } catch (error) {
-      console.error('Upload failed:', error);
-      toast.error('Upload failed');
-    } finally {
-      if (type === 'start') setUploadingStart(false);
-      else setUploadingEnd(false);
-      if (e.target) e.target.value = '';
-    }
+  const handleStartUploadComplete = (uploadedFile: UploadedFile) => {
+    setStartImage(mapUploadedFile(uploadedFile));
   };
+
+  const handleEndUploadComplete = (uploadedFile: UploadedFile) => {
+    setEndImage(mapUploadedFile(uploadedFile));
+  };
+
+  const handleUploadError = (error: Error) => {
+    toast.error(error.message || 'Upload failed');
+  };
+
+  const handleStartClear = () => setStartImage(null);
+  const handleEndClear = () => setEndImage(null);
 
   // Advanced Mode functions (commented out - Advanced Mode not open to public yet)
   // const removeAdvancedImage = (index: number) => {
@@ -621,58 +601,54 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                <div className="mb-6">
                   <h3 className="text-sm font-bold mb-3 text-foreground">{t.upload.label}</h3>
                   <div className="flex gap-4">
-                     <div className="flex-1">
-                        <input type="file" ref={startFileInputRef} onChange={(e) => handleUpload(e, 'start')} className="hidden" accept="image/*" />
-                        {startImage ? (
-                           <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
-                              <img src={startImage.fileUrl} alt="Start" className="w-full h-full object-contain bg-black/5" />
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                 <button onClick={() => setStartImage(null)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
-                                    <Trash2 size={16} />
-                                 </button>
-                              </div>
-                              <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center truncate px-1" title={startImage.fileName}>
-                                 {startImage.fileName || (activeTab === 'startEnd' ? 'Start Frame' : 'Reference')}
-                              </div>
-                           </div>
-                        ) : (
-                           <div 
-                              onClick={() => !uploadingStart && startFileInputRef.current?.click()}
-                              className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                                 uploadingStart ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                              }`}
-                           >
-                              {uploadingStart ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
-                              <span className="text-xs text-muted text-center px-2 mt-1">{t.upload.button}</span>
-                           </div>
+                     <div className="flex-1 relative">
+                        <UploadComponent
+                          onUploadComplete={handleStartUploadComplete}
+                          onClear={handleStartClear}
+                          onError={handleUploadError}
+                          uploadType="oss"
+                          accept="image/png, image/jpeg, image/jpg"
+                          maxSize={10}
+                          immediate={true}
+                          initialUrl={startImage?.fileUrl || ''}
+                          className="h-32"
+                        >
+                          <div className="h-full flex flex-col items-center justify-center text-center px-2 text-muted-foreground">
+                            <UploadCloud className="text-slate-400 dark:text-slate-500 mb-1" size={24} />
+                            <span className="text-xs font-medium">{t.upload.button}</span>
+                            <span className="text-[10px] text-muted mt-1">{t.upload.desc}</span>
+                          </div>
+                        </UploadComponent>
+                        {startImage && (
+                          <div className="pointer-events-none absolute inset-x-2 bottom-2 bg-black/70 text-white text-[10px] p-1 rounded text-center truncate">
+                            {startImage.fileName || (activeTab === 'startEnd' ? 'Start Frame' : 'Reference')}
+                          </div>
                         )}
                      </div>
                      
                      {activeTab === 'startEnd' && (
-                        <div className="flex-1">
-                           <input type="file" ref={endFileInputRef} onChange={(e) => handleUpload(e, 'end')} className="hidden" accept="image/*" />
-                           {endImage ? (
-                              <div className="relative rounded-xl overflow-hidden border-2 border-indigo-500 group h-32">
-                                 <img src={endImage.fileUrl} alt="End" className="w-full h-full object-contain bg-black/5" />
-                                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                    <button onClick={() => setEndImage(null)} className="p-1.5 bg-red-500 rounded-full text-white hover:bg-red-600 transition-colors">
-                                       <Trash2 size={16} />
-                                    </button>
-                                 </div>
-                                 <div className="absolute bottom-0 w-full bg-black/60 text-white text-[10px] p-1 text-center truncate px-1" title={endImage.fileName}>
-                                    {endImage.fileName || 'End Frame'}
-                                 </div>
-                              </div>
-                           ) : (
-                              <div 
-                                 onClick={() => !uploadingEnd && endFileInputRef.current?.click()}
-                                 className={`border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl h-32 flex flex-col items-center justify-center cursor-pointer transition-colors ${
-                                    uploadingEnd ? 'bg-slate-50' : 'hover:bg-slate-50 dark:hover:bg-slate-800'
-                                 }`}
-                              >
-                                 {uploadingEnd ? <Loader2 className="animate-spin text-indigo-600 mb-1" size={20} /> : <UploadCloud className="text-slate-400 mb-1" size={24} />}
-                                 <span className="text-xs text-muted text-center px-2 mt-1">{t.upload.button}</span>
-                              </div>
+                        <div className="flex-1 relative">
+                           <UploadComponent
+                             onUploadComplete={handleEndUploadComplete}
+                             onClear={handleEndClear}
+                             onError={handleUploadError}
+                             uploadType="oss"
+                             accept="image/png, image/jpeg, image/jpg"
+                             maxSize={10}
+                             immediate={true}
+                             initialUrl={endImage?.fileUrl || ''}
+                             className="h-32"
+                           >
+                             <div className="h-full flex flex-col items-center justify-center text-center px-2 text-muted-foreground">
+                               <UploadCloud className="text-slate-400 dark:text-slate-500 mb-1" size={24} />
+                               <span className="text-xs font-medium">{t.upload.button}</span>
+                               <span className="text-[10px] text-muted mt-1">{t.upload.desc}</span>
+                             </div>
+                           </UploadComponent>
+                           {endImage && (
+                             <div className="pointer-events-none absolute inset-x-2 bottom-2 bg-black/70 text-white text-[10px] p-1 rounded text-center truncate">
+                               {endImage.fileName || 'End Frame'}
+                             </div>
                            )}
                         </div>
                      )}
@@ -980,7 +956,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         isOpen={showMaterialModal}
         onClose={() => setShowMaterialModal(false)}
         onSuccess={() => {
-           toast.success('Saved to materials');
         }}
         initialData={materialData}
         disableAssetTypeSelection={true}

@@ -658,31 +658,32 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                  </div>
              )}
              
-             {/* AI Generated Subtitle */}
-             <div className="caption-selection flex flex-col gap-3 mt-4">
-                 <label className="caption-label text-sm font-medium text-gray-600 dark:text-gray-400">
-                     {t.rightPanel.aiSubtitle}
-                 </label>
-                 <div className="caption-container flex gap-4 items-center">
-                    {selectedCaption && (
-                        <div className="selected-caption flex gap-2 items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
-                            <img src={selectedCaption.thumbnail} alt="caption" className="caption-name h-6 object-contain" />
-                            <button 
-                                className="caption-remove flex items-center justify-center w-5 h-5 text-xs text-white bg-indigo-600 rounded-full hover:bg-indigo-700"
-                                onClick={() => setSelectedCaption(null)}
-                            >
-                                ×
-                            </button>
-                        </div>
-                    )}
-                    <button 
-                        onClick={() => setShowCaptionModal(true)} 
-                        className="caption-select-btn px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:border-indigo-500 transition-colors hover:bg-gray-50"
-                    >
-                        {selectedCaption ? (t.rightPanel.selectSubtitleStyle?.replace('Select', 'Change') || 'Change Style') : (t.rightPanel.selectSubtitleStyle || 'Select Style')}
-                    </button>
-                 </div>
-             </div>
+            {scriptMode === 'text' && (
+                <div className="caption-selection flex flex-col gap-3 mt-4">
+                    <label className="caption-label text-sm font-medium text-gray-600 dark:text-gray-400">
+                        {t.rightPanel.aiSubtitle}
+                    </label>
+                    <div className="caption-container flex gap-4 items-center">
+                       {selectedCaption && (
+                           <div className="selected-caption flex gap-2 items-center p-2 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-lg">
+                               <img src={selectedCaption.thumbnail} alt="caption" className="caption-name h-6 object-contain" />
+                               <button 
+                                   className="caption-remove flex items-center justify-center w-5 h-5 text-xs text-white bg-indigo-600 rounded-full hover:bg-indigo-700"
+                                   onClick={() => setSelectedCaption(null)}
+                               >
+                                   ×
+                               </button>
+                           </div>
+                       )}
+                       <button 
+                           onClick={() => setShowCaptionModal(true)} 
+                           className="caption-select-btn px-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm font-medium hover:border-indigo-500 transition-colors hover:bg-gray-50"
+                       >
+                           {selectedCaption ? (t.rightPanel.selectSubtitleStyle?.replace('Select', 'Change') || 'Change Style') : (t.rightPanel.selectSubtitleStyle || 'Select Style')}
+                       </button>
+                    </div>
+                </div>
+            )}
           </div>
 
              {/* Results Area (New) */}
@@ -839,7 +840,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                         <span>{t.rightPanel?.generatingLabel || '生成中...'}</span>
                       </span>
                     ) : (
-                      pointsTip > 0 ? t.rightPanel.generate : (t.rightPanel.awaitWorking || '设置完成之后生成')
+                      pointsTip > 0 ? t.rightPanel.generate : (t.rightPanel.awaitWorking || '开始生成')
                     )}
                   </button>
                 </div>

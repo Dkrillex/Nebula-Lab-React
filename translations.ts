@@ -339,6 +339,7 @@ interface Translation {
         previewGeneratingTip?: string;
         generatingLabel?: string;
         loadingStatus?: string;
+        awaitWorking?: string;
         buttonTip?: {
           text: string;
           audio: string;
@@ -622,11 +623,37 @@ interface Translation {
       title: string;
       subtitle: string;
       primaryLabel: string;
+      primaryDescription: string;
       referenceLabel: string;
+      referenceDescription: string;
+      promptLabel: string;
       promptPlaceholder: string;
+      promptDefault: string;
       generate: string;
+      generating: string;
+      generateButton: string;
       resultTitle: string;
       emptyState: string;
+      generatingMessage: string;
+      tabs: {
+        result: string;
+        sideBySide: string;
+        slider: string;
+      };
+      labels: {
+        original: string;
+        result: string;
+        preview: string;
+        download: string;
+        addToMaterials: string;
+      };
+      errors: {
+        uploadPrimaryImage: string;
+        uploadReferenceImage: string;
+        enterPrompt: string;
+        generateFailed: string;
+        useImageFailed: string;
+      };
     };
     workshop: {
       title: string;
@@ -696,6 +723,30 @@ interface Translation {
           s4: string;
           s5: string;
         };
+      };
+    };
+    useToolPage: {
+      promptPlaceholder: string;
+      primaryImageLabel: string;
+      referenceImageLabel: string;
+      optional: string;
+      uploadHint: string;
+      clearImage: string;
+      drawMask: string;
+      exitMaskEdit: string;
+      brushSize: string;
+      undo: string;
+      clearMask: string;
+      generating: string;
+      generateButton: string;
+      generatingMagic: string;
+      resultPlaceholder: string;
+      errors: {
+        uploadPrimaryImage: string;
+        enterPrompt: string;
+        uploadReferenceImage: string;
+        generateFailed: string;
+        unknownError: string;
       };
     };
   };
@@ -774,20 +825,48 @@ interface Translation {
     subtitle: string;
     balanceLabel: string;
     convertPoints: string;
+    memberLevel: string;
+    quickActions: string;
     buttons: {
       points: string;
       balance: string;
-      freeMember: string;
+      logs: string;
       refresh: string;
+      refreshPoints: string;
+      refreshLogs: string;
     };
     recordsTitle: string;
     refreshData: string;
+    export: string;
+    exportBill: string;
+    totalRecords: string;
+    timeRange: string;
+    to: string;
+    query: string;
+    search: string;
+    reset: string;
+    loading: string;
+    noData: string;
+    noRecords: string;
+    noUsageRecords: string;
+    noPointsRecords: string;
+    viewDetails: string;
+    collapseDetails: string;
+    date: string;
+    times: string;
+    token: string;
+    consumption: string;
+    recharge: string;
+    netAmount: string;
+    total: string;
+    consumedPoints: string;
     record: {
       type: string;
       duration: string;
       input: string;
       output: string;
       consumption: string;
+      recharge: string;
     };
     status: {
       paid: string; // 已扣款
@@ -795,6 +874,34 @@ interface Translation {
       failed: string; // 失败
       unknown: string; // 未知
     };
+    teamLogs: {
+      title: string;
+      team: string;
+      member: string;
+      expenseType: string;
+      time: string;
+      pleaseSelect: string;
+      teamName: string;
+      userName: string;
+      tokenName: string;
+      modelName: string;
+      cost: string;
+      expenseTypeLabel: string;
+      createdAt: string;
+      promptTokens: string;
+      completionTokens: string;
+      addRecharge: string;
+      addConsumption: string;
+      firstPage: string;
+      prevPage: string;
+      nextPage: string;
+      lastPage: string;
+      recordsPerPage: string;
+    };
+    exportError: string;
+    exportSuccess: string;
+    selectTeamFirst: string;
+    unknownService: string;
   };
   pricingPage: {
     title: string;
@@ -866,6 +973,71 @@ interface Translation {
       customSolution: string;
       techSupport: string;
       dataAnalysis: string;
+    };
+    errors?: {
+      loginRequired: string;
+      invalidAmount: string;
+      minAmountRequired: string;
+      invoiceOnlyWechat: string;
+      invoiceAutoDisabled: string;
+      invoiceFormNotInitialized: string;
+      invoiceInfoRequired: string;
+      invoiceInfoSaved: string;
+    };
+    invoiceFields?: {
+      name: string;
+      taxNumber: string;
+      email: string;
+      companyAddress: string;
+      companyPhone: string;
+      openingBank: string;
+      bankAccount: string;
+    };
+    paymentOptions?: {
+      alipay: string;
+      alipayHK: string;
+      billEase: string;
+      boost: string;
+      bpi: string;
+      gcash: string;
+      kredivo: string;
+      linePay: string;
+      touchNGo: string;
+    };
+    invoiceForm?: {
+      title: string;
+      fillInvoiceInfo: string;
+      invoiceName: string;
+      taxNumber: string;
+      email: string;
+      companyAddress: string;
+      companyPhone: string;
+      openingBank: string;
+      bankAccount: string;
+      placeholders: {
+        invoiceName: string;
+        taxNumber: string;
+        email: string;
+        companyAddress: string;
+        companyPhone: string;
+        openingBank: string;
+        bankAccount: string;
+      };
+      errors: {
+        invoiceNameRequired: string;
+        taxNumberRequired: string;
+        emailRequired: string;
+        emailInvalid: string;
+      };
+      cancel: string;
+      confirm: string;
+    };
+    quantity?: {
+      times: string;
+    };
+    currency?: {
+      yuan: string;
+      dollar: string;
     };
   };
   assetsPage: {
@@ -1160,8 +1332,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'Turn sketches into art',
         inpainting: 'AI Inpainting',
         inpaintingDesc: 'Remove or replace objects',
-        talkingPhoto: 'Talking Photo',
-        talkingPhotoDesc: 'Make photos talk'
+        talkingPhoto: 'Image-to-Video',
+        talkingPhotoDesc: 'Generate dynamic videos from images with one click, easily creating influencer-level marketing content that naturally attracts traffic.'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
       templateTypes: {
@@ -1379,6 +1551,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: 'Generating your video...',
           generatingLabel: 'Generating...',
           loadingStatus: 'Generating',
+          awaitWorking: 'Start Generating',
           buttonTip: {
             text: 'Please enter text.',
             audio: 'Please select an audio file.',
@@ -1659,14 +1832,173 @@ export const translations: Record<string, Translation> = {
         downloadAll: 'Download All'
       },
       imageTranslation: {
-        title: 'Image Translation',
-        subtitle: 'Use AI to swap faces or styles between two images',
-        primaryLabel: 'Primary Image',
-        referenceLabel: 'Reference Image',
-        promptPlaceholder: 'Describe how to translate the reference style onto the primary image',
+        title: 'AI Image Face Swap',
+        subtitle: 'Upload main image and reference image, let AI generate face swap images for you',
+        primaryLabel: 'Upload Main Image',
+        primaryDescription: 'Upload the main image for face swap',
+        referenceLabel: 'Upload Reference Image',
+        referenceDescription: 'Upload the reference image providing the face',
+        promptLabel: 'Prompt',
+        promptPlaceholder: 'Please enter face swap prompt...',
+        promptDefault: 'Please replace the face of the character in the reference image onto the face of the character in the main image, retaining the main image\'s hairstyle, posture, and lighting, only replacing facial features and skin tone, to make the synthesized image natural with no obvious stitching marks, while maintaining the facial expression and details of the character in the reference image',
         generate: 'Generate',
-        resultTitle: 'Translation Result',
-        emptyState: 'Upload images to open a new canvas',
+        generating: 'Generating...',
+        generateButton: '0.3 Generate Face Swap Image',
+        resultTitle: 'Generation Result',
+        emptyState: 'The generated image will be displayed here',
+        generatingMessage: 'Generating face swap image...',
+        tabs: {
+          result: 'Result',
+          sideBySide: 'Side-by-side',
+          slider: 'Slider'
+        },
+        labels: {
+          original: 'Original',
+          result: 'Result',
+          preview: 'Preview',
+          download: 'Download',
+          addToMaterials: 'Add to Materials'
+        },
+        errors: {
+          uploadPrimaryImage: 'Please upload main image',
+          uploadReferenceImage: 'Please upload reference image',
+          enterPrompt: 'Please enter prompt',
+          generateFailed: 'Generation failed, please try again',
+          useImageFailed: 'Failed to use image as input'
+        }
+      },
+      ttsPage: {
+        title: 'Text to Speech',
+        description: 'Convert text to natural, fluent speech with multiple voices and languages',
+        inputText: 'Input Text',
+        inputPlaceholder: 'Enter the text you want AI to voice here, e.g.: Welcome to our product showcase, let me introduce our latest features in detail...',
+        voice: 'Voice',
+        language: 'Language',
+        generate: 'Generate Speech',
+        generating: 'Generating...',
+        resultTitle: 'Generation Result',
+        emptyState: 'Configure parameters and start generation, results will be displayed here',
+        generatingState: 'Generating speech...',
+        downloadAudio: 'Download Audio',
+        importToMaterials: 'Import to Material Library',
+        importedToMaterials: 'Imported to Material Library',
+        errors: {
+          pleaseLogin: 'Please login first',
+          enterText: 'Please enter text content',
+          generateFailed: 'Generation failed',
+          noAudioToImport: 'No audio available to import',
+          alreadyImported: 'Already imported to material library',
+          importFailed: 'Import failed',
+          uploadFailed: 'Upload failed'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: 'Sweet Female',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: 'Mature Male',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: 'Neutral Voice',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: 'Professional Female',
+          RYAN: 'Ryan',
+          RYAN_DESC: 'Young Male',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: 'Elegant Female',
+          ELIAS: 'Elias',
+          ELIAS_DESC: 'Warm Male',
+          JADA: 'Jada',
+          JADA_DESC: 'Lively Female',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: 'Steady Male',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: 'Sunny Female',
+          LI: 'Li',
+          LI_DESC: 'Chinese Male',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: 'Magnetic Male',
+          ROY: 'Roy',
+          ROY_DESC: 'Rich Male',
+          PETER: 'Peter',
+          PETER_DESC: 'Clear Male',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: 'Rough Male',
+          KIKI: 'Kiki',
+          KIKI_DESC: 'Cute Female',
+          ERIC: 'Eric',
+          ERIC_DESC: 'Standard Male'
+        },
+        languages: {
+          AUTO: 'Auto Detect',
+          CHINESE: 'Chinese',
+          ENGLISH: 'English',
+          GERMAN: 'German',
+          ITALIAN: 'Italian',
+          PORTUGUESE: 'Portuguese',
+          SPANISH: 'Spanish',
+          JAPANESE: 'Japanese',
+          KOREAN: 'Korean',
+          FRENCH: 'French',
+          RUSSIAN: 'Russian'
+        }
+      },
+      threeDModelPage: {
+        title: '3D Model',
+        description: 'Transform your photo into a 3D render',
+        uploadImage: 'Click or drag to upload image',
+        generate: 'Generate 3D Model',
+        generating: 'Generating...',
+        resultTitle: 'Result',
+        emptyState: 'Generated results will be displayed here',
+        loadingMessages: {
+          uploading: 'Uploading image...',
+          generating: 'Generating 3D model...',
+          waiting: 'Waiting for generation to complete...',
+          downloading: 'Downloading file...',
+          parsing: 'Parsing model file...',
+          default: 'Generating...'
+        },
+        loadingHint: 'Please wait',
+        errors: {
+          uploadImage: 'Please upload image',
+          imageUploadFailed: 'Image upload failed',
+          createTaskFailed: 'Task creation failed',
+          downloadFailed: 'Download failed: Resource URL does not exist',
+          getDownloadUrlFailed: 'Failed to get download link: No url field in returned data',
+          parseGlbFailed: 'Failed to parse GLB file',
+          taskFailed: '3D task failed',
+          generateFailed: 'Failed to generate 3D effect',
+          downloadError: 'Download failed',
+          noGlbFile: 'No .glb file in the archive',
+          testFailed: 'Test failed'
+        },
+        testResult: {
+          success: '✅ Test successful! GLB file extracted and loaded.',
+          failure: '❌ Test failed'
+        }
+      },
+      useToolPage: {
+        promptPlaceholder: 'Describe the effect you want, for example: A majestic lion roaring on a rock at sunset...',
+        primaryImageLabel: 'Original Image',
+        referenceImageLabel: 'Reference Image',
+        optional: ' (Optional)',
+        uploadHint: 'Click or drag to upload image',
+        clearImage: 'Clear Image',
+        drawMask: 'Draw Mask',
+        exitMaskEdit: 'Exit Mask Edit',
+        brushSize: 'Brush Size',
+        undo: 'Undo',
+        clearMask: 'Clear Mask',
+        generating: 'Generating...',
+        generateButton: '0.3 Generate Effect',
+        generatingMagic: 'Working magic...',
+        resultPlaceholder: 'Generated results will be displayed here',
+        errors: {
+          uploadPrimaryImage: 'Please upload primary image',
+          enterPrompt: 'Please enter prompt',
+          uploadReferenceImage: 'Please upload reference image',
+          generateFailed: 'Generation failed: No valid image URL returned',
+          unknownError: 'Unknown error occurred'
+        }
       },
       workshop: {
         title: 'Creation Workshop',
@@ -2234,29 +2566,85 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Credits/Balance Center',
       subtitle: 'View and manage your credit balance, understand credit usage',
-      balanceLabel: 'Balance',
-      convertPoints: 'Convertible Points',
+      balanceLabel: 'Available Balance (CNY)',
+      convertPoints: 'Convertible Points:',
+      memberLevel: 'Member Level:',
+      quickActions: 'Quick Actions',
       buttons: {
         points: 'Points',
         balance: 'Balance',
-        freeMember: 'Free Member',
-        refresh: 'Refresh',
+        logs: 'Logs/Bills',
+        refresh: 'Refresh Balance',
+        refreshPoints: 'Refresh Points',
+        refreshLogs: 'Refresh Logs',
       },
       recordsTitle: 'Usage Records',
-      refreshData: 'Refresh Data',
+      refreshData: 'Data synchronization may be delayed',
+      export: 'Export',
+      exportBill: 'Export Bill',
+      totalRecords: 'Total {count} records',
+      timeRange: 'Time Range:',
+      to: 'to',
+      query: 'Query',
+      search: 'Search',
+      reset: 'Reset',
+      loading: 'Loading...',
+      noData: 'No Data',
+      noRecords: 'No Records',
+      noUsageRecords: 'No usage records',
+      noPointsRecords: 'No points records',
+      viewDetails: 'View Details',
+      collapseDetails: 'Collapse Details',
+      date: 'Date',
+      times: 'Times',
+      token: 'Token',
+      consumption: 'Consumption',
+      recharge: 'Recharge',
+      netAmount: 'Net Amount',
+      total: 'Total',
+      consumedPoints: 'Consumed Points',
       record: {
         type: 'Type',
-        duration: 'Time',
-        input: 'Input',
-        output: 'Output',
-        consumption: 'Consumption'
+        duration: 'Duration',
+        input: 'Input Token',
+        output: 'Output Token',
+        consumption: 'Consumption',
+        recharge: 'Recharge',
       },
       status: {
         paid: 'Paid',
         unpaid: 'Unpaid',
         failed: 'Failed',
         unknown: 'Unknown'
-      }
+      },
+      teamLogs: {
+        title: 'Logs/Bills',
+        team: 'Team',
+        member: 'Member',
+        expenseType: 'Expense Type',
+        time: 'Time',
+        pleaseSelect: 'Please Select',
+        teamName: 'Team Name',
+        userName: 'User Name',
+        tokenName: 'Creation/Token',
+        modelName: 'Function/Model',
+        cost: 'Cost(¥)',
+        expenseTypeLabel: 'Expense Type',
+        createdAt: 'Time',
+        promptTokens: 'Input(Tokens)',
+        completionTokens: 'Completion(Tokens)',
+        addRecharge: '+ Recharge',
+        addConsumption: '+ Consumption',
+        firstPage: 'First Page',
+        prevPage: 'Previous Page',
+        nextPage: 'Next Page',
+        lastPage: 'Last Page',
+        recordsPerPage: 'records/page',
+      },
+      exportError: 'Export failed, please try again later',
+      exportSuccess: 'Export successful',
+      selectTeamFirst: 'Please select a team first',
+      unknownService: 'Unknown Service',
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -2433,6 +2821,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 Custom Solutions',
         techSupport: '🔧 Technical Support',
         dataAnalysis: '📊 Data Analysis'
+      },
+      errors: {
+        loginRequired: 'Please login first',
+        invalidAmount: 'Please enter a valid amount ({currency})',
+        minAmountRequired: '{productName} version minimum amount is {amount}{currency}',
+        invoiceOnlyWechat: 'Only WeChat Pay supports invoicing, please select WeChat Pay',
+        invoiceAutoDisabled: 'Only WeChat Pay supports invoicing, invoice selection has been automatically disabled',
+        invoiceFormNotInitialized: 'Invoice form not initialized, please refresh the page and try again',
+        invoiceInfoRequired: 'Please fill in invoice information first',
+        invoiceInfoSaved: 'Invoice information saved'
+      },
+      invoiceFields: {
+        name: 'Name:',
+        taxNumber: 'Tax Number:',
+        email: 'Email:',
+        companyAddress: 'Company Address:',
+        companyPhone: 'Phone Number:',
+        openingBank: 'Opening Bank:',
+        bankAccount: 'Bank Account:'
+      },
+      paymentOptions: {
+        alipay: 'Alipay',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: 'Fill in Invoice Header Information',
+        fillInvoiceInfo: 'Fill Invoice Information',
+        invoiceName: 'Invoice Header Name',
+        taxNumber: 'Taxpayer Identification Number',
+        email: 'Email',
+        companyAddress: 'Company Address',
+        companyPhone: 'Company Phone',
+        openingBank: 'Opening Bank',
+        bankAccount: 'Bank Account',
+        placeholders: {
+          invoiceName: 'Please enter invoice header name',
+          taxNumber: 'Please enter taxpayer identification number',
+          email: 'Please enter email',
+          companyAddress: 'Please enter company address',
+          companyPhone: 'Please enter company phone',
+          openingBank: 'Please enter opening bank',
+          bankAccount: 'Please enter bank account'
+        },
+        errors: {
+          invoiceNameRequired: 'Please enter invoice header name',
+          taxNumberRequired: 'Please enter taxpayer identification number',
+          emailRequired: 'Please enter email',
+          emailInvalid: 'Please enter a valid email address'
+        },
+        cancel: 'Cancel',
+        confirm: 'Confirm'
+      },
+      quantity: {
+        times: 'times'
+      },
+      currency: {
+        yuan: 'CNY',
+        dollar: 'USD'
       }
     },
     assetsPage: {
@@ -2651,8 +3104,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'AI将文字描述或图片生成精美图像',
         inpainting: '万物编辑',
         inpaintingDesc: 'AI智能图像编辑，支持涂抹消除',
-        talkingPhoto: '照片说话',
-        talkingPhotoDesc: '让照片开口说话'
+        talkingPhoto: '图生视频',
+        talkingPhotoDesc: '基于图片一键生成动态视频，轻松打造自带流量属性的网红级营销内容'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
       templateTypes: {
@@ -2871,6 +3324,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: '正在生成您的视频...',
           generatingLabel: '生成中...',
           loadingStatus: '正在生成',
+          awaitWorking: '开始生成',
           buttonTip: {
             text: '请输入文本。',
             audio: '请选择上传一个音频文件。',
@@ -3151,14 +3605,173 @@ export const translations: Record<string, Translation> = {
         downloadAll: '批量下载'
       },
       imageTranslation: {
-        title: '图像翻译',
-        subtitle: '使用 AI 在两张图片之间交换风格或面部',
-        primaryLabel: '主图',
-        referenceLabel: '参考图',
-        promptPlaceholder: '描述期望的风格或换脸效果',
+        title: 'AI 图片换脸',
+        subtitle: '上传主图和参考图，让 AI 为您生成换脸图片',
+        primaryLabel: '上传主图',
+        primaryDescription: '上传需要换脸的主图片',
+        referenceLabel: '上传参考图',
+        referenceDescription: '上传提供脸部的参考图片',
+        promptLabel: '提示词',
+        promptPlaceholder: '请输入换脸提示词...',
+        promptDefault: '请将参考图像中的人物脸部替换到主图像人物的脸上，保留主图像的发型、姿势和光影，只替换面部特征与肤色，使合成后的画面自然、无明显拼接痕迹，同时保持参考图像人物的面部表情与细节',
         generate: '生成',
-        resultTitle: '翻译结果',
-        emptyState: '上传图片开始图像翻译',
+        generating: '生成中...',
+        generateButton: '0.3 生成换脸图片',
+        resultTitle: '生成结果',
+        emptyState: '生成的图片将显示在这里',
+        generatingMessage: '正在生成换脸图片...',
+        tabs: {
+          result: '结果',
+          sideBySide: '并排',
+          slider: '滑块'
+        },
+        labels: {
+          original: '原图',
+          result: '结果',
+          preview: '预览',
+          download: '下载',
+          addToMaterials: '添加到素材库'
+        },
+        errors: {
+          uploadPrimaryImage: '请上传主图',
+          uploadReferenceImage: '请上传参考图',
+          enterPrompt: '请输入提示词',
+          generateFailed: '生成失败，请重试',
+          useImageFailed: '使用图片作为输入失败'
+        }
+      },
+      ttsPage: {
+        title: '文本转语音',
+        description: '将文本转换为自然流畅的语音，支持多种音色和语言',
+        inputText: '输入文本',
+        inputPlaceholder: '在此输入需要AI配音的文本，例如：欢迎来到我们的产品展示，让我为您详细介绍我们最新的功能特点...',
+        voice: '音色',
+        language: '语言',
+        generate: '生成语音',
+        generating: '生成中...',
+        resultTitle: '生成结果',
+        emptyState: '配置参数并开始生成，结果将显示在这里',
+        generatingState: '正在生成语音...',
+        downloadAudio: '下载音频',
+        importToMaterials: '导入素材库',
+        importedToMaterials: '已导入素材库',
+        errors: {
+          pleaseLogin: '请先登录',
+          enterText: '请输入文本内容',
+          generateFailed: '生成失败',
+          noAudioToImport: '没有可导入的音频',
+          alreadyImported: '已导入素材库',
+          importFailed: '导入失败',
+          uploadFailed: '上传失败'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: '甜美女性',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: '成熟男性',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: '中性声音',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: '专业女性',
+          RYAN: 'Ryan',
+          RYAN_DESC: '年轻男性',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: '优雅女性',
+          ELIAS: 'Elias',
+          ELIAS_DESC: '温暖男性',
+          JADA: 'Jada',
+          JADA_DESC: '活泼女性',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: '沉稳男性',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: '阳光女性',
+          LI: 'Li',
+          LI_DESC: '中文男声',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: '磁性男声',
+          ROY: 'Roy',
+          ROY_DESC: '浑厚男声',
+          PETER: 'Peter',
+          PETER_DESC: '清晰男声',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: '粗犷男声',
+          KIKI: 'Kiki',
+          KIKI_DESC: '可爱女声',
+          ERIC: 'Eric',
+          ERIC_DESC: '标准男声'
+        },
+        languages: {
+          AUTO: '自动检测',
+          CHINESE: '中文',
+          ENGLISH: '英文',
+          GERMAN: '德语',
+          ITALIAN: '意大利语',
+          PORTUGUESE: '葡萄牙语',
+          SPANISH: '西班牙语',
+          JAPANESE: '日语',
+          KOREAN: '韩语',
+          FRENCH: '法语',
+          RUSSIAN: '俄语'
+        }
+      },
+      threeDModelPage: {
+        title: '3D 模型',
+        description: '将您的照片变成一份3D效果图',
+        uploadImage: '点击或拖拽上传图片',
+        generate: '生成 3D 模型',
+        generating: '生成中...',
+        resultTitle: '结果',
+        emptyState: '生成的结果将显示在这里',
+        loadingMessages: {
+          uploading: '正在上传图片...',
+          generating: '正在生成 3D 模型...',
+          waiting: '正在等待生成完成...',
+          downloading: '正在下载文件...',
+          parsing: '正在解析模型文件...',
+          default: '正在生成...'
+        },
+        loadingHint: '请稍候',
+        errors: {
+          uploadImage: '请上传图片',
+          imageUploadFailed: '图片上传失败',
+          createTaskFailed: '创建任务失败',
+          downloadFailed: '下载失败：资源URL不存在',
+          getDownloadUrlFailed: '获取下载链接失败：返回数据中没有 url 字段',
+          parseGlbFailed: '解析 GLB 文件失败',
+          taskFailed: '3D 任务失败',
+          generateFailed: '生成3D效果失败',
+          downloadError: '下载失败',
+          noGlbFile: '压缩包中没有 .glb 文件',
+          testFailed: '测试失败'
+        },
+        testResult: {
+          success: '✅ 测试成功！GLB 文件已提取并加载。',
+          failure: '❌ 测试失败'
+        }
+      },
+      useToolPage: {
+        promptPlaceholder: '描述你想要的效果，例如：一只雄伟的狮子在日落时分的岩石上咆哮...',
+        primaryImageLabel: '原始图像',
+        referenceImageLabel: '参考图像',
+        optional: ' (可选)',
+        uploadHint: '点击或拖拽上传图片',
+        clearImage: '清除图片',
+        drawMask: '绘制蒙版',
+        exitMaskEdit: '退出蒙版编辑',
+        brushSize: '画笔大小',
+        undo: '撤销',
+        clearMask: '清除蒙版',
+        generating: '生成中...',
+        generateButton: '0.3 生成效果',
+        generatingMagic: '正在施展魔法...',
+        resultPlaceholder: '生成的结果将显示在这里',
+        errors: {
+          uploadPrimaryImage: '请上传主图像',
+          enterPrompt: '请输入提示词',
+          uploadReferenceImage: '请上传参考图像',
+          generateFailed: '生成失败：未返回有效的图片URL',
+          unknownError: '发生未知错误'
+        }
       },
       workshop: {
         title: '创作工坊',
@@ -3925,6 +4538,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 定制化方案',
         techSupport: '🔧 技术支持',
         dataAnalysis: '📊 数据分析'
+      },
+      errors: {
+        loginRequired: '请先登录',
+        invalidAmount: '请输入有效的金额（{currency}）',
+        minAmountRequired: '{productName}版本最低金额为{amount}{currency}',
+        invoiceOnlyWechat: '只有微信支付支持开发票，请选择微信支付',
+        invoiceAutoDisabled: '只有微信支付支持开发票，已自动取消发票选择',
+        invoiceFormNotInitialized: '发票表单未初始化，请刷新页面重试',
+        invoiceInfoRequired: '请先填写发票信息',
+        invoiceInfoSaved: '发票信息已保存'
+      },
+      invoiceFields: {
+        name: '名称:',
+        taxNumber: '税号:',
+        email: '邮箱:',
+        companyAddress: '单位地址:',
+        companyPhone: '电话号码:',
+        openingBank: '开户银行:',
+        bankAccount: '银行账户:'
+      },
+      paymentOptions: {
+        alipay: '支付宝支付',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: '填写发票抬头信息',
+        fillInvoiceInfo: '填写发票信息',
+        invoiceName: '发票抬头名称',
+        taxNumber: '纳税人识别号',
+        email: '邮箱',
+        companyAddress: '公司地址',
+        companyPhone: '公司电话',
+        openingBank: '开户银行',
+        bankAccount: '银行账户',
+        placeholders: {
+          invoiceName: '请输入发票抬头名称',
+          taxNumber: '请输入纳税人识别号',
+          email: '请输入邮箱',
+          companyAddress: '请输入公司地址',
+          companyPhone: '请输入公司电话',
+          openingBank: '请输入开户银行',
+          bankAccount: '请输入银行账户'
+        },
+        errors: {
+          invoiceNameRequired: '请输入发票抬头名称',
+          taxNumberRequired: '请输入纳税人识别号',
+          emailRequired: '请输入邮箱',
+          emailInvalid: '请输入有效的邮箱地址'
+        },
+        cancel: '取消',
+        confirm: '确定'
+      },
+      quantity: {
+        times: '倍'
+      },
+      currency: {
+        yuan: '元',
+        dollar: '美元'
       }
     },
     assetsPage: {
@@ -3949,6 +4627,89 @@ export const translations: Record<string, Translation> = {
       totalFolders: '个文件夹',
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
+    },
+    expensesPage: {
+      title: '费用中心',
+      subtitle: '查看和管理您的余额和积分，了解使用情况',
+      balanceLabel: '可用余额 (CNY)',
+      convertPoints: '可转换积分:',
+      memberLevel: '会员等级:',
+      quickActions: '快捷操作',
+      buttons: {
+        points: '积分',
+        balance: '余额',
+        logs: '日志/账单',
+        refresh: '刷新余额',
+        refreshPoints: '刷新积分',
+        refreshLogs: '刷新日志',
+      },
+      recordsTitle: '使用记录',
+      refreshData: '数据同步可能存在延迟',
+      export: '导出',
+      exportBill: '导出账单',
+      totalRecords: '共 {count} 条记录',
+      timeRange: '时间范围：',
+      to: '至',
+      query: '查询',
+      search: '搜索',
+      reset: '重置',
+      loading: '加载中...',
+      noData: '暂无数据',
+      noRecords: '暂无记录',
+      noUsageRecords: '暂无使用记录',
+      noPointsRecords: '暂无积分流水',
+      viewDetails: '查看明细',
+      collapseDetails: '收起明细',
+      date: '日期',
+      times: '次数',
+      token: 'Token',
+      consumption: '消费',
+      recharge: '充值',
+      netAmount: '净额',
+      total: '合计',
+      consumedPoints: '消耗积分',
+      record: {
+        type: '类型',
+        duration: '用时',
+        input: '输入token',
+        output: '输出token',
+        consumption: '消费',
+        recharge: '充值',
+      },
+      status: {
+        paid: '已扣款',
+        unpaid: '未扣款',
+        failed: '失败',
+        unknown: '未知',
+      },
+      teamLogs: {
+        title: '日志/账单',
+        team: '团队',
+        member: '成员',
+        expenseType: '费用类型',
+        time: '时间',
+        pleaseSelect: '请选择',
+        teamName: '团队名称',
+        userName: '用户名',
+        tokenName: '创作/令牌',
+        modelName: '功能/模型',
+        cost: '费用(¥)',
+        expenseTypeLabel: '费用类型',
+        createdAt: '时间',
+        promptTokens: '输入(Tokens)',
+        completionTokens: '完成(Tokens)',
+        addRecharge: '+ 充值',
+        addConsumption: '+ 消费',
+        firstPage: '第一页',
+        prevPage: '上一页',
+        nextPage: '下一页',
+        lastPage: '最后一页',
+        recordsPerPage: '条/页',
+      },
+      exportError: '导出失败，请稍后重试',
+      exportSuccess: '导出成功',
+      selectTeamFirst: '请先选择团队',
+      unknownService: '未知服务',
     },
     profilePage: {
       title: '个人中心',
@@ -4176,8 +4937,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'Ubah sketsa menjadi seni',
         inpainting: 'Inpainting AI',
         inpaintingDesc: 'Hapus atau ganti objek',
-        talkingPhoto: 'Foto Berbicara',
-        talkingPhotoDesc: 'Buat foto berbicara'
+        talkingPhoto: 'Video yang dibuat dari gambar',
+        talkingPhotoDesc: 'Berdasarkan gambar, buat video dinamis dengan satu klik, dengan mudah menciptakan konten pemasaran ala selebriti internet yang sudah memiliki sifat viral.'
       },
       tabs: ['Semua', 'Karakter', 'Hewan', 'Anime', 'Kreatif', 'Makanan', 'Pemandangan', 'Produk'],
       templateTypes: {
@@ -4395,6 +5156,7 @@ export const translations: Record<string, Translation> = {
           previewGeneratingTip: 'Sedang membuat video Anda...',
           generatingLabel: 'Sedang membuat...',
           loadingStatus: 'Sedang membuat',
+          awaitWorking: 'Mulai membuat',
           buttonTip: {
             text: 'Silakan masukkan teks.',
             audio: 'Silakan pilih file audio.',
@@ -4611,14 +5373,173 @@ export const translations: Record<string, Translation> = {
         downloadAll: 'Unduh Semua'
       },
       imageTranslation: {
-        title: 'Terjemahan Gambar',
-        subtitle: 'Gunakan AI untuk menukar wajah atau gaya antar gambar',
-        primaryLabel: 'Gambar Utama',
-        referenceLabel: 'Gambar Referensi',
-        promptPlaceholder: 'Jelaskan gaya atau wajah yang ingin Anda terjemahkan',
+        title: 'AI Tukar Wajah Gambar',
+        subtitle: 'Unggah gambar utama dan gambar referensi, biarkan AI menghasilkan gambar tukar wajah untuk Anda',
+        primaryLabel: 'Unggah Gambar Utama',
+        primaryDescription: 'Unggah gambar utama untuk tukar wajah',
+        referenceLabel: 'Unggah Gambar Referensi',
+        referenceDescription: 'Unggah gambar referensi yang menyediakan wajah',
+        promptLabel: 'Prompt',
+        promptPlaceholder: 'Silakan masukkan prompt tukar wajah...',
+        promptDefault: 'Ganti wajah karakter dalam gambar referensi ke wajah karakter dalam gambar utama, pertahankan gaya rambut, pose, dan pencahayaan gambar utama, hanya ganti fitur wajah dan warna kulit, untuk membuat gambar yang disintesis terlihat alami tanpa bekas jahitan yang jelas, sambil mempertahankan ekspresi wajah dan detail karakter dalam gambar referensi',
         generate: 'Hasilkan',
-        resultTitle: 'Hasil Terjemahan',
-        emptyState: 'Unggah gambar untuk memulai',
+        generating: 'Menghasilkan...',
+        generateButton: '0.3 Hasilkan Gambar Tukar Wajah',
+        resultTitle: 'Hasil Pembuatan',
+        emptyState: 'Gambar yang dihasilkan akan ditampilkan di sini',
+        generatingMessage: 'Sedang menghasilkan gambar tukar wajah...',
+        tabs: {
+          result: 'Hasil',
+          sideBySide: 'Bersebelahan',
+          slider: 'Slider'
+        },
+        labels: {
+          original: 'Asli',
+          result: 'Hasil',
+          preview: 'Pratinjau',
+          download: 'Unduh',
+          addToMaterials: 'Tambahkan ke Perpustakaan Materi'
+        },
+        errors: {
+          uploadPrimaryImage: 'Silakan unggah gambar utama',
+          uploadReferenceImage: 'Silakan unggah gambar referensi',
+          enterPrompt: 'Silakan masukkan prompt',
+          generateFailed: 'Pembuatan gagal, silakan coba lagi',
+          useImageFailed: 'Gagal menggunakan gambar sebagai input'
+        }
+      },
+      ttsPage: {
+        title: 'Teks ke Ucapan',
+        description: 'Ubah teks menjadi ucapan alami dan lancar dengan berbagai suara dan bahasa',
+        inputText: 'Masukkan Teks',
+        inputPlaceholder: 'Masukkan teks yang ingin diubah menjadi suara oleh AI di sini, misalnya: Selamat datang di pameran produk kami, izinkan saya memperkenalkan fitur terbaru kami secara detail...',
+        voice: 'Suara',
+        language: 'Bahasa',
+        generate: 'Hasilkan Ucapan',
+        generating: 'Menghasilkan...',
+        resultTitle: 'Hasil Pembuatan',
+        emptyState: 'Konfigurasi parameter dan mulai pembuatan, hasil akan ditampilkan di sini',
+        generatingState: 'Sedang menghasilkan ucapan...',
+        downloadAudio: 'Unduh Audio',
+        importToMaterials: 'Impor ke Perpustakaan Materi',
+        importedToMaterials: 'Diimpor ke Perpustakaan Materi',
+        errors: {
+          pleaseLogin: 'Silakan login terlebih dahulu',
+          enterText: 'Silakan masukkan konten teks',
+          generateFailed: 'Pembuatan gagal',
+          noAudioToImport: 'Tidak ada audio yang tersedia untuk diimpor',
+          alreadyImported: 'Sudah diimpor ke perpustakaan materi',
+          importFailed: 'Impor gagal',
+          uploadFailed: 'Unggah gagal'
+        },
+        voices: {
+          CHERRY: 'Cherry',
+          CHERRY_DESC: 'Perempuan Manis',
+          ETHAN: 'Ethan',
+          ETHAN_DESC: 'Pria Dewasa',
+          NOFISH: 'Nofish',
+          NOFISH_DESC: 'Suara Netral',
+          JENNIFER: 'Jennifer',
+          JENNIFER_DESC: 'Perempuan Profesional',
+          RYAN: 'Ryan',
+          RYAN_DESC: 'Pria Muda',
+          KATERINA: 'Katerina',
+          KATERINA_DESC: 'Perempuan Elegan',
+          ELIAS: 'Elias',
+          ELIAS_DESC: 'Pria Hangat',
+          JADA: 'Jada',
+          JADA_DESC: 'Perempuan Lincah',
+          DYLAN: 'Dylan',
+          DYLAN_DESC: 'Pria Stabil',
+          SUNNY: 'Sunny',
+          SUNNY_DESC: 'Perempuan Cerah',
+          LI: 'Li',
+          LI_DESC: 'Pria Cina',
+          MARCUS: 'Marcus',
+          MARCUS_DESC: 'Pria Magnetis',
+          ROY: 'Roy',
+          ROY_DESC: 'Pria Kuat',
+          PETER: 'Peter',
+          PETER_DESC: 'Pria Jelas',
+          ROCKY: 'Rocky',
+          ROCKY_DESC: 'Pria Kasar',
+          KIKI: 'Kiki',
+          KIKI_DESC: 'Perempuan Lucu',
+          ERIC: 'Eric',
+          ERIC_DESC: 'Pria Standar'
+        },
+        languages: {
+          AUTO: 'Deteksi Otomatis',
+          CHINESE: 'Cina',
+          ENGLISH: 'Inggris',
+          GERMAN: 'Jerman',
+          ITALIAN: 'Italia',
+          PORTUGUESE: 'Portugis',
+          SPANISH: 'Spanyol',
+          JAPANESE: 'Jepang',
+          KOREAN: 'Korea',
+          FRENCH: 'Prancis',
+          RUSSIAN: 'Rusia'
+        }
+      },
+      threeDModelPage: {
+        title: 'Model 3D',
+        description: 'Ubah foto Anda menjadi render 3D',
+        uploadImage: 'Klik atau seret untuk mengunggah gambar',
+        generate: 'Hasilkan Model 3D',
+        generating: 'Menghasilkan...',
+        resultTitle: 'Hasil',
+        emptyState: 'Hasil yang dihasilkan akan ditampilkan di sini',
+        loadingMessages: {
+          uploading: 'Mengunggah gambar...',
+          generating: 'Menghasilkan model 3D...',
+          waiting: 'Menunggu pembuatan selesai...',
+          downloading: 'Mengunduh file...',
+          parsing: 'Mengurai file model...',
+          default: 'Menghasilkan...'
+        },
+        loadingHint: 'Harap tunggu',
+        errors: {
+          uploadImage: 'Silakan unggah gambar',
+          imageUploadFailed: 'Pengunggahan gambar gagal',
+          createTaskFailed: 'Pembuatan tugas gagal',
+          downloadFailed: 'Pengunduhan gagal: URL sumber tidak ada',
+          getDownloadUrlFailed: 'Gagal mendapatkan tautan unduhan: Tidak ada bidang url dalam data yang dikembalikan',
+          parseGlbFailed: 'Gagal mengurai file GLB',
+          taskFailed: 'Tugas 3D gagal',
+          generateFailed: 'Gagal menghasilkan efek 3D',
+          downloadError: 'Pengunduhan gagal',
+          noGlbFile: 'Tidak ada file .glb di arsip',
+          testFailed: 'Tes gagal'
+        },
+        testResult: {
+          success: '✅ Tes berhasil! File GLB diekstrak dan dimuat.',
+          failure: '❌ Tes gagal'
+        }
+      },
+      useToolPage: {
+        promptPlaceholder: 'Jelaskan efek yang Anda inginkan, misalnya: Seekor singa megah mengaum di atas batu saat matahari terbenam...',
+        primaryImageLabel: 'Gambar Utama',
+        referenceImageLabel: 'Gambar Referensi',
+        optional: ' (Opsional)',
+        uploadHint: 'Klik atau seret untuk mengunggah gambar',
+        clearImage: 'Hapus Gambar',
+        drawMask: 'Gambar Mask',
+        exitMaskEdit: 'Keluar dari Edit Mask',
+        brushSize: 'Ukuran Kuas',
+        undo: 'Batal',
+        clearMask: 'Hapus Mask',
+        generating: 'Menghasilkan...',
+        generateButton: '0.3 Hasilkan Efek',
+        generatingMagic: 'Sedang melakukan keajaiban...',
+        resultPlaceholder: 'Hasil yang dihasilkan akan ditampilkan di sini',
+        errors: {
+          uploadPrimaryImage: 'Silakan unggah gambar utama',
+          enterPrompt: 'Silakan masukkan prompt',
+          uploadReferenceImage: 'Silakan unggah gambar referensi',
+          generateFailed: 'Pembuatan gagal, silakan coba lagi',
+          useImageFailed: 'Gagal menggunakan gambar sebagai input'
+        }
       },
       workshop: {
         title: 'Workshop Kreatif',
@@ -4789,29 +5710,85 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Pusat Kredit/Saldo',
       subtitle: 'Lihat dan kelola saldo kredit Anda, pahami penggunaan kredit',
-      balanceLabel: 'Saldo',
-      convertPoints: 'Poin yang Dapat Dikonversi',
+      balanceLabel: 'Saldo Tersedia (CNY)',
+      convertPoints: 'Poin yang Dapat Dikonversi:',
+      memberLevel: 'Level Anggota:',
+      quickActions: 'Tindakan Cepat',
       buttons: {
         points: 'Poin',
         balance: 'Saldo',
-        freeMember: 'Anggota Gratis',
-        refresh: 'Segarkan',
+        logs: 'Log/Tagihan',
+        refresh: 'Segarkan Saldo',
+        refreshPoints: 'Segarkan Poin',
+        refreshLogs: 'Segarkan Log',
       },
       recordsTitle: 'Catatan Penggunaan',
-      refreshData: 'Segarkan Data',
+      refreshData: 'Sinkronisasi data mungkin tertunda',
+      export: 'Ekspor',
+      exportBill: 'Ekspor Tagihan',
+      totalRecords: 'Total {count} catatan',
+      timeRange: 'Rentang Waktu:',
+      to: 'hingga',
+      query: 'Kueri',
+      search: 'Cari',
+      reset: 'Reset',
+      loading: 'Memuat...',
+      noData: 'Tidak Ada Data',
+      noRecords: 'Tidak Ada Catatan',
+      noUsageRecords: 'Tidak ada catatan penggunaan',
+      noPointsRecords: 'Tidak ada catatan poin',
+      viewDetails: 'Lihat Detail',
+      collapseDetails: 'Tutup Detail',
+      date: 'Tanggal',
+      times: 'Kali',
+      token: 'Token',
+      consumption: 'Konsumsi',
+      recharge: 'Isi Ulang',
+      netAmount: 'Jumlah Bersih',
+      total: 'Total',
+      consumedPoints: 'Poin yang Dikonsumsi',
       record: {
         type: 'Jenis',
-        duration: 'Waktu',
-        input: 'Input',
-        output: 'Output',
-        consumption: 'Konsumsi'
+        duration: 'Durasi',
+        input: 'Token Input',
+        output: 'Token Output',
+        consumption: 'Konsumsi',
+        recharge: 'Isi Ulang',
       },
       status: {
         paid: 'Telah Dikurangi',
         unpaid: 'Belum Dikurangi',
         failed: 'Gagal',
         unknown: 'Tidak Diketahui'
-      }
+      },
+      teamLogs: {
+        title: 'Log/Tagihan',
+        team: 'Tim',
+        member: 'Anggota',
+        expenseType: 'Jenis Biaya',
+        time: 'Waktu',
+        pleaseSelect: 'Silakan Pilih',
+        teamName: 'Nama Tim',
+        userName: 'Nama Pengguna',
+        tokenName: 'Kreasi/Token',
+        modelName: 'Fungsi/Model',
+        cost: 'Biaya(¥)',
+        expenseTypeLabel: 'Jenis Biaya',
+        createdAt: 'Waktu',
+        promptTokens: 'Input(Tokens)',
+        completionTokens: 'Selesai(Tokens)',
+        addRecharge: '+ Isi Ulang',
+        addConsumption: '+ Konsumsi',
+        firstPage: 'Halaman Pertama',
+        prevPage: 'Halaman Sebelumnya',
+        nextPage: 'Halaman Berikutnya',
+        lastPage: 'Halaman Terakhir',
+        recordsPerPage: 'catatan/halaman',
+      },
+      exportError: 'Ekspor gagal, silakan coba lagi nanti',
+      exportSuccess: 'Ekspor berhasil',
+      selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
+      unknownService: 'Layanan Tidak Diketahui',
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -4988,6 +5965,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 Solusi Kustom',
         techSupport: '🔧 Dukungan Teknis',
         dataAnalysis: '📊 Analisis Data'
+      },
+      errors: {
+        loginRequired: 'Silakan login terlebih dahulu',
+        invalidAmount: 'Silakan masukkan jumlah yang valid ({currency})',
+        minAmountRequired: 'Versi {productName} jumlah minimum adalah {amount}{currency}',
+        invoiceOnlyWechat: 'Hanya WeChat Pay yang mendukung faktur, silakan pilih WeChat Pay',
+        invoiceAutoDisabled: 'Hanya WeChat Pay yang mendukung faktur, pemilihan faktur telah dinonaktifkan secara otomatis',
+        invoiceFormNotInitialized: 'Formulir faktur tidak diinisialisasi, silakan refresh halaman dan coba lagi',
+        invoiceInfoRequired: 'Silakan isi informasi faktur terlebih dahulu',
+        invoiceInfoSaved: 'Informasi faktur disimpan'
+      },
+      invoiceFields: {
+        name: 'Nama:',
+        taxNumber: 'Nomor Pajak:',
+        email: 'Email:',
+        companyAddress: 'Alamat Perusahaan:',
+        companyPhone: 'Nomor Telepon:',
+        openingBank: 'Bank Pembuka:',
+        bankAccount: 'Akun Bank:'
+      },
+      paymentOptions: {
+        alipay: 'Alipay',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: 'Isi Informasi Header Faktur',
+        fillInvoiceInfo: 'Isi Informasi Faktur',
+        invoiceName: 'Nama Header Faktur',
+        taxNumber: 'Nomor Identifikasi Wajib Pajak',
+        email: 'Email',
+        companyAddress: 'Alamat Perusahaan',
+        companyPhone: 'Telepon Perusahaan',
+        openingBank: 'Bank Pembuka',
+        bankAccount: 'Akun Bank',
+        placeholders: {
+          invoiceName: 'Silakan masukkan nama header faktur',
+          taxNumber: 'Silakan masukkan nomor identifikasi wajib pajak',
+          email: 'Silakan masukkan email',
+          companyAddress: 'Silakan masukkan alamat perusahaan',
+          companyPhone: 'Silakan masukkan telepon perusahaan',
+          openingBank: 'Silakan masukkan bank pembuka',
+          bankAccount: 'Silakan masukkan akun bank'
+        },
+        errors: {
+          invoiceNameRequired: 'Silakan masukkan nama header faktur',
+          taxNumberRequired: 'Silakan masukkan nomor identifikasi wajib pajak',
+          emailRequired: 'Silakan masukkan email',
+          emailInvalid: 'Silakan masukkan alamat email yang valid'
+        },
+        cancel: 'Batal',
+        confirm: 'Konfirmasi'
+      },
+      quantity: {
+        times: 'kali'
+      },
+      currency: {
+        yuan: 'CNY',
+        dollar: 'USD'
       }
     },
     assetsPage: {

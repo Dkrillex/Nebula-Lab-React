@@ -20,17 +20,19 @@ export interface PointsDailySummary {
 interface BalanceDailySummaryTableProps {
   mode: 'balance';
   data: BalanceDailySummary[];
+  t?: any;
 }
 
 interface PointsDailySummaryTableProps {
   mode: 'points';
   data: PointsDailySummary[];
+  t?: any;
 }
 
 type DailySummaryTableProps = BalanceDailySummaryTableProps | PointsDailySummaryTableProps;
 
 const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
-  const { mode, data } = props;
+  const { mode, data, t } = props;
 
   if (data.length === 0) return null;
 
@@ -49,12 +51,12 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
-                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">日期</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">次数</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">Token</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">消费</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">充值</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">净额</th>
+                <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">{t?.date || '日期'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.times || '次数'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.token || 'Token'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.consumption || '消费'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.recharge || '充值'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.netAmount || '净额'}</th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-zinc-900">
@@ -72,7 +74,7 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
               ))}
               {/* 合计行 */}
               <tr className="bg-gray-50 dark:bg-zinc-800 font-medium">
-                <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">合计</td>
+                <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">{t?.total || '合计'}</td>
                 <td className="px-3 py-2 text-right text-gray-800 dark:text-zinc-200">{totalUsageCount}</td>
                 <td className="px-3 py-2 text-right text-gray-800 dark:text-zinc-200 font-mono">{totalTokens.toLocaleString()}</td>
                 <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{totalConsumption.toFixed(4)}</td>
@@ -99,9 +101,9 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 dark:bg-zinc-800 border-b border-gray-200 dark:border-zinc-700">
-              <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">日期</th>
-              <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">次数</th>
-              <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">消耗积分</th>
+              <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">{t?.date || '日期'}</th>
+              <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.times || '次数'}</th>
+              <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.consumedPoints || '消耗积分'}</th>
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-zinc-900">
@@ -114,7 +116,7 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
             ))}
             {/* 合计行 */}
             <tr className="bg-gray-50 dark:bg-zinc-800 font-medium">
-              <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">合计</td>
+              <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">{t?.total || '合计'}</td>
               <td className="px-3 py-2 text-right text-gray-800 dark:text-zinc-200">{totalUsageCount}</td>
               <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{totalDeduct}</td>
             </tr>

@@ -7,6 +7,33 @@ export interface InvoiceFormProps {
   onClose: () => void;
   initialData?: UserInvoiceForm;
   onSubmit?: (data: UserInvoiceForm) => void;
+  translations?: {
+    title?: string;
+    invoiceName?: string;
+    taxNumber?: string;
+    email?: string;
+    companyAddress?: string;
+    companyPhone?: string;
+    openingBank?: string;
+    bankAccount?: string;
+    placeholders?: {
+      invoiceName?: string;
+      taxNumber?: string;
+      email?: string;
+      companyAddress?: string;
+      companyPhone?: string;
+      openingBank?: string;
+      bankAccount?: string;
+    };
+    errors?: {
+      invoiceNameRequired?: string;
+      taxNumberRequired?: string;
+      emailRequired?: string;
+      emailInvalid?: string;
+    };
+    cancel?: string;
+    confirm?: string;
+  };
 }
 
 export interface InvoiceFormRef {
@@ -15,7 +42,7 @@ export interface InvoiceFormRef {
 }
 
 const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
-  ({ isOpen, onClose, initialData, onSubmit }, ref) => {
+  ({ isOpen, onClose, initialData, onSubmit, translations }, ref) => {
     const [formData, setFormData] = useState<UserInvoiceForm>({
       invoiceName: '',
       taxNumber: '',
@@ -43,25 +70,25 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
 
         // 验证发票抬头名称
         if (!formData.invoiceName || formData.invoiceName.trim() === '') {
-          newErrors.invoiceName = '请输入发票抬头名称';
+          newErrors.invoiceName = translations?.errors?.invoiceNameRequired || '请输入发票抬头名称';
         }
 
         // 验证纳税人识别号
         if (!formData.taxNumber || formData.taxNumber.trim() === '') {
-          newErrors.taxNumber = '请输入纳税人识别号';
+          newErrors.taxNumber = translations?.errors?.taxNumberRequired || '请输入纳税人识别号';
         }
 
         // 验证邮箱
         if (!formData.email || formData.email.trim() === '') {
-          newErrors.email = '请输入邮箱';
+          newErrors.email = translations?.errors?.emailRequired || '请输入邮箱';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          newErrors.email = '请输入有效的邮箱地址';
+          newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
         }
 
         setErrors(newErrors);
 
         if (Object.keys(newErrors).length > 0) {
-          throw new Error('表单验证失败');
+          throw new Error('Form validation failed');
         }
 
         return { ...formData };
@@ -100,19 +127,19 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
 
         // 验证发票抬头名称
         if (!formData.invoiceName || formData.invoiceName.trim() === '') {
-          newErrors.invoiceName = '请输入发票抬头名称';
+          newErrors.invoiceName = translations?.errors?.invoiceNameRequired || '请输入发票抬头名称';
         }
 
         // 验证纳税人识别号
         if (!formData.taxNumber || formData.taxNumber.trim() === '') {
-          newErrors.taxNumber = '请输入纳税人识别号';
+          newErrors.taxNumber = translations?.errors?.taxNumberRequired || '请输入纳税人识别号';
         }
 
         // 验证邮箱
         if (!formData.email || formData.email.trim() === '') {
-          newErrors.email = '请输入邮箱';
+          newErrors.email = translations?.errors?.emailRequired || '请输入邮箱';
         } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          newErrors.email = '请输入有效的邮箱地址';
+          newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
         }
 
         setErrors(newErrors);
@@ -125,7 +152,7 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
         onClose();
       } catch (error) {
         // 验证失败，错误已通过 errors 状态显示
-        console.error('表单验证失败:', error);
+        console.error('Form validation failed:', error);
       }
     };
 
@@ -138,19 +165,19 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
       <BaseModal
         isOpen={isOpen}
         onClose={handleClose}
-        title="填写发票抬头信息"
+        title={translations?.title || "填写发票抬头信息"}
         width="max-w-2xl"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              发票抬头名称 <span className="text-red-500">*</span>
+              {translations?.invoiceName || '发票抬头名称'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.invoiceName || ''}
               onChange={(e) => handleInputChange('invoiceName', e.target.value)}
-              placeholder="请输入发票抬头名称"
+              placeholder={translations?.placeholders?.invoiceName || "请输入发票抬头名称"}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.invoiceName
                   ? 'border-red-500'
@@ -164,13 +191,13 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              纳税人识别号 <span className="text-red-500">*</span>
+              {translations?.taxNumber || '纳税人识别号'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.taxNumber || ''}
               onChange={(e) => handleInputChange('taxNumber', e.target.value)}
-              placeholder="请输入纳税人识别号"
+              placeholder={translations?.placeholders?.taxNumber || "请输入纳税人识别号"}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.taxNumber
                   ? 'border-red-500'
@@ -184,13 +211,13 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              邮箱 <span className="text-red-500">*</span>
+              {translations?.email || '邮箱'} <span className="text-red-500">*</span>
             </label>
             <input
               type="email"
               value={formData.email || ''}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="请输入邮箱"
+              placeholder={translations?.placeholders?.email || "请输入邮箱"}
               className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary ${
                 errors.email
                   ? 'border-red-500'
@@ -204,52 +231,52 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              公司地址
+              {translations?.companyAddress || '公司地址'}
             </label>
             <input
               type="text"
               value={formData.companyAddress || ''}
               onChange={(e) => handleInputChange('companyAddress', e.target.value)}
-              placeholder="请输入公司地址"
+              placeholder={translations?.placeholders?.companyAddress || "请输入公司地址"}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              公司电话
+              {translations?.companyPhone || '公司电话'}
             </label>
             <input
               type="text"
               value={formData.companyPhone || ''}
               onChange={(e) => handleInputChange('companyPhone', e.target.value)}
-              placeholder="请输入公司电话"
+              placeholder={translations?.placeholders?.companyPhone || "请输入公司电话"}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              开户银行
+              {translations?.openingBank || '开户银行'}
             </label>
             <input
               type="text"
               value={formData.openingBank || ''}
               onChange={(e) => handleInputChange('openingBank', e.target.value)}
-              placeholder="请输入开户银行"
+              placeholder={translations?.placeholders?.openingBank || "请输入开户银行"}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              银行账户
+              {translations?.bankAccount || '银行账户'}
             </label>
             <input
               type="text"
               value={formData.bankAccount || ''}
               onChange={(e) => handleInputChange('bankAccount', e.target.value)}
-              placeholder="请输入银行账户"
+              placeholder={translations?.placeholders?.bankAccount || "请输入银行账户"}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             />
           </div>
@@ -260,13 +287,13 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
               onClick={handleClose}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
             >
-              取消
+              {translations?.cancel || '取消'}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors"
             >
-              确定
+              {translations?.confirm || '确定'}
             </button>
           </div>
         </form>

@@ -14,41 +14,43 @@ import { assetsService, AdsAssetsForm } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
-// 音色选项
-const voiceOptions = [
-  { label: 'Cherry - 甜美女性', value: 'Cherry' },
-  { label: 'Ethan - 成熟男性', value: 'Ethan' },
-  { label: 'Nofish - 中性声音', value: 'Nofish' },
-  { label: 'Jennifer - 专业女性', value: 'Jennifer' },
-  { label: 'Ryan - 年轻男性', value: 'Ryan' },
-  { label: 'Katerina - 优雅女性', value: 'Katerina' },
-  { label: 'Elias - 温暖男性', value: 'Elias' },
-  { label: 'Jada - 活泼女性', value: 'Jada' },
-  { label: 'Dylan - 沉稳男性', value: 'Dylan' },
-  { label: 'Sunny - 阳光女性', value: 'Sunny' },
-  { label: 'Li - 中文男声', value: 'Li' },
-  { label: 'Marcus - 磁性男声', value: 'Marcus' },
-  { label: 'Roy - 浑厚男声', value: 'Roy' },
-  { label: 'Peter - 清晰男声', value: 'Peter' },
-  { label: 'Rocky - 粗犷男声', value: 'Rocky' },
-  { label: 'Kiki - 可爱女声', value: 'Kiki' },
-  { label: 'Eric - 标准男声', value: 'Eric' },
+// 音色选项 - 将在组件内根据翻译动态生成
+const getVoiceOptions = (t: any) => [
+  { label: `${t.voices.CHERRY} - ${t.voices.CHERRY_DESC}`, value: 'Cherry' },
+  { label: `${t.voices.ETHAN} - ${t.voices.ETHAN_DESC}`, value: 'Ethan' },
+  { label: `${t.voices.NOFISH} - ${t.voices.NOFISH_DESC}`, value: 'Nofish' },
+  { label: `${t.voices.JENNIFER} - ${t.voices.JENNIFER_DESC}`, value: 'Jennifer' },
+  { label: `${t.voices.RYAN} - ${t.voices.RYAN_DESC}`, value: 'Ryan' },
+  { label: `${t.voices.KATERINA} - ${t.voices.KATERINA_DESC}`, value: 'Katerina' },
+  { label: `${t.voices.ELIAS} - ${t.voices.ELIAS_DESC}`, value: 'Elias' },
+  { label: `${t.voices.JADA} - ${t.voices.JADA_DESC}`, value: 'Jada' },
+  { label: `${t.voices.DYLAN} - ${t.voices.DYLAN_DESC}`, value: 'Dylan' },
+  { label: `${t.voices.SUNNY} - ${t.voices.SUNNY_DESC}`, value: 'Sunny' },
+  { label: `${t.voices.LI} - ${t.voices.LI_DESC}`, value: 'Li' },
+  { label: `${t.voices.MARCUS} - ${t.voices.MARCUS_DESC}`, value: 'Marcus' },
+  { label: `${t.voices.ROY} - ${t.voices.ROY_DESC}`, value: 'Roy' },
+  { label: `${t.voices.PETER} - ${t.voices.PETER_DESC}`, value: 'Peter' },
+  { label: `${t.voices.ROCKY} - ${t.voices.ROCKY_DESC}`, value: 'Rocky' },
+  { label: `${t.voices.KIKI} - ${t.voices.KIKI_DESC}`, value: 'Kiki' },
+  { label: `${t.voices.ERIC} - ${t.voices.ERIC_DESC}`, value: 'Eric' },
 ];
 
-// 语言选项
-const languageOptions = [
-  { label: '自动检测', value: 'Auto' },
-  { label: '中文', value: 'Chinese' },
-  { label: '英文', value: 'English' },
-  { label: '德语', value: 'German' },
-  { label: '意大利语', value: 'Italian' },
-  { label: '葡萄牙语', value: 'Portuguese' },
-  { label: '西班牙语', value: 'Spanish' },
-  { label: '日语', value: 'Japanese' },
-  { label: '韩语', value: 'Korean' },
-  { label: '法语', value: 'French' },
-  { label: '俄语', value: 'Russian' },
+// 语言选项 - 将在组件内根据翻译动态生成
+const getLanguageOptions = (t: any) => [
+  { label: t.languages.AUTO, value: 'Auto' },
+  { label: t.languages.CHINESE, value: 'Chinese' },
+  { label: t.languages.ENGLISH, value: 'English' },
+  { label: t.languages.GERMAN, value: 'German' },
+  { label: t.languages.ITALIAN, value: 'Italian' },
+  { label: t.languages.PORTUGUESE, value: 'Portuguese' },
+  { label: t.languages.SPANISH, value: 'Spanish' },
+  { label: t.languages.JAPANESE, value: 'Japanese' },
+  { label: t.languages.KOREAN, value: 'Korean' },
+  { label: t.languages.FRENCH, value: 'French' },
+  { label: t.languages.RUSSIAN, value: 'Russian' },
 ];
 
 interface GeneratedAudio {
@@ -60,6 +62,10 @@ interface GeneratedAudio {
 
 const TtsPage: React.FC = () => {
   const { user, isAuthenticated } = useAuthStore();
+  const { t: rootT } = useAppOutletContext();
+  // 添加空值保护，防止页面崩溃
+  const t = (rootT?.createPage as any)?.ttsPage || (translations['en'].createPage as any).ttsPage;
+  
   const [text, setText] = useState('');
   const [voice, setVoice] = useState('Cherry');
   const [languageType, setLanguageType] = useState('Auto');
@@ -70,6 +76,10 @@ const TtsPage: React.FC = () => {
   
   const abortControllerRef = useRef<AbortController | null>(null);
   const audioChunksRef = useRef<Uint8Array[]>([]);
+  
+  // 获取音色和语言选项
+  const voiceOptions = getVoiceOptions(t);
+  const languageOptions = getLanguageOptions(t);
 
   // 生成按钮是否禁用
   const buttonDisabled = !text.trim() || isGenerating;
@@ -77,12 +87,12 @@ const TtsPage: React.FC = () => {
   // 生成音频
   const generateAudio = async () => {
     if (!isAuthenticated) {
-      toast.error('请先登录');
+      toast.error(t.errors.pleaseLogin);
       return;
     }
 
     if (!text.trim()) {
-      toast.error('请输入文本内容');
+      toast.error(t.errors.enterText);
       return;
     }
 
@@ -139,13 +149,13 @@ const TtsPage: React.FC = () => {
         // onError
         (error: Error) => {
           console.error('生成音频失败:', error);
-          toast.error(error.message || '生成失败');
+          toast.error(error.message || t.errors.generateFailed);
           setIsGenerating(false);
         }
       );
     } catch (error: any) {
       console.error('生成音频失败:', error);
-      toast.error(error.message || '生成失败');
+      toast.error(error.message || t.errors.generateFailed);
       setIsGenerating(false);
     }
   };
@@ -166,12 +176,12 @@ const TtsPage: React.FC = () => {
   // 导入素材库
   const importToMaterials = async () => {
     if (!generatedAudio || !generatedAudio.url) {
-      toast.error('没有可导入的音频');
+      toast.error(t.errors.noAudioToImport);
       return;
     }
 
     if (generatedAudio.addState) {
-      toast.info('已导入素材库');
+      toast.success(t.errors.alreadyImported);
       return;
     }
 
@@ -200,12 +210,12 @@ const TtsPage: React.FC = () => {
         if (uploadResult.code === 200 && uploadResult.data) {
           finalAudioUrl = uploadResult.data.url;
         } else {
-          throw new Error('上传失败');
+          throw new Error(t.errors.uploadFailed);
         }
       }
 
       // 准备素材数据
-      const materialName = `文本转语音_${Date.now()}`;
+      const materialName = `${t.title}_${Date.now()}`;
       const materialData: Partial<AdsAssetsForm> = {
         assetName: materialName,
         assetTag: materialName,
@@ -219,7 +229,7 @@ const TtsPage: React.FC = () => {
       setIsAddModalOpen(true);
     } catch (error: any) {
       console.error('导入素材失败:', error);
-      toast.error(error.message || '导入失败');
+      toast.error(error.message || t.errors.importFailed);
     }
   };
 
@@ -240,20 +250,20 @@ const TtsPage: React.FC = () => {
         {/* 左侧控制面板 */}
         <div className="control-panel">
           <div className="page-header">
-            <h1 className="page-title">文本转语音</h1>
+            <h1 className="page-title">{t.title}</h1>
             <p className="page-description">
-              将文本转换为自然流畅的语音，支持多种音色和语言
+              {t.description}
             </p>
           </div>
 
           {/* 文本输入 */}
           <div className="control-section">
-            <h3 className="section-title">输入文本</h3>
+            <h3 className="section-title">{t.inputText}</h3>
             <div className="relative">
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="在此输入需要AI配音的文本，例如：欢迎来到我们的产品展示，让我为您详细介绍我们最新的功能特点..."
+                placeholder={t.inputPlaceholder}
                 className="text-input"
                 rows={6}
                 maxLength={300}
@@ -266,7 +276,7 @@ const TtsPage: React.FC = () => {
 
           {/* 音色选择 */}
           <div className="control-section">
-            <h3 className="section-title">音色</h3>
+            <h3 className="section-title">{t.voice}</h3>
             <select
               value={voice}
               onChange={(e) => setVoice(e.target.value)}
@@ -282,7 +292,7 @@ const TtsPage: React.FC = () => {
 
           {/* 语言选择 */}
           <div className="control-section">
-            <h3 className="section-title">语言</h3>
+            <h3 className="section-title">{t.language}</h3>
             <select
               value={languageType}
               onChange={(e) => setLanguageType(e.target.value)}
@@ -306,13 +316,13 @@ const TtsPage: React.FC = () => {
               {isGenerating ? (
                 <>
                   <Loader2 size={20} className="animate-spin" />
-                  <span>生成中...</span>
+                  <span>{t.generating}</span>
                 </>
               ) : (
                 <>
                   <Sparkles size={20} />
                   <span className="mr-2" style={{ fontSize: '16px', fontWeight: 600 }}>1</span>
-                  <span>生成语音</span>
+                  <span>{t.generate}</span>
                 </>
               )}
             </button>
@@ -322,19 +332,19 @@ const TtsPage: React.FC = () => {
         {/* 右侧结果展示 */}
         <div className="result-panel">
           <div className="result-header">
-            <h2 className="result-title">生成结果</h2>
+            <h2 className="result-title">{t.resultTitle}</h2>
           </div>
 
           {!generatedAudio && !isGenerating && (
             <div className="empty-result">
-              <p>配置参数并开始生成，结果将显示在这里</p>
+              <p>{t.emptyState}</p>
             </div>
           )}
 
           {isGenerating && (
             <div className="generating-state">
               <Loader2 size={32} className="animate-spin text-indigo-600" />
-              <p>正在生成语音...</p>
+              <p>{t.generatingState}</p>
             </div>
           )}
 
@@ -347,7 +357,7 @@ const TtsPage: React.FC = () => {
               <div className="audio-actions">
                 <button onClick={downloadAudio} className="action-button">
                   <Download size={16} className="mr-2" />
-                  下载音频
+                  {t.downloadAudio}
                 </button>
                 <button
                   onClick={importToMaterials}
@@ -357,12 +367,12 @@ const TtsPage: React.FC = () => {
                   {generatedAudio.addState ? (
                     <>
                       <Check size={16} className="mr-2" />
-                      已导入素材库
+                      {t.importedToMaterials}
                     </>
                   ) : (
                     <>
                       <FolderPlus size={16} className="mr-2" />
-                      导入素材库
+                      {t.importToMaterials}
                     </>
                   )}
                 </button>

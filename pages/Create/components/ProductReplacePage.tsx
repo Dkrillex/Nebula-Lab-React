@@ -119,7 +119,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
   // Poll image generation task
   const pollTask = async (taskId: string) => {
-    const interval = 5000;
+    const interval = 10000;
     let attempts = 0;
     const maxAttempts = 100;
 
@@ -259,7 +259,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
   // Poll video generation task
   const pollImage2Video = async (videoTaskId: string) => {
-    const interval = 5000;
+    const interval = 10000;
     let attempts = 0;
     const maxAttempts = 100;
 
