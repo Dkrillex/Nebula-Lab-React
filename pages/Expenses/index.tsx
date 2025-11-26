@@ -613,8 +613,25 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     await initData();
   };
 
+  const reloadInitData = async () => {
+    if (currentMode === 'balance') {
+      if (user?.nebulaApiId) {
+        await Promise.all([fetchExpenseLogs(1)]);
+      }
+    } else if (currentMode === 'points') {
+      if (user?.userId) {
+        await Promise.all([fetchScoreList(1)]);
+      }
+    } else if (currentMode === 'logos') {
+      if (isShowTeamLogos) {
+        await fetchTeamList();
+      }
+    }
+  }
+
   const handleModeChange = (mode: 'balance' | 'points' | 'logos') => {
     setCurrentMode(mode);
+    reloadInitData()
     setPagination(prev => ({
       ...prev,
       current: 1,
@@ -656,10 +673,6 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   const handleRemoveType = (type: string) => {
     setSelectedTypes(selectedTypes.filter(t => t !== type));
   };
-
-  useEffect(() => {
-    initData();
-  }, [currentMode, user?.nebulaApiId, user?.userId]);
 
   useEffect(() => {
     if (user?.nebulaApiId || user?.userId) {

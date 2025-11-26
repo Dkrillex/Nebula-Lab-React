@@ -654,7 +654,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         } as any);
         console.log("getVoiceList Private", res);
 
-        if (res.code === 200 || res.code === '200') {
+        if (res.rows) {
             // Map AdsAssetsVO to Voice structure
             const rows = (res.data as any)?.rows || (res as any).rows || [];
             const total = (res.data as any)?.total || (res as any).total || 0;
