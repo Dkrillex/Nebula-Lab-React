@@ -974,6 +974,71 @@ interface Translation {
       techSupport: string;
       dataAnalysis: string;
     };
+    errors?: {
+      loginRequired: string;
+      invalidAmount: string;
+      minAmountRequired: string;
+      invoiceOnlyWechat: string;
+      invoiceAutoDisabled: string;
+      invoiceFormNotInitialized: string;
+      invoiceInfoRequired: string;
+      invoiceInfoSaved: string;
+    };
+    invoiceFields?: {
+      name: string;
+      taxNumber: string;
+      email: string;
+      companyAddress: string;
+      companyPhone: string;
+      openingBank: string;
+      bankAccount: string;
+    };
+    paymentOptions?: {
+      alipay: string;
+      alipayHK: string;
+      billEase: string;
+      boost: string;
+      bpi: string;
+      gcash: string;
+      kredivo: string;
+      linePay: string;
+      touchNGo: string;
+    };
+    invoiceForm?: {
+      title: string;
+      fillInvoiceInfo: string;
+      invoiceName: string;
+      taxNumber: string;
+      email: string;
+      companyAddress: string;
+      companyPhone: string;
+      openingBank: string;
+      bankAccount: string;
+      placeholders: {
+        invoiceName: string;
+        taxNumber: string;
+        email: string;
+        companyAddress: string;
+        companyPhone: string;
+        openingBank: string;
+        bankAccount: string;
+      };
+      errors: {
+        invoiceNameRequired: string;
+        taxNumberRequired: string;
+        emailRequired: string;
+        emailInvalid: string;
+      };
+      cancel: string;
+      confirm: string;
+    };
+    quantity?: {
+      times: string;
+    };
+    currency?: {
+      yuan: string;
+      dollar: string;
+    };
   };
   assetsPage: {
     title: string;
@@ -2752,6 +2817,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 Custom Solutions',
         techSupport: '🔧 Technical Support',
         dataAnalysis: '📊 Data Analysis'
+      },
+      errors: {
+        loginRequired: 'Please login first',
+        invalidAmount: 'Please enter a valid amount ({currency})',
+        minAmountRequired: '{productName} version minimum amount is {amount}{currency}',
+        invoiceOnlyWechat: 'Only WeChat Pay supports invoicing, please select WeChat Pay',
+        invoiceAutoDisabled: 'Only WeChat Pay supports invoicing, invoice selection has been automatically disabled',
+        invoiceFormNotInitialized: 'Invoice form not initialized, please refresh the page and try again',
+        invoiceInfoRequired: 'Please fill in invoice information first',
+        invoiceInfoSaved: 'Invoice information saved'
+      },
+      invoiceFields: {
+        name: 'Name:',
+        taxNumber: 'Tax Number:',
+        email: 'Email:',
+        companyAddress: 'Company Address:',
+        companyPhone: 'Phone Number:',
+        openingBank: 'Opening Bank:',
+        bankAccount: 'Bank Account:'
+      },
+      paymentOptions: {
+        alipay: 'Alipay',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: 'Fill in Invoice Header Information',
+        fillInvoiceInfo: 'Fill Invoice Information',
+        invoiceName: 'Invoice Header Name',
+        taxNumber: 'Taxpayer Identification Number',
+        email: 'Email',
+        companyAddress: 'Company Address',
+        companyPhone: 'Company Phone',
+        openingBank: 'Opening Bank',
+        bankAccount: 'Bank Account',
+        placeholders: {
+          invoiceName: 'Please enter invoice header name',
+          taxNumber: 'Please enter taxpayer identification number',
+          email: 'Please enter email',
+          companyAddress: 'Please enter company address',
+          companyPhone: 'Please enter company phone',
+          openingBank: 'Please enter opening bank',
+          bankAccount: 'Please enter bank account'
+        },
+        errors: {
+          invoiceNameRequired: 'Please enter invoice header name',
+          taxNumberRequired: 'Please enter taxpayer identification number',
+          emailRequired: 'Please enter email',
+          emailInvalid: 'Please enter a valid email address'
+        },
+        cancel: 'Cancel',
+        confirm: 'Confirm'
+      },
+      quantity: {
+        times: 'times'
+      },
+      currency: {
+        yuan: 'CNY',
+        dollar: 'USD'
       }
     },
     assetsPage: {
@@ -4400,6 +4530,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 定制化方案',
         techSupport: '🔧 技术支持',
         dataAnalysis: '📊 数据分析'
+      },
+      errors: {
+        loginRequired: '请先登录',
+        invalidAmount: '请输入有效的金额（{currency}）',
+        minAmountRequired: '{productName}版本最低金额为{amount}{currency}',
+        invoiceOnlyWechat: '只有微信支付支持开发票，请选择微信支付',
+        invoiceAutoDisabled: '只有微信支付支持开发票，已自动取消发票选择',
+        invoiceFormNotInitialized: '发票表单未初始化，请刷新页面重试',
+        invoiceInfoRequired: '请先填写发票信息',
+        invoiceInfoSaved: '发票信息已保存'
+      },
+      invoiceFields: {
+        name: '名称:',
+        taxNumber: '税号:',
+        email: '邮箱:',
+        companyAddress: '单位地址:',
+        companyPhone: '电话号码:',
+        openingBank: '开户银行:',
+        bankAccount: '银行账户:'
+      },
+      paymentOptions: {
+        alipay: '支付宝支付',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: '填写发票抬头信息',
+        fillInvoiceInfo: '填写发票信息',
+        invoiceName: '发票抬头名称',
+        taxNumber: '纳税人识别号',
+        email: '邮箱',
+        companyAddress: '公司地址',
+        companyPhone: '公司电话',
+        openingBank: '开户银行',
+        bankAccount: '银行账户',
+        placeholders: {
+          invoiceName: '请输入发票抬头名称',
+          taxNumber: '请输入纳税人识别号',
+          email: '请输入邮箱',
+          companyAddress: '请输入公司地址',
+          companyPhone: '请输入公司电话',
+          openingBank: '请输入开户银行',
+          bankAccount: '请输入银行账户'
+        },
+        errors: {
+          invoiceNameRequired: '请输入发票抬头名称',
+          taxNumberRequired: '请输入纳税人识别号',
+          emailRequired: '请输入邮箱',
+          emailInvalid: '请输入有效的邮箱地址'
+        },
+        cancel: '取消',
+        confirm: '确定'
+      },
+      quantity: {
+        times: '倍'
+      },
+      currency: {
+        yuan: '元',
+        dollar: '美元'
       }
     },
     assetsPage: {
@@ -5758,6 +5953,71 @@ export const translations: Record<string, Translation> = {
         customSolution: '🎯 Solusi Kustom',
         techSupport: '🔧 Dukungan Teknis',
         dataAnalysis: '📊 Analisis Data'
+      },
+      errors: {
+        loginRequired: 'Silakan login terlebih dahulu',
+        invalidAmount: 'Silakan masukkan jumlah yang valid ({currency})',
+        minAmountRequired: 'Versi {productName} jumlah minimum adalah {amount}{currency}',
+        invoiceOnlyWechat: 'Hanya WeChat Pay yang mendukung faktur, silakan pilih WeChat Pay',
+        invoiceAutoDisabled: 'Hanya WeChat Pay yang mendukung faktur, pemilihan faktur telah dinonaktifkan secara otomatis',
+        invoiceFormNotInitialized: 'Formulir faktur tidak diinisialisasi, silakan refresh halaman dan coba lagi',
+        invoiceInfoRequired: 'Silakan isi informasi faktur terlebih dahulu',
+        invoiceInfoSaved: 'Informasi faktur disimpan'
+      },
+      invoiceFields: {
+        name: 'Nama:',
+        taxNumber: 'Nomor Pajak:',
+        email: 'Email:',
+        companyAddress: 'Alamat Perusahaan:',
+        companyPhone: 'Nomor Telepon:',
+        openingBank: 'Bank Pembuka:',
+        bankAccount: 'Akun Bank:'
+      },
+      paymentOptions: {
+        alipay: 'Alipay',
+        alipayHK: 'AlipayHK',
+        billEase: 'BillEase',
+        boost: 'Boost',
+        bpi: 'BPI',
+        gcash: 'GCash',
+        kredivo: 'Kredivo',
+        linePay: 'Rabbit LINE Pay',
+        touchNGo: "Touch'n Go eWallet"
+      },
+      invoiceForm: {
+        title: 'Isi Informasi Header Faktur',
+        fillInvoiceInfo: 'Isi Informasi Faktur',
+        invoiceName: 'Nama Header Faktur',
+        taxNumber: 'Nomor Identifikasi Wajib Pajak',
+        email: 'Email',
+        companyAddress: 'Alamat Perusahaan',
+        companyPhone: 'Telepon Perusahaan',
+        openingBank: 'Bank Pembuka',
+        bankAccount: 'Akun Bank',
+        placeholders: {
+          invoiceName: 'Silakan masukkan nama header faktur',
+          taxNumber: 'Silakan masukkan nomor identifikasi wajib pajak',
+          email: 'Silakan masukkan email',
+          companyAddress: 'Silakan masukkan alamat perusahaan',
+          companyPhone: 'Silakan masukkan telepon perusahaan',
+          openingBank: 'Silakan masukkan bank pembuka',
+          bankAccount: 'Silakan masukkan akun bank'
+        },
+        errors: {
+          invoiceNameRequired: 'Silakan masukkan nama header faktur',
+          taxNumberRequired: 'Silakan masukkan nomor identifikasi wajib pajak',
+          emailRequired: 'Silakan masukkan email',
+          emailInvalid: 'Silakan masukkan alamat email yang valid'
+        },
+        cancel: 'Batal',
+        confirm: 'Konfirmasi'
+      },
+      quantity: {
+        times: 'kali'
+      },
+      currency: {
+        yuan: 'CNY',
+        dollar: 'USD'
       }
     },
     assetsPage: {

@@ -70,7 +70,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         openingBank: '',
         bankAccount: '',
       });
-      toast('只有微信支付支持开发票，已自动取消发票选择', { icon: 'ℹ️' });
+      toast(t.errors?.invoiceAutoDisabled || '只有微信支付支持开发票，已自动取消发票选择', { icon: 'ℹ️' });
     }
     
     // 当支付方式改变时，重置价格表状态
@@ -165,7 +165,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   const handlePayment = async (item: PriceListVO) => {
     if (!user) {
       // Handle not logged in - maybe redirect to login or show auth modal
-      toast.error('Please login first');
+      toast.error(t.errors?.loginRequired || 'Please login first');
       return;
     }
 
@@ -173,8 +173,9 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     if (item.productQuantity === 6) {
       const amount = Number(item.totalAmount);
       if (!amount || amount <= 0) {
-        const currency = paymentType === 'wechat' ? '元' : '美元';
-        toast.error(`请输入有效的金额（${currency}）`);
+        const currency = paymentType === 'wechat' ? (t.currency?.yuan || '元') : (t.currency?.dollar || '美元');
+        const errorMsg = (t.errors?.invalidAmount || '请输入有效的金额（{currency}）').replace('{currency}', currency);
+        toast.error(errorMsg);
         return;
       }
       
@@ -183,10 +184,14 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       const minAmount = paymentType === 'wechat' 
         ? minAmountRmb 
         : Number((minAmountRmb / 7.3).toFixed(2));
-      const currency = paymentType === 'wechat' ? '元' : '美元';
+      const currency = paymentType === 'wechat' ? (t.currency?.yuan || '元') : (t.currency?.dollar || '美元');
       
       if (amount < minAmount) {
-        toast.error(`${item.productName}版本最低金额为${minAmount}${currency}`);
+        const errorMsg = (t.errors?.minAmountRequired || '{productName}版本最低金额为{amount}{currency}')
+          .replace('{productName}', item.productName)
+          .replace('{amount}', minAmount.toString())
+          .replace('{currency}', currency);
+        toast.error(errorMsg);
         return;
       }
     }
@@ -199,7 +204,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
     // 只有微信支付支持开发票
     if (paymentType !== 'wechat' && invoiceEnabled) {
-      toast('只有微信支付支持开发票，请选择微信支付', { icon: '⚠️' });
+      toast(t.errors?.invoiceOnlyWechat || '只有微信支付支持开发票，请选择微信支付', { icon: '⚠️' });
       return;
     }
 
@@ -207,12 +212,12 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     if (paymentType === 'wechat' && invoiceEnabled) {
       try {
         if (!invoiceFormRef.current) {
-          toast.error('发票表单未初始化，请刷新页面重试');
+          toast.error(t.errors?.invoiceFormNotInitialized || '发票表单未初始化，请刷新页面重试');
           return;
         }
         await invoiceFormRef.current.validate();
       } catch (error) {
-        toast.error('请先填写发票信息');
+        toast.error(t.errors?.invoiceInfoRequired || '请先填写发票信息');
         setInvoiceFormOpen(true);
         return;
       }
@@ -423,15 +428,15 @@ const PricingPage: React.FC<PricingPageProps> = () => {
 
   const paymentOptions = [
     { value: 'wechat', label: t.wechatPay || '微信支付', color: '#00c300' },
-    { value: 'Alipay', label: '支付宝支付', color: '#1677ff' },
-    { value: 'AlipayHK', label: 'AlipayHK', color: '#1677ff' },
-    { value: 'BillEase', label: 'BillEase', color: '#722ed1' },
-    { value: 'Boost', label: 'Boost', color: '#52c41a' },
-    { value: 'BPI', label: 'BPI', color: '#1890ff' },
-    { value: 'GCash', label: 'GCash', color: '#fa8c16' },
-    { value: 'Kredivo', label: 'Kredivo', color: '#eb2f96' },
-    { value: 'LINE Pay', label: 'Rabbit LINE Pay', color: '#00c300' },
-    { value: "Touch'n Go eWallet", label: "Touch'n Go eWallet", color: '#13c2c2' },
+    { value: 'Alipay', label: t.paymentOptions?.alipay || '支付宝支付', color: '#1677ff' },
+    { value: 'AlipayHK', label: t.paymentOptions?.alipayHK || 'AlipayHK', color: '#1677ff' },
+    { value: 'BillEase', label: t.paymentOptions?.billEase || 'BillEase', color: '#722ed1' },
+    { value: 'Boost', label: t.paymentOptions?.boost || 'Boost', color: '#52c41a' },
+    { value: 'BPI', label: t.paymentOptions?.bpi || 'BPI', color: '#1890ff' },
+    { value: 'GCash', label: t.paymentOptions?.gcash || 'GCash', color: '#fa8c16' },
+    { value: 'Kredivo', label: t.paymentOptions?.kredivo || 'Kredivo', color: '#eb2f96' },
+    { value: 'LINE Pay', label: t.paymentOptions?.linePay || 'Rabbit LINE Pay', color: '#00c300' },
+    { value: "Touch'n Go eWallet", label: t.paymentOptions?.touchNGo || "Touch'n Go eWallet", color: '#13c2c2' },
   ];
 
   return (
@@ -527,7 +532,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                     className="text-xs text-primary hover:underline cursor-pointer"
                     type="button"
                   >
-                    填写发票信息
+                    {t.invoiceForm?.fillInvoiceInfo || '填写发票信息'}
                   </button>
                 )}
               </div>
@@ -658,38 +663,38 @@ const PricingPage: React.FC<PricingPageProps> = () => {
                   </div>
                   <div className="space-y-2 text-sm">
                     <div className="flex">
-                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">名称:</span>
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.name || '名称:'}</span>
                       <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.invoiceName || '-'}</span>
                     </div>
                     <div className="flex">
-                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">税号:</span>
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.taxNumber || '税号:'}</span>
                       <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.taxNumber || '-'}</span>
                     </div>
                     <div className="flex">
-                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">邮箱:</span>
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.email || '邮箱:'}</span>
                       <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.email || '-'}</span>
                     </div>
                     {invoiceFormData.companyAddress && (
                       <div className="flex">
-                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">单位地址:</span>
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.companyAddress || '单位地址:'}</span>
                         <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.companyAddress}</span>
                       </div>
                     )}
                     {invoiceFormData.companyPhone && (
                       <div className="flex">
-                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">电话号码:</span>
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.companyPhone || '电话号码:'}</span>
                         <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.companyPhone}</span>
                       </div>
                     )}
                     {invoiceFormData.openingBank && (
                       <div className="flex">
-                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">开户银行:</span>
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.openingBank || '开户银行:'}</span>
                         <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.openingBank}</span>
                       </div>
                     )}
                     {invoiceFormData.bankAccount && (
                       <div className="flex">
-                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">银行账户:</span>
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">{t.invoiceFields?.bankAccount || '银行账户:'}</span>
                         <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.bankAccount}</span>
                       </div>
                     )}
@@ -862,9 +867,10 @@ const PricingPage: React.FC<PricingPageProps> = () => {
         isOpen={invoiceFormOpen}
         onClose={() => setInvoiceFormOpen(false)}
         initialData={invoiceFormData}
+        translations={t.invoiceForm}
         onSubmit={(data) => {
           setInvoiceFormData(data);
-          toast.success('发票信息已保存');
+          toast.success(t.errors?.invoiceInfoSaved || '发票信息已保存');
           setInvoiceFormOpen(false);
         }}
       />
@@ -1018,7 +1024,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
                   <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
                     <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
                     <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {step}倍
+                    {step}{t.quantity?.times || '倍'}
                   </span>
                 </div>
               ))}
