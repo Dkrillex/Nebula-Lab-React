@@ -643,12 +643,59 @@ const PricingPage: React.FC<PricingPageProps> = () => {
           ) : (
             <>
               {/* 支付金额显示 */}
-              <div className="text-center space-y-2 w-full">
+              <div className="text-center space-y-2 w-full mb-4">
                 <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">{t.wechatPayModal?.payAmount || '支付金额'}</div>
-                <div className="text-3xl font-bold text-gray-900 dark:text-white">
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
                   ¥{orderInfo ? Number(orderInfo.originalAmount || orderInfo.totalAmount || 0).toFixed(2) : '0.00'}
                 </div>
               </div>
+
+              {/* 发票信息显示 - 如果勾选了发票 */}
+              {invoiceEnabled && invoiceFormData.invoiceName && (
+                <div className="w-full mb-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    {t.wechatPayModal?.invoiceInfo || '发票信息'}
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex">
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">名称:</span>
+                      <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.invoiceName || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">税号:</span>
+                      <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.taxNumber || '-'}</span>
+                    </div>
+                    <div className="flex">
+                      <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">邮箱:</span>
+                      <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.email || '-'}</span>
+                    </div>
+                    {invoiceFormData.companyAddress && (
+                      <div className="flex">
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">单位地址:</span>
+                        <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.companyAddress}</span>
+                      </div>
+                    )}
+                    {invoiceFormData.companyPhone && (
+                      <div className="flex">
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">电话号码:</span>
+                        <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.companyPhone}</span>
+                      </div>
+                    )}
+                    {invoiceFormData.openingBank && (
+                      <div className="flex">
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">开户银行:</span>
+                        <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.openingBank}</span>
+                      </div>
+                    )}
+                    {invoiceFormData.bankAccount && (
+                      <div className="flex">
+                        <span className="text-gray-600 dark:text-gray-400 w-20 flex-shrink-0">银行账户:</span>
+                        <span className="text-gray-900 dark:text-white flex-1">{invoiceFormData.bankAccount}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* 二维码区域 */}
               <div className="relative w-full flex justify-center">
