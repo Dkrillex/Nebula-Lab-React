@@ -4271,7 +4271,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
         {/* Messages List */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6 custom-scrollbar">
-          {messages.map((msg) => (
+          {messages.map((msg, index) => (
             <MessageBubble
               key={msg.id} 
               message={msg}
@@ -4282,6 +4282,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
               currentMode={currentMode}
+              isLoading={isLoading}
+              isLastMessage={index === messages.length - 1}
             />
           ))}
           <div ref={messagesEndRef} />
@@ -4483,10 +4485,12 @@ interface MessageBubbleProps {
   onCopy: (content: string) => void;
   onQuoteCode?: (code: string) => void;
   onPreview?: (type: 'image' | 'video', url: string) => void;
-  progress?: number; // 视频生成进度
+  progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
+  isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
+  isLastMessage?: boolean; // 是否是最后一条消息（用于判断是否显示生成中提示）
 }
 
 // 视频播放器组件，支持fallback到iframe
@@ -4542,7 +4546,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   progress = 0,
   onQuote,
   onResend,
-  currentMode = 'chat'
+  currentMode = 'chat',
+  isLoading = false,
+  isLastMessage = false
 }) => {
   const navigate = useNavigate();
   const isUser = message.role === 'user';
@@ -4736,6 +4742,110 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 )}
               </div>
             ))}
+          </div>
+        )}
+
+        {/* 生成中状态 - 参考旧系统设计（仅图片模式） */}
+        {currentMode === 'image' && 
+         isAssistant && 
+         isLastMessage && 
+         (isLoading || message.isStreaming) && 
+         (!message.generatedImages || message.generatedImages.length === 0) && (
+          <div 
+            className="generating-placeholder mt-2"
+            style={{
+              background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+              border: '2px dashed rgba(102, 126, 234, 0.3)',
+              borderRadius: '8px',
+              padding: '1rem',
+              textAlign: 'center',
+              animation: 'pulse 2s infinite'
+            }}
+          >
+            <div className="generating-content">
+              <div 
+                className="generating-animation"
+                style={{
+                  display: 'flex',
+                  gap: '1rem',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  marginBottom: '1rem'
+                }}
+              >
+                <div 
+                  className="paint-brush"
+                  style={{
+                    fontSize: '3rem',
+                    animation: 'bounce 2s ease-in-out infinite'
+                  }}
+                >
+                  🖌️
+                </div>
+                <div 
+                  className="sparkles"
+                  style={{
+                    display: 'flex',
+                    gap: '0.5rem'
+                  }}
+                >
+                  <span style={{
+                    fontSize: '1.5rem',
+                    animation: 'twinkle 1.5s ease-in-out infinite'
+                  }}>✨</span>
+                  <span style={{
+                    fontSize: '1.5rem',
+                    animation: 'twinkle 1.5s ease-in-out infinite 0.3s'
+                  }}>✨</span>
+                  <span style={{
+                    fontSize: '1.5rem',
+                    animation: 'twinkle 1.5s ease-in-out infinite 0.6s'
+                  }}>✨</span>
+                </div>
+              </div>
+              <p 
+                className="generating-text"
+                style={{
+                  fontWeight: 600,
+                  color: '#2d3748',
+                  fontSize: '1rem',
+                  marginBottom: '1rem'
+                }}
+              >
+                AI正在为您创作精美图片...
+              </p>
+              <div 
+                className="progress-bar"
+                style={{
+                  width: '300px',
+                  height: '8px',
+                  overflow: 'hidden',
+                  background: '#e2e8f0',
+                  borderRadius: '4px',
+                  margin: '0 auto 0.5rem'
+                }}
+              >
+                <div
+                  className="progress-fill"
+                  style={{
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #667eea, #764ba2)',
+                    transition: 'width 0.3s ease',
+                    width: `${progress}%`
+                  }}
+                />
+              </div>
+              <span 
+                className="progress-text"
+                style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: '#667eea'
+                }}
+              >
+                {progress}%
+              </span>
+            </div>
           </div>
         )}
                     </div>
@@ -4934,4 +5044,50 @@ if (typeof document !== 'undefined') {
   const styleElement = document.createElement('style');
   styleElement.textContent = markdownStyles;
   document.head.appendChild(styleElement);
+  
+  // 添加生成中状态的动画样式（参考旧系统）
+  const generatingStyles = `
+    @keyframes bounce {
+      0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+      }
+      40% {
+        transform: translateY(-10px);
+      }
+      60% {
+        transform: translateY(-5px);
+      }
+    }
+    
+    @keyframes twinkle {
+      0%, 100% {
+        opacity: 0.3;
+        transform: scale(0.8);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.2);
+      }
+    }
+    
+    @keyframes pulse {
+      0% {
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.45);
+      }
+      50% {
+        box-shadow: 0 6px 24px rgba(102, 126, 234, 0.65);
+      }
+      100% {
+        box-shadow: 0 6px 16px rgba(102, 126, 234, 0.45);
+      }
+    }
+  `;
+  
+  // 检查是否已经添加过动画样式
+  if (!document.getElementById('generating-animations')) {
+    const animationStyleElement = document.createElement('style');
+    animationStyleElement.id = 'generating-animations';
+    animationStyleElement.textContent = generatingStyles;
+    document.head.appendChild(animationStyleElement);
+  }
 }
