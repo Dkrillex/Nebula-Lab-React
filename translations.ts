@@ -1161,8 +1161,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'Turn sketches into art',
         inpainting: 'AI Inpainting',
         inpaintingDesc: 'Remove or replace objects',
-        talkingPhoto: 'Talking Photo',
-        talkingPhotoDesc: 'Make photos talk'
+        talkingPhoto: 'Image-to-Video',
+        talkingPhotoDesc: 'Generate dynamic videos from images with one click, easily creating influencer-level marketing content that naturally attracts traffic.'
       },
       tabs: ['All', 'Characters', 'Animals', 'Anime', 'Creative', 'Food', 'Scenery', 'Product'],
       templateTypes: {
@@ -2758,8 +2758,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'AI将文字描述或图片生成精美图像',
         inpainting: '万物编辑',
         inpaintingDesc: 'AI智能图像编辑，支持涂抹消除',
-        talkingPhoto: '照片说话',
-        talkingPhotoDesc: '让照片开口说话'
+        talkingPhoto: '图生视频',
+        talkingPhotoDesc: '基于图片一键生成动态视频，轻松打造自带流量属性的网红级营销内容'
       },
       tabs: ['全部', '人物', '宠物', '动漫', '创意', '食物', '风景', '产品', '电商'],
       templateTypes: {
@@ -4389,8 +4389,8 @@ export const translations: Record<string, Translation> = {
         sketchDesc: 'Ubah sketsa menjadi seni',
         inpainting: 'Inpainting AI',
         inpaintingDesc: 'Hapus atau ganti objek',
-        talkingPhoto: 'Foto Berbicara',
-        talkingPhotoDesc: 'Buat foto berbicara'
+        talkingPhoto: 'Video yang dibuat dari gambar',
+        talkingPhotoDesc: 'Berdasarkan gambar, buat video dinamis dengan satu klik, dengan mudah menciptakan konten pemasaran ala selebriti internet yang sudah memiliki sifat viral.'
       },
       tabs: ['Semua', 'Karakter', 'Hewan', 'Anime', 'Kreatif', 'Makanan', 'Pemandangan', 'Produk'],
       templateTypes: {

@@ -67,7 +67,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       title: t.shortcuts?.talkingPhoto || 'Talking Photo',
       icon: 'https://nebula-ads.oss-cn-guangzhou.aliyuncs.com/cdn/picture/talking-pictures.png',
       description: t.shortcuts?.talkingPhotoDesc || 'Make photo speak',
-      toolId: 'digitalHuman',
+      toolId: 'imgToVideo',
       type: 'image',
     },
     {
@@ -466,6 +466,11 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     navigate(`/chat?mode=image&content=${encodeURIComponent(messageContent)}`);
   };
 
+  // 处理按钮点击（包装 handleSend 以匹配事件处理器签名）
+  const handleSendClick = () => {
+    handleSend();
+  };
+
   return (
     <div className="w-full">
       <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl">
@@ -496,7 +501,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
                     <div className="flex items-center gap-3">
                       <span className="text-xs text-muted hidden sm:inline">{t.keyboardHint || 'Enter to send · Shift + Enter for new line'}</span>
                       <button 
-                        onClick={handleSend}
+                        onClick={handleSendClick}
                         disabled={!inputValue.trim()}
                         className={`h-9 w-9 rounded-full flex items-center justify-center transition-all shadow-md ${
                           inputValue.trim()
