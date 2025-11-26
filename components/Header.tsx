@@ -86,7 +86,14 @@ const Header: React.FC<HeaderProps> = ({
         // 首先尝试从 TOOLS_DATA 中获取 title
         const tool = TOOLS_DATA.find(t => t.key === tab.activeTool || t.route === `/create/${tab.activeTool}`);
         if (tool) {
-          return tool.title;
+          let title = tool.title;
+          // 对于 product-replace，如果有 taskId，在标题后添加 taskId 的简短标识
+          if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
+            // 显示 taskId 的后 6 位作为标识
+            const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
+            title = `${title}`;
+          }
+          return title;
         }
         
         // 如果找不到，尝试从翻译映射中获取
@@ -101,7 +108,13 @@ const Header: React.FC<HeaderProps> = ({
         } else if (tab.activeTool === 'product-replace') {
           toolKey = 'productReplace';
         }
-        return sideMenuMap[toolKey] || tab.activeTool;
+        let label = sideMenuMap[toolKey] || tab.activeTool;
+        // 对于 product-replace，如果有 taskId，在标签后添加 taskId 的简短标识
+        if (tab.activeTool === 'product-replace' && tab.searchParams?.taskId) {
+          const shortTaskId = tab.searchParams.taskId.length > 6 ? tab.searchParams.taskId.slice(-6) : tab.searchParams.taskId;
+          label = `${label}`;
+        }
+        return label;
       }
       return sideMenuMap.home;
     }
@@ -221,11 +234,40 @@ const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-2 overflow-x-auto w-full px-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
             >
             {visitedViews && visitedViews.map((tab, index) => {
+              // 动态获取当前 URL 的所有查询参数（排除 'tool'）
+              const currentSearchParams: Record<string, string> = {};
+              searchParams.forEach((value, key) => {
+                if (key !== 'tool') {
+                  currentSearchParams[key] = value;
+                }
+              });
+              
+              // 比较 searchParams 的辅助函数
+              const compareSearchParams = (params1?: Record<string, string>, params2?: Record<string, string>): boolean => {
+                if (!params1 && !params2) return true;
+                if (!params1 || !params2) return false;
+                const keys1 = Object.keys(params1).sort();
+                const keys2 = Object.keys(params2).sort();
+                if (keys1.length !== keys2.length) return false;
+                return keys1.every(key => params1[key] === params2[key]);
+              };
+              
               const isActive = tab.view === currentView && 
-                               (tab.view !== 'create' || tab.activeTool === activeTool);
+                               (tab.view !== 'create' || (tab.activeTool === activeTool && 
+                                compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined)));
+              
+              // 生成唯一的 key，包含所有查询参数（如果存在）
+              let tabKey = `${tab.view}-${tab.activeTool || index}`;
+              if (tab.view === 'create' && tab.activeTool && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
+                const paramsKey = Object.entries(tab.searchParams)
+                  .sort(([a], [b]) => a.localeCompare(b))
+                  .map(([key, value]) => `${key}=${value}`)
+                  .join('&');
+                tabKey = `${tab.view}-${tab.activeTool}-${paramsKey}`;
+              }
               return (
                 <div 
-                  key={`${tab.view}-${tab.activeTool || index}`}
+                  key={tabKey}
                   onClick={() => onTabClick && onTabClick(tab)}
                   className={`
                     group flex-shrink-0 flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium cursor-pointer border transition-all

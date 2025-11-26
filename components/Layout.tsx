@@ -50,7 +50,7 @@ const Layout: React.FC = () => {
   const t = translations[lang];
 
   // Helper to map path to View type and Tool
-  const getCurrentViewAndTool = (): { view: View, tool?: string } => {
+  const getCurrentViewAndTool = (): { view: View, tool?: string, searchParams?: Record<string, string> } => {
     const path = location.pathname.substring(1) || 'home';
     const params = new URLSearchParams(location.search);
     
@@ -89,7 +89,19 @@ const Layout: React.FC = () => {
     else if (path === 'assets') view = 'assets';
     else if (path === 'profile') view = 'profile';
 
-    return { view, tool };
+    // 动态提取所有查询参数（排除 'tool'，因为它已经单独处理）
+    const searchParams: Record<string, string> = {};
+    params.forEach((value, key) => {
+      if (key !== 'tool') {
+        searchParams[key] = value;
+      }
+    });
+
+    return { 
+      view, 
+      tool, 
+      searchParams: Object.keys(searchParams).length > 0 ? searchParams : undefined 
+    };
   };
   
   // Helper to get tool title from TOOLS_DATA
@@ -99,26 +111,43 @@ const Layout: React.FC = () => {
     return tool?.title;
   };
 
-  const { view: currentView, tool: activeTool } = getCurrentViewAndTool();
+  const { view: currentView, tool: activeTool, searchParams: currentSearchParams } = getCurrentViewAndTool();
 
   const { drop } = useAliveController();
+
+  // Helper function to compare search params
+  const compareSearchParams = (params1?: Record<string, string>, params2?: Record<string, string>): boolean => {
+    if (!params1 && !params2) return true;
+    if (!params1 || !params2) return false;
+    const keys1 = Object.keys(params1).sort();
+    const keys2 = Object.keys(params2).sort();
+    if (keys1.length !== keys2.length) return false;
+    return keys1.every(key => params1[key] === params2[key]);
+  };
 
   // Update Tabs History and Cache
   useEffect(() => {
     setVisitedViews(prev => {
-      const exists = prev.some(t => 
-        t.view === currentView && 
-        (t.view !== 'create' || t.activeTool === activeTool)
-      );
+      const exists = prev.some(t => {
+        if (t.view !== currentView) return false;
+        if (t.view === 'create') {
+          // For create view, check both activeTool and searchParams
+          if (t.activeTool !== activeTool) return false;
+          // Compare all search params dynamically
+          return compareSearchParams(t.searchParams, currentSearchParams);
+        }
+        return true;
+      });
       
       if (exists) return prev;
 
       return [...prev, { 
         view: currentView, 
-        activeTool: currentView === 'create' ? activeTool : undefined 
+        activeTool: currentView === 'create' ? activeTool : undefined,
+        searchParams: currentView === 'create' ? currentSearchParams : undefined
       }];
     });
-  }, [currentView, activeTool]);
+  }, [currentView, activeTool, currentSearchParams]);
 
   // 注意：缓存列表由 CachedOutlet 自动管理，这里不需要手动更新
   // 只在标签页关闭时清除对应的缓存
@@ -149,14 +178,30 @@ const Layout: React.FC = () => {
               state: { toolKey: tab.activeTool }
             });
           } else {
-            navigate(tool.route, { 
+            // 动态构建查询参数
+            const searchParams = new URLSearchParams();
+            if (tab.searchParams) {
+              Object.entries(tab.searchParams).forEach(([key, value]) => {
+                searchParams.set(key, value);
+              });
+            }
+            const queryString = searchParams.toString();
+            navigate(queryString ? `${tool.route}?${queryString}` : tool.route, { 
               replace: false,
               state: { toolKey: tab.activeTool }
             });
           }
         } else {
           // 如果没有配置 route，尝试直接使用路径（向后兼容）
-          navigate(`/create/${tab.activeTool}`, { replace: false });
+          // 动态构建查询参数
+          const searchParams = new URLSearchParams();
+          if (tab.searchParams) {
+            Object.entries(tab.searchParams).forEach(([key, value]) => {
+              searchParams.set(key, value);
+            });
+          }
+          const queryString = searchParams.toString();
+          navigate(queryString ? `/create/${tab.activeTool}?${queryString}` : `/create/${tab.activeTool}`, { replace: false });
         }
       } else {
         // 如果没有 activeTool，导航到 create 首页
@@ -184,7 +229,19 @@ const Layout: React.FC = () => {
     // 必须与 router/index.tsx 中生成的 fullPath 保持一致
     let cacheKey = '/';
     if (targetTab.view === 'create') {
-      cacheKey = targetTab.activeTool ? `/create/${targetTab.activeTool}` : '/create';
+      if (targetTab.activeTool) {
+        cacheKey = `/create/${targetTab.activeTool}`;
+        // 动态构建查询参数
+        if (targetTab.searchParams && Object.keys(targetTab.searchParams).length > 0) {
+          const searchParams = new URLSearchParams();
+          Object.entries(targetTab.searchParams).forEach(([key, value]) => {
+            searchParams.set(key, String(value));
+          });
+          cacheKey = `${cacheKey}?${searchParams.toString()}`;
+        }
+      } else {
+        cacheKey = '/create';
+      }
     } else {
       cacheKey = targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
     }
@@ -199,7 +256,8 @@ const Layout: React.FC = () => {
 
     // If closing active tab, navigate to last available
     const isActive = targetTab.view === currentView && 
-                     (targetTab.view !== 'create' || targetTab.activeTool === activeTool);
+                     (targetTab.view !== 'create' || (targetTab.activeTool === activeTool && 
+                      compareSearchParams(targetTab.searchParams, currentSearchParams)));
 
     if (isActive) {
       if (newTabs.length > 0) {
