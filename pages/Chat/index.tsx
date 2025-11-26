@@ -3,7 +3,8 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Settings, Trash2, Save, Plus, RefreshCw, Send, Bot, User, 
   MoreHorizontal, Cpu, MessageSquare, X, Copy, Loader2, Square,
-  Image as ImageIcon, Video, MessageCircle, Eye, Maximize2, Reply
+  Image as ImageIcon, Video, MessageCircle, Eye, Maximize2, Reply,
+  Download, FolderPlus
 } from 'lucide-react';
 import ModelSelect from '../../components/ModelSelect';
 import ReactMarkdown from 'react-markdown';
@@ -24,6 +25,7 @@ import { translations } from '../../translations';
 import CodeBlock from './components/CodeBlock';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
+import AddMaterialModal from '../../components/AddMaterialModal';
 import {
   getImageSizes,
   getVideoRatios,
@@ -174,6 +176,15 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     type: 'image',
     url: '',
   });
+
+  // 导入素材模态框状态
+  const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
+  const [selectedMaterial, setSelectedMaterial] = useState<{
+    type: 'image' | 'video';
+    url: string;
+    prompt?: string;
+    assetType: number;
+  } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -1783,6 +1794,119 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       setMessages([]);
     }
     setSelectedRecordId(null);
+  };
+
+  // 下载图片
+  const handleDownloadImage = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `generated-image-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('图片下载开始');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('下载失败，尝试在新窗口打开');
+      window.open(url, '_blank');
+    }
+  };
+
+  // 下载视频
+  const handleDownloadVideo = async (url: string) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = `generated-video-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      toast.success('视频下载开始');
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast.error('下载失败，尝试在新窗口打开');
+      window.open(url, '_blank');
+    }
+  };
+
+  // 导入素材
+  const handleExportMaterial = async (type: 'image' | 'video', url: string, prompt?: string) => {
+    try {
+      let finalUrl = url;
+      
+      if (type === 'image') {
+        // 处理图片上传
+        const imageType = detectImageType({ url });
+        
+        // 如果已经是 OSS 链接，直接使用
+        if (imageType === 'oss') {
+          setSelectedMaterial({
+            type,
+            url: finalUrl,
+            prompt,
+            assetType: 7, // AI生图
+          });
+          setIsAddMaterialModalOpen(true);
+          return;
+        }
+        
+        const ossResult = await processImageToOSS({ url });
+        if (ossResult && ossResult.url) {
+          finalUrl = ossResult.url;
+        } else {
+          toast.error('图片上传到 OSS 失败', { id: 'upload-oss' });
+          return;
+        }
+      } else {
+        // 处理视频上传
+        const videoType = detectVideoType({ url });
+        
+        // 如果已经是 OSS 链接，直接使用
+        if (videoType === 'oss') {
+          setSelectedMaterial({
+            type,
+            url: finalUrl,
+            prompt,
+            assetType: 14, // AI视频生成
+          });
+          setIsAddMaterialModalOpen(true);
+          return;
+        }
+        
+        // 需要上传到 OSS
+        toast.loading('正在上传视频到 OSS...', { id: 'upload-oss' });
+        
+        const ossResult = await processVideoToOSS({ url });
+        if (ossResult && ossResult.url) {
+          finalUrl = ossResult.url;
+          toast.success('视频上传成功', { id: 'upload-oss' });
+        } else {
+          toast.error('视频上传到 OSS 失败', { id: 'upload-oss' });
+          return;
+        }
+      }
+      
+      // 使用 OSS 返回的 URL
+      setSelectedMaterial({
+        type,
+        url: finalUrl,
+        prompt,
+        assetType: type === 'image' ? 7 : 14, // 7: AI生图, 14: AI视频生成
+      });
+      setIsAddMaterialModalOpen(true);
+    } catch (error) {
+      console.error('导入素材失败:', error);
+      toast.error('导入素材失败，请重试', { id: 'upload-oss' });
+    }
   };
 
   // 保存对话记录
@@ -4304,6 +4428,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               onCopy={handleCopy}
               onQuoteCode={handleQuoteCode}
               onPreview={(type, url) => setPreviewModal({ isOpen: true, type, url })}
+              onDownloadImage={handleDownloadImage}
+              onDownloadVideo={handleDownloadVideo}
+              onExportMaterial={handleExportMaterial}
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
@@ -4502,6 +4629,33 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
         </div>
       )}
+
+      {/* 导入素材模态框 */}
+      {selectedMaterial && (
+        <AddMaterialModal
+          isOpen={isAddMaterialModalOpen}
+          onClose={() => {
+            setIsAddMaterialModalOpen(false);
+            setSelectedMaterial(null);
+          }}
+          onSuccess={() => {
+            setIsAddMaterialModalOpen(false);
+            setSelectedMaterial(null);
+            toast.success('素材导入成功');
+          }}
+          initialData={{
+            assetUrl: selectedMaterial.url,
+            assetName: selectedMaterial.prompt 
+              ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频'}-${selectedMaterial.prompt.slice(0, 10)}`
+              : selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频',
+            assetType: selectedMaterial.assetType,
+            assetTag: selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频生成',
+            assetDesc: selectedMaterial.prompt || (selectedMaterial.type === 'image' ? 'AI生图' : 'AI视频生成'),
+          }}
+          disableAssetTypeSelection={true}
+          isImportMode={true}
+        />
+      )}
     </div>
   );
 };
@@ -4511,6 +4665,9 @@ interface MessageBubbleProps {
   onCopy: (content: string) => void;
   onQuoteCode?: (code: string) => void;
   onPreview?: (type: 'image' | 'video', url: string) => void;
+  onDownloadImage?: (url: string) => void;
+  onDownloadVideo?: (url: string) => void;
+  onExportMaterial?: (type: 'image' | 'video', url: string, prompt?: string) => void;
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
@@ -4568,7 +4725,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   message, 
   onCopy, 
   onQuoteCode, 
-  onPreview, 
+  onPreview,
+  onDownloadImage,
+  onDownloadVideo,
+  onExportMaterial,
   progress = 0,
   onQuote,
   onResend,
@@ -4716,9 +4876,50 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           </div>
                         </div>
                       ) : video.status === 'succeeded' && video.url ? (
-                        <div className="relative">
+                        <div className="relative group">
                           {/* 先尝试使用video标签，如果失败则使用iframe */}
                           <VideoPlayer url={video.url} />
+                          {/* 操作按钮 - 右上角 */}
+                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onPreview?.('video', video.url);
+                              }}
+                              className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                              title="预览"
+                            >
+                              <Eye size={16} className="text-gray-700 dark:text-gray-300" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDownloadVideo?.(video.url);
+                              }}
+                              className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                              title="下载"
+                            >
+                              <Download size={16} className="text-gray-700 dark:text-gray-300" />
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onExportMaterial?.('video', video.url, video.prompt);
+                              }}
+                              className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                              title="导入素材"
+                            >
+                              <svg 
+                                className="w-4 h-4 text-gray-700 dark:text-gray-300" 
+                                viewBox="0 0 1024 1024" 
+                                version="1.1" 
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="currentColor"
+                              >
+                                <path d="M832 464h-64v192c0 44.16-35.84 80-80 80H336c-44.16 0-80-35.84-80-80V464h-64c-17.68 0-32-14.32-32-32V192c0-17.68 14.32-32 32-32h640c17.68 0 32 14.32 32 32v240c0 17.68-14.32 32-32 32zM512 320L336 496h128v128h64V496h128L512 320z" />
+                              </svg>
+                            </button>
+                          </div>
                         </div>
                       ) : video.status === 'failed' ? (
                         <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
@@ -4763,6 +4964,47 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   className="w-full rounded-lg border border-border cursor-pointer"
                   onClick={() => onPreview?.('image', img.url)}
                 />
+                {/* 操作按钮 - 右上角 */}
+                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPreview?.('image', img.url);
+                    }}
+                    className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                    title="预览"
+                  >
+                    <Eye size={16} className="text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onDownloadImage?.(img.url);
+                    }}
+                    className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                    title="下载"
+                  >
+                    <Download size={16} className="text-gray-700 dark:text-gray-300" />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onExportMaterial?.('image', img.url, img.prompt);
+                    }}
+                    className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
+                    title="导入素材"
+                  >
+                    <svg 
+                      className="w-4 h-4 text-gray-700 dark:text-gray-300" 
+                      viewBox="0 0 1024 1024" 
+                      version="1.1" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="currentColor"
+                    >
+                      <path d="M832 464h-64v192c0 44.16-35.84 80-80 80H336c-44.16 0-80-35.84-80-80V464h-64c-17.68 0-32-14.32-32-32V192c0-17.68 14.32-32 32-32h640c17.68 0 32 14.32 32 32v240c0 17.68-14.32 32-32 32zM512 320L336 496h128v128h64V496h128L512 320z" />
+                    </svg>
+                  </button>
+                </div>
                 {img.prompt && (
                   <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
                 )}
