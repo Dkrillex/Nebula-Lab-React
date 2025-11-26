@@ -818,6 +818,12 @@ const ProfilePage: React.FC = () => {
                   </button> */}
                 </div>
               </div>
+              {/* 邀请奖励说明 */}
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-xs text-muted">
+                  🎁 邀请好友注册，好友可获得 <span className="text-green-600 dark:text-green-400 font-medium">$10</span> 使用金额
+                </p>
+              </div>
             </div>
           )}
 
