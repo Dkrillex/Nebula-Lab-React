@@ -1,10 +1,17 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './router';
 import { Toaster } from 'react-hot-toast';
+import { CURRENT_SYSTEM, SYSTEM_TYPE } from './constants';
 
 const App: React.FC = () => {
+  useEffect(() => {
+    const title =
+      CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'Nebula API' : 'Nebula Lab';
+    document.title = title;
+  }, []);
+
   return (
     <>
       <RouterProvider router={router} />
