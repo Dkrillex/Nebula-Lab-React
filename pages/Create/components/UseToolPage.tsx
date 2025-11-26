@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, RefreshCw, Edit3 } from 'lucide-react';
+import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, RefreshCw, Edit3, X } from 'lucide-react';
 import { TOOLS_DATA, Tool } from '../data';
 import UploadComponent from '../../../components/UploadComponent';
 import { aiToolService } from '../../../services/aiToolService';
@@ -89,6 +89,19 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
     reader.readAsDataURL(file);
   };
 
+  // 清除主图像
+  const handleClearPrimaryImage = () => {
+    setPrimaryFile(null);
+    setPrimaryImageBase64(null);
+    setResultUrl(null);
+    setError(null);
+    setMaskDataUrl(null);
+    setIsMaskToolActive(false);
+    if (maskCanvasRef.current) {
+      maskCanvasRef.current.clearCanvas();
+    }
+  };
+
   // Generate
   const handleGenerate = async () => {
     if (!activeTool) return;
@@ -123,27 +136,30 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
       }
 
       // 获取蒙版数据（如果有）
+      // 自定义提示和姿势参考工具不使用蒙版
       let maskBase64 = null;
-      if (maskCanvasRef.current) {
-        try {
-          const maskBlob = await maskCanvasRef.current.getMask();
-          if (maskBlob) {
-            const reader = new FileReader();
-            maskBase64 = await new Promise<string>((resolve, reject) => {
-              reader.onload = (e) => resolve(e.target?.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(maskBlob);
-            });
+      if (activeTool.key !== 'customPrompt' && activeTool.key !== 'pose') {
+        if (maskCanvasRef.current) {
+          try {
+            const maskBlob = await maskCanvasRef.current.getMask();
+            if (maskBlob) {
+              const reader = new FileReader();
+              maskBase64 = await new Promise<string>((resolve, reject) => {
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.onerror = reject;
+                reader.readAsDataURL(maskBlob);
+              });
+            }
+          } catch (err) {
+            console.warn('获取蒙版失败:', err);
+            // 如果获取失败，尝试使用缓存的 maskDataUrl
+            if (maskDataUrl) {
+              maskBase64 = maskDataUrl;
+            }
           }
-        } catch (err) {
-          console.warn('获取蒙版失败:', err);
-          // 如果获取失败，尝试使用缓存的 maskDataUrl
-          if (maskDataUrl) {
-            maskBase64 = maskDataUrl;
-          }
+        } else if (maskDataUrl) {
+          maskBase64 = maskDataUrl;
         }
-      } else if (maskDataUrl) {
-        maskBase64 = maskDataUrl;
       }
 
       const result = await aiToolService.editImage(
@@ -235,16 +251,35 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                     ) : (
                         <div className="space-y-3">
                             <div className="relative h-64 w-full rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-                                <MaskCanvas
-                                    ref={maskCanvasRef}
-                                    imageUrl={primaryImageBase64}
-                                    tool={isMaskToolActive ? 'pencil' : 'pencil'}
-                                    brushSize={brushSize}
-                                    brushColor="rgba(113, 102, 240, 0.7)"
-                                    mode="mask"
-                                    enableZoom={true}
-                                    className="w-full h-full"
-                                />
+                                {/* 自定义提示和姿势参考工具直接显示图片，不使用 MaskCanvas */}
+                                {activeTool.key === 'customPrompt' || activeTool.key === 'pose' ? (
+                                    <>
+                                        <img
+                                            src={primaryImageBase64}
+                                            alt="Primary image"
+                                            className="w-full h-full object-contain"
+                                        />
+                                        {/* 右上角关闭按钮 */}
+                                        <button
+                                            onClick={handleClearPrimaryImage}
+                                            className="absolute top-2 right-2 p-1.5 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-lg transition-colors z-10"
+                                            title="清除图片"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <MaskCanvas
+                                        ref={maskCanvasRef}
+                                        imageUrl={primaryImageBase64}
+                                        tool={isMaskToolActive ? 'pencil' : 'pencil'}
+                                        brushSize={brushSize}
+                                        brushColor="rgba(113, 102, 240, 0.7)"
+                                        mode="mask"
+                                        enableZoom={true}
+                                        className="w-full h-full"
+                                    />
+                                )}
                             </div>
                             {/* 自定义提示和姿势参考工具不显示绘制蒙版按钮 */}
                             {activeTool.key !== 'customPrompt' && activeTool.key !== 'pose' && (
@@ -316,6 +351,7 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
                             className="h-48 w-full"
                             showPreview={true}
                             immediate={false}
+                            showConfirmButton={false}
                         />
                     </div>
                 )}
