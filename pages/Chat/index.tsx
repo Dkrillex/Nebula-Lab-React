@@ -1864,13 +1864,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           return;
         }
         
-        // 需要上传到 OSS
-        toast.loading('正在上传图片到 OSS...', { id: 'upload-oss' });
-        
         const ossResult = await processImageToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
-          toast.success('图片上传成功', { id: 'upload-oss' });
         } else {
           toast.error('图片上传到 OSS 失败', { id: 'upload-oss' });
           return;
