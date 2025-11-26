@@ -151,7 +151,7 @@ const ThreeDModelPage: React.FC = () => {
 
       // 创建 3D 任务
       const dataList = {
-        score: 1,
+        score: 3,
         model: 'doubao-seed3d-1-0-250928',
         content: [
           {
@@ -307,7 +307,7 @@ const ThreeDModelPage: React.FC = () => {
                     <Gem className="h-5 w-5" />
                     <Check className="absolute -top-1 -right-1 h-3 w-3" />
                   </div>
-                  <span className="text-sm font-semibold">0.3</span>
+                  <span className="text-sm font-semibold">3</span>
                   <span>生成 3D 模型</span>
                 </>
               )}
