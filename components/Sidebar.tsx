@@ -5,7 +5,7 @@ import {
   Layers, Scissors, User, Film, Image, Repeat, Mic, Hammer, 
   UserCircle, Folder, CreditCard, DollarSign, Trophy,
   ChevronDown, ChevronRight, PanelLeftClose, PanelLeftOpen, ExternalLink,
-  RefreshCcw, MessageSquare, MonitorPlay, X
+  RefreshCcw, MessageSquare, MonitorPlay, X, Info
 } from 'lucide-react';
 import { useAuthStore } from '../stores/authStore';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../constants';
@@ -65,6 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
     const cleanPath = path.substring(1);
     if (cleanPath === 'chat') return 'aiExperience';
     if (cleanPath === 'models') return 'modelSquare';
+    if (cleanPath === 'models-intro') return 'modelsIntro';
     if (cleanPath === 'keys') return 'apiKeys';
     if (cleanPath === 'rank') return 'rank';
     if (cleanPath === 'expenses') return 'expenses';
@@ -116,7 +117,9 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       id: 'modelCenter', 
       icon: Box, 
       label: t.modelCenter,
+      path: '/models-intro', // 点击模型中心跳转简介页面
       children: [
+        { id: 'modelsIntro', icon: Info, label: t.modelsIntro || '简介', path: '/models-intro' },
         { id: 'aiExperience', icon: Sparkles, label: t.aiExperience, path: '/chat' },
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
@@ -172,7 +175,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
 
   const getActiveCategory = () => {
     const path = location.pathname;
-    if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys') || path.startsWith('/rank')) return 'modelCenter';
+    if (path.startsWith('/chat') || path.startsWith('/models') || path.startsWith('/keys') || path.startsWith('/rank') || path.startsWith('/models-intro')) return 'modelCenter';
     if (path.startsWith('/create')) return 'creationCenter';
     if (path.startsWith('/assets') || path.startsWith('/pricing') || path.startsWith('/expenses') || path.startsWith('/profile')) return 'personalCenter';
     

@@ -73,7 +73,13 @@ const Header: React.FC<HeaderProps> = ({
       return;
     }
     
-    onNavClick(href);
+    // 点击模型中心时跳转到简介页面
+    let targetHref = href;
+    if (href === '/models') {
+      targetHref = '/models-intro';
+    }    
+    
+    onNavClick(targetHref);
     setShowUserMenu(false);
   };
 
@@ -255,9 +261,13 @@ const Header: React.FC<HeaderProps> = ({
                 return keys1.every(key => params1[key] === params2[key]);
               };
               
-              const isActive = tab.view === currentView && 
+              // 首页 Tab 在模型中心简介和创作中心首页时也保持高亮
+              const isHomeActive = tab.view === 'home' && 
+                (currentView === 'home' || currentView === 'models-intro' || (currentView === 'create' && !activeTool));
+              
+              const isActive = isHomeActive || (tab.view === currentView && 
                                (tab.view !== 'create' || (tab.activeTool === activeTool && 
-                                compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined)));
+                                compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined))));
               
               // 生成唯一的 key，包含所有查询参数（如果存在）
               let tabKey = `${tab.view}-${tab.activeTool || index}`;
@@ -313,7 +323,7 @@ const Header: React.FC<HeaderProps> = ({
             {filteredNav.map((item) => {
               // Determine if item is active based on current view/path
               const isActive = 
-                (item.href === '/models' && ['models', 'chat', 'keys'].includes(currentView)) ||
+                (item.href === '/models' && ['models-intro','models', 'chat', 'keys'].includes(currentView)) ||
                 (item.href === '/create' && currentView === 'create') ||
                 (item.href === '/profile' && ['profile', 'assets', 'pricing', 'expenses'].includes(currentView));
 
