@@ -3405,7 +3405,7 @@ export const translations: Record<string, Translation> = {
         videoTranslation: '视频翻译',
         productReplace: '产品数字人',
         assets: '素材管理',
-        pricing: '定价列表',
+        pricing: '费用充值',
         expenses: '我的费用',
         profile: '个人中心',
         footer: {
