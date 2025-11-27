@@ -378,20 +378,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const handleDoSame = (item: LabTemplate) => {
     const goToUrl = () => {
       setShowTemplateDetail(false);
-      const isImageType = item.templateType === 1 || item.templateType === 2;
-      const isImageToVideo = item.templateType === 4;
-
-      // 根据旧系统逻辑，统一跳转到 /chat 页面
-      const targetUrl = isImageType
-        ? '/chat?mode=image'
-        : '/chat?mode=video';
-
       const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-
-      // 固定模型名称，与旧系统保持一致
-      const modelName = isImageType
-        ? 'doubao-seedream-4-0-250828'
-        : 'veo-3.1-fast-generate-preview';
 
       const referenceMedia = (() => {
         if (item.templateType === 1) return ''; // 文生图，无需参考图
@@ -399,7 +386,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
           // 图生图，使用原图
           return item.videoTemplateUrl || item.templateUrl || '';
         }
-        if (isImageToVideo) {
+        if (item.templateType === 4) {
           // 图生视频，优先使用原图作为参考
           return item.videoTemplateUrl || item.templateUrl || '';
         }
@@ -410,12 +397,53 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       // 处理图片 URL，移除反引号等特殊字符
       const cleanImageUrl = referenceMedia ? referenceMedia.replace(/`/g, '') : '';
       const images = cleanImageUrl ? [cleanImageUrl] : [];
-      
-      // 使用 store 存储数据
-      setData(transferId, {
+      const basePayload = {
         images,
         sourcePrompt: item.templateDesc,
         timestamp: Date.now(),
+      };
+
+      if (item.templateType === 1) {
+        // 文生图 -> 文生图模块
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:textToImage',
+        });
+        navigate(`/create/textToImage?transferId=${transferId}`);
+        return;
+      }
+
+      if (item.templateType === 2) {
+        // 图生图 -> 图生图模块（携带 prompt + 参考图）
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:imageToImage',
+        });
+        navigate(`/create/textToImage?transferId=${transferId}`);
+        return;
+      }
+
+      if (item.templateType === 4) {
+        // 图生视频 -> 图生视频页（携带 prompt + 参考图）
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:imageToVideo',
+        });
+        navigate(`/create/imgToVideo?transferId=${transferId}`);
+        return;
+      }
+
+      const isImageType = item.templateType === 1 || item.templateType === 2;
+      const isImageToVideo = item.templateType === 4;
+
+      // 固定模型名称，与旧系统保持一致
+      const modelName = isImageType
+        ? 'doubao-seedream-4-0-250828'
+        : 'veo-3.1-fast-generate-preview';
+
+      // 使用 store 存储数据
+      setData(transferId, {
+        ...basePayload,
         source: isImageType 
           ? 'imageGenerates' 
           : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),

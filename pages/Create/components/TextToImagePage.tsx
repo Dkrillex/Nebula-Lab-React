@@ -105,7 +105,7 @@ const ratios = [
 const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { getData, setData } = useVideoGenerationStore();
+  const { getData, setData, removeData } = useVideoGenerationStore();
   const { token, isAuthenticated } = useAuthStore();
   const [mode, setMode] = useState<'text' | 'image'>('text');
   const [selectedRatio, setSelectedRatio] = useState('2048x2048');
@@ -140,12 +140,13 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
             setReferenceImage(null);
             setMode('text');
           }
+          removeData(transferId);
         }
       } catch (error) {
         console.error('Failed to load transfer data:', error);
       }
     }
-  }, [searchParams, getData]);
+  }, [searchParams, getData, removeData]);
 
   useEffect(() => {
     // Update size when ratio changes
