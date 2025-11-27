@@ -128,7 +128,7 @@ export const imageToVideoService = {
         prompt: data.prompt,
         negativePrompt: data.negativePrompt,
         mode: data.mode,
-        duration: data.duration?.toString(),
+        duration: data.duration,
         generatingCount: data.generatingCount
       });
     }
