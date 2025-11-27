@@ -90,6 +90,9 @@ interface ImageToVideoPageProps {
     };
     generating?: string;
     progressStatusShort?: string;
+    messages?: {
+      requestFailed: string;
+    };
   };
 }
 
@@ -571,7 +574,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(error.message || 'Generation failed');
+    toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       setProgress(0);

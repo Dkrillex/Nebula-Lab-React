@@ -1803,7 +1803,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Generating your masterpiece...',
-        progressStatusShort: 'Generating'
+        progressStatusShort: 'Generating',
+        messages: {
+          requestFailed: 'Request failed, please try again later'
+        }
       },
       digitalHuman: {
         title: 'Digital Human Video Creation',
@@ -3870,7 +3873,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: '正在生成您的杰作...',
-        progressStatusShort: '生成中'
+        progressStatusShort: '生成中',
+        messages: {
+          requestFailed: '请求失败, 请稍后重试'
+        }
       },
       digitalHuman: {
         title: '数字人视频创作',
@@ -5969,7 +5975,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Membuat karya agung Anda...',
-        progressStatusShort: 'Membuat'
+        progressStatusShort: 'Membuat',
+        messages: {
+          requestFailed: 'Permintaan gagal, silakan coba lagi nanti'
+        }
       },
       digitalHuman: {
         title: 'Pembuatan Video Manusia Digital',
