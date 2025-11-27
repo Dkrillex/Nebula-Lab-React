@@ -102,7 +102,7 @@ interface UploadedImage {
 
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
-  const { getData } = useVideoGenerationStore();
+  const { getData, removeData } = useVideoGenerationStore();
   const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
   
@@ -169,12 +169,13 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             //   fileUrl: data.images[0]
             // }]);
           }
+          removeData(transferId);
         }
       } catch (error) {
         console.error('Failed to load transfer data:', error);
       }
     }
-  }, [searchParams, getData]);
+  }, [searchParams, getData, removeData]);
 
   // Cleanup
   useEffect(() => {
