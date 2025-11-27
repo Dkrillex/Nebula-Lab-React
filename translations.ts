@@ -4522,33 +4522,6 @@ export const translations: Record<string, Translation> = {
         disabled: '禁用'
       }
     },
-    expensesPage: {
-      title: '积分/余额管理中心',
-      subtitle: '查看和管理您的积分余额，了解积分使用情况',
-      balanceLabel: '余额',
-      convertPoints: '转换可用积分',
-      buttons: {
-        points: '积分',
-        balance: '余额',
-        freeMember: '免费会员',
-        refresh: '刷新余额',
-      },
-      recordsTitle: '使用记录',
-      refreshData: '刷新数据',
-      record: {
-        type: '类型:',
-        duration: '用时:',
-        input: '输入token:',
-        output: '输出token:',
-        consumption: '消费'
-      },
-      status: {
-        paid: '已扣款',
-        unpaid: '未扣款',
-        failed: '失败',
-        unknown: '未知'
-      }
-    },
     aiVideoFaceSwapPage: {
       title: 'AI 视频换脸',
       subtitle: '上传视频和参考图片，让 AI 为您生成换脸视频',
