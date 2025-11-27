@@ -2988,7 +2988,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               prompt: item.revised_prompt || prompt,
               timestamp: Date.now(),
             }));
-            lastMsg.content = `已为您生成${imageData.length}张图片`;
+            
+            // 检查是否有有效的图片 URL
+            const hasValidImageUrl = lastMsg.generatedImages.some(img => img.url && img.url.trim() !== '');
+            
+            // 只有当有有效图片 URL 时才显示"已为您生成X张图片"的提示
+            if (hasValidImageUrl) {
+              lastMsg.content = `已为您生成${imageData.length}张图片`;
+            } else {
+              // 没有有效图片 URL 时，不显示提示，content 保持为空或使用 revised_prompt
+              lastMsg.content = '';
+            }
+            
             lastMsg.isStreaming = false;
           }
           
@@ -4803,7 +4814,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           {isAssistant ? (
             <div className="markdown-content">
               {/* 如果有正在生成的视频，不显示content文本，只显示视频进度条 */}
-              {message.content && !(message.generatedVideos && message.generatedVideos.some(v => v.status === 'processing')) ? (
+              {message.content && message.content.trim() !== '' && !(message.generatedVideos && message.generatedVideos.some(v => v.status === 'processing')) ? (
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   rehypePlugins={[rehypeRaw]}
@@ -4967,7 +4978,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               )}
             </div>
           ) : (
-            <div className="whitespace-pre-wrap">{message.content}</div>
+            message.content && message.content.trim() !== '' && (
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            )
           )}
 
         {/* 用户上传的图片 */}
@@ -4985,9 +4998,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         )}
 
         {/* AI生成的图片 */}
-        {isAssistant && message.generatedImages && message.generatedImages.length > 0 && (
+        {isAssistant && message.generatedImages && message.generatedImages.length > 0 && 
+         message.generatedImages.some(img => img.url && img.url.trim() !== '') && (
           <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {message.generatedImages.map((img) => (
+            {message.generatedImages
+              .filter(img => img.url && img.url.trim() !== '')
+              .map((img) => (
               <div key={img.id} className="relative group">
                 <img 
                   src={img.url} 
@@ -5044,6 +5060,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 {img.prompt && (
                   <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
                 )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* 没有图片URL但有revised_prompt时显示文本卡片 */}
+        {isAssistant && currentMode === 'image' && message.generatedImages && message.generatedImages.length > 0 && 
+         message.generatedImages.some(img => (!img.url || img.url.trim() === '') && img.prompt && img.prompt.trim() !== '') && (
+          <div className="mt-2">
+            {message.generatedImages
+              .filter(img => (!img.url || img.url.trim() === '') && img.prompt && img.prompt.trim() !== '')
+              .map((img) => (
+              <div 
+                key={img.id} 
+                className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-blue-200/50 dark:border-blue-800/30 rounded-xl p-4 shadow-sm"
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm leading-relaxed text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                      {img.prompt}
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -5197,8 +5236,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <Copy size={12} />
             </button>
           )}
-            {/* 引用按钮 - 只对用户消息和部分AI消息显示 */}
-            {onQuote && (isUser || (isAssistant && message.action !== 'goFixPrice' && message.id !== 'welcome')) && (
+            {/* 引用按钮 - 只对用户消息和部分AI消息显示，图片模式下如果没有图片则不显示 */}
+            {onQuote && (isUser || (isAssistant && message.action !== 'goFixPrice' && message.id !== 'welcome')) && 
+              !(currentMode === 'image' && isAssistant && (!message.generatedImages || message.generatedImages.length === 0)) && (
               <button
                 onClick={() => onQuote(message)}
                 className="p-1 hover:bg-border rounded transition-colors"
