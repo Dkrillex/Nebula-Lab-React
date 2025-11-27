@@ -122,8 +122,8 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   const deleteKey = async (token: TokenVO) => {
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确认删除令牌 "${token.name || token.id}" 吗？`,
+      title: t.confirmDelete.title,
+      message: t.confirmDelete.message.replace('{name}', token.name || String(token.id)),
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
@@ -170,10 +170,10 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   const copyKey = async (key: string) => {
     try {
       await navigator.clipboard.writeText(`sk-${key}`);
-      toast.success('密钥已复制');
+      toast.success(t.messages.copySuccess);
     } catch (error) {
       console.error('复制失败:', error);
-      toast.error('复制失败');
+      toast.error(t.messages.copyFailed);
     }
   };
 
@@ -201,7 +201,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   // 格式化额度显示
   const formatQuota = (token: TokenVO) => {
     if (token.unlimitedQuota === 1) {
-      return '无限';
+      return t.values.unlimited;
     }
     const totalQuota = ((token.remainQuota + token.usedQuota) * 7.3) / 500000;
     return `￥${totalQuota.toFixed(2)}`;
@@ -210,7 +210,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   // 格式化剩余额度
   const formatRemainingQuota = (token: TokenVO) => {
     if (token.unlimitedQuota === 1) {
-      return '无限';
+      return t.values.unlimited;
     }
     const remaining = (token.remainQuota * 7.3) / 500000;
     return `￥${remaining.toFixed(2)}`;
@@ -225,19 +225,21 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   // 格式化过期时间
   const formatExpiration = (token: TokenVO) => {
     const expiredTime = token.expiredTime;
+    const lang = localStorage.getItem('language') || 'zh';
+    const locale = lang === 'en' ? 'en-US' : lang === 'id' ? 'id-ID' : 'zh-CN';
     
     if (expiredTime === null || expiredTime === undefined) {
-      return '永不过期';
+      return t.values.never;
     }
     
     if (typeof expiredTime === 'string') {
       const timestamp = new Date(expiredTime).getTime();
       const now = Date.now();
       if (timestamp < now) {
-        return '已过期';
+        return t.values.expired;
       }
       const date = new Date(timestamp);
-      return date.toLocaleString('zh-CN', {
+      return date.toLocaleString(locale, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -250,10 +252,10 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
     
     if (typeof expiredTime === 'number') {
       if (expiredTime === -1) {
-        return '永不过期';
+        return t.values.never;
       }
       if (expiredTime === 0) {
-        return '已过期';
+        return t.values.expired;
       }
       
       const timestamp = expiredTime > 1000000000000 
@@ -262,11 +264,11 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
 
       const now = Date.now();
       if (timestamp < now) {
-        return '已过期';
+        return t.values.expired;
       }
 
       const date = new Date(timestamp);
-      return date.toLocaleString('zh-CN', {
+      return date.toLocaleString(locale, {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
@@ -277,7 +279,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
       }).replace(/\//g, '-');
     }
     
-    return '永不过期';
+    return t.values.never;
   };
 
   const handlePageChange = (newPage: number) => {
@@ -299,10 +301,10 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
         <div className="flex justify-between items-center mb-4 gap-3 flex-wrap">
           <div className="flex-1 flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100 m-0">
-              API 令牌管理
+              {t.title}
             </h1>
             <p className="text-sm text-gray-500 dark:text-gray-400 m-0">
-              管理您的 API 密钥以访问服务
+              {t.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-3 flex-shrink-0">
@@ -312,14 +314,14 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
               className={`px-4 py-2 border border-gray-200 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 text-sm font-medium transition-all duration-200 flex items-center gap-2 whitespace-nowrap hover:bg-gray-50 dark:hover:bg-gray-700 ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-              刷新
+              {t.refresh}
             </button>
             <button 
               onClick={handleCreate}
               className="px-4 py-2 border-none rounded-md bg-black dark:bg-white text-white dark:text-black text-sm font-medium cursor-pointer transition-all duration-200 flex items-center gap-2 whitespace-nowrap hover:opacity-80"
             >
               <Plus size={16} />
-               新建 API 密钥
+              {t.createButton}
             </button>
           </div>
         </div>
@@ -330,15 +332,15 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
             <div className="flex justify-center items-center py-16 px-8 min-h-[400px]">
               <div className="flex flex-col items-center gap-2">
                 <RefreshCw className="animate-spin text-slate-500 dark:text-slate-400" size={24} />
-                <span className="text-slate-500 dark:text-slate-400">加载中...</span>
+                <span className="text-slate-500 dark:text-slate-400">{t.loading}</span>
               </div>
             </div>
           ) : tokens.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 px-8 text-slate-500 dark:text-slate-400 text-center min-h-[400px]">
               <div className="text-6xl mb-4 opacity-50">🔑</div>
-              <div className="text-xl font-semibold mb-2">暂无令牌</div>
+              <div className="text-xl font-semibold mb-2">{t.emptyState.title}</div>
               <div className="text-sm opacity-80">
-                点击上方"新建 API 密钥"按钮创建您的第一个令牌
+                {t.emptyState.message}
               </div>
             </div>
           ) : (
@@ -348,12 +350,12 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="bg-gray-50 dark:bg-gray-900/50 border-b border-gray-200 dark:border-gray-700">
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">名称</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">API Key</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">状态</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">额度使用</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">过期时间</th>
-                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">操作</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.name}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.apiKey}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.status}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.quotaUsage}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.expirationTime}</th>
+                      <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">{t.tableHeaders.operations}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -386,7 +388,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                     toggleKeyVisibility(token.id);
                                   }}
                                   className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
-                                  title={isKeyVisible ? '隐藏密钥' : '显示密钥'}
+                                  title={isKeyVisible ? t.actions.hideKey : t.actions.showKey}
                                 >
                                   {isKeyVisible ? <EyeOff size={16} /> : <Eye size={16} />}
                                 </button>
@@ -396,7 +398,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                     copyKey(token.key);
                                   }}
                                   className="inline-flex items-center justify-center w-7 h-7 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200"
-                                  title="复制密钥"
+                                  title={t.actions.copyKey}
                                 >
                                   <Copy size={16} />
                                 </button>
@@ -408,15 +410,15 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                             <div className="flex items-center gap-1.5">
                               <div className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-500' : 'bg-gray-400 dark:bg-gray-500'}`}></div>
                               <span className={`font-medium ${isActive ? 'text-emerald-500' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {isActive ? '启用' : '禁用'}
+                                {isActive ? t.status.active : t.status.disabled}
                               </span>
                             </div>
                           </td>
                           {/* 额度使用 */}
                           <td className="px-4 py-4 text-sm text-gray-700 dark:text-gray-300">
                             <div className="flex flex-col gap-1">
-                              <span>已用: {formatUsedQuota(token)}</span>
-                              <span>剩余: {token.unlimitedQuota === 1 ? '无限' : formatRemainingQuota(token)}</span>
+                              <span>{t.labels.used}: {formatUsedQuota(token)}</span>
+                              <span>{t.labels.remaining}: {token.unlimitedQuota === 1 ? t.values.unlimited : formatRemainingQuota(token)}</span>
                             </div>
                           </td>
                           {/* 过期时间 */}
@@ -432,7 +434,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                   handleEdit(token);
                                 }}
                                 className="inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-blue-50 dark:hover:bg-blue-900/30 hover:text-blue-500"
-                                title="编辑"
+                                title={t.actions.edit}
                               >
                                 <Edit2 size={16} />
                               </button>
@@ -443,7 +445,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                 }}
                                 disabled={toggleStatusLoading === token.id}
                                 className={`inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none transition-all duration-200 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-800 dark:hover:text-gray-200 ${toggleStatusLoading === token.id ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                                title={isActive ? '禁用' : '启用'}
+                                title={isActive ? t.actions.disable : t.actions.enable}
                               >
                                 {toggleStatusLoading === token.id ? (
                                   <RefreshCw size={16} className="animate-spin" />
@@ -459,7 +461,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
                                   deleteKey(token);
                                 }}
                                 className="inline-flex items-center justify-center w-8 h-8 rounded bg-transparent border-none cursor-pointer text-gray-500 dark:text-gray-400 transition-all duration-200 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-500"
-                                title="删除"
+                                title={t.actions.delete}
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -476,7 +478,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
               {!loading && pagination.total > 0 && (
                 <div className="flex justify-between items-center px-4 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
                   <div className="text-sm text-gray-500 dark:text-gray-400">
-                    共 {pagination.total} 条记录
+                    {t.totalRecords.replace('{count}', String(pagination.total))}
                   </div>
                   <div className="flex items-center gap-2">
                     {/* 分页按钮（已注释） */}
