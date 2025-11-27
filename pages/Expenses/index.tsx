@@ -1094,6 +1094,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <div className="relative flex-1 min-w-0">
                       <input
                         type="date"
+                        lang="en"
                         value={currentMode === 'balance' 
                           ? formatDateToLocalString(balanceDateRange[0])
                           : formatDateToLocalString(pointsDateRange[0])
@@ -1121,13 +1122,14 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                           ? formatDateToLocalString(balanceDateRange[1] || getToday())
                           : formatDateToLocalString(pointsDateRange[1] || getToday())
                         }
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                       />
                     </div>
                     <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">{t.to}</span>
                     <div className="relative flex-1 min-w-0">
                       <input
                         type="date"
+                        lang="en"
                         value={currentMode === 'balance'
                           ? formatDateToLocalString(balanceDateRange[1])
                           : formatDateToLocalString(pointsDateRange[1])
@@ -1155,7 +1157,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                           ? formatDateToLocalString(balanceDateRange[0] || new Date(0))
                           : formatDateToLocalString(pointsDateRange[0] || new Date(0))
                         }
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                       />
                     </div>
                     <button
@@ -1327,35 +1329,27 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
+                          lang="en"
                           value={formatDateToLocalString(dateRange[0])}
                           onChange={(e) => {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
                             setDateRange([date, dateRange[1]]);
                           }}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
                       </div>
                       <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">→</span>
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
+                          lang="en"
                           value={formatDateToLocalString(dateRange[1])}
                           onChange={(e) => {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
                             setDateRange([dateRange[0], date]);
                           }}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
                       </div>
                     </div>
                   </div>
