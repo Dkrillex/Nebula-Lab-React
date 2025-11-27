@@ -1839,6 +1839,42 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     await handleSend();
   };
 
+  // 删除消息
+  const handleDeleteMessage = (messageId: string) => {
+    // 不允许删除欢迎消息和system消息
+    if (messageId === 'welcome') {
+      return;
+    }
+
+    setMessages(prev => {
+      const messageToDelete = prev.find(msg => msg.id === messageId);
+      // 不允许删除system消息
+      if (messageToDelete?.role === 'system') {
+        return prev;
+      }
+
+      const filtered = prev.filter(msg => msg.id !== messageId);
+      // 如果删除后没有消息了，且不是system消息，显示欢迎消息
+      if (filtered.length === 0 || (filtered.length === 1 && filtered[0].role === 'system')) {
+        if (currentMode === 'chat') {
+          const hasSystemMessage = filtered.some(msg => msg.role === 'system');
+          if (hasSystemMessage) {
+            return filtered;
+          }
+          return [{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }];
+        } else {
+          return [];
+        }
+      }
+      return filtered;
+    });
+  };
+
   // 清空消息
   const handleClear = () => {
     // 检查是否存在system消息（AI角色定义）
@@ -4721,6 +4757,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
+              onDelete={handleDeleteMessage}
               onDefineAIRole={handleDefineAIRole}
               currentMode={currentMode}
               isLoading={isLoading}
@@ -5063,6 +5100,7 @@ interface MessageBubbleProps {
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
+  onDelete?: (messageId: string) => void; // 删除消息
   onDefineAIRole?: (messageId: string) => void; // 定义AI助手角色
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
   isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
@@ -5129,6 +5167,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   progress = 0,
   onQuote,
   onResend,
+  onDelete,
   onDefineAIRole,
   currentMode = 'chat',
   isLoading = false,
@@ -5656,6 +5695,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 title="重新发送"
               >
                 <RefreshCw size={12} />
+              </button>
+            )}
+            {/* 删除按钮 - 只在对话模式下显示，用户消息和AI消息都显示，但不显示在欢迎消息和system消息上 */}
+            {onDelete && currentMode === 'chat' && !isWelcomeMessage && !isSystem && (
+              <button
+                onClick={() => onDelete(message.id)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title={t?.deleteMessage || '删除消息'}
+              >
+                <Trash2 size={12} />
               </button>
             )}
           </div>

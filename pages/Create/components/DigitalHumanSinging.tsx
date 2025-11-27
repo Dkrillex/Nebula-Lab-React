@@ -232,7 +232,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
        {/* Left: Uploads */}
-       <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-6">
+       <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-6 overflow-y-auto custom-scrollbar">
            {/* Image Upload */}
            <div className="space-y-3">
                <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传图片</h3>
@@ -289,6 +289,15 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                </UploadComponent>
            </div>
 
+           {/* Price Info */}
+           <div className="p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl">
+               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1 text-center">消耗积分</div>
+               <div className="flex items-center justify-center gap-2">
+                   <SvgPointsIcon className="w-4 h-4 text-indigo-600" />
+                   <span className="text-base font-bold text-indigo-600">7 积分</span>
+               </div>
+           </div>
+
            {/* Actions */}
            <div className="flex flex-col gap-3 mt-auto pt-4 border-t border-gray-100 dark:border-gray-700">
                <button 
@@ -327,7 +336,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
        {/* Right: Result */}
        <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col h-[calc(100vh-240px)] lg:h-[calc(100vh-240px)]">
-           <div className="flex-1 overflow-y-auto custom-scrollbar p-8 mb-[80px] flex items-center justify-center">
+           <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pb-24 flex items-center justify-center">
                {/* Background Pattern */}
                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
                    <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
@@ -412,7 +421,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
            {/* Results Area (New) */}
            {(generatedVideos.length > 0 || resultVideoUrl) && (
-             <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+             <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] max-h-[200px] overflow-y-auto custom-scrollbar">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm text-gray-800 dark:text-gray-200">生成记录</h3>
                     <div className="flex gap-2">

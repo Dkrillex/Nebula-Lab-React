@@ -57,9 +57,9 @@ interface ApiResponse {
 
 type MetricType = 'intelligence' | 'coding' | 'math' | 'speed';
 
-const METRIC_CONFIG = {
+const getMetricConfig = (rankT: any) => ({
   intelligence: { 
-    label: '智能指数',
+    label: rankT.metrics.intelligence,
     icon: Brain,
     barColor: 'from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-500',
     bgColor: 'bg-slate-100 dark:bg-slate-800/40',
@@ -67,7 +67,7 @@ const METRIC_CONFIG = {
     tagText: 'text-slate-600 dark:text-slate-400',
   },
   coding: { 
-    label: '编码能力',
+    label: rankT.metrics.coding,
     icon: Code,
     barColor: 'from-stone-300 to-stone-400 dark:from-stone-600 dark:to-stone-500',
     bgColor: 'bg-stone-100 dark:bg-stone-800/40',
@@ -75,7 +75,7 @@ const METRIC_CONFIG = {
     tagText: 'text-stone-600 dark:text-stone-400',
   },
   math: { 
-    label: '数学能力',
+    label: rankT.metrics.math,
     icon: Calculator,
     barColor: 'from-zinc-300 to-zinc-400 dark:from-zinc-600 dark:to-zinc-500',
     bgColor: 'bg-zinc-100 dark:bg-zinc-800/40',
@@ -83,14 +83,14 @@ const METRIC_CONFIG = {
     tagText: 'text-zinc-600 dark:text-zinc-400',
   },
   speed: { 
-    label: '推理速度',
+    label: rankT.metrics.speed,
     icon: Zap,
     barColor: 'from-neutral-300 to-neutral-400 dark:from-neutral-600 dark:to-neutral-500',
     bgColor: 'bg-neutral-100 dark:bg-neutral-800/40',
     tagBg: 'bg-neutral-100 dark:bg-neutral-800/50',
     tagText: 'text-neutral-600 dark:text-neutral-400',
   },
-};
+});
 
 const MEDAL_COLORS = ['text-amber-400', 'text-slate-400', 'text-orange-300'];
 
@@ -108,7 +108,7 @@ const RankPage: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`ph-api/rank`, {
+        const response = await fetch(`/ph-api/rank`, {
           method: 'GET',
           headers: {
             'x-api-key': 'aa_mKpAYvFzbkXVycTHshPUgTxbVKfQqqlu',
@@ -195,6 +195,7 @@ const RankPage: React.FC = () => {
     );
   }
 
+  const METRIC_CONFIG = getMetricConfig(rankT);
   const config = METRIC_CONFIG[chartMetric];
 
   const renderBarChart = () => {
@@ -235,7 +236,7 @@ const RankPage: React.FC = () => {
                       {isFirst && (
                         <span className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-medium bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400">
                           <Sparkles className="w-3 h-3" />
-                          最佳
+                          {rankT.best}
                         </span>
                       )}
                       <span className="text-xs text-muted-foreground flex-shrink-0">
@@ -397,12 +398,12 @@ const RankPage: React.FC = () => {
               {showAllModels ? (
                 <>
                   <ChevronUp size={16} />
-                  收起
+                  {rankT.collapse}
                 </>
               ) : (
                 <>
                   <ChevronDown size={16} />
-                  展示更多（{models.length - LIST_INITIAL_COUNT} 个）
+                  {rankT.showMore}（{models.length - LIST_INITIAL_COUNT}）
                 </>
               )}
             </button>
@@ -431,7 +432,7 @@ const RankPage: React.FC = () => {
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-slate-500" />
             <h2 className="text-sm font-medium text-foreground/80">
-              {config.label} TOP 10
+              {config.label} {rankT.top10}
             </h2>
           </div>
 
@@ -464,9 +465,9 @@ const RankPage: React.FC = () => {
       {/* 列表区域 */}
       <div>
         <h2 className="text-sm font-medium text-foreground/80 mb-3 flex items-center gap-2">
-          全部模型
+          {rankT.allModels}
           <span className="text-xs text-muted-foreground font-normal">
-            （<Crown className="w-3 h-3 inline text-violet-500" /> 表示该指标最佳）
+            <Crown className="w-3 h-3 inline text-violet-500" /> {rankT.bestIndicator}
           </span>
         </h2>
         {renderListView()}

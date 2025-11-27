@@ -151,10 +151,10 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       icon: UserCircle, 
       label: t.personalCenter,
       children: [
+        { id: 'profile', icon: UserCircle, label: t.profile || '个人中心', path: '/profile' },
         { id: 'assets', icon: Folder, label: t.assets, path: '/assets' },
         { id: 'pricing', icon: CreditCard, label: t.pricing, path: '/pricing' },
         { id: 'expenses', icon: DollarSign, label: t.expenses, path: '/expenses' },
-        { id: 'profile', icon: UserCircle, label: t.profile || '个人中心', path: '/profile' },
       ]
     },
   ];

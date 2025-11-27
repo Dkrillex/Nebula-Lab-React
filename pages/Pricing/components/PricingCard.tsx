@@ -176,7 +176,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
       {/* 功能列表 */}
       <div className="flex-1 space-y-2 mb-8 relative z-10">
          {item.productName === 'Starter' && (
-            <ul className="space-y-1.5 flex flex-col items-center">
+            <ul className="px-5 space-y-2.5 flex flex-col items-left">
               {/* 模型中心功能 - MODEL_CENTER 或 BOTH 显示 */}
               {(CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER || CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) && t.starter?.modelFeatures && (
                 t.starter.modelFeatures.map((feature: string, index: number) => (
@@ -198,7 +198,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
             </ul>
          )}
          {item.productName === 'Business' && (
-            <ul className="space-y-1.5 flex flex-col items-center">
+            <ul className="px-5 space-y-2.5 flex flex-col items-left">
               {/* 模型中心功能 - MODEL_CENTER 或 BOTH 显示 */}
               {(CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER || CURRENT_SYSTEM === SYSTEM_TYPE.BOTH) && t.business?.modelFeatures && (
                 t.business.modelFeatures.map((feature: string, index: number) => (
@@ -220,7 +220,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
             </ul>
          )}
          {isEnterprise && t.enterprise?.features && (
-            <ul className="space-y-2 flex flex-col items-center">
+            <ul className="px-5 space-y-2.5 flex flex-col items-left">
               {t.enterprise.features.map((feature: string, index: number) => (
                 <li key={index} className="text-sm text-foreground/90 dark:text-foreground/80 flex items-center py-0.5">
                   <span className="text-green-500 dark:text-green-400 mr-3 text-base font-bold">✓</span>

@@ -1,17 +1,8 @@
 import React, { useState } from 'react';
 import { SearchIcon, Box, X, GitCompareArrows as Compare } from 'lucide-react';
 import { AIModel } from '@/types';
-
-// 计费类型标签
-const getBillingTypeLabel = (quotaType?: number): string => {
-  if (quotaType === 0) return '按量计费';
-  if (quotaType === 1) return '按次计费';
-  if (quotaType === 2) return '按资源类型计费';
-  if (quotaType === 3) return '按秒计费';
-  if (quotaType === 4) return '按全模态计费';
-  if (quotaType === 5) return '按张计费';
-  return '未知';
-};
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 export interface ModelCompareModalProps {
   visible: boolean;
@@ -32,6 +23,19 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
   formatPrice, 
   formatPriceUnit 
 }) => {
+  const { t: rootT } = useAppOutletContext();
+  const t = rootT?.modelSquare?.compare || translations['zh'].modelSquare.compare;
+  
+  // 计费类型标签
+  const getBillingTypeLabel = (quotaType?: number): string => {
+    if (quotaType === 0) return t.billingTypes.payPerUse;
+    if (quotaType === 1) return t.billingTypes.payPerCall;
+    if (quotaType === 2) return t.billingTypes.payPerResource;
+    if (quotaType === 3) return t.billingTypes.payPerSecond;
+    if (quotaType === 4) return t.billingTypes.payPerMultimodal;
+    if (quotaType === 5) return t.billingTypes.payPerImage;
+    return t.billingTypes.unknown;
+  };
   const [searchTerms, setSearchTerms] = useState(['', '', '']);
   const [dropdownOpen, setDropdownOpen] = useState<number | null>(null);
 
@@ -76,9 +80,9 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
 
   // 对比属性配置
   const compareFields = [
-    { key: 'provider', label: '供应商', render: (m: AIModel) => m.vendorName || m.provider },
-    { key: 'price', label: '输入价格', render: (m: AIModel) => `${formatPrice(m)} ${formatPriceUnit(m)}` },
-    { key: 'outputPrice', label: '输出价格', render: (m: AIModel) => {
+    { key: 'provider', label: t.compareFields.provider, render: (m: AIModel) => m.vendorName || m.provider },
+    { key: 'price', label: t.compareFields.inputPrice, render: (m: AIModel) => `${formatPrice(m)} ${formatPriceUnit(m)}` },
+    { key: 'outputPrice', label: t.compareFields.outputPrice, render: (m: AIModel) => {
       if (m.quotaType === 0) {
         const outputRatio = parseFloat(String(m.completionRatio || 1));
         const inputPrice = parseFloat(formatPrice(m).replace(/[^\d.]/g, ''));
@@ -86,15 +90,15 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
       }
       return '-';
     }},
-    { key: 'contextLength', label: '上下文长度', render: (m: AIModel) => {
+    { key: 'contextLength', label: t.compareFields.contextLength, render: (m: AIModel) => {
       if (!m.contextLength) return '-';
       if (m.contextLength >= 1000000) return `${(m.contextLength / 1000000).toFixed(1)}M`;
       if (m.contextLength >= 1000) return `${(m.contextLength / 1000).toFixed(0)}K`;
       return m.contextLength.toString();
     }},
-    { key: 'billingType', label: '计费类型', render: (m: AIModel) => getBillingTypeLabel(m.quotaType) },
-    { key: 'tags', label: '标签', render: (m: AIModel) => (m.tags || []).slice(0, 3).join(', ') || '-' },
-    { key: 'description', label: '描述', render: (m: AIModel) => m.description || '-' },
+    { key: 'billingType', label: t.compareFields.billingType, render: (m: AIModel) => getBillingTypeLabel(m.quotaType) },
+    { key: 'tags', label: t.compareFields.tags, render: (m: AIModel) => (m.tags || []).slice(0, 3).join(', ') || '-' },
+    { key: 'description', label: t.compareFields.description, render: (m: AIModel) => m.description || '-' },
   ];
 
   return (
@@ -114,8 +118,8 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
               <Compare size={20} className="text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">模型对比</h2>
-              <p className="text-sm text-zinc-500">选择最多3个模型进行对比分析</p>
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">{t.title}</h2>
+              <p className="text-sm text-zinc-500">{t.subtitle}</p>
             </div>
           </div>
           <button 
@@ -132,7 +136,7 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
             {[0, 1, 2].map((index) => (
               <div key={index} className="relative">
                 <label className="block text-xs font-medium text-zinc-500 mb-2">
-                  模型 {index + 1}
+                  {t.modelLabel} {index + 1}
                 </label>
                 {compareModels[index] ? (
                   <div className="flex items-center gap-2 p-3 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700">
@@ -162,7 +166,7 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
                   <div className="relative">
                     <input
                       type="text"
-                      placeholder="搜索并选择模型..."
+                      placeholder={t.searchPlaceholder}
                       value={searchTerms[index]}
                       onChange={(e) => handleSearchChange(index, e.target.value)}
                       onFocus={() => setDropdownOpen(index)}
@@ -175,7 +179,7 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
                       <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-zinc-900 rounded-xl border border-zinc-200 dark:border-zinc-700 shadow-lg max-h-64 overflow-y-auto z-[60]">
                         {getFilteredModels(index).length === 0 ? (
                           <div className="p-4 text-sm text-zinc-500 text-center">
-                            没有找到匹配的模型
+                            {t.noResults}
                           </div>
                         ) : (
                           getFilteredModels(index).map(model => (
@@ -216,7 +220,7 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
           {selectedModels.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-zinc-400">
               <Compare size={48} strokeWidth={1.5} className="mb-4 opacity-50" />
-              <p className="text-sm font-medium">请选择至少一个模型进行对比</p>
+              <p className="text-sm font-medium">{t.selectAtLeastOne}</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -224,7 +228,7 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
                 <thead>
                   <tr className="border-b border-zinc-100 dark:border-zinc-800">
                     <th className="text-left p-4 text-sm font-semibold text-zinc-500 bg-zinc-50 dark:bg-zinc-800/50 rounded-tl-xl w-40">
-                      对比项
+                      {t.tableHeader}
                     </th>
                     {selectedModels.map((model, idx) => (
                       <th key={model.id} className={`text-left p-4 text-sm font-semibold text-zinc-900 dark:text-zinc-100 bg-zinc-50 dark:bg-zinc-800/50 ${idx === selectedModels.length - 1 ? 'rounded-tr-xl' : ''}`}>
@@ -269,20 +273,20 @@ const ModelCompareModal: React.FC<ModelCompareModalProps> = ({
         {/* 底部操作栏 */}
         <div className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-800/30 flex justify-between items-center">
           <div className="text-sm text-zinc-500">
-            已选择 {selectedModels.length} / 3 个模型
+            {t.selectedCount} {selectedModels.length} / 3 {t.modelLabel}
           </div>
           <div className="flex gap-3">
             <button
               onClick={() => setCompareModels([null, null, null])}
               className="px-4 py-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
             >
-              清空选择
+              {t.clearSelection}
             </button>
             <button
               onClick={onClose}
               className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors"
             >
-              完成对比
+              {t.finishCompare}
             </button>
           </div>
         </div>
