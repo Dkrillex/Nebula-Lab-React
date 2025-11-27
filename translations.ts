@@ -765,6 +765,18 @@ interface Translation {
       price: string;
     };
     fetchError: string;
+    metrics: {
+      intelligence: string;
+      coding: string;
+      math: string;
+      speed: string;
+    };
+    best: string;
+    allModels: string;
+    bestIndicator: string;
+    showMore: string;
+    collapse: string;
+    top10: string;
   };
   chatPage: {
     settingsTitle: string;
@@ -2652,7 +2664,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Speed',
         price: 'Price (1M)'
       },
-      fetchError: 'Failed to load ranking data'
+      fetchError: 'Failed to load ranking data',
+      metrics: {
+        intelligence: 'Intelligence',
+        coding: 'Coding',
+        math: 'Math',
+        speed: 'Speed'
+      },
+      best: 'Best',
+      allModels: 'All Models',
+      bestIndicator: '(Crown indicates best in this metric)',
+      showMore: 'Show More',
+      collapse: 'Collapse',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Dialogue Settings',
@@ -4636,7 +4660,19 @@ export const translations: Record<string, Translation> = {
         speed: '速度',
         price: '价格（1M）'
       },
-      fetchError: '排行榜数据加载失败'
+      fetchError: '排行榜数据加载失败',
+      metrics: {
+        intelligence: '智能指数',
+        coding: '编码能力',
+        math: '数学能力',
+        speed: '推理速度'
+      },
+      best: '最佳',
+      allModels: '全部模型',
+      bestIndicator: '（表示该指标最佳）',
+      showMore: '展示更多',
+      collapse: '收起',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: '对话设置',
@@ -6191,7 +6227,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Kecepatan',
         price: 'Harga (1M)'
       },
-      fetchError: 'Gagal memuat data peringkat'
+      fetchError: 'Gagal memuat data peringkat',
+      metrics: {
+        intelligence: 'Kecerdasan',
+        coding: 'Pemrograman',
+        math: 'Matematika',
+        speed: 'Kecepatan'
+      },
+      best: 'Terbaik',
+      allModels: 'Semua Model',
+      bestIndicator: '(Mahkota menunjukkan yang terbaik dalam metrik ini)',
+      showMore: 'Tampilkan Lebih Banyak',
+      collapse: 'Tutup',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Pengaturan Dialog',
