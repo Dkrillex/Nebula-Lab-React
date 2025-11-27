@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 // 默认检查间隔（分钟）
-const DEFAULT_INTERVAL = 1;
+const DEFAULT_INTERVAL = 5;
 
 export interface VersionWatcherOptions {
   enable?: boolean;
@@ -13,47 +13,54 @@ export interface VersionWatcherOptions {
  * 通过轮询 ETag/Last-Modified 检测是否有新版本
  */
 export function useVersionWatcher(options: VersionWatcherOptions = {}) {
-  const { 
-    enable = import.meta.env.MODE === 'production', 
-    intervalMinutes = Number(import.meta.env.VITE_APP_CHECK_UPDATES_INTERVAL) || DEFAULT_INTERVAL 
+  const {
+    // 只要不是开发环境，或者是 production 开头的模式，都默认启用
+    enable = !import.meta.env.DEV || import.meta.env.MODE.includes('production'),
+    intervalMinutes = Number(import.meta.env.VITE_APP_CHECK_UPDATES_INTERVAL) || DEFAULT_INTERVAL
   } = options;
 
   const [hasUpdate, setHasUpdate] = useState(false);
   const lastVersionTagRef = useRef<string | null>(null);
   const checkingRef = useRef(false);
 
+  // 打印初始化配置，辅助排查
+  // useEffect(() => {
+  //   console.log('[VersionWatcher] Initialized:', { enable, intervalMinutes, mode: import.meta.env.MODE });
+  // }, [enable, intervalMinutes]);
+
   const checkForUpdates = useCallback(async () => {
     if (!enable || checkingRef.current) return;
 
     try {
       checkingRef.current = true;
-      // 添加时间戳避免浏览器缓存
-      const response = await fetch(`/?t=${Date.now()}`, { 
+      const url = `/?t=${Date.now()}`;
+
+      const response = await fetch(url, {
         method: 'HEAD',
         cache: 'no-cache',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' }
       });
-      
+
       const etag = response.headers.get('etag');
       const lastModified = response.headers.get('last-modified');
-      
+
       // 组合 tag 以增加鲁棒性
       const currentTag = [etag, lastModified].filter(Boolean).join('-');
-      
+
       if (!currentTag) return;
-      
+
       if (lastVersionTagRef.current && lastVersionTagRef.current !== currentTag) {
-        console.log('New version detected:', currentTag, 'Old version:', lastVersionTagRef.current);
+        console.log('[VersionWatcher] New version detected:', currentTag, 'Old version:', lastVersionTagRef.current);
         setHasUpdate(true);
       } else {
         if (!lastVersionTagRef.current) {
-           // 首次加载，记录当前版本
-           console.log('Initial version tag:', currentTag);
+          // 首次加载，记录当前版本
+          // console.log('[VersionWatcher] Initial version tag recorded:', currentTag);
         }
         lastVersionTagRef.current = currentTag;
       }
     } catch (error) {
-      console.error('Failed to check for updates:', error);
+      console.error('[VersionWatcher] Failed to check for updates:', error);
     } finally {
       checkingRef.current = false;
     }
@@ -96,4 +103,3 @@ export function useVersionWatcher(options: VersionWatcherOptions = {}) {
 
   return { hasUpdate, reload: () => window.location.reload() };
 }
-
