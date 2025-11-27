@@ -1780,6 +1780,70 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 可以添加提示消息
   };
 
+  // 复制图片到剪贴板并添加到输入框
+  const handleCopyImage = async (imageUrl: string, textContent?: string) => {
+    try {
+      // 将图片URL转换为blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // 复制图片到剪贴板
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+
+      // 将图片转换为base64并添加到输入框
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          // 图片模式下，最多只显示一张图片，替换已有图片
+          setUploadedImages([base64]);
+          // 如果有文字内容，同时设置到输入框
+          if (textContent && textContent.trim()) {
+            setInputValue(textContent.trim());
+            // 如果同时有文字和图片，显示引用消息的提示
+            toast.success('已引用消息内容到输入框');
+          } else {
+            // 只有图片时，显示图片复制的提示
+            toast.success('图片已复制并添加到输入框');
+          }
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('复制图片失败:', error);
+      // 如果复制失败，至少尝试添加到输入框
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+          const base64 = event.target?.result as string;
+          if (base64) {
+            // 图片模式下，最多只显示一张图片，替换已有图片
+            setUploadedImages([base64]);
+            // 如果有文字内容，同时设置到输入框
+            if (textContent && textContent.trim()) {
+              setInputValue(textContent.trim());
+              // 如果同时有文字和图片，显示引用消息的提示
+              toast.success('已引用消息内容到输入框');
+            } else {
+              // 只有图片时，显示图片添加的提示
+              toast.success('图片已添加到输入框');
+            }
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (fallbackError) {
+        console.error('添加图片到输入框失败:', fallbackError);
+        toast.error('复制图片失败');
+      }
+    }
+  };
+
   // 处理代码引用
   const handleQuoteCode = (code: string) => {
     setInputValue(code);
@@ -4747,6 +4811,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               key={msg.id} 
               message={msg}
               onCopy={handleCopy}
+              onCopyImage={handleCopyImage}
               onQuoteCode={handleQuoteCode}
               onPreview={(type, url) => setPreviewModal({ isOpen: true, type, url })}
               onDownloadImage={handleDownloadImage}
@@ -5090,6 +5155,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 interface MessageBubbleProps {
   message: ExtendedChatMessage;
   onCopy: (content: string) => void;
+  onCopyImage?: (imageUrl: string, textContent?: string) => Promise<void>; // 复制图片到剪贴板并添加到输入框
   onQuoteCode?: (code: string) => void;
   onPreview?: (type: 'image' | 'video', url: string) => void;
   onDownloadImage?: (url: string) => void;
@@ -5156,6 +5222,7 @@ const VideoPlayer: React.FC<{ url: string }> = ({ url }) => {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
   onCopy, 
+  onCopyImage,
   onQuoteCode, 
   onPreview,
   onDownloadImage,
@@ -5645,9 +5712,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span>{formatTime(message.timestamp)}</span>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
             {/* 复制按钮 */}
-            {(message.content || message.generatedImages?.length || message.generatedVideos?.length) && (
+            {(message.content || message.generatedImages?.length || message.generatedVideos?.length || (isUser && message.images?.length)) && (
             <button
-                onClick={() => {
+                onClick={async () => {
+                  // 图片模式下，优先复制图片（无论是用户上传的图片还是AI生成的图片）
+                  if (currentMode === 'image' && onCopyImage) {
+                    // 优先检查AI生成的图片
+                    if (message.generatedImages?.length && message.generatedImages[0]?.url) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.generatedImages[0].url, message.content);
+                      return;
+                    }
+                    // 其次检查用户上传的图片
+                    if (isUser && message.images?.length && message.images[0]) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.images[0], message.content);
+                      return;
+                    }
+                  }
+                  
+                  // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
                     toast.success('已复制到剪贴板');
