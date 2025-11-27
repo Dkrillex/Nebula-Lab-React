@@ -1875,10 +1875,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     setAiRoleMessageId(messageId);
     // 如果消息已存在，使用现有内容；否则使用默认内容
     const message = messages.find(msg => msg.id === messageId);
+    const defaultContent = t?.aiRoleDefinition?.defaultContent || '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。';
     if (message && message.role === 'system') {
-      setAiRoleContent(message.content || '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。');
+      setAiRoleContent(message.content || defaultContent);
     } else {
-      setAiRoleContent('你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。');
+      setAiRoleContent(defaultContent);
     }
     setShowAIRoleModal(true);
   };
@@ -1886,7 +1887,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   // 确认AI角色定义
   const confirmAIRole = () => {
     if (!aiRoleContent.trim()) {
-      toast.error('请输入AI角色定义');
+      toast.error(t?.aiRoleDefinition?.inputRequired || '请输入AI角色定义');
       return;
     }
 
@@ -1923,7 +1924,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     setShowAIRoleModal(false);
     setAiRoleContent('');
     setAiRoleMessageId('');
-    toast.success('AI角色定义已更新');
+    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI角色定义已更新');
   };
 
   // 取消AI角色定义
@@ -4941,22 +4942,22 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       <BaseModal
         isOpen={showAIRoleModal}
         onClose={cancelAIRole}
-        title="定义AI助手角色"
+        title={t?.aiRoleDefinition?.title || '定义AI助手角色'}
         width="max-w-2xl"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。
+            {t?.aiRoleDefinition?.description || '请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。'}
           </p>
           
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              AI角色定义：
+              {t?.aiRoleDefinition?.label || 'AI角色定义：'}
             </label>
             <textarea
               value={aiRoleContent}
               onChange={(e) => setAiRoleContent(e.target.value)}
-              placeholder="例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题..."
+              placeholder={t?.aiRoleDefinition?.placeholder || '例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题...'}
               rows={6}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100 resize-y min-h-[120px]"
             />
@@ -4965,12 +4966,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-indigo-500">
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
               <span>💡</span>
-              <span>提示：</span>
+              <span>{t?.aiRoleDefinition?.hint || '提示：'}</span>
             </p>
             <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
-              <li>可以定义AI的专业领域（如编程、设计、写作等）</li>
-              <li>可以设置AI的性格特点（如友好、专业、幽默等）</li>
-              <li>可以指定AI的回复风格（如简洁、详细、创意等）</li>
+              {t?.aiRoleDefinition?.tips?.map((tip: string, index: number) => (
+                <li key={index}>{tip}</li>
+              )) || [
+                '可以定义AI的专业领域（如编程、设计、写作等）',
+                '可以设置AI的性格特点（如友好、专业、幽默等）',
+                '可以指定AI的回复风格（如简洁、详细、创意等）'
+              ].map((tip, index) => (
+                <li key={index}>{tip}</li>
+              ))}
             </ul>
           </div>
 
@@ -4979,13 +4986,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               onClick={cancelAIRole}
               className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
             >
-              取消
+              {t?.aiRoleDefinition?.cancel || '取消'}
             </button>
             <button
               onClick={confirmAIRole}
               className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
             >
-              确定
+              {t?.aiRoleDefinition?.confirm || '确定'}
             </button>
           </div>
         </div>
@@ -5128,7 +5135,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="text-foreground">
               <div className="flex items-center gap-2 mb-2">
                 <Settings size={14} className="text-gray-500 dark:text-gray-400" />
-                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">AI角色定义</span>
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t?.aiRoleDefinition?.roleLabel || 'AI角色定义'}
+                </span>
               </div>
               <div className="whitespace-pre-wrap">{message.content}</div>
             </div>
@@ -5574,7 +5583,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 onClick={() => onDefineAIRole(message.id)}
                 className="p-1 hover:bg-border rounded transition-colors"
-                title={isSystem ? '编辑AI角色' : '定义AI助手角色'}
+                title={isSystem ? (t?.aiRoleDefinition?.editRole || '编辑AI角色') : (t?.aiRoleDefinition?.title || '定义AI助手角色')}
               >
                 <Settings size={12} />
               </button>

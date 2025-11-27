@@ -830,6 +830,21 @@ interface Translation {
       linkCopied: string;
       materialImported: string;
     };
+    aiRoleDefinition: {
+      title: string;
+      description: string;
+      label: string;
+      placeholder: string;
+      hint: string;
+      tips: string[];
+      cancel: string;
+      confirm: string;
+      roleLabel: string;
+      editRole: string;
+      defaultContent: string;
+      inputRequired: string;
+      updateSuccess: string;
+    };
   };
   keysPage: {
     title: string;
@@ -2701,6 +2716,25 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: 'Failed to delete chat record',
         linkCopied: 'Link copied',
         materialImported: 'Material imported successfully'
+      },
+      aiRoleDefinition: {
+        title: 'Define AI Assistant Role',
+        description: 'Please define the AI assistant\'s role and characteristics, which will affect its reply style and behavior.',
+        label: 'AI Role Definition:',
+        placeholder: 'For example: You are an excellent programming expert, proficient in Python, JavaScript and other programming languages, capable of helping users solve various programming problems...',
+        hint: 'Hint:',
+        tips: [
+          'You can define AI\'s professional field (e.g., programming, design, writing, etc.)',
+          'You can set AI\'s personality traits (e.g., friendly, professional, humorous, etc.)',
+          'You can specify AI\'s reply style (e.g., concise, detailed, creative, etc.)'
+        ],
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        roleLabel: 'AI Role Definition',
+        editRole: 'Edit AI Role',
+        defaultContent: 'You are an excellent AI assistant expert, with rich knowledge and experience, capable of helping users solve various problems.',
+        inputRequired: 'Please enter AI role definition',
+        updateSuccess: 'AI role definition updated'
       }
     },
     keysPage: {
@@ -4665,6 +4699,25 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: '删除对话记录失败',
         linkCopied: '链接已复制',
         materialImported: '素材导入成功'
+      },
+      aiRoleDefinition: {
+        title: '定义AI助手角色',
+        description: '请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。',
+        label: 'AI角色定义：',
+        placeholder: '例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题...',
+        hint: '提示：',
+        tips: [
+          '可以定义AI的专业领域（如编程、设计、写作等）',
+          '可以设置AI的性格特点（如友好、专业、幽默等）',
+          '可以指定AI的回复风格（如简洁、详细、创意等）'
+        ],
+        cancel: '取消',
+        confirm: '确定',
+        roleLabel: 'AI角色定义',
+        editRole: '编辑AI角色',
+        defaultContent: '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。',
+        inputRequired: '请输入AI角色定义',
+        updateSuccess: 'AI角色定义已更新'
       }
     },
     keysPage: {
@@ -6200,6 +6253,25 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: 'Gagal menghapus catatan obrolan',
         linkCopied: 'Tautan disalin',
         materialImported: 'Materi berhasil diimpor'
+      },
+      aiRoleDefinition: {
+        title: 'Definisikan Peran Asisten AI',
+        description: 'Silakan definisikan peran dan karakteristik asisten AI, ini akan mempengaruhi gaya balasan dan perilaku AI.',
+        label: 'Definisi Peran AI:',
+        placeholder: 'Misalnya: Anda adalah ahli pemrograman yang sangat baik, mahir dalam Python, JavaScript dan bahasa pemrograman lainnya, mampu membantu pengguna menyelesaikan berbagai masalah pemrograman...',
+        hint: 'Petunjuk:',
+        tips: [
+          'Anda dapat mendefinisikan bidang profesional AI (misalnya, pemrograman, desain, penulisan, dll.)',
+          'Anda dapat mengatur karakteristik kepribadian AI (misalnya, ramah, profesional, humoris, dll.)',
+          'Anda dapat menentukan gaya balasan AI (misalnya, ringkas, detail, kreatif, dll.)'
+        ],
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        roleLabel: 'Definisi Peran AI',
+        editRole: 'Edit Peran AI',
+        defaultContent: 'Anda adalah ahli asisten AI yang sangat baik, dengan pengetahuan dan pengalaman yang kaya, mampu membantu pengguna menyelesaikan berbagai masalah.',
+        inputRequired: 'Silakan masukkan definisi peran AI',
+        updateSuccess: 'Definisi peran AI diperbarui'
       }
     },
     keysPage: {
