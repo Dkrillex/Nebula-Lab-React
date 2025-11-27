@@ -79,7 +79,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
         }));
       }
     } catch (error) {
-      console.error('获取令牌列表失败:', error);
+      // 错误提示已由封装的 request 自动处理
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
       });
       await fetchTokens();
     } catch (error) {
-      console.error('状态切换失败:', error);
+      // 错误提示已由封装的 request 自动处理
     } finally {
       setToggleStatusLoading(null);
     }
@@ -129,10 +129,10 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
         try {
           await keyService.deleteToken(token.id);
           await fetchTokens();
-          toast.success('删除成功');
+          // 成功提示已由封装的 request 自动处理（如果配置了 successMessageMode）
+          // 如果需要显示成功提示，可以在 keyService 中设置 successMessageMode: 'message'
         } catch (error) {
-          console.error('删除令牌失败:', error);
-          toast.error('删除失败，请重试');
+          // 错误提示已由封装的 request 自动处理
         }
       },
     });

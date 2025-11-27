@@ -65,7 +65,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
         }))
       );
     } catch (error) {
-      console.error('加载模型列表失败:', error);
+      // 错误提示已由封装的 request 自动处理
       setModelOptions([]);
     }
   };
@@ -232,9 +232,9 @@ const TokenForm: React.FC<TokenFormProps> = ({
 
       onSuccess();
       onClose();
+      // 成功提示已由封装的 request 自动处理（如果配置了 successMessageMode）
     } catch (error) {
-      console.error('保存失败:', error);
-      toast.error('保存失败，请重试');
+      // 错误提示已由封装的 request 自动处理
     } finally {
       setLoading(false);
     }
