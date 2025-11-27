@@ -4612,7 +4612,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   }
                   disabled={isLoading || !selectedModel}
                   className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
-                  rows={1}
+                  rows={2}
                   style={{ 
                     lineHeight: '1.5',
                     fontFamily: 'inherit'
