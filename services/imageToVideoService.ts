@@ -128,7 +128,8 @@ export const imageToVideoService = {
         prompt: data.prompt,
         negativePrompt: data.negativePrompt,
         mode: data.mode,
-        duration: Number(data.duration),
+        duration: typeof data.duration === 'string' ? parseInt(data.duration) : data.duration,
+        score: typeof data.score === 'string' ? parseFloat(data.score) : (data.score as number),
         generatingCount: data.generatingCount
       });
     }
