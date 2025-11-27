@@ -84,6 +84,7 @@ const Layout: React.FC = () => {
     else if (path === 'keys') view = 'keys';
     else if (path === 'chat') view = 'chat';
     else if (path === 'models') view = 'models';
+    else if (path === 'models-intro') view = 'models-intro';
     else if (path === 'expenses') view = 'expenses';
     else if (path === 'pricing') view = 'pricing';
     else if (path === 'assets') view = 'assets';
@@ -128,6 +129,11 @@ const Layout: React.FC = () => {
   // Update Tabs History and Cache
   useEffect(() => {
     setVisitedViews(prev => {
+      // 模型中心简介页面和创作中心首页不需要显示 Tab，共享首页 Tab
+      if (currentView === 'models-intro' || (currentView === 'create' && !activeTool)) {
+        return prev;
+      }
+      
       const exists = prev.some(t => {
         if (t.view !== currentView) return false;
         if (t.view === 'create') {

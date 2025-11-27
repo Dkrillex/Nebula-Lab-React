@@ -12,6 +12,7 @@ const AssetsPage = React.lazy(() => import('../../pages/Assets'));
 const ChatPage = React.lazy(() => import('../../pages/Chat'));
 const KeysPage = React.lazy(() => import('../../pages/Keys'));
 const ModelSquarePage = React.lazy(() => import('../../pages/Models'));
+const ModelsIntroPage = React.lazy(() => import('../../pages/Models/ModelsIntro'));
 const ExpensesPage = React.lazy(() => import('../../pages/Expenses'));
 const PricingPage = React.lazy(() => import('../../pages/Pricing'));
 const PriceListPage = React.lazy(() => import('../../pages/PriceList'));
@@ -190,6 +191,16 @@ export const localRoutes: AppRouteObject[] = [
           title: 'Leaderboard',
           icon: 'trophy',
           requiresAuth: true,
+          keepAlive: true
+        }
+      },
+      {
+        path: 'models-intro',
+        element: <RouteWrapper component={ModelsIntroPage} translationKey="modelsIntro" />,
+        meta: {
+          title: 'Models Intro',
+          icon: 'info',
+          requiresAuth: false,
           keepAlive: true
         }
       },
