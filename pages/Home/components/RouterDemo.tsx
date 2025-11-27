@@ -259,7 +259,7 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
                   <div className="text-2xl flex-shrink-0">📱</div>
                   <div className="flex-1 min-w-0">
                     <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">联系电话</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">18890659150</div>
+                    <div className="text-base font-medium text-gray-900 dark:text-white">19210015325</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">

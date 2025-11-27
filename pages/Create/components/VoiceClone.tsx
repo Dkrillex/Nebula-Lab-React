@@ -121,6 +121,7 @@ const defaultT = {
   audioFirst: '请先录制音频',
   recordUploadSuccess: '录音上传成功',
   recordUploadFail: '录音上传失败',
+  recordDurationTip: '录音时长需在 10 秒到 5 分钟之间才能上传',
   recordPrepare: '准备录音',
   msgConfirm: '请确保已填写必要信息',
   messionPushFail: '任务提交失败',
@@ -141,6 +142,9 @@ const defaultT = {
   transWAVFail: '音频格式转换失败，将使用原始格式',
   downloadAll: '批量下载'
 };
+
+const RECORD_MIN_DURATION = 10;
+const RECORD_MAX_DURATION = 300;
 
 const selectLanguageList = [
   { label: 'Simplified Chinese (简体中文)', value: 'zh-CN' },
@@ -178,6 +182,7 @@ const selectLanguageList = [
 ];
 
 const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
+  const recordDurationTip = t?.recordDurationTip ?? defaultT.recordDurationTip;
   const { user, isAuthenticated } = useAuthStore();
   
   // Page Mode: 'clone' | 'synthesis'
@@ -202,12 +207,14 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [isRecording, setIsRecording] = useState(false);
   const [recordStatus, setRecordStatus] = useState(t.recordPrepare);
   const [recordTime, setRecordTime] = useState(0);
+  const [recordDuration, setRecordDuration] = useState(0);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string>('');
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const recordTimerRef = useRef<NodeJS.Timeout | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [recordSubmitLoading, setRecordSubmitLoading] = useState(false);
+  const isRecordDurationValid = recordDuration >= RECORD_MIN_DURATION && recordDuration <= RECORD_MAX_DURATION;
 
   // Voice List State
   const [voiceList, setVoiceList] = useState<Voice[]>([]);
@@ -450,6 +457,9 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       e.preventDefault();
       e.stopPropagation();
     }
+
+    clearRecording();
+    setRecordDuration(0);
     
     if (!isAuthenticated) {
       showAuthModal();
@@ -560,6 +570,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
+      setRecordDuration(recordTime);
       setRecordTime(0);
       if (streamRef.current) streamRef.current.getTracks().forEach(track => track.stop());
     }
@@ -571,6 +582,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     setAudioFile(null);
     setRecordStatus(t.recordPrepare);
     setRecordTime(0);
+    setRecordDuration(0);
     setAudioData(prev => ({ ...prev, originVoiceFileId: '' }));
   };
 
@@ -588,6 +600,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const uploadRecording = async () => {
     if (!audioFile?.file) {
       toast.error(t.audioFirst);
+      return;
+    }
+
+    if (!isRecordDurationValid) {
+      toast.error(recordDurationTip);
       return;
     }
 
@@ -845,6 +862,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   };
 
   const handleSaveToAssets = (result: VoiceCloneResult) => {
+    console.log(result);
+    
     if (!result || !result.voice?.demoAudioUrl) return;
     
     const materialName = result.voice.voiceName || '声音克隆';
@@ -855,7 +874,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       assetType: 8, // 声音克隆
       assetTag: materialName,
       assetDesc: materialName,
-      assetId: result.taskId // Using task ID as asset ID reference
+      assetId: result.voice.voiceId
     });
     setShowAddMaterialModal(true);
   };
@@ -996,6 +1015,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                                        </button>
                                    )}
                                </div>
+                               <p className="w-full mt-2 text-xs text-muted-foreground text-center">{recordDurationTip}</p>
 
                                {recordedAudioUrl && (
                            <div className="w-full mt-3 pt-3 border-t border-border">
@@ -1006,7 +1026,8 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
                                        <audio src={recordedAudioUrl} controls className="w-full h-8" />
                                        <button 
                                           onClick={uploadRecording}
-                                          disabled={recordSubmitLoading || !!audioData.originVoiceFileId}
+                                          disabled={recordSubmitLoading || !!audioData.originVoiceFileId || !isRecordDurationValid}
+                                          title={!isRecordDurationValid ? recordDurationTip : undefined}
                                   className="w-full mt-2 py-2 bg-green-600 text-white rounded-lg font-bold text-xs hover:bg-green-700 disabled:opacity-50 transition flex items-center justify-center gap-2"
                                        >
                                    {recordSubmitLoading && <Loader2 size={14} className="animate-spin" />}
@@ -1202,22 +1223,22 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
              <h2 className="text-xl font-bold text-foreground">{t.resultTitle || '生成结果'}</h2>
              <div className="flex gap-2">
                  {/* Clear History Button */}
-                 <button
+                 {/* <button
                     onClick={handleClearHistory}
                     disabled={generatedHistory.length === 0}
                     className="px-3 py-1.5 text-xs border border-border rounded-lg hover:bg-white dark:hover:bg-slate-800 transition-colors text-muted-foreground disabled:opacity-50"
                  >
                     {t.clear || '清空'}
-                 </button>
+                 </button> */}
                  
                  {/* Batch Download Button */}
-                 <button
+                 {/* <button
                     onClick={handleDownloadAll}
                     disabled={generatedHistory.length === 0}
                     className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1"
                  >
                     <Download size={12} /> {t.downloadAudio || '批量下载'}
-                 </button>
+                 </button> */}
              </div>
            </div>
 
