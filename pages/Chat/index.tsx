@@ -27,6 +27,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import AuthModal from '../../components/AuthModal';
+import BaseModal from '../../components/BaseModal';
 import {
   getImageSizes,
   getVideoRatios,
@@ -96,6 +97,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [temperature, setTemperature] = useState(1.0);
   const [presencePenalty, setPresencePenalty] = useState(0.4);
+  
+  // AI角色定义相关状态
+  const [showAIRoleModal, setShowAIRoleModal] = useState(false);
+  const [aiRoleContent, setAiRoleContent] = useState('');
+  const [aiRoleMessageId, setAiRoleMessageId] = useState('');
   
   // 图片生成参数
   const [imageSize, setImageSize] = useState('1024x1024');
@@ -1834,21 +1840,97 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 清空消息
   const handleClear = () => {
-    // 只在对话模式显示欢迎消息
+    // 检查是否存在system消息（AI角色定义）
+    const hasSystemMessage = messages.some(msg => msg.role === 'system');
+    
     if (currentMode === 'chat') {
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: t.welcomeMessage,
-      timestamp: Date.now()
+      if (hasSystemMessage) {
+        // 如果定义了AI角色，只保留system消息，不显示欢迎消息
+        const systemMessage = messages.find(msg => msg.role === 'system');
+        if (systemMessage) {
+          setMessages([systemMessage]);
+        } else {
+          setMessages([]);
+        }
+      } else {
+        // 如果没有定义AI角色，显示欢迎消息
+        setMessages([
+          {
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }
+        ]);
       }
-    ]);
     } else {
       // 图片和视频模式不显示欢迎消息
       setMessages([]);
     }
     setSelectedRecordId(null);
+  };
+
+  // 处理定义AI角色
+  const handleDefineAIRole = (messageId: string) => {
+    setAiRoleMessageId(messageId);
+    // 如果消息已存在，使用现有内容；否则使用默认内容
+    const message = messages.find(msg => msg.id === messageId);
+    if (message && message.role === 'system') {
+      setAiRoleContent(message.content || '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。');
+    } else {
+      setAiRoleContent('你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。');
+    }
+    setShowAIRoleModal(true);
+  };
+
+  // 确认AI角色定义
+  const confirmAIRole = () => {
+    if (!aiRoleContent.trim()) {
+      toast.error('请输入AI角色定义');
+      return;
+    }
+
+    // 检查是否已存在system消息
+    const existingSystemIndex = messages.findIndex(msg => msg.role === 'system');
+    
+    if (existingSystemIndex !== -1) {
+      // 如果已存在system消息，更新它
+      const updatedMessages = [...messages];
+      updatedMessages[existingSystemIndex] = {
+        ...updatedMessages[existingSystemIndex],
+        role: 'system' as const,
+        content: aiRoleContent.trim(), // 保存用户在弹窗中输入的角色定义内容
+      };
+      // 移除欢迎消息（如果存在）
+      const filteredMessages = updatedMessages.filter(msg => msg.id !== 'welcome');
+      setMessages(filteredMessages);
+      console.log('✅ 更新已存在的system消息:', updatedMessages[existingSystemIndex]);
+    } else {
+      // 如果不存在system消息，创建新的 system 消息
+      // role固定传system，content是用户在弹窗中输入的角色定义内容
+      const newMessage: ExtendedChatMessage = {
+        id: generateId(),
+        role: 'system',
+        content: aiRoleContent.trim(), // 保存用户在弹窗中输入的角色定义内容
+        timestamp: Date.now(),
+      };
+      // 移除欢迎消息，只保留system消息和其他消息
+      const filteredMessages = messages.filter(msg => msg.id !== 'welcome');
+      setMessages([newMessage, ...filteredMessages]);
+      console.log('✅ 创建新的system消息，已移除欢迎消息:', newMessage);
+    }
+
+    setShowAIRoleModal(false);
+    setAiRoleContent('');
+    setAiRoleMessageId('');
+    toast.success('AI角色定义已更新');
+  };
+
+  // 取消AI角色定义
+  const cancelAIRole = () => {
+    setShowAIRoleModal(false);
+    setAiRoleContent('');
+    setAiRoleMessageId('');
   };
 
   // 下载图片
@@ -2863,26 +2945,52 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 处理对话生成
   const handleChatGeneration = async (aiMessageId: string, currentInput: string) => {
-    // 构建消息历史
+    // 构建消息历史（参考 Nebula1 的实现方式）
     const buildMessages = (): ChatRequest['messages'] => {
       const history: ChatRequest['messages'] = [];
+      let systemMessage: { role: 'system'; content: string } | null = null;
+      const conversationMessages: ChatRequest['messages'] = [];
       
-      // 添加历史消息（排除欢迎消息和当前正在流式的AI消息）
+      // 遍历所有消息，构建完整的对话上下文（排除欢迎消息和当前正在流式的AI消息）
       messages.forEach(msg => {
-        if (msg.id !== 'welcome' && msg.id !== aiMessageId && msg.content.trim()) {
-          history.push({
+        // 跳过欢迎消息和当前正在流式的AI消息
+        if (msg.id === 'welcome' || msg.id === aiMessageId) {
+          return;
+        }
+        
+        // 处理 system 消息：只保留最新的一个（AI角色定义的内容）
+        // role固定传system，content是用户在弹窗中输入的角色定义内容
+        if (msg.role === 'system' && msg.content && msg.content.trim()) {
+          systemMessage = {
+            role: 'system',
+            content: msg.content.trim(), // 这里就是用户在弹窗中输入的角色定义内容
+          };
+          return;
+        }
+        
+        // 处理其他消息（user、assistant）
+        if ((msg.role === 'user' || msg.role === 'assistant') && msg.content && msg.content.trim()) {
+          conversationMessages.push({
             role: msg.role,
-            content: msg.content,
+            content: msg.content.trim(),
           });
         }
       });
 
+      // 按照 Nebula1 的格式：先添加 system 消息（如果有），然后是对话历史，最后是当前用户消息
+      // system消息格式：{ role: "system", content: "AI角色定义的输入内容" }
+      if (systemMessage) {
+        history.push(systemMessage);
+      }
+      history.push(...conversationMessages);
+      
       // 添加当前用户消息
       history.push({
         role: 'user',
         content: currentInput,
       });
 
+      console.log('📤 构建的消息列表:', JSON.stringify(history, null, 2));
       return history;
     };
 
@@ -4572,6 +4680,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
+              onDefineAIRole={handleDefineAIRole}
               currentMode={currentMode}
               isLoading={isLoading}
               isLastMessage={index === messages.length - 1}
@@ -4827,6 +4936,60 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           terms: '服务条款',
         }}
       />
+
+      {/* AI角色定义弹窗 */}
+      <BaseModal
+        isOpen={showAIRoleModal}
+        onClose={cancelAIRole}
+        title="定义AI助手角色"
+        width="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。
+          </p>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              AI角色定义：
+            </label>
+            <textarea
+              value={aiRoleContent}
+              onChange={(e) => setAiRoleContent(e.target.value)}
+              placeholder="例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题..."
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100 resize-y min-h-[120px]"
+            />
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-indigo-500">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <span>💡</span>
+              <span>提示：</span>
+            </p>
+            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+              <li>可以定义AI的专业领域（如编程、设计、写作等）</li>
+              <li>可以设置AI的性格特点（如友好、专业、幽默等）</li>
+              <li>可以指定AI的回复风格（如简洁、详细、创意等）</li>
+            </ul>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={cancelAIRole}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              onClick={confirmAIRole}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            >
+              确定
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 };
@@ -4844,6 +5007,7 @@ interface MessageBubbleProps {
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
+  onDefineAIRole?: (messageId: string) => void; // 定义AI助手角色
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
   isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
   isLastMessage?: boolean; // 是否是最后一条消息（用于判断是否显示生成中提示）
@@ -4909,6 +5073,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   progress = 0,
   onQuote,
   onResend,
+  onDefineAIRole,
   currentMode = 'chat',
   isLoading = false,
   isLastMessage = false
@@ -4916,6 +5081,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const navigate = useNavigate();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+  const isSystem = message.role === 'system';
+  const isWelcomeMessage = message.id === 'welcome';
   const [showReasoning, setShowReasoning] = useState(false);
 
   const formatTime = (timestamp: number) => {
@@ -4935,9 +5102,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border
         ${isUser 
           ? 'bg-indigo-600 border-indigo-600 text-white' 
+          : isSystem
+          ? 'bg-gray-500 border-gray-500 text-white'
           : 'bg-background border-border'}
       `}>
-        {isAssistant ? (
+        {isSystem ? (
+          <Settings size={16} className="text-white" />
+        ) : isAssistant ? (
           <Bot size={16} className="text-indigo-600" />
         ) : (
           <User size={16} />
@@ -4949,9 +5120,19 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
           ${isUser 
             ? 'bg-indigo-600 text-white rounded-tr-sm' 
+            : isSystem
+            ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-tl-sm text-foreground'
             : 'bg-background border border-border rounded-tl-sm text-foreground'}
         `}>
-          {isAssistant ? (
+          {isSystem ? (
+            <div className="text-foreground">
+              <div className="flex items-center gap-2 mb-2">
+                <Settings size={14} className="text-gray-500 dark:text-gray-400" />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">AI角色定义</span>
+              </div>
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            </div>
+          ) : isAssistant ? (
             <div className="markdown-content">
               {/* 如果有正在生成的视频，不显示content文本，只显示视频进度条 */}
               {message.content && message.content.trim() !== '' && !(message.generatedVideos && message.generatedVideos.some(v => v.status === 'processing')) ? (
@@ -5388,6 +5569,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <Copy size={12} />
             </button>
           )}
+            {/* 定义AI助手角色按钮 - 欢迎消息或system消息 */}
+            {onDefineAIRole && currentMode === 'chat' && (isWelcomeMessage || isSystem) && (
+              <button
+                onClick={() => onDefineAIRole(message.id)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title={isSystem ? '编辑AI角色' : '定义AI助手角色'}
+              >
+                <Settings size={12} />
+              </button>
+            )}
             {/* 引用按钮 - 只对用户消息和部分AI消息显示，图片模式下如果没有图片则不显示 */}
             {onQuote && (isUser || (isAssistant && message.action !== 'goFixPrice' && message.id !== 'welcome')) && 
               !(currentMode === 'image' && isAssistant && (!message.generatedImages || message.generatedImages.length === 0)) && (
