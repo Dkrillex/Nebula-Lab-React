@@ -223,6 +223,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     fetchAllModels();
   }, []);
 
+  // 监听模式切换，自动截断超出限制的输入内容
+  useEffect(() => {
+    const maxLength = currentMode === 'chat' ? 10000 : 2000;
+    setInputValue(prev => {
+      if (prev.length > maxLength) {
+        return prev.slice(0, maxLength);
+      }
+      return prev;
+    });
+  }, [currentMode]);
+
   // 同时获取所有模式的模型列表
   const fetchAllModels = async () => {
     try {
@@ -4614,7 +4625,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
                   rows={2}
                   style={{ 
-                    lineHeight: '1.5',
+                    lineHeight: '1.2',
                     fontFamily: 'inherit'
                   }}
                 />
@@ -4683,14 +4694,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                       {' '}· 支持格式: {ModelCapabilities.getFormatDisplayText(selectedModel)} · 最大: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
                     </span>
                   )}
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{inputValue.length}/{currentMode === 'chat' ? 10000 : 2000}</span>
               </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">{inputValue.length}/2000</span>
-            </div>
             </div>
             
             {/* 底部温馨提示 */}
             <p className="text-[10px] text-center text-muted mt-2">
-            {t.footerTip || '温馨提示: 所有内容均由AI模型生成,准确性和完整性无法保证,不代表平台的态度或观点'}
+              {t.footerTip || '温馨提示: 所有内容均由AI模型生成,准确性和完整性无法保证,不代表平台的态度或观点'}
             </p>
           </div>
         </div>
