@@ -74,11 +74,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { getData } = useVideoGenerationStore();
+  const { getData, setData } = useVideoGenerationStore();
   // 登录框状态
   const [showAuthModal, setShowAuthModal] = useState(false);
   // 模式切换：对话/图片生成/视频生成
   const [currentMode, setCurrentMode] = useState<Mode>('chat');
+  // 用于标记从图生视频跳转过来的图片，避免被自动清除
+  const imageToVideoImageRef = useRef<string | null>(null);
   
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([
     {
@@ -565,9 +567,45 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     const supportsUpload = ModelCapabilities.supportsImageUpload(selectedModel, currentMode as 'image' | 'video');
     
     // 如果当前模型不支持图片上传，且有已上传的图片，则清除
+    // 但是要保留从图生视频跳转过来的图片
     if (!supportsUpload && uploadedImages.length > 0) {
-      console.log(`模型 ${selectedModel} 不支持图片上传，清除已上传的图片`);
-      setUploadedImages([]);
+      // 检查是否有从图生视频跳转过来的图片
+      const hasImageToVideoImage = imageToVideoImageRef.current && 
+        uploadedImages.some(img => img === imageToVideoImageRef.current);
+      
+      if (!hasImageToVideoImage) {
+        console.log(`模型 ${selectedModel} 不支持图片上传，清除已上传的图片`);
+        setUploadedImages([]);
+      } else {
+        console.log(`模型 ${selectedModel} 不支持图片上传，但保留图生视频的图片`);
+        // 即使模型不支持，也保留图片，因为这是用户主动从图生视频跳转过来的
+      }
+    }
+    
+    // 如果是从图生视频跳转过来的，且模型支持图片上传，确保图片存在
+    // 但只有在标记还存在的情况下才保留（如果已经发送成功，标记会被清除）
+    if (supportsUpload && imageToVideoImageRef.current && currentMode === 'video') {
+      const hasImage = uploadedImages.some(img => img === imageToVideoImageRef.current);
+      if (!hasImage) {
+        console.log('检测到图生视频跳转，重新设置图片');
+        setUploadedImages([imageToVideoImageRef.current]);
+        if (!inputValue.trim()) {
+          setInputValue('根据这张图片生成视频');
+        }
+      }
+    }
+    
+    // 如果标记已经被清除（说明已经发送成功），且模型不支持图片上传，应该清除图片和输入内容
+    if (!supportsUpload && !imageToVideoImageRef.current && currentMode === 'video') {
+      if (uploadedImages.length > 0) {
+        console.log('图生视频标记已清除，且模型不支持图片上传，清除已上传的图片');
+        setUploadedImages([]);
+      }
+      // 如果输入内容是"根据这张图片生成视频"，也清除
+      if (inputValue.trim() === '根据这张图片生成视频') {
+        console.log('图生视频标记已清除，清除默认提示词');
+        setInputValue('');
+      }
     }
 
     // 图片模式：根据模型重置配置
@@ -1844,6 +1882,31 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     }
   };
 
+  // 图生视频：切换到视频模式并传递图片数据
+  const handleImageToVideo = (imageUrl: string, prompt?: string) => {
+    // 标记这是从图生视频跳转过来的图片
+    imageToVideoImageRef.current = imageUrl;
+    
+    // 先设置图片和提示词（在切换模式之前）
+    setUploadedImages([imageUrl]);
+    setInputValue('根据这张图片生成视频');
+    
+    // 切换到视频模式
+    setCurrentMode('video');
+    
+    // 使用多次 setTimeout 确保图片在模式切换和模型选择完成后仍然存在
+    setTimeout(() => {
+      setUploadedImages([imageUrl]);
+      setInputValue('根据这张图片生成视频');
+    }, 100);
+    
+    setTimeout(() => {
+      setUploadedImages([imageUrl]);
+      setInputValue('根据这张图片生成视频');
+      toast.success('已切换到视频模式，图片已自动加载');
+    }, 500);
+  };
+
   // 导入素材
   const handleExportMaterial = async (type: 'image' | 'video', url: string, prompt?: string) => {
     // 如果正在导入，直接返回
@@ -2644,6 +2707,27 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     
     if (!inputValue.trim() || isLoading || !selectedModel) return;
     if (currentMode === 'image' && uploadedImages.length === 0 && !inputValue.trim()) return;
+    
+    // 视频模式：如果上传了图片但模型不支持图片上传，提示并阻止发送
+    let shouldBlockSend = false;
+    if (currentMode === 'video' && uploadedImages.length > 0) {
+      const supportsUpload = ModelCapabilities.supportsImageUpload(selectedModel, 'video');
+      if (!supportsUpload) {
+        toast.error('该模型不支持上传图片，请切换模型');
+        shouldBlockSend = true;
+        return;
+      }
+    }
+    
+    // 如果通过了检查（没有阻止发送），且是从图生视频跳转过来的，清除标记
+    if (currentMode === 'video' && imageToVideoImageRef.current && uploadedImages.length > 0) {
+      // 检查图片是否匹配（说明这是从图生视频跳转过来的）
+      const isImageToVideoImage = uploadedImages.some(img => img === imageToVideoImageRef.current);
+      if (isImageToVideoImage) {
+        console.log('✅ 视频发送请求通过验证，清除图生视频标记');
+        imageToVideoImageRef.current = null;
+      }
+    }
 
     const userMsg: ExtendedChatMessage = {
       id: generateId(),
@@ -4472,6 +4556,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               onDownloadImage={handleDownloadImage}
               onDownloadVideo={handleDownloadVideo}
               onExportMaterial={handleExportMaterial}
+              onImageToVideo={handleImageToVideo}
               isExportingMaterial={isExportingMaterial}
               progress={progress}
               onQuote={handleQuoteMessage}
@@ -4740,6 +4825,7 @@ interface MessageBubbleProps {
   onDownloadImage?: (url: string) => void;
   onDownloadVideo?: (url: string) => void;
   onExportMaterial?: (type: 'image' | 'video', url: string, prompt?: string) => void;
+  onImageToVideo?: (imageUrl: string, prompt?: string) => void; // 图生视频
   isExportingMaterial?: boolean; // 是否正在导入素材
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
@@ -4802,6 +4888,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onDownloadImage,
   onDownloadVideo,
   onExportMaterial,
+  onImageToVideo,
   isExportingMaterial = false,
   progress = 0,
   onQuote,
@@ -5093,6 +5180,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       <path d="M832 464h-64v192c0 44.16-35.84 80-80 80H336c-44.16 0-80-35.84-80-80V464h-64c-17.68 0-32-14.32-32-32V192c0-17.68 14.32-32 32-32h640c17.68 0 32 14.32 32 32v240c0 17.68-14.32 32-32 32zM512 320L336 496h128v128h64V496h128L512 320z" />
                     </svg>
                   </button>
+                  {onImageToVideo && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onImageToVideo(img.url, img.prompt);
+                      }}
+                      className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm cursor-pointer"
+                      title="图生视频"
+                    >
+                      <Video size={16} className="text-gray-700 dark:text-gray-300" />
+                    </button>
+                  )}
                 </div>
                 {img.prompt && (
                   <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
