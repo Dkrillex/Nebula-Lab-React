@@ -2707,7 +2707,17 @@ export const translations: Record<string, Translation> = {
     },
     keysPage: {
       title: 'API Key Management',
+      subtitle: 'Manage your API keys to access services',
+      refresh: 'Refresh',
       createButton: 'New API Key',
+      tableHeaders: {
+        name: 'Name',
+        apiKey: 'API Key',
+        status: 'Status',
+        quotaUsage: 'Quota Usage',
+        expirationTime: 'Expiration Time',
+        operations: 'Operations'
+      },
       labels: {
         limit: 'Total Limit',
         remaining: 'Remaining',
@@ -2717,17 +2727,69 @@ export const translations: Record<string, Translation> = {
       },
       values: {
         unlimited: 'Unlimited',
-        never: 'Never'
+        never: 'Never Expires',
+        expired: 'Expired'
       },
       actions: {
         disable: 'Disable',
         enable: 'Enable',
         delete: 'Delete',
-        edit: 'Edit'
+        edit: 'Edit',
+        showKey: 'Show Key',
+        hideKey: 'Hide Key',
+        copyKey: 'Copy Key'
       },
       status: {
         active: 'Active',
         disabled: 'Disabled'
+      },
+      loading: 'Loading...',
+      emptyState: {
+        title: 'No Tokens',
+        message: 'Click the "New API Key" button above to create your first token'
+      },
+      totalRecords: 'Total {count} records',
+      confirmDelete: {
+        title: 'Confirm Delete',
+        message: 'Are you sure you want to delete token "{name}"?'
+      },
+      messages: {
+        copySuccess: 'Key copied',
+        copyFailed: 'Copy failed'
+      },
+      form: {
+        title: 'New API Key',
+        name: 'Name',
+        namePlaceholder: 'Please enter token name',
+        nameRequired: 'Please enter token name',
+        enableModelLimits: 'Enable Model Restrictions',
+        modelLimits: 'Model Restrictions',
+        searchModel: 'Search models...',
+        unlimitedQuota: 'Unlimited Quota',
+        totalQuota: 'Total Quota (RMB)',
+        totalQuotaPlaceholder: 'Please enter RMB quota',
+        totalQuotaRequired: 'Please enter total quota (must be greater than 0)',
+        usedQuota: 'Used Quota',
+        remainingQuota: 'Remaining Quota',
+        expirationTime: 'Expiration Time',
+        apiKey: 'API Key',
+        yes: 'Yes',
+        no: 'No',
+        quickExpire: {
+          never: 'Never Expires',
+          oneHour: '1 Hour',
+          oneDay: '1 Day',
+          oneMonth: '1 Month'
+        },
+        buttons: {
+          save: 'Save',
+          saving: 'Saving...',
+          close: 'Close'
+        },
+        errors: {
+          nameRequired: 'Please enter token name',
+          quotaRequired: 'Please enter total quota (must be greater than 0)'
+        }
       }
     },
     expensesPage: {
@@ -4610,7 +4672,17 @@ export const translations: Record<string, Translation> = {
     },
     keysPage: {
       title: 'API 令牌管理',
+      subtitle: '管理您的 API 密钥以访问服务',
+      refresh: '刷新',
       createButton: '新建 API 密钥',
+      tableHeaders: {
+        name: '名称',
+        apiKey: 'API Key',
+        status: '状态',
+        quotaUsage: '额度使用',
+        expirationTime: '过期时间',
+        operations: '操作'
+      },
       labels: {
         limit: '总额度',
         remaining: '剩余额度',
@@ -4620,17 +4692,69 @@ export const translations: Record<string, Translation> = {
       },
       values: {
         unlimited: '无限',
-        never: '永不过期'
+        never: '永不过期',
+        expired: '已过期'
       },
       actions: {
-        disable: '禁用令牌',
-        enable: '启用令牌',
-        delete: '删除令牌',
-        edit: '编辑令牌'
+        disable: '禁用',
+        enable: '启用',
+        delete: '删除',
+        edit: '编辑',
+        showKey: '显示密钥',
+        hideKey: '隐藏密钥',
+        copyKey: '复制密钥'
       },
       status: {
         active: '启用',
         disabled: '禁用'
+      },
+      loading: '加载中...',
+      emptyState: {
+        title: '暂无令牌',
+        message: '点击上方"新建 API 密钥"按钮创建您的第一个令牌'
+      },
+      totalRecords: '共 {count} 条记录',
+      confirmDelete: {
+        title: '确认删除',
+        message: '确认删除令牌 "{name}" 吗？'
+      },
+      messages: {
+        copySuccess: '密钥已复制',
+        copyFailed: '复制失败'
+      },
+      form: {
+        title: '新建 API 密钥',
+        name: '名称',
+        namePlaceholder: '请输入令牌名称',
+        nameRequired: '请输入令牌名称',
+        enableModelLimits: '启用模型限制',
+        modelLimits: '模型限制',
+        searchModel: '搜索模型...',
+        unlimitedQuota: '无限额度',
+        totalQuota: '总额度（人民币）',
+        totalQuotaPlaceholder: '请输入人民币额度',
+        totalQuotaRequired: '请输入总额度（必须大于0）',
+        usedQuota: '已用额度',
+        remainingQuota: '剩余额度',
+        expirationTime: '过期时间',
+        apiKey: 'API密钥',
+        yes: '是',
+        no: '否',
+        quickExpire: {
+          never: '永不过期',
+          oneHour: '1小时',
+          oneDay: '1天',
+          oneMonth: '1个月'
+        },
+        buttons: {
+          save: '保存',
+          saving: '保存中...',
+          close: '关闭'
+        },
+        errors: {
+          nameRequired: '请输入令牌名称',
+          quotaRequired: '请输入总额度（必须大于0）'
+        }
       }
     },
     aiVideoFaceSwapPage: {
@@ -6084,7 +6208,17 @@ export const translations: Record<string, Translation> = {
     },
     keysPage: {
       title: 'Manajemen Kunci API',
+      subtitle: 'Kelola kunci API Anda untuk mengakses layanan',
+      refresh: 'Segarkan',
       createButton: 'Kunci API Baru',
+      tableHeaders: {
+        name: 'Nama',
+        apiKey: 'API Key',
+        status: 'Status',
+        quotaUsage: 'Penggunaan Kuota',
+        expirationTime: 'Waktu Kedaluwarsa',
+        operations: 'Operasi'
+      },
       labels: {
         limit: 'Batas Total',
         remaining: 'Tersisa',
@@ -6094,17 +6228,69 @@ export const translations: Record<string, Translation> = {
       },
       values: {
         unlimited: 'Tidak Terbatas',
-        never: 'Tidak Pernah'
+        never: 'Tidak Pernah Kedaluwarsa',
+        expired: 'Kedaluwarsa'
       },
       actions: {
         disable: 'Nonaktifkan',
         enable: 'Aktifkan',
         delete: 'Hapus',
-        edit: 'Edit'
+        edit: 'Edit',
+        showKey: 'Tampilkan Kunci',
+        hideKey: 'Sembunyikan Kunci',
+        copyKey: 'Salin Kunci'
       },
       status: {
         active: 'Aktif',
         disabled: 'Dinonaktifkan'
+      },
+      loading: 'Memuat...',
+      emptyState: {
+        title: 'Tidak Ada Token',
+        message: 'Klik tombol "Kunci API Baru" di atas untuk membuat token pertama Anda'
+      },
+      totalRecords: 'Total {count} catatan',
+      confirmDelete: {
+        title: 'Konfirmasi Hapus',
+        message: 'Apakah Anda yakin ingin menghapus token "{name}"?'
+      },
+      messages: {
+        copySuccess: 'Kunci disalin',
+        copyFailed: 'Gagal menyalin'
+      },
+      form: {
+        title: 'Kunci API Baru',
+        name: 'Nama',
+        namePlaceholder: 'Silakan masukkan nama token',
+        nameRequired: 'Silakan masukkan nama token',
+        enableModelLimits: 'Aktifkan Pembatasan Model',
+        modelLimits: 'Pembatasan Model',
+        searchModel: 'Cari model...',
+        unlimitedQuota: 'Kuota Tidak Terbatas',
+        totalQuota: 'Total Kuota (RMB)',
+        totalQuotaPlaceholder: 'Silakan masukkan kuota RMB',
+        totalQuotaRequired: 'Silakan masukkan total kuota (harus lebih besar dari 0)',
+        usedQuota: 'Kuota yang Digunakan',
+        remainingQuota: 'Kuota Tersisa',
+        expirationTime: 'Waktu Kedaluwarsa',
+        apiKey: 'Kunci API',
+        yes: 'Ya',
+        no: 'Tidak',
+        quickExpire: {
+          never: 'Tidak Pernah Kedaluwarsa',
+          oneHour: '1 Jam',
+          oneDay: '1 Hari',
+          oneMonth: '1 Bulan'
+        },
+        buttons: {
+          save: 'Simpan',
+          saving: 'Menyimpan...',
+          close: 'Tutup'
+        },
+        errors: {
+          nameRequired: 'Silakan masukkan nama token',
+          quotaRequired: 'Silakan masukkan total kuota (harus lebih besar dari 0)'
+        }
       }
     },
     expensesPage: {

@@ -528,7 +528,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
         <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 p-8 flex flex-col relative overflow-hidden">
            <div className="flex items-center justify-between mb-6">
              <h2 className="text-xl font-bold text-foreground">{t.resultTitle}</h2>
-             {previewImage && (
+             {/* {previewImage && (
                <button 
                  onClick={handleImageToVideo}
                  className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-md"
@@ -536,7 +536,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
                  <Video size={16} />
                  {t.actions.imageToVideo}
                </button>
-             )}
+             )} */}
            </div>
 
            {/* Main Preview Area */}

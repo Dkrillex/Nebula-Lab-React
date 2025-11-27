@@ -35,6 +35,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const [inputValue, setInputValue] = useState('');
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isCreateDragOver, setIsCreateDragOver] = useState(false);
   
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
@@ -472,24 +473,25 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     imageInputRef.current?.click();
   };
 
-  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { files } = event.target;
-    if (!files || files.length === 0) return;
+  const processPendingImages = async (filesInput: FileList | File[] | null) => {
+    if (!filesInput) return;
 
     const remainingSlots = MAX_CREATE_UPLOAD_IMAGES - pendingImages.length;
     if (remainingSlots <= 0) {
       toast.error(`最多上传 ${MAX_CREATE_UPLOAD_IMAGES} 张图片`);
-      event.target.value = '';
       return;
     }
 
-    const imageFiles = Array.from(files)
+    const filesArray = Array.isArray(filesInput)
+      ? filesInput
+      : Array.from(filesInput as ArrayLike<File>);
+
+    const imageFiles = filesArray
       .filter((file) => file.type.startsWith('image/'))
       .slice(0, remainingSlots);
 
     if (imageFiles.length === 0) {
       toast.error('请选择图片文件');
-      event.target.value = '';
       return;
     }
 
@@ -498,7 +500,6 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     );
     if (oversizeFile) {
       toast.error(`单张图片不能超过 ${MAX_CREATE_UPLOAD_SIZE_MB}MB`);
-      event.target.value = '';
       return;
     }
 
@@ -511,7 +512,35 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       toast.error('图片读取失败，请重试');
     } finally {
       setIsUploadingImages(false);
-      event.target.value = '';
+    }
+  };
+
+  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    await processPendingImages(event.target.files);
+    event.target.value = '';
+  };
+
+  const handleCreateDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(true);
+  };
+
+  const handleCreateDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(false);
+  };
+
+  const handleCreateDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await processPendingImages(files);
     }
   };
 
@@ -582,7 +611,14 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
               {/* Input Box */}
               <div className="max-w-3xl mx-auto relative mb-12">
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
+                <div
+                  className={`relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary ${
+                    isCreateDragOver ? 'border-primary bg-primary/5' : ''
+                  }`}
+                  onDragOver={handleCreateDragOver}
+                  onDragLeave={handleCreateDragLeave}
+                  onDrop={handleCreateDrop}
+                >
                   <textarea 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}

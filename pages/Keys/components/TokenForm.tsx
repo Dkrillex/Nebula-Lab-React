@@ -5,6 +5,8 @@ import { modelService } from '../../../services/modelService';
 import { useAuthStore } from '../../../stores/authStore';
 import { AIModel } from '../../../types';
 import toast from 'react-hot-toast';
+import { useAppOutletContext } from '../../../router/context';
+import { translations } from '../../../translations';
 
 interface TokenFormProps {
   visible: boolean;
@@ -22,6 +24,10 @@ const TokenForm: React.FC<TokenFormProps> = ({
   onSuccess,
 }) => {
   const { user } = useAuthStore();
+  const { t: rawT } = useAppOutletContext();
+  const lang = localStorage.getItem('language') || 'zh';
+  const keysPageT = rawT?.keysPage || translations[lang]?.keysPage || translations['zh'].keysPage;
+  const t = keysPageT.form;
   const [formData, setFormData] = useState<Partial<TokenFormType>>({
     name: '',
     status: 1,
@@ -65,7 +71,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
         }))
       );
     } catch (error) {
-      console.error('加载模型列表失败:', error);
+      // 错误提示已由封装的 request 自动处理
       setModelOptions([]);
     }
   };
@@ -135,12 +141,12 @@ const TokenForm: React.FC<TokenFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.name?.trim()) {
-      newErrors.name = '请输入令牌名称';
+      newErrors.name = t.errors.nameRequired;
     }
 
     if (formData.unlimitedQuota === 0) {
       if (!formData.quotaRmb || formData.quotaRmb <= 0) {
-        newErrors.quotaRmb = '请输入总额度（必须大于0）';
+        newErrors.quotaRmb = t.errors.quotaRequired;
       }
     }
 
@@ -232,9 +238,9 @@ const TokenForm: React.FC<TokenFormProps> = ({
 
       onSuccess();
       onClose();
+      // 成功提示已由封装的 request 自动处理（如果配置了 successMessageMode）
     } catch (error) {
-      console.error('保存失败:', error);
-      toast.error('保存失败，请重试');
+      // 错误提示已由封装的 request 自动处理
     } finally {
       setLoading(false);
     }
@@ -283,7 +289,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
     if (token?.key) {
       try {
         await navigator.clipboard.writeText(`sk-${token.key}`);
-        toast.success('密钥已复制');
+        toast.success(keysPageT.messages.copySuccess);
       } catch (error) {
         console.error('复制失败:', error);
       }
@@ -292,11 +298,13 @@ const TokenForm: React.FC<TokenFormProps> = ({
 
   // 格式化过期时间显示
   const getExpiredTimeDisplay = (): string => {
+    const locale = lang === 'en' ? 'en-US' : lang === 'id' ? 'id-ID' : 'zh-CN';
+    
     if (!token?.expiredTime || token.expiredTime === null) {
-      return '永不过期';
+      return keysPageT.values.never;
     }
     if (token.expiredTime === -1) {
-      return '永不过期';
+      return keysPageT.values.never;
     }
 
     let timestamp: number;
@@ -307,10 +315,10 @@ const TokenForm: React.FC<TokenFormProps> = ({
     }
 
     if (timestamp < Date.now()) {
-      return '已过期';
+      return keysPageT.values.expired;
     }
 
-    return new Date(timestamp).toLocaleString('zh-CN', {
+    return new Date(timestamp).toLocaleString(locale, {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -344,7 +352,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-border bg-background flex-shrink-0">
           <div className="flex items-center gap-3">
             {token && <h2 className="text-lg font-semibold text-foreground">{token.name || token.id}</h2>}
-            {!token && <h2 className="text-lg font-semibold text-foreground">新建 API 密钥</h2>}
+            {!token && <h2 className="text-lg font-semibold text-foreground">{t.title}</h2>}
           </div>
           <button
             onClick={onClose}
@@ -360,7 +368,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* 令牌名称 */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                名称 <span className="text-red-500">*</span>
+                {t.name} <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -370,7 +378,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                 className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground ${
                   errors.name ? 'border-red-500' : 'border-border'
                 } disabled:opacity-50`}
-                placeholder="请输入令牌名称"
+                placeholder={t.namePlaceholder}
               />
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
             </div>
@@ -378,7 +386,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* API密钥（仅查看模式） */}
             {isViewMode && token?.key && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">API密钥</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.apiKey}</label>
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -390,14 +398,14 @@ const TokenForm: React.FC<TokenFormProps> = ({
                   <button
                     onClick={() => setKeyVisible(!keyVisible)}
                     className="p-2 border border-border rounded-lg hover:bg-surface transition-colors"
-                    title={keyVisible ? '隐藏密钥' : '显示密钥'}
+                    title={keyVisible ? keysPageT.actions.hideKey : keysPageT.actions.showKey}
                   >
                     {keyVisible ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                   <button
                     onClick={copyKey}
                     className="p-2 border border-border rounded-lg hover:bg-surface transition-colors"
-                    title="复制密钥"
+                    title={keysPageT.actions.copyKey}
                   >
                     <Copy size={16} />
                   </button>
@@ -408,7 +416,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* 启用模型限制 */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                启用模型限制
+                {t.enableModelLimits}
               </label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -419,7 +427,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                     disabled={isViewMode}
                     className="disabled:opacity-50"
                   />
-                  <span>是</span>
+                  <span>{t.yes}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -429,7 +437,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                     disabled={isViewMode}
                     className="disabled:opacity-50"
                   />
-                  <span>否</span>
+                  <span>{t.no}</span>
                 </label>
               </div>
             </div>
@@ -438,7 +446,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {formData.modelLimitsEnabled === 1 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  模型限制
+                  {t.modelLimits}
                 </label>
                 <div className="space-y-2">
                   <input
@@ -449,7 +457,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                       loadModels(e.target.value);
                     }}
                     disabled={isViewMode}
-                    placeholder="搜索模型..."
+                    placeholder={t.searchModel}
                     className="w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground disabled:opacity-50"
                   />
                   <div className="max-h-40 overflow-y-auto border border-border rounded-lg p-2">
@@ -495,7 +503,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
 
             {/* 无限额度 */}
             <div>
-              <label className="block text-sm font-medium text-foreground mb-2">无限额度</label>
+              <label className="block text-sm font-medium text-foreground mb-2">{t.unlimitedQuota}</label>
               <div className="flex gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -505,7 +513,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                     disabled={isViewMode}
                     className="disabled:opacity-50"
                   />
-                  <span>是</span>
+                  <span>{t.yes}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -515,7 +523,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                     disabled={isViewMode}
                     className="disabled:opacity-50"
                   />
-                  <span>否</span>
+                  <span>{t.no}</span>
                 </label>
               </div>
             </div>
@@ -524,7 +532,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {formData.unlimitedQuota === 0 && (
               <div>
                 <label className="block text-sm font-medium text-foreground mb-2">
-                  总额度（人民币） <span className="text-red-500">*</span>
+                  {t.totalQuota} <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -541,7 +549,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
                   className={`w-full px-3 py-2 border rounded-lg bg-background text-foreground ${
                     errors.quotaRmb ? 'border-red-500' : 'border-border'
                   } disabled:opacity-50`}
-                  placeholder="请输入人民币额度"
+                  placeholder={t.totalQuotaPlaceholder}
                 />
                 {errors.quotaRmb && (
                   <p className="text-red-500 text-xs mt-1">{errors.quotaRmb}</p>
@@ -552,7 +560,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* 已用额度（仅查看模式） */}
             {isViewMode && token && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">已用额度</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.usedQuota}</label>
                 <div className="text-gray-700 dark:text-gray-300 font-semibold">
                   ￥{((token.usedQuota || 0) * 7.3 / 500000).toFixed(2)}
                 </div>
@@ -562,7 +570,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* 剩余额度（仅查看模式） */}
             {isViewMode && token && token.unlimitedQuota === 0 && (
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">剩余额度</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.remainingQuota}</label>
                 <div className="text-gray-700 dark:text-gray-300 font-semibold">
                   ￥{((token.remainQuota || 0) * 7.3 / 500000).toFixed(2)}
                 </div>
@@ -572,7 +580,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
             {/* 过期时间 */}
             <div>
               <label className="block text-sm font-medium text-foreground mb-2">
-                过期时间 {isViewMode ? '' : <span className="text-red-500">*</span>}
+                {t.expirationTime} {isViewMode ? '' : <span className="text-red-500">*</span>}
               </label>
               {isViewMode ? (
                 <div className="px-3 py-2 border border-border rounded-lg bg-background">
@@ -591,25 +599,25 @@ const TokenForm: React.FC<TokenFormProps> = ({
                       onClick={() => setQuickExpire('never')}
                       className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
                     >
-                      永不过期
+                      {t.quickExpire.never}
                     </button>
                     <button
                       onClick={() => setQuickExpire('hour')}
                       className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
                     >
-                      1小时
+                      {t.quickExpire.oneHour}
                     </button>
                     <button
                       onClick={() => setQuickExpire('day')}
                       className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
                     >
-                      1天
+                      {t.quickExpire.oneDay}
                     </button>
                     <button
                       onClick={() => setQuickExpire('month')}
                       className="px-3 py-1 text-xs border border-border rounded hover:bg-surface transition-colors"
                     >
-                      1个月
+                      {t.quickExpire.oneMonth}
                     </button>
                   </div>
                 </>
@@ -626,14 +634,14 @@ const TokenForm: React.FC<TokenFormProps> = ({
               disabled={loading}
               className="px-6 py-2 bg-gray-800 dark:bg-white hover:bg-gray-900 dark:hover:bg-gray-100 text-white dark:text-black rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? '保存中...' : '保存'}
+              {loading ? t.buttons.saving : t.buttons.save}
             </button>
           )}
           <button
             onClick={onClose}
             className="px-6 py-2 border border-border rounded-lg hover:bg-surface transition-colors text-foreground"
           >
-            关闭
+            {t.buttons.close}
           </button>
         </div>
       </div>

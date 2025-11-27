@@ -2,13 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { useAppOutletContext } from '../../router/context';
 import { translations } from '../../translations';
 import { RefreshCw, Wallet, Receipt, Clock, ArrowRightLeft, Download, Search, X, Maximize2, Settings, Upload } from 'lucide-react';
-import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount, TeamLog, TeamLogsQuery } from '../../services/expenseService';
+import { expenseService, ExpenseLog, UserQuotaInfo, ScoreRecord, UserAccount, TeamLog, TeamLogsQuery, BalanceDailySummary, PointsDailySummary } from '../../services/expenseService';
 import { useAuthStore } from '../../stores/authStore';
 import { teamService } from '../../services/teamService';
 import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
-import DailySummaryTable, { BalanceDailySummary, PointsDailySummary } from './components/DailySummaryTable';
+import DailySummaryTable from './components/DailySummaryTable';
 
 interface ExpensesPageProps {
   t?: any;
@@ -94,6 +94,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   // 明细列表展开状态
   const [detailExpanded, setDetailExpanded] = useState(false);
   
+  // 选中的日期（用于查询当天详情）
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  
   // 导入模态框状态
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   
@@ -166,8 +169,6 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           current: page,
           total: res.total || logs.length,
         }));
-        // 计算日汇总数据
-        calculateDailySummary(logs);
       }
     } catch (error) {
       console.error('获取费用记录失败:', error);
@@ -235,8 +236,6 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           current: page,
           total: res.total || scores.length,
         }));
-        // 计算积分日汇总数据
-        calculatePointsDailySummary(scores);
       }
     } catch (error) {
       console.error('获取积分流水失败:', error);
@@ -592,11 +591,15 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   const initData = async () => {
     if (currentMode === 'balance') {
       if (user?.nebulaApiId) {
-        await Promise.all([fetchQuotaInfo(), fetchExpenseLogs(1)]);
+        await fetchQuotaInfo();
+        // 初始化时自动选中第一条数据并查询明细
+        await fetchBalanceDailySummary(true);
       }
     } else if (currentMode === 'points') {
       if (user?.userId) {
-        await Promise.all([fetchUserAccounts(), fetchScoreList(1)]);
+        await fetchUserAccounts();
+        // 初始化时自动选中第一条数据并查询明细
+        await fetchPointsDailySummary(true);
       }
     } else if (currentMode === 'logos') {
       if (isShowTeamLogos) {
@@ -616,11 +619,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   const reloadInitData = async () => {
     if (currentMode === 'balance') {
       if (user?.nebulaApiId) {
-        await Promise.all([fetchExpenseLogs(1)]);
+        await fetchBalanceDailySummary();
       }
     } else if (currentMode === 'points') {
       if (user?.userId) {
-        await Promise.all([fetchScoreList(1)]);
+        await fetchPointsDailySummary();
       }
     } else if (currentMode === 'logos') {
       if (isShowTeamLogos) {
@@ -693,101 +696,151 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     return Number(points).toFixed(2);
   };
 
-  // 计算余额日汇总数据
-  const calculateDailySummary = (logs: ExpenseLog[]) => {
-    const dailyMap = new Map<string, {
-      totalConsumption: number;
-      totalRecharge: number;
-      usageCount: number;
-      totalTokens: number;
-    }>();
+  // 获取余额日汇总数据
+  const fetchBalanceDailySummary = async (autoSelectFirst: boolean = false) => {
+    if (!user?.nebulaApiId) return;
 
-    logs.forEach(log => {
-      // 提取日期部分
-      let dateKey = '';
-      if (log.createTime) {
-        dateKey = log.createTime.split(' ')[0];
-      } else if (log.createdAt) {
-        const timestamp = typeof log.createdAt === 'number' 
-          ? (log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000)
-          : Date.now();
-        const date = new Date(timestamp);
-        dateKey = formatDateToLocalString(date);
+    try {
+      const params: any = {
+        userId: user.nebulaApiId,
+      };
+      
+      // 开始时间加上 00:00:00，结束时间加上 23:59:59
+      if (balanceDateRange[0]) {
+        params.startDate = formatDateToLocalString(balanceDateRange[0]) + ' 00:00:00';
+      }
+      if (balanceDateRange[1]) {
+        params.endDate = formatDateToLocalString(balanceDateRange[1]) + ' 23:59:59';
       }
       
-      if (!dateKey) return;
-
-      const existing = dailyMap.get(dateKey) || {
-        totalConsumption: 0,
-        totalRecharge: 0,
-        usageCount: 0,
-        totalTokens: 0,
-      };
-
-      const isConsumption = String(log.type) === '2';
-      const amount = Math.abs(Number(log.quotaRmb || log.quota || 0));
-      const tokens = (Number(log.promptTokens) || 0) + (Number(log.completionTokens) || 0);
-
-      if (isConsumption) {
-        existing.totalConsumption += amount;
-        existing.usageCount += 1;
-        existing.totalTokens += tokens;
-      } else {
-        existing.totalRecharge += amount;
+      const res = await expenseService.getBalanceDailySummary(params);
+      // requestClient 会自动解包，直接返回 data 字段的内容（数组）
+      let summary: BalanceDailySummary[] = [];
+      if (Array.isArray(res)) {
+        summary = res;
+      } else if (res?.rows) {
+        summary = res.rows;
+      } else if (res?.data) {
+        summary = res.data;
       }
-
-      dailyMap.set(dateKey, existing);
-    });
-
-    // 转换为数组并排序（按日期降序）
-    const summary = Array.from(dailyMap.entries()).map(([date, data]) => ({
-      date,
-      totalConsumption: data.totalConsumption,
-      totalRecharge: data.totalRecharge,
-      netAmount: data.totalRecharge - data.totalConsumption,
-      usageCount: data.usageCount,
-      totalTokens: data.totalTokens,
-    })).sort((a, b) => b.date.localeCompare(a.date));
-
-    setDailySummary(summary);
+      setDailySummary(summary);
+      
+      // 如果启用自动选择第一条，且有数据，则自动查询第一条的明细
+      if (autoSelectFirst && summary.length > 0) {
+        const firstDate = summary[0].date;
+        setSelectedDate(firstDate);
+        await fetchDateDetails(firstDate);
+      }
+    } catch (error) {
+      console.error('获取余额日汇总失败:', error);
+      setDailySummary([]);
+    }
   };
 
-  // 计算积分日汇总数据
-  const calculatePointsDailySummary = (scores: ScoreRecord[]) => {
-    const dailyMap = new Map<string, {
-      totalDeduct: number;
-      usageCount: number;
-    }>();
+  // 获取积分日汇总数据
+  const fetchPointsDailySummary = async (autoSelectFirst: boolean = false) => {
+    if (!user?.userId) return;
 
-    scores.forEach(score => {
-      // 提取日期部分
-      let dateKey = '';
-      if (score.createTime) {
-        dateKey = score.createTime.split(' ')[0];
+    try {
+      const params: any = {
+        createBy: user.userId,
+      };
+      
+      // 开始时间加上 00:00:00，结束时间加上 23:59:59
+      if (pointsDateRange[0]) {
+        params.startDate = formatDateToLocalString(pointsDateRange[0]) + ' 00:00:00';
+      }
+      if (pointsDateRange[1]) {
+        params.endDate = formatDateToLocalString(pointsDateRange[1]) + ' 23:59:59';
       }
       
-      if (!dateKey) return;
+      const res = await expenseService.getPointsDailySummary(params);
+      // requestClient 会自动解包，直接返回 data 字段的内容（数组）
+      let summary: PointsDailySummary[] = [];
+      if (Array.isArray(res)) {
+        summary = res;
+      } else if (res?.rows) {
+        summary = res.rows;
+      } else if (res?.data) {
+        summary = res.data;
+      }
+      setPointsDailySummary(summary);
+      
+      // 如果启用自动选择第一条，且有数据，则自动查询第一条的明细
+      if (autoSelectFirst && summary.length > 0) {
+        const firstDate = summary[0].date;
+        setSelectedDate(firstDate);
+        await fetchDateDetails(firstDate);
+      }
+    } catch (error) {
+      console.error('获取积分日汇总失败:', error);
+      setPointsDailySummary([]);
+    }
+  };
 
-      const existing = dailyMap.get(dateKey) || {
-        totalDeduct: 0,
-        usageCount: 0,
-      };
-
-      const scoreValue = Math.abs(Number(score.score) || 0);
-      existing.totalDeduct += scoreValue;
-      existing.usageCount += 1;
-
-      dailyMap.set(dateKey, existing);
-    });
-
-    // 转换为数组并排序（按日期降序）
-    const summary = Array.from(dailyMap.entries()).map(([date, data]) => ({
-      date,
-      totalDeduct: data.totalDeduct,
-      usageCount: data.usageCount,
-    })).sort((a, b) => b.date.localeCompare(a.date));
-
-    setPointsDailySummary(summary);
+  // 查询指定日期的详情
+  const fetchDateDetails = async (date: string) => {
+    if (currentMode === 'balance') {
+      if (!user?.nebulaApiId) return;
+      
+      try {
+        setLoading(true);
+        const params: any = {
+          pageNum: 1,
+          pageSize: pagination.pageSize,
+          userId: user.nebulaApiId,
+          startDate: date + ' 00:00:00',
+          endDate: date + ' 23:59:59',
+        };
+        
+        const res = await expenseService.getExpenseLogs(params);
+        if (res.rows) {
+          const logs = res.rows || res.data || [];
+          setExpenseLogs(logs);
+          setPagination(prev => ({
+            ...prev,
+            current: 1,
+            total: res.total || logs.length,
+          }));
+          setDetailExpanded(true);
+          setSelectedDate(date);
+        }
+      } catch (error) {
+        console.error('获取日期详情失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    } else if (currentMode === 'points') {
+      if (!user?.userId) return;
+      
+      try {
+        setLoading(true);
+        const params: any = {
+          pageNum: 1,
+          pageSize: pagination.pageSize,
+          createBy: user.userId,
+          startDate: date + ' 00:00:00',
+          endDate: date + ' 23:59:59',
+        };
+        
+        const res = await expenseService.getScoreList(params);
+        if (res.rows) {
+          const scores = res.rows || res.data || [];
+          setScoreList(scores);
+          setPagination(prev => ({
+            ...prev,
+            current: 1,
+            total: res.total || scores.length,
+          }));
+          setDetailExpanded(true);
+          setSelectedDate(date);
+        }
+      } catch (error) {
+        console.error('获取日期详情失败:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
   };
 
   const convertLogToExpenseRecord = (log: ExpenseLog) => {
@@ -1041,6 +1094,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                     <div className="relative flex-1 min-w-0">
                       <input
                         type="date"
+                        lang="en"
                         value={currentMode === 'balance' 
                           ? formatDateToLocalString(balanceDateRange[0])
                           : formatDateToLocalString(pointsDateRange[0])
@@ -1048,19 +1102,34 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         onChange={(e) => {
                           if (currentMode === 'balance') {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
-                            setBalanceDateRange([date, balanceDateRange[1]]);
+                            // 如果选择的开始日期晚于结束日期，自动调整结束日期
+                            if (date && balanceDateRange[1] && date > balanceDateRange[1]) {
+                              setBalanceDateRange([date, date]);
+                            } else {
+                              setBalanceDateRange([date, balanceDateRange[1]]);
+                            }
                           } else {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
-                            setPointsDateRange([date, pointsDateRange[1]]);
+                            // 如果选择的开始日期晚于结束日期，自动调整结束日期
+                            if (date && pointsDateRange[1] && date > pointsDateRange[1]) {
+                              setPointsDateRange([date, date]);
+                            } else {
+                              setPointsDateRange([date, pointsDateRange[1]]);
+                            }
                           }
                         }}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                        max={currentMode === 'balance' 
+                          ? formatDateToLocalString(balanceDateRange[1] || getToday())
+                          : formatDateToLocalString(pointsDateRange[1] || getToday())
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                       />
                     </div>
                     <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">{t.to}</span>
                     <div className="relative flex-1 min-w-0">
                       <input
                         type="date"
+                        lang="en"
                         value={currentMode === 'balance'
                           ? formatDateToLocalString(balanceDateRange[1])
                           : formatDateToLocalString(pointsDateRange[1])
@@ -1068,21 +1137,35 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                         onChange={(e) => {
                           if (currentMode === 'balance') {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
-                            setBalanceDateRange([balanceDateRange[0], date]);
+                            // 如果选择的结束日期早于开始日期，自动调整开始日期
+                            if (date && balanceDateRange[0] && date < balanceDateRange[0]) {
+                              setBalanceDateRange([date, date]);
+                            } else {
+                              setBalanceDateRange([balanceDateRange[0], date]);
+                            }
                           } else {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
-                            setPointsDateRange([pointsDateRange[0], date]);
+                            // 如果选择的结束日期早于开始日期，自动调整开始日期
+                            if (date && pointsDateRange[0] && date < pointsDateRange[0]) {
+                              setPointsDateRange([date, date]);
+                            } else {
+                              setPointsDateRange([pointsDateRange[0], date]);
+                            }
                           }
                         }}
-                        className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                        min={currentMode === 'balance' 
+                          ? formatDateToLocalString(balanceDateRange[0] || new Date(0))
+                          : formatDateToLocalString(pointsDateRange[0] || new Date(0))
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                       />
                     </div>
                     <button
                       onClick={() => {
                         if (currentMode === 'balance') {
-                          fetchExpenseLogs(1);
+                          fetchBalanceDailySummary(true); // 查询后自动选中第一条
                         } else {
-                          fetchScoreList(1);
+                          fetchPointsDailySummary(true); // 查询后自动选中第一条
                         }
                       }}
                       disabled={loading}
@@ -1098,12 +1181,24 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
 
             {/* 余额模式：日汇总表格 */}
             {currentMode === 'balance' && (
-              <DailySummaryTable mode="balance" data={dailySummary} t={t} />
+              <DailySummaryTable 
+                mode="balance" 
+                data={dailySummary} 
+                t={t}
+                onDateClick={fetchDateDetails}
+                selectedDate={selectedDate}
+              />
             )}
 
             {/* 积分模式：日汇总表格 */}
             {currentMode === 'points' && (
-              <DailySummaryTable mode="points" data={pointsDailySummary} t={t} />
+              <DailySummaryTable 
+                mode="points" 
+                data={pointsDailySummary} 
+                t={t}
+                onDateClick={fetchDateDetails}
+                selectedDate={selectedDate}
+              />
             )}
 
             {/* 查看明细按钮 - 余额/积分模式 */}
@@ -1234,35 +1329,27 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
+                          lang="en"
                           value={formatDateToLocalString(dateRange[0])}
                           onChange={(e) => {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
                             setDateRange([date, dateRange[1]]);
                           }}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
                       </div>
                       <span className="text-gray-400 dark:text-zinc-500 flex-shrink-0 px-1">→</span>
                       <div className="relative flex-1 min-w-0">
                         <input
                           type="date"
+                          lang="en"
                           value={formatDateToLocalString(dateRange[1])}
                           onChange={(e) => {
                             const date = e.target.value ? parseLocalDate(e.target.value) : null;
                             setDateRange([dateRange[0], date]);
                           }}
-                          className="w-full px-3 py-2 pr-8 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100"
+                          className="w-full px-3 py-2 border border-gray-300 dark:border-zinc-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:focus:ring-indigo-400 text-sm bg-white dark:bg-zinc-700 text-gray-900 dark:text-zinc-100 cursor-pointer [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:inset-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full"
                         />
-                        <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                          <svg className="w-4 h-4 text-gray-400 dark:text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                          </svg>
-                        </div>
                       </div>
                     </div>
                   </div>
@@ -1564,7 +1651,7 @@ const ExpenseListItem: React.FC<{
       <div className={`text-sm font-medium whitespace-nowrap self-center ${
         isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
       }`}>
-        ￥ {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(4)}
+        ￥ {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
       </div>
     </div>
   );

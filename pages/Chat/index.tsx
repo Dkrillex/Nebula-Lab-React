@@ -92,6 +92,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]); // base64图片数组
+  const [isDragOverInput, setIsDragOverInput] = useState(false);
   const [models, setModels] = useState<ModelsVO[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [temperature, setTemperature] = useState(1.0);
@@ -2548,9 +2549,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  const processImageFiles = async (filesInput: FileList | File[] | null) => {
+    if (!filesInput || !selectedModel) return;
+    if (currentMode !== 'image' && currentMode !== 'video') return;
+
+    const filesArray = Array.isArray(filesInput)
+      ? filesInput
+      : Array.from(filesInput as ArrayLike<File>);
+    if (filesArray.length === 0) return;
 
     // 获取当前模式的限制规则
     const restrictions = getImageUploadRestrictions(
@@ -2567,15 +2573,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       if (currentCount >= maxImages) {
         toast.error(`当前模式最多支持上传 ${maxImages} 张图片`);
-        e.target.value = '';
         return;
       }
 
       // 计算还能上传多少张
       const remainingSlots = maxImages - currentCount;
-      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      const filesToProcess = filesArray.slice(0, remainingSlots);
       
-      if (files.length > remainingSlots) {
+      if (filesArray.length > remainingSlots) {
         toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
       }
 
@@ -2614,15 +2619,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       if (currentCount >= maxImages) {
         toast.error(`当前模型最多支持上传 ${maxImages} 张图片`);
-        e.target.value = '';
         return;
       }
 
       // 计算还能上传多少张
       const remainingSlots = maxImages - currentCount;
-      const filesToProcess = Array.from(files).slice(0, remainingSlots) as File[];
+      const filesToProcess = filesArray.slice(0, remainingSlots) as File[];
       
-      if (files.length > remainingSlots) {
+      if (filesArray.length > remainingSlots) {
         toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
       }
 
@@ -2655,9 +2659,45 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         reader.readAsDataURL(file);
       }
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processImageFiles(e.target.files);
     
     // 清空文件选择，以便可以再次选择相同文件
     e.target.value = '';
+  };
+
+  const isImageDropEnabled = () =>
+    currentMode === 'image' &&
+    !!selectedModel &&
+    ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await processImageFiles(files);
+    }
   };
 
   // 移除上传的图片
@@ -4584,7 +4624,16 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         {/* Input Area */}
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
-            <div className="border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)]">
+            <div
+              className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
+                isImageDropEnabled() && isDragOverInput
+                  ? 'border-indigo-400 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/30'
+                  : ''
+              }`}
+              onDragOver={isImageDropEnabled() ? handleDragOver : undefined}
+              onDragLeave={isImageDropEnabled() ? handleDragLeave : undefined}
+              onDrop={isImageDropEnabled() ? handleDrop : undefined}
+            >
               
               {/* 上传的图片预览 */}
               {uploadedImages.length > 0 && (

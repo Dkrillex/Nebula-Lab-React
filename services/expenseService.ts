@@ -127,6 +127,23 @@ export interface TeamLog {
   [key: string]: any;
 }
 
+// 余额日汇总
+export interface BalanceDailySummary {
+  date: string; // 日期（YYYY-MM-DD）
+  totalConsumption: number; // 消费总额
+  totalRecharge: number; // 充值总额
+  netAmount: number; // 净额（充值-消费）
+  usageCount: number; // 使用次数
+  totalTokens: number; // 总Token数
+}
+
+// 积分日汇总
+export interface PointsDailySummary {
+  date: string; // 日期（YYYY-MM-DD）
+  totalDeduct: number; // 消耗积分总额
+  usageCount: number; // 使用次数
+}
+
 export const expenseService = {
   /**
    * 获取用户余额信息
@@ -234,6 +251,28 @@ export const expenseService = {
     return request.post('/ads/teamLogs/importTemplate', {}, {
       responseType: 'blob',
       isTransformResponse: false,
+    });
+  },
+
+  /**
+   * 获取余额日汇总统计
+   * @param params 查询参数
+   * @returns 日汇总列表
+   */
+  getBalanceDailySummary: (params?: ExpenseLogsQuery) => {
+    return request.get<ApiResponse<BalanceDailySummary[]>>('/api/logs/dailySummary', {
+      params,
+    });
+  },
+
+  /**
+   * 获取积分日汇总统计
+   * @param params 查询参数
+   * @returns 日汇总列表
+   */
+  getPointsDailySummary: (params?: ScoreListQuery) => {
+    return request.get<ApiResponse<PointsDailySummary[]>>('/ads/labScore/dailySummary', {
+      params,
     });
   },
 };
