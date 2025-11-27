@@ -80,6 +80,7 @@ interface Translation {
       apiKeys: string;
       apiDocs: string;
       rank: string;
+      modelsIntro: string;
       // Creation Center items
       viralVideo: string;
       digitalHuman: string;
@@ -1439,6 +1440,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'API Keys',
         apiDocs: 'API Docs',
         rank: 'Leaderboard',
+        modelsIntro: 'Introduction',
         viralVideo: 'Viral Video',
         digitalHuman: 'Digital Human',
         imgToVideo: 'Image to Video',
@@ -3421,6 +3423,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'API密钥',
         apiDocs: 'API操作文档',
         rank: '排行榜',
+        modelsIntro: '简介',
         viralVideo: 'AI混剪视频',
         digitalHuman: '数字人视频',
         imgToVideo: '图生视频',
@@ -5437,6 +5440,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'Kunci API',
         apiDocs: 'Dokumen API',
         rank: 'Papan Peringkat',
+        modelsIntro: 'Pengantar',
         viralVideo: 'Video Viral',
         digitalHuman: 'Manusia Digital',
         imgToVideo: 'Gambar ke Video',
