@@ -1,12 +1,16 @@
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import Prerender from '@prerenderer/rollup-plugin';
 import PuppeteerRenderer from '@prerenderer/renderer-puppeteer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// 读取 package.json 获取版本号
+const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode, command }) => {
@@ -74,6 +78,7 @@ export default defineConfig(({ mode, command }) => {
       __APP_ENV__: JSON.stringify(env.VITE_APP_ENV || mode),
       __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
       __IS_PRODUCTION__: JSON.stringify(isProduction),
+      'import.meta.env.VITE_APP_VERSION': JSON.stringify(packageJson.version),
     },
     esbuild: {
       // 生产环境移除 console 和 debugger
