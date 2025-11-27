@@ -26,8 +26,9 @@ export const SYSTEM_TYPE = {
   BOTH: 3
 } as const;
 
-// 当前选中的系统类型 (修改此处来切换显示的模块)
-export const CURRENT_SYSTEM: number = SYSTEM_TYPE.BOTH;
+// 当前选中的系统类型，优先读取环境变量，默认展示全部模块
+const ENV_SYSTEM = Number(import.meta.env.VITE_CURRENT_SYSTEM);
+export const CURRENT_SYSTEM: number = ENV_SYSTEM || SYSTEM_TYPE.BOTH;
 
 export const MODELS: AIModel[] = [
   {
