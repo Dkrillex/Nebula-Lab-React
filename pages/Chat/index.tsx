@@ -26,6 +26,7 @@ import CodeBlock from './components/CodeBlock';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
 import AddMaterialModal from '../../components/AddMaterialModal';
+import AuthModal from '../../components/AuthModal';
 import {
   getImageSizes,
   getVideoRatios,
@@ -74,6 +75,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { getData } = useVideoGenerationStore();
+  // 登录框状态
+  const [showAuthModal, setShowAuthModal] = useState(false);
   // 模式切换：对话/图片生成/视频生成
   const [currentMode, setCurrentMode] = useState<Mode>('chat');
   
@@ -2633,6 +2636,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 发送消息（根据模式调用不同的API）
   const handleSend = async () => {
+    // 检查用户是否登录
+    if (!user) {
+      setShowAuthModal(true);
+      return;
+    }
+    
     if (!inputValue.trim() || isLoading || !selectedModel) return;
     if (currentMode === 'image' && uploadedImages.length === 0 && !inputValue.trim()) return;
 
@@ -4691,6 +4700,34 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           isImportMode={true}
         />
       )}
+
+      {/* 登录框 */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        onLoginSuccess={() => {
+          setShowAuthModal(false);
+          // 登录成功后可以继续发送消息
+        }}
+        t={t.authModal || {
+          loginTitle: '登录',
+          tabPassword: '密码登录',
+          tabPhone: '手机登录',
+          accountLabel: '账号',
+          accountPlaceholder: '请输入账号',
+          passwordLabel: '密码',
+          passwordPlaceholder: '请输入密码',
+          phoneLabel: '手机号',
+          phonePlaceholder: '请输入手机号',
+          codeLabel: '验证码',
+          codePlaceholder: '请输入验证码',
+          sendCode: '发送验证码',
+          codeSent: '验证码已发送',
+          signIn: '登录',
+          privacyPolicy: '隐私政策',
+          terms: '服务条款',
+        }}
+      />
     </div>
   );
 };
