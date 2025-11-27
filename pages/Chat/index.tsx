@@ -1929,9 +1929,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             type,
             url: finalUrl,
             prompt,
-            assetType: 7, // AI生图
-            assetName: `AI生图_${dateStr}`,
-            assetDesc: `AI生图_${dateStr}`,
+            assetType: 13, // AI图片生成
+            assetName: `AI图片生成_${dateStr}`,
+            assetDesc: `AI图片生成_${dateStr}`,
           });
           setIsAddMaterialModalOpen(true);
           return;
