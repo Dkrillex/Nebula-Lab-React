@@ -39,7 +39,7 @@ interface ViralVideoPageProps {
 }
 
 const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0); // 0=首页, 1=素材与卖点, 2=选择脚本, 3=编辑分镜, 4=生成视频
   const [activeTab, setActiveTab] = useState<'upload' | 'link'>('upload');
   
   // Step 2: 脚本相关状态
@@ -91,8 +91,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const scripts = await viralVideoService.generateScripts(analysisResult, defaultModel);
       setAvailableScripts(scripts);
       
-      // 保存到localStorage
-      localStorage.setItem('viralVideo_scripts', JSON.stringify(scripts));
       
       if (scripts.length > 0) {
         setSelectedScript(scripts[0].id);
@@ -129,10 +127,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       setStoryboard(storyboardData);
       setSelectedScript(script.id);
       
-      // 保存到localStorage
-      localStorage.setItem('viralVideo_storyboard', JSON.stringify(storyboardData));
-      localStorage.setItem('viralVideo_selectedScript', script.id);
-      
       toast.success('分镜生成完成');
     } catch (error: any) {
       console.error('分镜生成失败:', error);
@@ -149,19 +143,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
     setSelectedScript(scriptId);
     
-    // 如果已有该脚本的分镜数据，直接使用；否则生成新的
-    const savedStoryboard = localStorage.getItem('viralVideo_storyboard');
-    const savedScriptId = localStorage.getItem('viralVideo_selectedScript');
-    
-    if (savedStoryboard && savedScriptId === scriptId) {
-      try {
-        setStoryboard(JSON.parse(savedStoryboard));
-      } catch {
-        await generateStoryboard(script);
-      }
-    } else {
-      await generateStoryboard(script);
-    }
+    // 生成新脚本的分镜
+    await generateStoryboard(script);
   };
 
   // 进入Step 2时自动生成脚本
@@ -171,28 +154,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
   }, [step, analysisResult]);
 
-  // 从localStorage恢复Step 2数据
-  useEffect(() => {
-    if (step === 2) {
-      try {
-        const savedScripts = localStorage.getItem('viralVideo_scripts');
-        const savedStoryboard = localStorage.getItem('viralVideo_storyboard');
-        const savedScriptId = localStorage.getItem('viralVideo_selectedScript');
-        
-        if (savedScripts) {
-          setAvailableScripts(JSON.parse(savedScripts));
-        }
-        if (savedStoryboard) {
-          setStoryboard(JSON.parse(savedStoryboard));
-        }
-        if (savedScriptId) {
-          setSelectedScript(savedScriptId);
-        }
-      } catch (error) {
-        console.error('恢复Step 2数据失败:', error);
-      }
-    }
-  }, [step]);
 
   const scriptScenes = [
     {
@@ -268,7 +229,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const results = await Promise.all(uploadPromises);
       const newList = [...uploadedImages, ...results];
       setUploadedImages(newList);
-      localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       toast.success(`成功上传 ${results.length} 张图片`);
       
       // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
@@ -333,7 +293,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
     const newList = [...uploadedImages, { url: imageUrl, id: asset.id?.toString() }];
     setUploadedImages(newList);
-    localStorage.setItem('viralVideo_images', JSON.stringify(newList));
     setShowPortfolioModal(false);
     toast.success('已选择素材');
 
@@ -371,7 +330,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       }
       const newList = [...uploadedImages, { url: result.url, id: result.ossId }];
       setUploadedImages(newList);
-      localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       setLinkInput('');
       toast.success('图片导入成功');
 
@@ -405,20 +363,75 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
 
     setIsAnalyzing(true);
-    setAnalyzingProgress({ current: 0, total: 1 }); // 只有一次分析请求
     
     try {
-      // 提取所有图片的URL
-      const imageUrls = uploadedImages.map(img => img.url);
+      // 第一步：检查并上传所有有 file 对象但还未上传到OSS的图片（包括编辑后的图片）
+      const imagesToUpload = uploadedImages.filter(img => img.file && !img.id);
       
-      // 一次性传入所有图片给AI进行综合分析
+      let finalImages = uploadedImages;
+      
+      if (imagesToUpload.length > 0) {
+        toast.loading(`正在上传 ${imagesToUpload.length} 张图片到OSS...`, { id: 'uploading-images' });
+        
+        // 并发上传所有需要上传的图片
+        const uploadPromises = imagesToUpload.map(async (img) => {
+          if (!img.file) return img;
+          
+          try {
+            const result = await uploadService.uploadFile(img.file);
+            // 清理blob URL（如果是预览URL）
+            if (img.url.startsWith('blob:')) {
+              URL.revokeObjectURL(img.url);
+            }
+            return {
+              url: result.url, // OSS URL
+              id: result.ossId,
+              // 不保留file对象，因为已经上传到OSS了
+            };
+          } catch (error: any) {
+            console.error('图片上传失败:', error);
+            throw new Error(`图片上传失败: ${error.message}`);
+          }
+        });
+
+        const uploadedResults = await Promise.all(uploadPromises);
+        
+        // 更新已上传的图片：用OSS URL替换预览URL
+        finalImages = uploadedImages.map(img => {
+          // 找到对应的上传结果（通过file对象匹配）
+          const uploaded = uploadedResults.find((u, index) => {
+            const originalImg = imagesToUpload[index];
+            return originalImg && originalImg.file === img.file;
+          });
+          if (uploaded) {
+            return uploaded;
+          }
+          return img;
+        });
+        
+        setUploadedImages(finalImages);
+        
+        toast.dismiss('uploading-images');
+        toast.success(`成功上传 ${uploadedResults.length} 张图片到OSS`);
+      }
+
+      // 第二步：提取所有图片的OSS URL（确保都是OSS链接）
+      const imageUrls = finalImages.map(img => img.url).filter(Boolean);
+      
+      if (imageUrls.length < MIN_IMAGES) {
+        throw new Error(`至少需要 ${MIN_IMAGES} 张有效图片`);
+      }
+      
+      // 第三步：一次性传入所有图片给AI进行综合分析
+      toast.loading('正在调用AI分析图片...', { id: 'analyzing-images' });
       const result = await viralVideoService.analyzeProductImages(imageUrls, defaultModel);
       
+      toast.dismiss('analyzing-images');
       setAnalysisResult(result);
-      toast.success(`成功分析 ${uploadedImages.length} 张图片`);
+      toast.success(`成功分析 ${imageUrls.length} 张图片`);
       
-      // 保存到localStorage
-      localStorage.setItem('viralVideo_analysis', JSON.stringify(result));
+      // 分析完成后自动进入 Step 1（素材与卖点）
+      setStep(1);
     } catch (error: any) {
       console.error('图片分析失败:', error);
       toast.error(error.message || '图片分析失败，请重试');
@@ -432,7 +445,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
     if (index === 0 && uploadedImages.length === 1) {
       setAnalysisResult(null);
-      localStorage.removeItem('viralVideo_analysis');
     }
   };
 
@@ -450,9 +462,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       if (scene) {
         scene.lines = lines;
       }
-      
-      // 保存到localStorage
-      localStorage.setItem('viralVideo_editedStoryboard', JSON.stringify(newStoryboard));
       
       return newStoryboard;
     });
@@ -568,12 +577,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           clearInterval(videoPollingIntervals.current[sceneId]);
           delete videoPollingIntervals.current[sceneId];
           toast.success(`分镜 ${sceneId} 视频生成完成`);
-          
-          // 保存到localStorage
-          const savedVideos = localStorage.getItem('viralVideo_sceneVideos');
-          const videos = savedVideos ? JSON.parse(savedVideos) : {};
-          videos[sceneId] = { url: video_url, status: 'succeeded' };
-          localStorage.setItem('viralVideo_sceneVideos', JSON.stringify(videos));
         } else if (status === 'failed') {
           setStoryboardVideos((prev) => ({
             ...prev,
@@ -686,10 +689,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const newVideoId = `VID${Date.now()}`;
       setVideoId(newVideoId);
       
-      // 保存到localStorage
-      localStorage.setItem('viralVideo_finalVideo', mergedVideoUrl);
-      localStorage.setItem('viralVideo_videoId', newVideoId);
-      
       toast.success('视频合并完成');
     } catch (error: any) {
       console.error('视频合并失败:', error);
@@ -719,46 +718,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 进入Step 4时自动合并视频
   useEffect(() => {
     if (step === 4 && !finalVideoUrl) {
-      // 检查是否有已保存的最终视频
-      const savedVideo = localStorage.getItem('viralVideo_finalVideo');
-      const savedVideoId = localStorage.getItem('viralVideo_videoId');
-      
-      if (savedVideo) {
-        setFinalVideoUrl(savedVideo);
-        if (savedVideoId) {
-          setVideoId(savedVideoId);
-        }
-      } else {
-        // 自动合并
-        mergeAllVideos();
-      }
+      // 自动合并
+      mergeAllVideos();
     }
   }, [step]);
 
-  // 从localStorage恢复数据
-  useEffect(() => {
-    try {
-      const savedAnalysis = localStorage.getItem('viralVideo_analysis');
-      const savedImages = localStorage.getItem('viralVideo_images');
-      const savedEditedStoryboard = localStorage.getItem('viralVideo_editedStoryboard');
-      const savedVideos = localStorage.getItem('viralVideo_sceneVideos');
-      
-      if (savedAnalysis) {
-        setAnalysisResult(JSON.parse(savedAnalysis));
-      }
-      if (savedImages) {
-        setUploadedImages(JSON.parse(savedImages));
-      }
-      if (savedEditedStoryboard) {
-        setEditedStoryboard(JSON.parse(savedEditedStoryboard));
-      }
-      if (savedVideos) {
-        setStoryboardVideos(JSON.parse(savedVideos));
-      }
-    } catch (error) {
-      console.error('恢复数据失败:', error);
-    }
-  }, []);
 
   // 清理轮询定时器
   useEffect(() => {
@@ -768,6 +732,73 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       });
     };
   }, []);
+
+  // 工作流进度条组件
+  const renderWorkflowProgress = () => {
+    const steps = [
+      { id: 1, name: '素材与卖点', active: step === 1, completed: step > 1 },
+      { id: 2, name: '选择脚本', active: step === 2, completed: step > 2 },
+      { id: 3, name: '编辑分镜', active: step === 3, completed: step > 3 },
+      { id: 4, name: '生成视频', active: step === 4, completed: step > 4 },
+    ];
+
+    return (
+      <div className="bg-background border-b border-border">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4 flex-1">
+              {steps.map((s, idx) => (
+                <React.Fragment key={s.id}>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
+                        s.active
+                          ? 'bg-primary text-white'
+                          : s.completed
+                          ? 'bg-green-500 text-white'
+                          : 'bg-surface border border-border text-muted'
+                      }`}
+                    >
+                      {s.completed ? <CheckCircle2 size={16} /> : s.id}
+                    </div>
+                    <span
+                      className={`text-sm font-medium ${
+                        s.active ? 'text-primary' : s.completed ? 'text-green-600' : 'text-muted'
+                      }`}
+                    >
+                      {s.name}
+                    </span>
+                  </div>
+                  {idx < steps.length - 1 && (
+                    <ChevronRight
+                      size={20}
+                      className={`${s.completed ? 'text-green-500' : 'text-border'}`}
+                    />
+                  )}
+                </React.Fragment>
+              ))}
+            </div>
+            <div className="flex items-center gap-2 text-sm text-muted">
+              <span>项目ID: {videoId || '未创建'}</span>
+              {videoId && (
+                <>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(videoId);
+                      toast.success('已复制项目ID');
+                    }}
+                    className="p-1 hover:bg-surface rounded"
+                  >
+                    <Copy size={14} />
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   // 进入Step 2前检查
   const handleGoToStep2 = () => {
@@ -782,7 +813,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setStep(2);
   };
 
-  const renderStep1 = () => (
+  // 渲染首页
+  const renderHomePage = () => (
     <div className="bg-background min-h-full flex flex-col pb-12">
       {/* Header Title */}
       <div className="py-8 text-center">
@@ -894,23 +926,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
              </div>
 
              <div className="w-full max-w-sm space-y-3">
-              {isAnalyzing && (
-                <div className="w-full py-2 flex flex-col items-center justify-center gap-2 text-sm text-muted">
-                  <Loader className="animate-spin" size={16} />
-                  <div>正在分析 {uploadedImages.length} 张图片...</div>
-                  <div className="text-xs">AI正在综合分析所有图片</div>
-                </div>
-              )}
-              {/* 完成提交按钮 - 当图片数量>=4时显示 */}
-              {uploadedImages.length >= MIN_IMAGES && !analysisResult && !isAnalyzing && (
-                <button 
-                  onClick={analyzeAllImages}
-                  disabled={isAnalyzing || uploadedImages.length < MIN_IMAGES}
-                  className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  完成提交
-                </button>
-              )}
                <button 
                  onClick={handleGoToStep2}
                  disabled={!analysisResult || uploadedImages.length === 0}
@@ -961,19 +976,315 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                              </div>
                            ))}
                          </div>
-                       <button
-                          onClick={handleLocalUpload}
-                          className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-                        >
-                          <Upload size={16} />
-                          继续上传
-                        </button>
-                        <button
-                          onClick={() => setShowEditModal(true)}
-                          className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-                        >
-                          修改视频拟合比例
-                        </button>
+                         {uploadedImages.length < MAX_IMAGES && (
+                           <button
+                             onClick={handleLocalUpload}
+                             disabled={isUploading}
+                             className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
+                           >
+                             {isUploading ? (
+                               <Loader className="animate-spin" size={16} />
+                             ) : (
+                               <Upload size={16} />
+                             )}
+                             继续上传 ({uploadedImages.length}/{MAX_IMAGES})
+                           </button>
+                         )}
+                         <button
+                           onClick={() => setShowEditModal(true)}
+                           className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                         >
+                           修改图片拟合比例
+                         </button>
+                         {uploadedImages.length >= MIN_IMAGES && !analysisResult && (
+                           <button 
+                             onClick={analyzeAllImages}
+                             disabled={isAnalyzing}
+                             className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                           >
+                             {isAnalyzing ? (
+                               <div className="flex items-center justify-center gap-2">
+                                 <Loader className="animate-spin" size={16} />
+                                 AI正在综合分析所有图片...
+                               </div>
+                             ) : (
+                               '完成提交'
+                             )}
+                           </button>
+                         )}
+                       </div>
+                     ) : (
+                       <>
+                         {/* Initial upload UI */}
+                         <div className="mb-6 p-4 rounded-full bg-surface border border-border">
+                           <ImageIcon size={48} className="text-muted/50" />
+                         </div>
+                         <h3 className="text-lg font-medium text-foreground mb-2">{t.uploadArea.title}</h3>
+                         <p className="text-xs text-muted max-w-md mb-6">{t.uploadArea.desc}</p>
+                         <p className="text-[10px] text-muted/70 max-w-xs mb-8">{t.uploadArea.limitation}</p>
+                         
+                         <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+                           <button 
+                             onClick={handleSelectFromPortfolio}
+                             className="flex-1 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                           >
+                             <FolderOpen size={16} />
+                             {t.uploadArea.selectFromPortfolio}
+                           </button>
+                           <button 
+                             onClick={handleLocalUpload}
+                             disabled={isUploading}
+                             className="flex-1 py-2.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
+                           >
+                             {isUploading ? (
+                               <Loader className="animate-spin" size={16} />
+                             ) : (
+                               <Upload size={16} />
+                             )}
+                             {t.uploadArea.uploadLocal}
+                           </button>
+                         </div>
+                       </>
+                     )}
+                     <input
+                       ref={fileInputRef}
+                       type="file"
+                       accept="image/*"
+                       multiple
+                       onChange={handleFileChange}
+                       className="hidden"
+                     />
+                  </div>
+                ) : null}
+             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer: Excellent Cases */}
+      <div className="px-4 md:px-8 max-w-7xl mx-auto w-full">
+         <h2 className="text-xl font-bold text-foreground mb-6">{t.examples}</h2>
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <ExampleCard image="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop" />
+            <ExampleCard image="https://images.unsplash.com/photo-1529139574466-a302c27e3844?q=80&w=400&auto=format&fit=crop" />
+            <ExampleCard image="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400&auto=format&fit=crop" />
+            <ExampleCard image="https://images.unsplash.com/photo-1485230946086-1d99d529c750?q=80&w=400&auto=format&fit=crop" />
+         </div>
+      </div>
+    </div>
+  );
+
+  const renderStep1 = () => (
+    <div className="bg-background min-h-full flex flex-col pb-12">
+      {/* 工作流进度条 */}
+      {renderWorkflowProgress()}
+
+      {/* Header Title */}
+      <div className="py-8 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-foreground">素材与卖点</h1>
+      </div>
+
+      {/* Main Content - Split Layout */}
+      <div className="px-4 md:px-8 max-w-7xl mx-auto w-full mb-12">
+        <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Left Panel: Visual Process Flow */}
+          <div className="flex-1 bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col items-center justify-center shadow-sm">
+             <div className="flex items-center justify-center gap-4 md:gap-8 w-full mb-8">
+                {/* Images Stack */}
+                <div className="flex flex-col gap-2">
+                   {uploadedImages.length > 0 ? (
+                     <>
+                       {uploadedImages.slice(0, 2).map((img, idx) => (
+                         <div 
+                           key={idx}
+                           className={`w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative ${
+                             idx === 0 ? 'transform -rotate-3' : 'transform rotate-3 -mt-20 ml-8 z-10'
+                           }`}
+                         >
+                           <div className="w-full h-full rounded overflow-hidden relative group">
+                             <img src={img.url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
+                             <button
+                               onClick={() => handleRemoveImage(idx)}
+                               className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                             >
+                               <X size={12} className="text-white" />
+                             </button>
+                           </div>
+                         </div>
+                       ))}
+                       {uploadedImages.length > 2 && (
+                         <div className="text-center text-xs text-muted mt-2">
+                           +{uploadedImages.length - 2} 张
+                         </div>
+                       )}
+                     </>
+                   ) : (
+                     <>
+                   <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform -rotate-3 border border-border">
+                         <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
+                           <ImageIcon size={24} className="text-muted/50" />
+                      </div>
+                   </div>
+                   <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform rotate-3 -mt-20 ml-8 z-10 border border-border">
+                         <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
+                           <ImageIcon size={24} className="text-muted/50" />
+                      </div>
+                   </div>
+                     </>
+                   )}
+                   <div className="text-center mt-4 text-sm text-muted font-medium">{t.process.uploadImages}</div>
+                </div>
+
+                {/* Arrow */}
+                <div className="text-orange-500">
+                   <ArrowRight size={32} strokeWidth={3} />
+                </div>
+
+                {/* Output Video */}
+                <div className="flex flex-col gap-2">
+                   <div className="w-40 h-72 md:w-48 md:h-80 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative group cursor-pointer">
+                      <div className="w-full h-full bg-gray-900 rounded overflow-hidden relative">
+                         {analysisResult && uploadedImages.length > 0 ? (
+                           <>
+                             <img 
+                               src={uploadedImages[0].url} 
+                               alt="Video Result" 
+                               className="w-full h-full object-cover opacity-90" 
+                             />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
+                                   <Play fill="white" className="text-white" size={20} />
+                                </div>
+                             </div>
+                             {/* Captions simulation - 显示商品名称或第一个卖点 */}
+                             {analysisResult.productName && (
+                               <div className="absolute bottom-8 left-0 w-full text-center text-white text-xs font-bold shadow-black drop-shadow-md px-2">
+                                  {analysisResult.productName}
+                               </div>
+                             )}
+                           </>
+                         ) : (
+                           <>
+                             <img 
+                               src="https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=400&auto=format&fit=crop" 
+                               alt="Video Result" 
+                               className="w-full h-full object-cover opacity-90" 
+                             />
+                             <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
+                                   <Play fill="white" className="text-white" size={20} />
+                                </div>
+                             </div>
+                             {/* Default caption */}
+                             <div className="absolute bottom-8 left-0 w-full text-center text-white text-xs font-bold shadow-black drop-shadow-md">
+                                就好像穿上一双对的靴子
+                             </div>
+                           </>
+                         )}
+                      </div>
+                   </div>
+                   <div className="text-center mt-4 text-sm text-muted font-medium">
+                     {isAnalyzing ? '分析中...' : analysisResult ? '分析完成' : t.process.generateVideo}
+                   </div>
+                </div>
+             </div>
+
+             <div className="w-full max-w-sm space-y-3">
+               <button 
+                 onClick={handleGoToStep2}
+                 disabled={!analysisResult || uploadedImages.length === 0}
+                 className="w-full py-3 rounded-lg border border-border bg-background hover:bg-surface transition-colors text-foreground font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+               >
+                 {t.process.makeSame}
+               </button>
+               <div className="flex justify-center gap-1 mt-3">
+                 <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+                 <div className="w-1.5 h-1.5 rounded-full bg-border"></div>
+                 <div className="w-1.5 h-1.5 rounded-full bg-border"></div>
+               </div>
+             </div>
+          </div>
+
+          {/* Right Panel: Upload Interface */}
+          <div className="flex-1 bg-surface border border-border rounded-xl overflow-hidden shadow-sm flex flex-col">
+             {/* Tabs */}
+             <div className="flex border-b border-border">
+                <button 
+                  onClick={() => setActiveTab('upload')}
+                  className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'upload' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
+                >
+                  {t.tabs.upload}
+                </button>
+             </div>
+
+             {/* Content */}
+             <div className="p-6 md:p-10 flex-1 flex flex-col">
+                {true ? (
+                  <div className="flex-1 border-2 border-dashed border-border rounded-xl bg-background flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+                     {uploadedImages.length > 0 ? (
+                       <div className="w-full space-y-4">
+                         <div className="grid grid-cols-2 gap-4">
+                           {uploadedImages.map((img, idx) => (
+                             <div key={idx} className="relative group">
+                               <img 
+                                 src={img.url} 
+                                 alt={`Upload ${idx + 1}`} 
+                                 className="w-full h-32 object-cover rounded-lg border border-border"
+                               />
+                               <button
+                                 onClick={() => handleRemoveImage(idx)}
+                                 className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                               >
+                                 <X size={14} className="text-white" />
+                               </button>
+                             </div>
+                           ))}
+                         </div>
+                         
+                         {/* 继续上传按钮 - 如果未达到最大数量 */}
+                         {uploadedImages.length < MAX_IMAGES && (
+                           <button
+                             onClick={handleLocalUpload}
+                             disabled={isUploading}
+                             className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
+                           >
+                             {isUploading ? (
+                               <Loader className="animate-spin" size={16} />
+                             ) : (
+                               <Upload size={16} />
+                             )}
+                             继续上传 ({uploadedImages.length}/{MAX_IMAGES})
+                           </button>
+                         )}
+                         
+                         {/* 修改视频拟合比例按钮 */}
+                         <button
+                           onClick={() => setShowEditModal(true)}
+                           className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                         >
+                           修改图片拟合比例
+                         </button>
+                         
+                         {/* 完成提交按钮 - 放在右侧上传区域，至少4张图片才显示 */}
+                         {uploadedImages.length >= MIN_IMAGES && !analysisResult && !isAnalyzing && (
+                           <button 
+                             onClick={analyzeAllImages}
+                             disabled={isAnalyzing || uploadedImages.length < MIN_IMAGES}
+                             className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
+                           >
+                             完成提交
+                           </button>
+                         )}
+                         
+                         {/* 分析中提示 */}
+                         {isAnalyzing && (
+                           <div className="w-full py-3 rounded-lg border border-border bg-white dark:bg-zinc-800 flex flex-col items-center justify-center gap-2 text-sm">
+                             <Loader className="animate-spin text-indigo-600" size={16} />
+                             <div>正在分析 {uploadedImages.length} 张图片...</div>
+                             <div className="text-xs text-muted">AI正在综合分析所有图片</div>
+                           </div>
+                         )}
                       </div>
                      ) : (
                        <>
@@ -1005,18 +1316,39 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                            {t.uploadArea.uploadLocal}
                         </button>
                      </div>
-                         <input
-                           ref={fileInputRef}
-                           type="file"
-                           accept="image/*"
-                           multiple
-                           onChange={handleFileChange}
-                           className="hidden"
-                         />
                        </>
                      )}
+                     
+                     {/* 隐藏的文件输入 - 始终存在 */}
+                     <input
+                       ref={fileInputRef}
+                       type="file"
+                       accept="image/*"
+                       multiple
+                       onChange={handleFileChange}
+                       className="hidden"
+                     />
                   </div>
-                ) : null}
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+                    <div className="w-full max-w-md">
+                      <input
+                        type="text"
+                        placeholder="https://..."
+                        value={linkInput}
+                        onChange={(e) => setLinkInput(e.target.value)}
+                        className="w-full p-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none mb-4"
+                      />
+                      <button 
+                        onClick={handleLinkImport}
+                        disabled={!linkInput || isUploading}
+                        className="w-full py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Import
+                      </button>
+                    </div>
+                  </div>
+                )}
              </div>
           </div>
 
@@ -1038,6 +1370,9 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   const renderStep2 = () => (
     <div className="bg-background min-h-full flex flex-col pb-12">
+      {/* 工作流进度条 */}
+      {renderWorkflowProgress()}
+      
       {/* Step Progress Bar */}
       <div className="w-full bg-surface border-b border-border py-4 sticky top-0 z-20">
         <div className="container mx-auto max-w-5xl px-4 flex justify-center">
@@ -1210,6 +1545,9 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   const renderStep3 = () => (
     <div className="bg-background min-h-full flex flex-col h-[calc(100vh-64px)]">
+      {/* 工作流进度条 */}
+      {renderWorkflowProgress()}
+      
       {/* Top Navigation Bar */}
       <div className="border-b border-border bg-background p-4 flex items-center justify-between shrink-0">
          <button onClick={() => setStep(2)} className="flex items-center gap-1 px-4 py-2 rounded-lg border border-border hover:bg-surface text-sm transition-colors">
@@ -1327,6 +1665,9 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   const renderStep4 = () => (
     <div className="bg-background min-h-full flex flex-col h-[calc(100vh-64px)]">
+       {/* 工作流进度条 */}
+       {renderWorkflowProgress()}
+       
        {/* Top Navigation - Reuse from Step 3 but update active state */}
        <div className="border-b border-border bg-background p-4 flex items-center justify-between shrink-0">
          <button onClick={() => setStep(3)} className="flex items-center gap-1 px-4 py-2 rounded-lg border border-border hover:bg-surface text-sm transition-colors">
@@ -1544,7 +1885,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   return (
     <>
-      {step === 1 ? renderStep1() : step === 2 ? renderStep2() : step === 3 ? renderStep3() : renderStep4()}
+      {step === 0 ? renderHomePage() : step === 1 ? renderStep1() : step === 2 ? renderStep2() : step === 3 ? renderStep3() : renderStep4()}
       
       {/* 作品集选择弹窗 */}
       <BaseModal
@@ -1599,7 +1940,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         images={uploadedImages}
         onSubmit={(edited) => {
           setUploadedImages(edited);
-          localStorage.setItem('viralVideo_images', JSON.stringify(edited));
         }}
       />
     </>

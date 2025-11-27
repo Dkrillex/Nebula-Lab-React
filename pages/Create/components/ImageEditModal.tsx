@@ -7,8 +7,8 @@ import toast from 'react-hot-toast';
 interface ImageEditModalProps {
   isOpen: boolean;
   onClose: () => void;
-  images: Array<{ url: string; id?: string }>;
-  onSubmit: (images: Array<{ url: string; id?: string }>) => void;
+  images: Array<{ url: string; file?: File; id?: string }>;
+  onSubmit: (images: Array<{ url: string; file?: File; id?: string }>) => void;
 }
 
 const RATIO_OPTIONS = ['3:4', '1:1', '9:16'] as const;
@@ -109,24 +109,42 @@ const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images
     const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
     const blob = await (await fetch(dataUrl)).blob();
     const file = new File([blob], `edited_${Date.now()}.jpg`, { type: 'image/jpeg' });
-    const res = await uploadService.uploadFile(file);
-    return { url: res.url, id: res.ossId };
+    // 不立即上传，返回File对象和预览URL
+    const previewUrl = URL.createObjectURL(file);
+    return { file, url: previewUrl, id: undefined };
   };
 
   const handleSubmit = async () => {
     if (!images || images.length === 0) return;
     try {
       setBusy(true);
-      const edited: Array<{ url: string; id?: string }> = [];
-      // 上传全部图片，无论是否被编辑过
+      const edited: Array<{ url: string; file?: File; id?: string }> = [];
+      // 处理全部图片，生成编辑后的File对象，但不立即上传OSS
       for (let i = 0; i < images.length; i++) {
         const edit = edits[i] || { ratio: '3:4', rotate: 0, zoom: 100 };
-        const res = await applyEditForUrl(images[i].url, edit);
-        edited.push({ url: res.url, id: images[i].id });
-        await sleep(200);
+        // 检查是否有编辑（与默认值不同）
+        const hasEdit = edit.ratio !== '3:4' || edit.rotate !== 0 || edit.zoom !== 100;
+        
+        if (hasEdit) {
+          // 有编辑，生成新的File对象
+          const res = await applyEditForUrl(images[i].url, edit);
+          edited.push({ 
+            url: res.url, // 预览URL（blob URL）
+            file: res.file, // 编辑后的File对象
+            id: undefined // 清除旧的OSS ID，因为需要重新上传
+          });
+        } else {
+          // 没有编辑，保持原样
+          edited.push({ 
+            url: images[i].url, 
+            file: images[i].file, // 保留原有的file对象（如果有）
+            id: images[i].id 
+          });
+        }
+        await sleep(100); // 减少延迟
       }
       onSubmit(edited);
-      toast.success('已应用编辑并更新全部图片');
+      toast.success('已保存编辑，点击"完成提交"后将上传到OSS');
       onClose();
     } catch (e: any) {
       toast.error(e.message || '编辑失败');
@@ -165,7 +183,7 @@ const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images
           </div>
           <div className="mt-4 flex items-center gap-3">
             <button onClick={handleSubmit} disabled={busy} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
-              <Upload size={16} /> 完成并提交
+              <Upload size={16} /> 完成
             </button>
           </div>
         </div>

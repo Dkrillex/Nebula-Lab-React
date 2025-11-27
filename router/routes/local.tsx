@@ -21,7 +21,7 @@ const RankPage = React.lazy(() => import('../../pages/Rank'));
 
 // Create Page Sub-components
 const TextToImagePage = React.lazy(() => import('../../pages/Create/components/TextToImagePage'));
-const ViralVideoPage = React.lazy(() => import('../../pages/Create/components/ViralVideoPage'));
+const ViralVideoPage = React.lazy(() => import('../../pages/Create/components/ViralVideoPage/index'));
 const ImageToVideoPage = React.lazy(() => import('../../pages/Create/components/ImageToVideoPage'));
 const DigitalHumanPage = React.lazy(() => import('../../pages/Create/components/DigitalHumanPage'));
 const StyleTransferPage = React.lazy(() => import('../../pages/Create/components/StyleTransferPage'));
