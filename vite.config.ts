@@ -41,7 +41,7 @@ export default defineConfig(({ mode, command }) => {
         launchOptions: {
           headless: true,
           // 使用系统已安装的 Chrome（macOS 默认路径）
-          executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+          executablePath: 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
         },
       }),
       postProcess(renderedRoute) {
@@ -82,6 +82,7 @@ export default defineConfig(({ mode, command }) => {
     build: {
       outDir: 'lab', // 输出目录（默认 dist，可修改如 'build'）
       assetsDir: 'assets', // 静态资源目录（默认 assets）
+      emptyOutDir: true, // 构建前清空输出目录，避免残留旧文件
       sourcemap: isProduction ? false : true, // 生产环境关闭 SourceMap，减小体积
       minify: isProduction ? 'esbuild' : false, // 生产环境启用压缩（使用 esbuild，更快）
       rollupOptions: {
