@@ -18,13 +18,22 @@ import { AliveScope, useAliveController } from './KeepAlive';
 
 const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
-  const [lang, setLang] = useState<Language>('zh');
+  // 初始化时从 localStorage 读取语言，如果没有则默认为 'zh'
+  const [lang, setLang] = useState<Language>(() => {
+    const savedLang = localStorage.getItem('language') as Language;
+    return (savedLang === 'en' || savedLang === 'id' || savedLang === 'zh') ? savedLang : 'zh';
+  });
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [visitedViews, setVisitedViews] = useState<TabItem[]>([{ view: 'home' }]);
   
   const location = useLocation();
   const navigate = useNavigate();
   const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
+
+  // 同步语言到 localStorage，确保 request.tsx 中的 getLanguage() 能读取到最新值
+  useEffect(() => {
+    localStorage.setItem('language', lang);
+  }, [lang]);
 
   // Theme handling
   useEffect(() => {

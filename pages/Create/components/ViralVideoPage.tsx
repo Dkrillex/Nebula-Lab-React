@@ -405,6 +405,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
 
     setIsAnalyzing(true);
+    setAnalyzingProgress({ current: 0, total: 1 }); // 只有一次分析请求
     
     try {
       // 提取所有图片的URL

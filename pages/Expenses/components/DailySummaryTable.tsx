@@ -21,29 +21,43 @@ interface BalanceDailySummaryTableProps {
   mode: 'balance';
   data: BalanceDailySummary[];
   t?: any;
+  onDateClick?: (date: string) => void;
+  selectedDate?: string | null;
 }
 
 interface PointsDailySummaryTableProps {
   mode: 'points';
   data: PointsDailySummary[];
   t?: any;
+  onDateClick?: (date: string) => void;
+  selectedDate?: string | null;
 }
 
 type DailySummaryTableProps = BalanceDailySummaryTableProps | PointsDailySummaryTableProps;
 
 const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
-  const { mode, data, t } = props;
+  const { mode, data, t, onDateClick, selectedDate } = props;
 
   if (data.length === 0) return null;
 
   // 余额模式表格
   if (mode === 'balance') {
     const balanceData = data as BalanceDailySummary[];
-    const totalUsageCount = balanceData.reduce((sum, day) => sum + day.usageCount, 0);
-    const totalTokens = balanceData.reduce((sum, day) => sum + day.totalTokens, 0);
-    const totalConsumption = balanceData.reduce((sum, day) => sum + day.totalConsumption, 0);
-    const totalRecharge = balanceData.reduce((sum, day) => sum + day.totalRecharge, 0);
-    const totalNetAmount = balanceData.reduce((sum, day) => sum + day.netAmount, 0);
+    // 确保数值字段是数字类型（后端可能返回字符串）
+    const normalizedData = balanceData.map(day => ({
+      ...day,
+      totalConsumption: Number(day.totalConsumption) || 0,
+      totalRecharge: Number(day.totalRecharge) || 0,
+      netAmount: Number(day.netAmount) || 0,
+      usageCount: Number(day.usageCount) || 0,
+      totalTokens: Number(day.totalTokens) || 0,
+    }));
+    
+    const totalUsageCount = normalizedData.reduce((sum, day) => sum + day.usageCount, 0);
+    const totalTokens = normalizedData.reduce((sum, day) => sum + day.totalTokens, 0);
+    const totalConsumption = normalizedData.reduce((sum, day) => sum + day.totalConsumption, 0);
+    const totalRecharge = normalizedData.reduce((sum, day) => sum + day.totalRecharge, 0);
+    const totalNetAmount = normalizedData.reduce((sum, day) => sum + day.netAmount, 0);
 
     return (
       <div className="mb-4">
@@ -60,15 +74,21 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-zinc-900">
-              {balanceData.map((day) => (
-                <tr key={day.date} className="border-b border-gray-100 dark:border-zinc-800">
+              {normalizedData.map((day) => (
+                <tr 
+                  key={day.date} 
+                  className={`border-b border-gray-100 dark:border-zinc-800 ${
+                    onDateClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800' : ''
+                  } ${selectedDate === day.date ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                  onClick={() => onDateClick?.(day.date)}
+                >
                   <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">{day.date}</td>
                   <td className="px-3 py-2 text-right text-gray-600 dark:text-zinc-400">{day.usageCount}</td>
                   <td className="px-3 py-2 text-right text-gray-600 dark:text-zinc-400 font-mono">{day.totalTokens.toLocaleString()}</td>
-                  <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{day.totalConsumption.toFixed(4)}</td>
-                  <td className="px-3 py-2 text-right text-green-600 dark:text-green-400 font-mono">+{day.totalRecharge.toFixed(4)}</td>
+                  <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{day.totalConsumption.toFixed(6)}</td>
+                  <td className="px-3 py-2 text-right text-green-600 dark:text-green-400 font-mono">+{day.totalRecharge.toFixed(6)}</td>
                   <td className={`px-3 py-2 text-right font-mono ${day.netAmount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                    {day.netAmount >= 0 ? '+' : ''}{day.netAmount.toFixed(4)}
+                    {day.netAmount >= 0 ? '+' : ''}{day.netAmount.toFixed(6)}
                   </td>
                 </tr>
               ))}
@@ -77,10 +97,10 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
                 <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">{t?.total || '合计'}</td>
                 <td className="px-3 py-2 text-right text-gray-800 dark:text-zinc-200">{totalUsageCount}</td>
                 <td className="px-3 py-2 text-right text-gray-800 dark:text-zinc-200 font-mono">{totalTokens.toLocaleString()}</td>
-                <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{totalConsumption.toFixed(4)}</td>
-                <td className="px-3 py-2 text-right text-green-600 dark:text-green-400 font-mono">+{totalRecharge.toFixed(4)}</td>
+                <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{totalConsumption.toFixed(6)}</td>
+                <td className="px-3 py-2 text-right text-green-600 dark:text-green-400 font-mono">+{totalRecharge.toFixed(6)}</td>
                 <td className={`px-3 py-2 text-right font-mono ${totalNetAmount >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                  {totalNetAmount >= 0 ? '+' : ''}{totalNetAmount.toFixed(4)}
+                  {totalNetAmount >= 0 ? '+' : ''}{totalNetAmount.toFixed(6)}
                 </td>
               </tr>
             </tbody>
@@ -92,8 +112,15 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
 
   // 积分模式表格
   const pointsData = data as PointsDailySummary[];
-  const totalUsageCount = pointsData.reduce((sum, day) => sum + day.usageCount, 0);
-  const totalDeduct = pointsData.reduce((sum, day) => sum + day.totalDeduct, 0);
+  // 确保数值字段是数字类型（后端可能返回字符串）
+  const normalizedPointsData = pointsData.map(day => ({
+    ...day,
+    totalDeduct: Number(day.totalDeduct) || 0,
+    usageCount: Number(day.usageCount) || 0,
+  }));
+  
+  const totalUsageCount = normalizedPointsData.reduce((sum, day) => sum + day.usageCount, 0);
+  const totalDeduct = normalizedPointsData.reduce((sum, day) => sum + day.totalDeduct, 0);
 
   return (
     <div className="mb-4">
@@ -107,8 +134,14 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-zinc-900">
-            {pointsData.map((day) => (
-              <tr key={day.date} className="border-b border-gray-100 dark:border-zinc-800">
+            {normalizedPointsData.map((day) => (
+              <tr 
+                key={day.date} 
+                className={`border-b border-gray-100 dark:border-zinc-800 ${
+                  onDateClick ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-zinc-800' : ''
+                } ${selectedDate === day.date ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                onClick={() => onDateClick?.(day.date)}
+              >
                 <td className="px-3 py-2 text-gray-800 dark:text-zinc-200">{day.date}</td>
                 <td className="px-3 py-2 text-right text-gray-600 dark:text-zinc-400">{day.usageCount}</td>
                 <td className="px-3 py-2 text-right text-red-600 dark:text-red-400 font-mono">-{day.totalDeduct}</td>
