@@ -785,6 +785,17 @@ interface Translation {
     mainTitle: string;
     statusReady: string;
     inputPlaceholder: string;
+    inputPlaceholders: {
+      chat: string;
+      image: string;
+      video: string;
+    };
+    inputHints: {
+      send: string;
+      newline: string;
+      supportedFormats: string;
+      maxSize: string;
+    };
     send: string;
     welcomeMessage: string;
     footerTip: string;
@@ -793,6 +804,31 @@ interface Translation {
       chat: string;
       image: string;
       video: string;
+    };
+    aiCreatingImage: string;
+    modelNotSupportImageUpload: string;
+    deleteConfirm: {
+      title: string;
+      message: string;
+      confirmText: string;
+      cancelText: string;
+    };
+    toasts: {
+      switchToVideoMode: string;
+      uploadingVideoToOSS: string;
+      videoUploadSuccess: string;
+      videoUploadFailed: string;
+      imageUploadFailed: string;
+      importMaterialFailed: string;
+      noMessagesToSave: string;
+      savingAndProcessing: string;
+      recordUpdated: string;
+      recordSaved: string;
+      saveRecordFailed: string;
+      recordDeleted: string;
+      deleteRecordFailed: string;
+      linkCopied: string;
+      materialImported: string;
     };
   };
   keysPage: {
@@ -2621,6 +2657,17 @@ export const translations: Record<string, Translation> = {
       mainTitle: 'Dialogue Area',
       statusReady: 'Ready',
       inputPlaceholder: 'Enter your question... (Enter to send, Shift+Enter for newline)',
+      inputPlaceholders: {
+        chat: 'Enter your question... (Enter to send, Shift+Enter for newline)',
+        image: 'Describe the image you want to generate',
+        video: 'Describe the video you want to generate, or upload reference images...'
+      },
+      inputHints: {
+        send: 'Send',
+        newline: 'New line',
+        supportedFormats: 'Supported formats',
+        maxSize: 'Max'
+      },
       send: 'Send',
       welcomeMessage: 'Hi! I am your AI assistant. How can I help you today?',
       footerTip: 'Disclaimer: Content is AI-generated. Accuracy not guaranteed.',
@@ -2629,6 +2676,31 @@ export const translations: Record<string, Translation> = {
         chat: 'Chat',
         image: 'Image',
         video: 'Video'
+      },
+      aiCreatingImage: 'AI is creating beautiful images for you...',
+      modelNotSupportImageUpload: 'This model does not support image upload, please switch models',
+      deleteConfirm: {
+        title: 'Confirm Deletion',
+        message: 'Are you sure you want to delete this chat record?',
+        confirmText: 'Confirm',
+        cancelText: 'Cancel'
+      },
+      toasts: {
+        switchToVideoMode: 'Switched to video mode, image loaded automatically',
+        uploadingVideoToOSS: 'Uploading video to OSS...',
+        videoUploadSuccess: 'Video uploaded successfully',
+        videoUploadFailed: 'Video upload to OSS failed',
+        imageUploadFailed: 'Image upload to OSS failed',
+        importMaterialFailed: 'Failed to import material, please try again',
+        noMessagesToSave: 'No messages to save',
+        savingAndProcessing: 'Saving and processing images/videos...',
+        recordUpdated: 'Chat record updated',
+        recordSaved: 'Chat record saved',
+        saveRecordFailed: 'Failed to save chat record',
+        recordDeleted: 'Chat record deleted',
+        deleteRecordFailed: 'Failed to delete chat record',
+        linkCopied: 'Link copied',
+        materialImported: 'Material imported successfully'
       }
     },
     keysPage: {
@@ -4487,6 +4559,17 @@ export const translations: Record<string, Translation> = {
       mainTitle: '对话区域',
       statusReady: '准备就绪',
       inputPlaceholder: '输入您的问题... (Enter发送，Shift+Enter换行)',
+      inputPlaceholders: {
+        chat: '输入您的问题... (Enter发送, Shift+Enter换行)',
+        image: '描述您想要生成的图片',
+        video: '描述您想要生成的视频,也可以上传参考图片...'
+      },
+      inputHints: {
+        send: '发送',
+        newline: '换行',
+        supportedFormats: '支持格式',
+        maxSize: '最大'
+      },
       send: '发送',
       welcomeMessage: '你好！我是AI助手，很高兴为您服务。请问有什么可以帮助您的吗？',
       footerTip: '温馨提示：所有内容均由AI模型生成，准确性和完整性无法保证，不代表平台的态度或观点',
@@ -4495,6 +4578,31 @@ export const translations: Record<string, Translation> = {
         chat: '对话',
         image: '图片',
         video: '视频'
+      },
+      aiCreatingImage: 'AI正在为您创作精美图片...',
+      modelNotSupportImageUpload: '该模型不支持上传图片，请切换模型',
+      deleteConfirm: {
+        title: '确认删除',
+        message: '确定要删除这条对话记录吗？',
+        confirmText: '确定',
+        cancelText: '取消'
+      },
+      toasts: {
+        switchToVideoMode: '已切换到视频模式，图片已自动加载',
+        uploadingVideoToOSS: '正在上传视频到 OSS...',
+        videoUploadSuccess: '视频上传成功',
+        videoUploadFailed: '视频上传到 OSS 失败',
+        imageUploadFailed: '图片上传到 OSS 失败',
+        importMaterialFailed: '导入素材失败，请重试',
+        noMessagesToSave: '没有可保存的消息',
+        savingAndProcessing: '正在保存并处理图片/视频...',
+        recordUpdated: '对话记录已更新',
+        recordSaved: '对话记录已保存',
+        saveRecordFailed: '保存对话记录失败',
+        recordDeleted: '对话记录已删除',
+        deleteRecordFailed: '删除对话记录失败',
+        linkCopied: '链接已复制',
+        materialImported: '素材导入成功'
       }
     },
     keysPage: {
@@ -5924,6 +6032,17 @@ export const translations: Record<string, Translation> = {
       mainTitle: 'Area Dialog',
       statusReady: 'Siap',
       inputPlaceholder: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
+      inputPlaceholders: {
+        chat: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
+        image: 'Jelaskan gambar yang ingin Anda hasilkan',
+        video: 'Jelaskan video yang ingin Anda hasilkan, atau unggah gambar referensi...'
+      },
+      inputHints: {
+        send: 'Kirim',
+        newline: 'Baris baru',
+        supportedFormats: 'Format yang didukung',
+        maxSize: 'Maks'
+      },
       send: 'Kirim',
       welcomeMessage: 'Hai! Saya adalah asisten AI Anda. Bagaimana saya bisa membantu Anda hari ini?',
       footerTip: 'Penafian: Konten dihasilkan oleh AI. Akurasi tidak dijamin.',
@@ -5932,6 +6051,31 @@ export const translations: Record<string, Translation> = {
         chat: 'Obrolan',
         image: 'Gambar',
         video: 'Video'
+      },
+      aiCreatingImage: 'AI sedang membuat gambar indah untuk Anda...',
+      modelNotSupportImageUpload: 'Model ini tidak mendukung unggah gambar, silakan ganti model',
+      deleteConfirm: {
+        title: 'Konfirmasi Penghapusan',
+        message: 'Apakah Anda yakin ingin menghapus catatan obrolan ini?',
+        confirmText: 'Konfirmasi',
+        cancelText: 'Batal'
+      },
+      toasts: {
+        switchToVideoMode: 'Beralih ke mode video, gambar dimuat otomatis',
+        uploadingVideoToOSS: 'Mengunggah video ke OSS...',
+        videoUploadSuccess: 'Video berhasil diunggah',
+        videoUploadFailed: 'Pengunggahan video ke OSS gagal',
+        imageUploadFailed: 'Pengunggahan gambar ke OSS gagal',
+        importMaterialFailed: 'Gagal mengimpor materi, silakan coba lagi',
+        noMessagesToSave: 'Tidak ada pesan untuk disimpan',
+        savingAndProcessing: 'Menyimpan dan memproses gambar/video...',
+        recordUpdated: 'Catatan obrolan diperbarui',
+        recordSaved: 'Catatan obrolan disimpan',
+        saveRecordFailed: 'Gagal menyimpan catatan obrolan',
+        recordDeleted: 'Catatan obrolan dihapus',
+        deleteRecordFailed: 'Gagal menghapus catatan obrolan',
+        linkCopied: 'Tautan disalin',
+        materialImported: 'Materi berhasil diimpor'
       }
     },
     keysPage: {

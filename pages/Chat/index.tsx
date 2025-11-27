@@ -1543,8 +1543,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     e.stopPropagation();
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: '确定要删除这条对话记录吗？',
+      title: t.deleteConfirm.title,
+      message: t.deleteConfirm.message,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
@@ -1629,9 +1629,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           }
           // 重新获取记录列表
           await refreshRecords();
-          toast.success('对话记录已删除');
+          toast.success(t.toasts.recordDeleted);
         } catch (error) {
-          toast.error('删除对话记录失败');
+          toast.error(t.toasts.deleteRecordFailed);
           console.error('❌ 删除对话记录失败:', error);
         }
       },
@@ -1914,7 +1914,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     setTimeout(() => {
       setUploadedImages([imageUrl]);
       setInputValue('根据这张图片生成视频');
-      toast.success('已切换到视频模式，图片已自动加载');
+      toast.success(t.toasts.switchToVideoMode);
     }, 500);
   };
 
@@ -1952,7 +1952,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
         } else {
-          toast.error('图片上传到 OSS 失败', { id: 'upload-oss' });
+          toast.error(t.toasts.imageUploadFailed, { id: 'upload-oss' });
           setIsExportingMaterial(false);
           return;
         }
@@ -1976,14 +1976,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         }
         
         // 需要上传到 OSS
-        toast.loading('正在上传视频到 OSS...', { id: 'upload-oss' });
+        toast.loading(t.toasts.uploadingVideoToOSS, { id: 'upload-oss' });
         
         const ossResult = await processVideoToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
-          toast.success('视频上传成功', { id: 'upload-oss' });
+          toast.success(t.toasts.videoUploadSuccess, { id: 'upload-oss' });
         } else {
-          toast.error('视频上传到 OSS 失败', { id: 'upload-oss' });
+          toast.error(t.toasts.videoUploadFailed, { id: 'upload-oss' });
           setIsExportingMaterial(false);
           return;
         }
@@ -2002,7 +2002,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       setIsAddMaterialModalOpen(true);
     } catch (error) {
       console.error('导入素材失败:', error);
-      toast.error('导入素材失败，请重试', { id: 'upload-oss' });
+      toast.error(t.toasts.importMaterialFailed, { id: 'upload-oss' });
       setIsExportingMaterial(false);
     }
   };
@@ -2238,7 +2238,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     const validMessages = messages.filter(msg => msg.id !== 'welcome');
     if (validMessages.length === 0) {
       if (showToast) {
-        toast.error('没有可保存的消息');
+        toast.error(t.toasts.noMessagesToSave);
       }
       return;
     }
@@ -2246,7 +2246,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 调试：检查保存前的消息 role
     console.log('💾 自动保存前的消息列表:', validMessages.map(m => ({ id: m.id, role: m.role, content: m.content?.slice(0, 20) })));
 
-    const saveToast = showToast ? toast.loading('正在保存并处理图片/视频...') : null;
+    const saveToast = showToast ? toast.loading(t.toasts.savingAndProcessing) : null;
     
     try {
       // 处理图片和视频，转换为 OSS 链接
@@ -2374,7 +2374,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         });
         if (showToast && saveToast) {
           toast.dismiss(saveToast);
-          toast.success('对话记录已更新');
+          toast.success(t.toasts.recordUpdated);
         }
         console.log('💾 对话记录已更新:', selectedRecordId);
       } else {
@@ -2386,7 +2386,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           setSelectedRecordId(newId);
           if (showToast && saveToast) {
             toast.dismiss(saveToast);
-            toast.success('对话记录已保存');
+            toast.success(t.toasts.recordSaved);
           }
           console.log('💾 对话记录已保存，ID:', newId);
           // 刷新记录列表
@@ -2396,7 +2396,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           // 参考Vue3实现：即使没有ID也不报错，只是不设置selectedRecordId
           if (showToast && saveToast) {
             toast.dismiss(saveToast);
-            toast.success('对话记录已保存');
+            toast.success(t.toasts.recordSaved);
           }
           console.log('💾 对话记录已保存（未返回ID）');
           // 刷新记录列表，可能能从列表中获取到ID
@@ -2406,7 +2406,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     } catch (error) {
       if (showToast && saveToast) {
         toast.dismiss(saveToast);
-        toast.error('保存对话记录失败');
+        toast.error(t.toasts.saveRecordFailed);
       }
       console.error('❌ 保存对话记录失败:', error);
     }
@@ -2724,7 +2724,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     if (currentMode === 'video' && uploadedImages.length > 0) {
       const supportsUpload = ModelCapabilities.supportsImageUpload(selectedModel, 'video');
       if (!supportsUpload) {
-        toast.error('该模型不支持上传图片，请切换模型');
+        toast.error(t.modelNotSupportImageUpload);
         shouldBlockSend = true;
         return;
       }
@@ -4575,6 +4575,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               currentMode={currentMode}
               isLoading={isLoading}
               isLastMessage={index === messages.length - 1}
+              t={t}
             />
           ))}
           <div ref={messagesEndRef} />
@@ -4616,10 +4617,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   onKeyDown={handleKeyDown}
                   placeholder={
                     currentMode === 'chat' 
-                      ? '输入您的问题... (Enter发送, Shift+Enter换行)'
+                      ? t.inputPlaceholders.chat
                       : currentMode === 'image'
-                      ? '描述您想要生成的图片'
-                      : '描述您想要生成的视频,也可以上传参考图片...'
+                      ? t.inputPlaceholders.image
+                      : t.inputPlaceholders.video
                   }
                   disabled={isLoading || !selectedModel}
                   className="flex-1 border-none outline-none text-sm leading-6 resize-none min-h-[20px] max-h-[120px] bg-transparent text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 disabled:cursor-not-allowed disabled:opacity-60"
@@ -4686,12 +4687,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               <div className="flex items-center justify-between px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-b-[10px]">
                 <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                   <span className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Enter</span>
-                  <span>发送 ·</span>
+                  <span>{t.inputHints.send} ·</span>
                   <span className="bg-gray-200 dark:bg-gray-700 px-1.5 py-0.5 rounded font-mono text-[0.7rem] font-medium">Shift + Enter</span>
-                  <span>换行</span>
+                  <span>{t.inputHints.newline}</span>
                   {currentMode === 'image' && ModelCapabilities.supportsImageUpload(selectedModel, 'image') && (
                     <span className="text-orange-500 dark:text-orange-400 font-medium">
-                      {' '}· 支持格式: {ModelCapabilities.getFormatDisplayText(selectedModel)} · 最大: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
+                      {' '}· {t.inputHints.supportedFormats}: {ModelCapabilities.getFormatDisplayText(selectedModel)} · {t.inputHints.maxSize}: {ModelCapabilities.getMaxFileSize(selectedModel)}MB
                     </span>
                   )}
                 </div>
@@ -4716,6 +4717,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
         type="danger"
+        confirmText={t.deleteConfirm.confirmText}
+        cancelText={t.deleteConfirm.cancelText}
       />
 
       {/* 预览模态框 */}
@@ -4741,7 +4744,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             <button
               onClick={() => {
                 navigator.clipboard.writeText(previewModal.url);
-                toast.success('链接已复制');
+                toast.success(t.toasts.linkCopied);
               }}
               className="absolute top-4 right-16 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
               title="复制链接"
@@ -4781,7 +4784,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             setIsAddMaterialModalOpen(false);
             setSelectedMaterial(null);
             setIsExportingMaterial(false);
-            toast.success('素材导入成功');
+            toast.success(t.toasts.materialImported);
           }}
           initialData={{
             assetUrl: selectedMaterial.url,
@@ -4844,6 +4847,7 @@ interface MessageBubbleProps {
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
   isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
   isLastMessage?: boolean; // 是否是最后一条消息（用于判断是否显示生成中提示）
+  t?: any; // 翻译对象
 }
 
 // 视频播放器组件，支持fallback到iframe
@@ -4897,6 +4901,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   onQuoteCode, 
   onPreview,
   onDownloadImage,
+  t,
   onDownloadVideo,
   onExportMaterial,
   onImageToVideo,
@@ -5302,7 +5307,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   marginBottom: '1rem'
                 }}
               >
-                AI正在为您创作精美图片...
+                {t?.aiCreatingImage || 'AI正在为您创作精美图片...'}
               </p>
               <div 
                 className="progress-bar"
