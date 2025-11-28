@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, 
   Upload, 
@@ -26,6 +26,7 @@ import { showAuthModal } from '../../../lib/authModalManager';
 import UploadComponent from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -247,8 +248,16 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [isAddedToLib, setIsAddedToLib] = useState(false);
   
   const [isPolling, setIsPolling] = useState(false);
-  const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollerRef = useRef<PollingController | null>(null);
   const mimeTypeRef = useRef<string>('');
+
+  const stopActivePoller = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
 
   // AddMaterialModal State
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
@@ -373,14 +382,14 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     }
     return () => {
       stopAllAudio();
-      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+      stopActivePoller();
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
     };
-  }, [pageMode]);
+  }, [pageMode, stopActivePoller]);
 
   // Helper to trigger list refresh when filters change
   useEffect(() => {
@@ -438,7 +447,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     // setGenderFilter('');
     // setStyleFilter('');
     stopAllAudio();
-    if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+    stopActivePoller();
   };
 
   const switchMode = (mode: 'clone' | 'synthesis') => {
@@ -770,6 +779,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       return;
     }
 
+    stopActivePoller();
     setSubmitLoading(true);
     setTaskStatus('');
     // Don't clear currentResult here so user can still see previous while generating new
@@ -816,49 +826,56 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   // --- Polling ---
 
   const startPolling = (tid: string) => {
+    if (!tid) return;
+
+    stopActivePoller();
     setIsPolling(true);
     setTaskProgress(0);
-    
-    const poll = async () => {
-      try {
-        let res: any;
-        if (pageMode === 'clone') {
-          res = await avatarService.queryVoiceCloneTask(tid);
-        } else {
-          res = await avatarService.queryText2VoiceTask(tid);
-        }
-        
-        const result = (res as any).result || (res.data as any)?.result || res.data;
-        
-        if (result) {
-            setTaskStatus(result.status);
-            if (result.status === 'success') {
-                setTaskProgress(100);
-                
-                // Add to history and set as current
-                setGeneratedHistory(prev => [result, ...prev]);
-                setCurrentResult(result);
-                
-                setIsPolling(false);
-            } else if (result.status === 'fail' || result.status === 'error') {
-                toast.error(result.errorMsg || t.messionPushFail);
-                setTaskStatus('fail');
-                setIsPolling(false);
-            } else {
-                // Running
-                setTaskProgress(prev => prev < 90 ? prev + Math.floor(Math.random() * 10) : 95);
-                loopTimerRef.current = setTimeout(poll, 3000);
-            }
-        }
-      } catch (error) {
+
+    const poller = createTaskPoller<VoiceCloneResult>({
+      request: async () => {
+        const res =
+          pageMode === 'clone'
+            ? await avatarService.queryVoiceCloneTask(tid)
+            : await avatarService.queryText2VoiceTask(tid);
+        return (
+          (res as any)?.result ||
+          (res as any)?.data?.result ||
+          (res as any)?.data ||
+          res
+        );
+      },
+      onProgress: progress => setTaskProgress(progress),
+      onStatusChange: status => setTaskStatus(status || ''),
+      onSuccess: result => {
+        setTaskProgress(100);
+        setGeneratedHistory(prev => [result, ...prev]);
+        setCurrentResult(result);
+        setTaskStatus('success');
+        stopActivePoller();
+      },
+      onFailure: result => {
+        toast.error(result?.errorMsg || t.messionPushFail);
+        setTaskStatus(result?.status || 'fail');
+        stopActivePoller();
+      },
+      onTimeout: () => {
+        toast.error(t.queryFail || '任务超时');
+        setTaskStatus('timeout');
+        stopActivePoller();
+      },
+      onError: error => {
         console.error('Poll error', error);
-        setIsPolling(false);
         toast.error(t.queryFail);
         setTaskStatus('fail');
-      }
-    };
-    
-    poll();
+        stopActivePoller();
+      },
+      progressMode: pageMode === 'clone' ? 'slow' : 'fast',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
   };
 
   const handleSaveToAssets = (result: VoiceCloneResult) => {

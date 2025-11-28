@@ -3298,15 +3298,16 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           (requestData as any).parameters.seed = qwenImageEditSeed;
         }
       }
-
+      
       // GPT-image specific
       if (selectedModel.startsWith('gpt-image')) {
         // GPT模型使用quality字段，但需要映射
         const qualityMap: Record<string, string> = {
-          'low': 'standard',
-          'medium': 'hd',
-          'high': 'hd', // 或者根据实际API调整
+          'low': 'low',
+          'medium': 'medium',
+          'high': 'high', // 或者根据实际API调整
         };
+
         requestData.quality = qualityMap[gptImageQuality] || 'hd';
         requestData.n = gptImageN;
         if (images && images.length > 0) {

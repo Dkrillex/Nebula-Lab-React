@@ -11,6 +11,7 @@ import ImagePreviewModal from './ImagePreviewModal';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 interface ProductReplaceResult {
   key: string;
@@ -51,6 +52,9 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const [taskResult, setTaskResult] = useState<any>(null);
   const [selectImage, setSelectImage] = useState<ProductReplaceResult | null>(null);
   const [image2VideoResult, setImage2VideoResult] = useState<any>(null);
+  useEffect(() => {
+    progressRef.current = progress;
+  }, [progress]);
   
   // Image generation state
   const [imageGeneration, setImageGeneration] = useState<ImageGenerationState>({
@@ -82,9 +86,10 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     assetName: '',
   });
 
-  // Timers
-  const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Pollers
+  const imagePollerRef = useRef<PollingController | null>(null);
+  const videoPollerRef = useRef<PollingController | null>(null);
+  const progressRef = useRef(0);
   const hasCheckedTaskIdRef = useRef(false);
   // 跟踪是否已经初始化过，避免 KeepAlive 恢复时重复执行
   const hasInitializedRef = useRef(false);
@@ -92,6 +97,20 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const pollingTaskIdRef = useRef<string | null>(null);
   // 标记组件是否处于 KeepAlive 缓存状态
   const isKeepAliveInactiveRef = useRef(false);
+
+  const stopImagePolling = useCallback(() => {
+    if (imagePollerRef.current) {
+      imagePollerRef.current.stop();
+      imagePollerRef.current = null;
+    }
+  }, []);
+
+  const stopVideoPolling = useCallback(() => {
+    if (videoPollerRef.current) {
+      videoPollerRef.current.stop();
+      videoPollerRef.current = null;
+    }
+  }, []);
 
   // Calculate points
   const pointsTip = () => {
@@ -119,211 +138,169 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     }
   };
 
-  // Poll image generation task
-  const pollTask = async (taskId: string) => {
-    const interval = 10000;
-    let attempts = 0;
-    const maxAttempts = 100;
+  const extractResultData = (res: any) =>
+    (res as any)?.data?.result || (res as any)?.result || (res as any)?.data || res;
 
-    const check = async () => {
-      try {
-        if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
-        setPageLoading(true);
+  const handleImageTaskSuccess = useCallback(
+    (resultData: any) => {
+      setProgress(100);
 
-        let res: any;
-        if (isV2) {
-          res = await avatarService.queryV2ImageReplaceTask(taskId);
-        } else {
-          res = await avatarService.queryImageReplaceTask(taskId);
-        }
+      if (isV2) {
+        const replaceResult = resultData.replaceProductResult || [];
+        const productReplaceResult = replaceResult.map((item: any) => ({
+          key: item.imageId,
+          url: item.url,
+          imageId: item.imageId,
+          faceExistence: item.faceExistence,
+        }));
 
-        // 修复数据提取逻辑：支持 res.data.result 和 res.result 两种结构
-        const resultData = (res as any)?.data?.result || (res as any)?.result || (res as any)?.data || res;
-        const status = resultData?.taskStatus || resultData?.status;
-
-        console.log(`[轮询 ${attempts + 1}/${maxAttempts}] 任务状态:`, status, '完整数据:', resultData);
-
-        // 支持更多状态值：running, init, processing, pending 等
-        if (status === 'running' || status === 'init' || status === 'processing' || status === 'pending' || status === 'in_queue') {
-          // Update progress - ensure it doesn't exceed 99%
-          setProgress(prev => {
-            if (prev < 80) {
-              const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 5) + 1);
-              return Math.min(prev + maxIncrement, 80);
-            } else if (prev < 99) {
-              const maxIncrement = Math.min(99 - prev, Math.floor(Math.random() * 3) + 1);
-              return Math.min(prev + maxIncrement, 99);
-            }
-            return prev; // Don't exceed 99
-          });
-
-          attempts++;
-          if (attempts < maxAttempts) {
-            loopTimerRef.current = setTimeout(check, interval);
-          } else {
-            console.error('轮询超时，已达到最大尝试次数:', maxAttempts);
-            toast.error('任务超时，请稍后重试');
-            setPageLoading(false);
-            setTaskResult({
-              taskStatus: 'fail',
-              errorMsg: '任务超时，请稍后重试',
-            });
-          }
-        } else if (status === 'success' || status === 'completed') {
-          setProgress(100);
-          console.log('任务成功完成:', resultData);
-          
-          if (isV2) {
-            // V2 result processing
-            const replaceResult = resultData.replaceProductResult || [];
-            const productReplaceResult = replaceResult.map((item: any) => ({
-              key: item.imageId,
-              url: item.url,
-              imageId: item.imageId,
-              faceExistence: item.faceExistence,
-            }));
-
-            setTaskResult({
-              ...resultData,
-              taskStatus: 'success',
-              productReplaceResult,
-            });
-
-            if (replaceResult.length > 0) {
-              setSelectImage(replaceResult[0]);
-              setImageGeneration(prev => ({
-                ...prev,
-                replaceProductTaskImageId: replaceResult[0].imageId,
-                productReplaceResultKey: replaceResult[0].imageId,
-              }));
-
-              if (!replaceResult[0].faceExistence) {
-                setImageGeneration(prev => ({ ...prev, mode: 'avatar2' }));
-              }
-            }
-          } else {
-            // V1 result processing
-            const productReplaceResult = resultData.productReplaceResult || [];
-            setTaskResult(resultData);
-
-            if (productReplaceResult.length > 0) {
-              setSelectImage(productReplaceResult[0]);
-              setImageGeneration(prev => ({
-                ...prev,
-                productReplaceResultKey: productReplaceResult[0].key,
-              }));
-            }
-          }
-
-          setPageLoading(false);
-        } else if (status === 'fail' || status === 'failed' || status === 'error') {
-          console.error('任务失败:', resultData);
-          setTaskResult({
-            taskStatus: 'fail',
-            errorMsg: resultData?.errorMsg || resultData?.message || resultData?.error || '任务失败',
-          });
-          setPageLoading(false);
-        } else {
-          // 未知状态，继续轮询但记录日志
-          console.warn('未知任务状态:', status, '继续轮询...');
-          attempts++;
-          if (attempts < maxAttempts) {
-            loopTimerRef.current = setTimeout(check, interval);
-          } else {
-            console.error('轮询超时，未知状态:', status);
-            toast.error('任务状态异常，请稍后重试');
-            setPageLoading(false);
-            setTaskResult({
-              taskStatus: 'fail',
-              errorMsg: `任务状态异常: ${status}`,
-            });
-          }
-        }
-      } catch (error) {
-        console.error('轮询查询失败:', error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          loopTimerRef.current = setTimeout(check, interval);
-        } else {
-          console.error('轮询查询失败，已达到最大尝试次数');
-          toast.error('查询任务状态失败，请稍后重试');
-          setPageLoading(false);
-          setTaskResult({
-            taskStatus: 'fail',
-            errorMsg: '查询任务状态失败',
-          });
-        }
-      }
-    };
-
-    check();
-  };
-
-  const resumePollingIfNeeded = useCallback(() => {
-    if (!taskId) return;
-
-    const taskStatus = taskResult?.taskStatus || taskResult?.status;
-    if (taskStatus === 'success' || taskStatus === 'completed' || taskStatus === 'fail' || taskStatus === 'failed' || taskStatus === 'error') {
-      return;
-    }
-
-    if (!loopTimerRef.current) {
-      pollTask(taskId);
-    }
-  }, [taskId, taskResult]);
-
-  // Poll video generation task
-  const pollImage2Video = async (videoTaskId: string) => {
-    const interval = 10000;
-    let attempts = 0;
-    const maxAttempts = 100;
-
-    const check = async () => {
-      try {
-        if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
-        setPageLoading(true);
-        setTip(t?.tip1 || '合成视频中大约需要1~2分钟...');
-
-        // Update progress BEFORE querying (like old system)
-        setProgress(prev => {
-          if (prev < 80) {
-            const maxIncrement = Math.min(80 - prev, Math.floor(Math.random() * 20) + 1);
-            return Math.min(prev + maxIncrement, 80);
-          } else if (prev < 90) {
-            const maxIncrement = Math.min(90 - prev, Math.floor(Math.random() * 10) + 1);
-            return Math.min(prev + maxIncrement, 90);
-          }
-          return prev; // Don't exceed 90
+        setTaskResult({
+          ...resultData,
+          taskStatus: 'success',
+          productReplaceResult,
         });
 
-        let res: any;
-        if (isV2) {
-          res = await avatarService.queryV2Image2Video(videoTaskId);
-        } else {
-          res = await avatarService.queryImage2Video(videoTaskId);
-        }
+        if (replaceResult.length > 0) {
+          setSelectImage(replaceResult[0]);
+          setImageGeneration(prev => ({
+            ...prev,
+            replaceProductTaskImageId: replaceResult[0].imageId,
+            productReplaceResultKey: replaceResult[0].imageId,
+          }));
 
-        // 修复数据提取逻辑：支持 res.data.result 和 res.result 两种结构
-        const resultData = (res as any)?.data?.result || (res as any)?.result || (res as any)?.data || res;
-        const status = resultData?.taskStatus || resultData?.status;
-
-        console.log(`[视频轮询 ${attempts + 1}/${maxAttempts}] 任务状态:`, status, '完整数据:', resultData);
-
-        // 支持更多状态值：running, init, processing, pending 等
-        if (status === 'running' || status === 'init' || status === 'processing' || status === 'pending' || status === 'in_queue') {
-          attempts++;
-          if (attempts < maxAttempts) {
-            loopTimerRef.current = setTimeout(check, interval);
-          } else {
-            console.error('视频轮询超时，已达到最大尝试次数:', maxAttempts);
-            toast.error('任务超时，请稍后重试');
-            setPageLoading(false);
+          if (!replaceResult[0].faceExistence) {
+            setImageGeneration(prev => ({ ...prev, mode: 'avatar2' }));
           }
-        } else if (status === 'success' || status === 'completed') {
+        }
+      } else {
+        const productReplaceResult = resultData.productReplaceResult || [];
+        setTaskResult(resultData);
+
+        if (productReplaceResult.length > 0) {
+          setSelectImage(productReplaceResult[0]);
+          setImageGeneration(prev => ({
+            ...prev,
+            productReplaceResultKey: productReplaceResult[0].key,
+          }));
+        }
+      }
+
+      setPageLoading(false);
+    },
+    [isV2]
+  );
+
+  const handleImageTaskFailure = useCallback(
+    (resultData?: any, fallbackMsg?: string) => {
+      const errorMsg =
+        resultData?.errorMsg ||
+        resultData?.message ||
+        resultData?.error ||
+        fallbackMsg ||
+        '任务失败';
+      toast.error(errorMsg);
+      setTaskResult({
+        taskStatus: 'fail',
+        errorMsg,
+      });
+      setPageLoading(false);
+    },
+    []
+  );
+
+  const startImagePolling = useCallback(
+    (currentTaskId: string) => {
+      if (!currentTaskId) return;
+
+      stopImagePolling();
+      setPageLoading(true);
+      setTip(t?.tip || '合成图片中大约需要1~2分钟...');
+
+      const poller = createTaskPoller<any>({
+        request: async () => {
+          const res = isV2
+            ? await avatarService.queryV2ImageReplaceTask(currentTaskId)
+            : await avatarService.queryImageReplaceTask(currentTaskId);
+          return extractResultData(res);
+        },
+        parseStatus: data => data?.taskStatus || data?.status,
+        onProgress: value => setProgress(value),
+        onStatusChange: status => {
+          console.log('[产品替换轮询] 状态:', status);
+        },
+        onSuccess: resultData => {
+          handleImageTaskSuccess(resultData);
+          stopImagePolling();
+        },
+        onFailure: resultData => {
+          handleImageTaskFailure(resultData);
+          stopImagePolling();
+        },
+        onTimeout: () => {
+          handleImageTaskFailure(null, '任务超时，请稍后重试');
+          stopImagePolling();
+        },
+        onError: error => {
+          console.error('轮询查询失败:', error);
+          handleImageTaskFailure(null, '查询任务状态失败，请稍后重试');
+          stopImagePolling();
+        },
+        intervalMs: 10_000,
+        progressMode: 'slow',
+        initialProgress: Math.min(progressRef.current || 0, 99),
+      });
+
+      imagePollerRef.current = poller;
+      poller.start();
+    },
+    [handleImageTaskFailure, handleImageTaskSuccess, isV2, stopImagePolling, t]
+  );
+
+  const ensureImagePolling = useCallback(() => {
+    if (!taskId) return;
+    const taskStatus = (taskResult?.taskStatus || taskResult?.status || '').toLowerCase();
+    const isTerminal = ['success', 'completed', 'fail', 'failed', 'error'].includes(taskStatus);
+    if (isTerminal) return;
+    const isRunning = imagePollerRef.current?.isRunning?.() ?? false;
+    if (!isRunning) {
+      startImagePolling(taskId);
+    }
+  }, [startImagePolling, taskId, taskResult]);
+
+  const startVideoPolling = useCallback(
+    (videoTaskId: string) => {
+      if (!videoTaskId) return;
+
+      stopVideoPolling();
+      setPageLoading(true);
+      setTip(t?.tip1 || '合成视频中大约需要1~2分钟...');
+
+      const poller = createTaskPoller<any>({
+        request: async () => {
+          const res = isV2
+            ? await avatarService.queryV2Image2Video(videoTaskId)
+            : await avatarService.queryImage2Video(videoTaskId);
+          return extractResultData(res);
+        },
+        parseStatus: data => data?.taskStatus || data?.status,
+        isSuccess: status => {
+          if (!status) return false;
+          return ['success', 'completed'].includes(status.toLowerCase());
+        },
+        isFailure: status => {
+          if (!status) return false;
+          return ['fail', 'failed', 'error'].includes(status.toLowerCase());
+        },
+        onProgress: value => setProgress(value),
+        onSuccess: async resultData => {
           setProgress(100);
           setPageLoading(false);
-          
-          const videoUrl = resultData.finishedVideoUrl || resultData.videoUrl || resultData.aiAvatar?.previewVideoUrl;
+
+          const videoUrl =
+            resultData.finishedVideoUrl ||
+            resultData.videoUrl ||
+            resultData.aiAvatar?.previewVideoUrl;
+
           setImage2VideoResult({
             ...resultData,
             previewVideoUrl: videoUrl,
@@ -335,7 +312,6 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
             assetId: videoTaskId,
           }));
 
-          // Deduct points after video generation success
           try {
             await avatarService.deductPoints({
               deductPoints: pointsTip(),
@@ -344,39 +320,44 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
             });
           } catch (error) {
             console.error('Failed to deduct points:', error);
-            // Don't show error to user as video is already generated
           }
-        } else if (status === 'fail' || status === 'failed' || status === 'error') {
+
+          stopVideoPolling();
+        },
+        onFailure: resultData => {
           console.error('视频生成失败:', resultData);
-          toast.error(resultData?.errorMsg || resultData?.message || resultData?.error || t?.errors?.generateFailed || '视频生成失败');
+          toast.error(
+            resultData?.errorMsg ||
+              resultData?.message ||
+              resultData?.error ||
+              t?.errors?.generateFailed ||
+              '视频生成失败'
+          );
           setPageLoading(false);
-        } else {
-          // 未知状态，继续轮询但记录日志
-          console.warn('未知视频任务状态:', status, '继续轮询...');
-          attempts++;
-          if (attempts < maxAttempts) {
-            loopTimerRef.current = setTimeout(check, interval);
-          } else {
-            console.error('视频轮询超时，未知状态:', status);
-            toast.error('任务状态异常，请稍后重试');
-            setPageLoading(false);
-          }
-        }
-      } catch (error) {
-        console.error('视频轮询查询失败:', error);
-        attempts++;
-        if (attempts < maxAttempts) {
-          loopTimerRef.current = setTimeout(check, interval);
-        } else {
-          console.error('视频轮询查询失败，已达到最大尝试次数');
+          stopVideoPolling();
+        },
+        onTimeout: () => {
+          toast.error('任务超时，请稍后重试');
+          setPageLoading(false);
+          stopVideoPolling();
+        },
+        onError: error => {
+          console.error('视频轮询查询失败:', error);
           toast.error('查询任务状态失败，请稍后重试');
           setPageLoading(false);
-        }
-      }
-    };
+          stopVideoPolling();
+        },
+        intervalMs: 10_000,
+        progressMode: 'medium',
+        initialProgress: Math.min(progressRef.current || 0, 99),
+        continueOnError: () => false,
+      });
 
-    check();
-  };
+      videoPollerRef.current = poller;
+      poller.start();
+    },
+    [isV2, pointsTip, stopVideoPolling, t, user?.userId]
+  );
 
   // Handle regenerate
   const handleRegenerate = async () => {
@@ -422,7 +403,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
       const resultData = (res as any).result || res;
       if (resultData?.taskId) {
         productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
-        pollTask(resultData.taskId);
+        startImagePolling(resultData.taskId);
       } else {
         throw new Error((res as any).msg || (res as any).message || '任务提交失败');
       }
@@ -487,7 +468,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
       const resultData = (res as any).result || res;
       if (resultData?.taskId) {
-        pollImage2Video(resultData.taskId);
+        startVideoPolling(resultData.taskId);
       } else {
         throw new Error((res as any).msg || (res as any).message || '任务提交失败');
       }
@@ -591,21 +572,15 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     hasInitializedRef.current = true;
     pollingTaskIdRef.current = taskId;
 
-    pollTask(taskId);
+    startImagePolling(taskId);
 
     return () => {
-      // 清理定时器（只在组件真正卸载或 taskId 变化时执行）
+      // 清理轮询（只在组件真正卸载或 taskId 变化时执行）
       if (isKeepAliveInactiveRef.current) return;
-      if (loopTimerRef.current) {
-        clearTimeout(loopTimerRef.current);
-        loopTimerRef.current = null;
-      }
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
+      stopImagePolling();
+      stopVideoPolling();
     };
-  }, [taskId, isV2]);
+  }, [isV2, startImagePolling, stopImagePolling, stopVideoPolling, taskId]);
 
   // 使用 useActivate 处理 KeepAlive 恢复时的逻辑
   useActivate(() => {
@@ -617,11 +592,11 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
     if (pollingTaskIdRef.current !== taskId) {
       hasInitializedRef.current = false;
       pollingTaskIdRef.current = taskId;
-      pollTask(taskId);
+      startImagePolling(taskId);
       return;
     }
     
-    resumePollingIfNeeded();
+    ensureImagePolling();
   });
 
   // 使用 useUnactivate 处理组件被缓存时的逻辑

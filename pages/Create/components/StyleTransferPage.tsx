@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic, FolderPlus, Video, Pencil, Eye } from 'lucide-react';
 import ImagePreviewModal, { ImagePreviewAction } from '../../../components/ImagePreviewModal';
@@ -16,6 +16,7 @@ import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 interface StyleTransferPageProps {
   t: {
@@ -135,8 +136,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const garmentInputRef = useRef<HTMLInputElement>(null);
   const modelInputRef = useRef<HTMLInputElement>(null);
   const referenceInputRef = useRef<HTMLInputElement>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
+  const pollerRef = useRef<PollingController | null>(null);
 
   // AddMaterialModal State
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
@@ -413,14 +413,74 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     }
   };
 
+  const stopTaskPolling = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+  }, []);
+
   // 轮询任务状态
-  const startPolling = (taskId: string, mode: 'standard' | 'creative' | 'clothing') => {
-    if (pollingInterval.current) clearInterval(pollingInterval.current);
+  const startPolling = useCallback((taskId: string, mode: 'standard' | 'creative' | 'clothing') => {
+    if (!taskId) return;
+    stopTaskPolling();
     
     console.log('开始轮询任务:', taskId, '模式:', mode);
     
-    pollingInterval.current = setInterval(async () => {
-      try {
+    const extractTaskResult = (res: any) => {
+      if (res.result) {
+        return res.result;
+      } else if (res.data) {
+        return res.data;
+      }
+      return res;
+    };
+
+    const processResultImages = (taskResult: any): GeneratedImage[] => {
+      let images: GeneratedImage[] = [];
+      
+      if (taskResult.anyfitImages && Array.isArray(taskResult.anyfitImages)) {
+        // 标准模式返回格式
+        images = taskResult.anyfitImages.map((item: any, index: number) => ({
+          key: item.key || index + 1,
+          url: item.url,
+          previewVisible: false
+        }));
+      } else if (taskResult.image_urls && Array.isArray(taskResult.image_urls)) {
+        // 服装模式返回格式: image_urls
+        images = taskResult.image_urls.map((url: string, index: number) => ({
+          key: index + 1,
+          url: url,
+          previewVisible: false
+        }));
+      } else if (taskResult.resultImages && Array.isArray(taskResult.resultImages)) {
+        images = taskResult.resultImages.map((url: string, index: number) => ({
+          key: index + 1,
+          url: url,
+          previewVisible: false
+        }));
+      } else if (taskResult.data && Array.isArray(taskResult.data)) {
+        // 创意模式可能返回 data 数组
+        images = taskResult.data.map((item: any, index: number) => ({
+          key: index + 1,
+          url: item.url || item.image_url || '',
+          revised_prompt: item.revised_prompt,
+          previewVisible: false
+        })).filter(img => img.url);
+      } else if (taskResult.url) {
+        // 单个图片URL
+        images = [{
+          key: 1,
+          url: taskResult.url,
+          previewVisible: false
+        }];
+      }
+      
+      return images;
+    };
+
+    const poller = createTaskPoller<any>({
+      request: async () => {
         let res;
         if (mode === 'standard') {
           res = await styleTransferService.queryStandard(taskId);
@@ -429,108 +489,66 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         } else {
           res = await styleTransferService.queryClothing(taskId);
         }
-        
         console.log('轮询查询结果:', res);
+        return extractTaskResult(res);
+      },
+      parseStatus: data => data?.status,
+      isSuccess: status => {
+        if (!status) return false;
+        return ['success', 'succeeded', 'done'].includes(status.toLowerCase());
+      },
+      isFailure: status => {
+        if (!status) return false;
+        return ['fail', 'failed', 'error'].includes(status.toLowerCase());
+      },
+      isPending: status => {
+        if (!status) return false;
+        return ['running', 'init', 'in_queue', 'generating'].includes(status.toLowerCase());
+      },
+      onProgress: value => setProgress(value),
+      onSuccess: taskResult => {
+        setProgress(100);
+        console.log('任务完成,处理结果...');
         
-        // requestClient 已处理外层,返回格式:
-        // TopView: { result: { taskId, status, anyfitImages: [...] } }
-        // Clothing: { data: { status, image_urls: [...] } }
-        // 或其他: { taskId, status, ... }
-        let taskResult;
-        if (res.result) {
-          // TopView 格式: { result: {...} }
-          taskResult = res.result;
-        } else if (res.data) {
-          // 服装模式格式: { data: { status, image_urls: [...] } }
-          taskResult = res.data;
-        } else {
-          // 直接格式
-          taskResult = res;
-        }
+        const images = processResultImages(taskResult);
+        console.log('生成的图片:', images);
+        setGeneratedImages(images);
         
-        const status = taskResult.status;
-        console.log('任务状态:', status);
-        
-        if (status === 'running' || status === 'init' || status === 'in_queue' || status === 'generating') {
-          // 任务进行中,更新进度
-          setProgress(prev => {
-            if (prev < 95) {
-              return Math.min(95, prev + Math.floor(Math.random() * 3) + 1);
-            }
-            return prev; // keep at 95% until task completes
-          });
-          // 继续轮询
-        } else if (status === 'success' || status === 'succeeded' || status === 'done') {
-          // 任务成功完成
-          if (pollingInterval.current) clearInterval(pollingInterval.current);
-          if (progressInterval.current) clearInterval(progressInterval.current);
-          setProgress(100);
-          
-          console.log('任务完成,处理结果...');
-          
-          // 处理结果图片 - 兼容多种返回格式
-          let images: GeneratedImage[] = [];
-          
-          if (taskResult.anyfitImages && Array.isArray(taskResult.anyfitImages)) {
-            // 标准模式返回格式
-            images = taskResult.anyfitImages.map((item: any, index: number) => ({
-              key: item.key || index + 1,
-              url: item.url,
-              previewVisible: false
-            }));
-          } else if (taskResult.image_urls && Array.isArray(taskResult.image_urls)) {
-            // 服装模式返回格式: image_urls
-            images = taskResult.image_urls.map((url: string, index: number) => ({
-              key: index + 1,
-              url: url,
-              previewVisible: false
-            }));
-          } else if (taskResult.resultImages && Array.isArray(taskResult.resultImages)) {
-            images = taskResult.resultImages.map((url: string, index: number) => ({
-              key: index + 1,
-              url: url,
-              previewVisible: false
-            }));
-          } else if (taskResult.data && Array.isArray(taskResult.data)) {
-            // 创意模式可能返回 data 数组
-            images = taskResult.data.map((item: any, index: number) => ({
-              key: index + 1,
-              url: item.url || item.image_url || '',
-              revised_prompt: item.revised_prompt,
-              previewVisible: false
-            })).filter(img => img.url);
-          } else if (taskResult.url) {
-            // 单个图片URL
-            images = [{
-              key: 1,
-              url: taskResult.url,
-              previewVisible: false
-            }];
-          }
-          
-          console.log('生成的图片:', images);
-          setGeneratedImages(images);
-          
-          // 延迟重置生成状态,让用户看到 100% 进度
-          setTimeout(() => {
-            setIsGenerating(false);
-          }, 1000);
-          
-        } else if (status === 'fail' || status === 'failed' || status === 'error') {
-          // 任务失败
-          if (pollingInterval.current) clearInterval(pollingInterval.current);
-          if (progressInterval.current) clearInterval(progressInterval.current);
+        // 延迟重置生成状态,让用户看到 100% 进度
+        setTimeout(() => {
           setIsGenerating(false);
-          setProgress(0);
-          const errorMsg = taskResult.errorMsg || taskResult.error || taskResult.message || 'Generation failed';
-          console.error('任务失败:', errorMsg);
-          toast.error(errorMsg);
-        }
-      } catch (error) {
+        }, 1000);
+        
+        stopTaskPolling();
+      },
+      onFailure: taskResult => {
+        setIsGenerating(false);
+        setProgress(0);
+        const errorMsg = taskResult?.errorMsg || taskResult?.error || taskResult?.message || 'Generation failed';
+        console.error('任务失败:', errorMsg);
+        toast.error(errorMsg);
+        stopTaskPolling();
+      },
+      onTimeout: () => {
+        setIsGenerating(false);
+        setProgress(0);
+        toast.error('任务超时');
+        stopTaskPolling();
+      },
+      onError: error => {
         console.error('轮询查询出错:', error);
-      }
-    }, 5000); // 5秒轮询一次
-  };
+        toast.error('查询失败');
+        setIsGenerating(false);
+        stopTaskPolling();
+      },
+      intervalMs: 10_000,
+      progressMode: 'medium',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
+  }, [stopTaskPolling]);
 
   // 提交生成任务
   const handleGenerate = async (e?: React.MouseEvent) => {
@@ -546,17 +564,10 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     
     if (isGenerating) return;
     
+    stopTaskPolling();
     setIsGenerating(true);
     setProgress(0);
     setGeneratedImages([]);
-
-    // 模拟进度
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) return 90;
-        return prev + Math.floor(Math.random() * 10);
-      });
-    }, 2000);
 
     try {
       if (selectedMode === 'creative') {
@@ -638,7 +649,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
             setGeneratedImages(images);
             setProgress(100);
             setIsGenerating(false);
-            if (progressInterval.current) clearInterval(progressInterval.current);
+            stopTaskPolling();
         } else if (taskId) {
             startPolling(taskId, 'creative');
         } else {
@@ -935,7 +946,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
       console.error('Generation error:', error);
       toast.error(error.message || 'Generation failed');
       setIsGenerating(false);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopTaskPolling();
     }
   };
 
@@ -949,10 +960,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
   useEffect(() => {
     return () => {
-      if (pollingInterval.current) clearInterval(pollingInterval.current);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopTaskPolling();
     };
-  }, []);
+  }, [stopTaskPolling]);
 
   const handleSaveToAssets = (img: GeneratedImage) => {
     let assetType = 6; // 万物迁移

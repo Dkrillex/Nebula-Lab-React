@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
@@ -11,6 +11,7 @@ import AddMaterialModal from '../../../components/AddMaterialModal';
 import { AdsAssetsVO } from '../../../services/assetsService';
 import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import { UploadedFile } from '../../../services/avatarService';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 import demoProduct from '../../../assets/demo/1111.png';
 
@@ -147,8 +148,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   // const advancedFileInputRef = useRef<HTMLInputElement>(null); // Advanced Mode not open to public yet
   const startUploadRef = useRef<UploadComponentRef>(null);
   const endUploadRef = useRef<UploadComponentRef>(null);
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const pollerRef = useRef<PollingController | null>(null);
 
   // Handle "Make Same Style" data transfer
   useEffect(() => {
@@ -182,13 +182,19 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
   }, [searchParams, getData, removeData]);
 
+  const stopActivePoller = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+  }, []);
+
   // Cleanup
   useEffect(() => {
     return () => {
-      if (pollingInterval.current) clearInterval(pollingInterval.current);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopActivePoller();
     };
-  }, []);
+  }, [stopActivePoller]);
 
   // Validate Duration on Tab/Model Change
   useEffect(() => {
@@ -371,84 +377,97 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   };
 
   // --- Polling ---
-  const startPolling = (taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
-    if (pollingInterval.current) clearInterval(pollingInterval.current);
-    
-    let pollCount = 0;
-    pollingInterval.current = setInterval(async () => {
-      try {
-        pollCount++;
-        if (pollCount > 120) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           setIsGenerating(false);
-           toast.error('Generation timed out');
-           return;
-        }
+  const startPolling = useCallback((taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
+    if (!taskId) return;
+    stopActivePoller();
+    setIsGenerating(true);
+    setProgress(0);
 
+    const extractResponseData = (res: any) => res.data || (res as any).result || res;
+
+    const poller = createTaskPoller<any>({
+      request: async () => {
         let res;
         if (mode === 'traditional') {
-           res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
+          res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
         } else {
-           res = await imageToVideoService.queryStartEnd(taskId);
+          res = await imageToVideoService.queryStartEnd(taskId);
         }
-        
-        // Handle different response structures
-        const responseData = res.data || (res as any).result || res;
-        if (!responseData) return;
+        return extractResponseData(res);
+      },
+      parseStatus: data => {
+        let status = data?.status || data?.task_status;
+        if (!status && (data as any)?.status) status = (data as any).status;
+        return status;
+      },
+      isSuccess: status => {
+        if (!status) return false;
+        return ['succeeded', 'success', 'completed', 'done'].includes(status.toLowerCase());
+      },
+      isFailure: status => {
+        if (!status) return false;
+        return ['failed', 'fail', 'error', 'expired'].includes(status.toLowerCase());
+      },
+      onProgress: value => setProgress(value),
+      onSuccess: responseData => {
+        setProgress(100);
+        setIsGenerating(false);
 
-        // Normalize status
-        let status = responseData.status || responseData.task_status;
-        if (!status && (res as any).status) status = (res as any).status; // Handle top-level status if any
+        let videoUrl = responseData.videoUrl || responseData.video_url || responseData.file_url;
+        let coverUrl = responseData.coverUrl || responseData.cover_url;
 
-        const isSuccess = ['succeeded', 'success', 'completed', 'done'].includes(status?.toLowerCase());
-        const isFailed = ['failed', 'fail', 'error', 'expired'].includes(status?.toLowerCase());
-        
-        if (isSuccess) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           if (progressInterval.current) clearInterval(progressInterval.current);
-           setProgress(100);
-           
-           let videoUrl = responseData.videoUrl || responseData.video_url || responseData.file_url;
-           let coverUrl = responseData.coverUrl || responseData.cover_url;
-
-           if (responseData.content) {
-             videoUrl = responseData.content.video_url || videoUrl;
-             coverUrl = responseData.content.last_frame_url || coverUrl;
-           }
-           
-           if (Array.isArray(responseData.videos) && responseData.videos.length > 0) {
-              const v = responseData.videos[0];
-              if (v.originVideo) videoUrl = v.originVideo.filePath;
-              else if (v.url) videoUrl = v.url;
-           }
-
-           if (videoUrl) {
-              const newVideo: I2VTaskResult = {
-                ...responseData,
-                videoUrl: videoUrl,
-                coverUrl: coverUrl,
-                status: 'success',
-                id: taskId,
-                taskId: taskId
-              };
-              setGeneratedVideos(prev => [newVideo, ...prev]);
-              setSelectedVideo(newVideo);
-           } else {
-              toast.error('Task succeeded but no video URL found');
-           }
-           setIsGenerating(false);
-        } else if (isFailed) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           if (progressInterval.current) clearInterval(progressInterval.current);
-           setIsGenerating(false);
-           const errorMsg = responseData.error || responseData.errorMsg || responseData.message || 'Generation failed';
-           toast.error(errorMsg);
+        if (responseData.content) {
+          videoUrl = responseData.content.video_url || videoUrl;
+          coverUrl = responseData.content.last_frame_url || coverUrl;
         }
-      } catch (error) {
+
+        if (Array.isArray(responseData.videos) && responseData.videos.length > 0) {
+          const v = responseData.videos[0];
+          if (v.originVideo) videoUrl = v.originVideo.filePath;
+          else if (v.url) videoUrl = v.url;
+        }
+
+        if (videoUrl) {
+          const newVideo: I2VTaskResult = {
+            ...responseData,
+            videoUrl: videoUrl,
+            coverUrl: coverUrl,
+            status: 'success',
+            id: taskId,
+            taskId: taskId
+          };
+          setGeneratedVideos(prev => [newVideo, ...prev]);
+          setSelectedVideo(newVideo);
+        } else {
+          toast.error('Task succeeded but no video URL found');
+        }
+        stopActivePoller();
+      },
+      onFailure: responseData => {
+        setIsGenerating(false);
+        const errorMsg = responseData?.error || responseData?.errorMsg || responseData?.message || 'Generation failed';
+        toast.error(errorMsg);
+        stopActivePoller();
+      },
+      onTimeout: () => {
+        setIsGenerating(false);
+        toast.error('Generation timed out');
+        stopActivePoller();
+      },
+      onError: error => {
         console.error('Polling error:', error);
-      }
-    }, 5000);
-  };
+        setIsGenerating(false);
+        toast.error(error?.message || 'Polling failed');
+        stopActivePoller();
+      },
+      intervalMs: 10_000,
+      progressMode: 'medium',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
+  }, [stopActivePoller]);
 
   // --- Submit ---
   const handleGenerate = async (e?: React.MouseEvent) => {
@@ -477,15 +496,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       return;
     }
 
-    setIsGenerating(true);
-    setProgress(0);
-    
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) return 90;
-        return prev + Math.floor(Math.random() * 3) + 1;
-      });
-    }, 800);
+    stopActivePoller();
 
     try {
       let taskId = '';
@@ -574,9 +585,9 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-    toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
+      toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
       setIsGenerating(false);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopActivePoller();
       setProgress(0);
     }
   };

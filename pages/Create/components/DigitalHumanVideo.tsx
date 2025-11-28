@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
@@ -10,6 +10,7 @@ import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
 import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 import AddMaterialModal from '@/components/AddMaterialModal';
 import UploadComponent from '@/components/UploadComponent';
 interface DigitalHumanVideoProps {
@@ -91,6 +92,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
+  const taskPollerRef = useRef<PollingController | null>(null);
 
   useEffect(() => {
     if (!resultsSectionRef.current) return;
@@ -100,6 +102,20 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   }, [generatedVideos.length, generating, taskStatus]);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
+
+  const stopTaskPolling = useCallback(() => {
+    if (taskPollerRef.current) {
+      taskPollerRef.current.stop();
+      taskPollerRef.current = null;
+    }
+    setGenerating(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopTaskPolling();
+    };
+  }, [stopTaskPolling]);
 
   const handleVideoUploadComplete = (file: UploadedFile) => {
     setUploadedVideo(file);
@@ -317,7 +333,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
       if (newTaskId) {
         setTaskId(newTaskId);
-        pollTaskStatus(newTaskId);
+        startTaskPolling(newTaskId);
       } else {
         throw new Error('任务提交失败：未获取到 TaskId');
       }
@@ -330,68 +346,54 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
     }
   };
 
-  const pollTaskStatus = async (id: string) => {
-    const maxAttempts = 60;
-    const interval = 5000;
-    let attempts = 0;
+  const startTaskPolling = useCallback((id: string) => {
+    if (!id) return;
+    stopTaskPolling();
 
-    const poll = async () => {
-      try {
+    const poller = createTaskPoller<any>({
+      request: async () => {
         const res = await avatarService.queryVideoCreationTask(id);
-        let taskData: any = res;
-         if ((res as any).result) {
-            taskData = (res as any).result;
-         } else if (res.data) {
-            taskData = res.data;
-         }
+        if ((res as any).result) return (res as any).result;
+        if ((res as any).data) return (res as any).data;
+        return res;
+      },
+      parseStatus: data => data?.status,
+      isSuccess: status => status === 'success',
+      isFailure: status => status === 'fail',
+      onProgress: () => {},
+      onSuccess: taskData => {
+        setTaskStatus('success');
+        setPreviewVideoUrl(taskData.outputVideoUrl);
+        setGeneratedVideos(prev => {
+          if (prev.some(v => v.id === id)) return prev;
+          return [{ id, url: taskData.outputVideoUrl, timestamp: Date.now() }, ...prev];
+        });
+        stopTaskPolling();
+      },
+      onFailure: taskData => {
+        setTaskStatus('fail');
+        toast.error(taskData?.errorMsg || '任务执行失败');
+        stopTaskPolling();
+      },
+      onTimeout: () => {
+        setTaskStatus('fail');
+        toast.error('任务超时');
+        stopTaskPolling();
+      },
+      onError: error => {
+        console.error('查询失败', error);
+        setTaskStatus('fail');
+        toast.error('查询失败');
+        stopTaskPolling();
+      },
+      intervalMs: 5_000,
+      progressMode: 'slow',
+      continueOnError: () => false,
+    });
 
-        if (taskData) {
-          const status = taskData.status;
-          if (status === 'success') {
-            setTaskStatus('success');
-            setPreviewVideoUrl(taskData.outputVideoUrl);
-            
-            // Add to history
-            setGeneratedVideos(prev => {
-                if (prev.some(v => v.id === id)) return prev;
-                return [{
-                    id: id,
-                    url: taskData.outputVideoUrl,
-                    timestamp: Date.now()
-                }, ...prev];
-            });
-
-            setGenerating(false);
-            return;
-          } else if (status === 'fail') {
-            setTaskStatus('fail');
-            toast.error(taskData.errorMsg || '任务执行失败');
-            setGenerating(false);
-            return;
-          } else {
-            attempts++;
-            if (attempts < maxAttempts) {
-              setTimeout(poll, interval);
-            } else {
-              setTaskStatus('fail');
-              toast.error('任务超时');
-              setGenerating(false);
-            }
-          }
-        }
-      } catch (error) {
-        attempts++;
-        if (attempts < maxAttempts) {
-            setTimeout(poll, interval);
-        } else {
-             setTaskStatus('fail');
-             toast.error('查询失败');
-             setGenerating(false);
-        }
-      }
-    };
-    poll();
-  };
+    taskPollerRef.current = poller;
+    poller.start();
+  }, [stopTaskPolling]);
 
   const handleAddToMaterials = () => {
       if (!previewVideoUrl) return;

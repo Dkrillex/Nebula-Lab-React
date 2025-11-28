@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
@@ -8,6 +8,7 @@ import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg
@@ -122,7 +123,27 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const progressPollerRef = useRef<PollingController | null>(null);
+  const stopProgressPoller = useCallback(() => {
+    if (progressPollerRef.current) {
+      progressPollerRef.current.stop();
+      progressPollerRef.current = null;
+    }
+  }, []);
+  const startProgressPoller = useCallback(() => {
+    stopProgressPoller();
+    const poller = createTaskPoller({
+      request: async () => ({ status: 'running' }),
+      isPending: () => true,
+      isSuccess: () => false,
+      isFailure: () => false,
+      onProgress: value => setProgress(value),
+      intervalMs: 1000,
+      progressMode: 'fast',
+    });
+    progressPollerRef.current = poller;
+    poller.start();
+  }, [stopProgressPoller]);
 
   useEffect(() => {
     const transferId = searchParams.get('transferId');
@@ -147,6 +168,12 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       }
     }
   }, [searchParams, getData, removeData]);
+
+  useEffect(() => {
+    return () => {
+      stopProgressPoller();
+    };
+  }, [stopProgressPoller]);
 
   useEffect(() => {
     // Update size when ratio changes
@@ -240,17 +267,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
 
     setIsGenerating(true);
     setProgress(0);
-
-    // Simulated progress
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) {
-          if (progressInterval.current) clearInterval(progressInterval.current);
-          return 90;
-        }
-        return prev + Math.floor(Math.random() * 5);
-      });
-    }, 300);
+    startProgressPoller();
 
     try {
       let res;
@@ -279,8 +296,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
           }
         });
       }
-      
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopProgressPoller();
       setProgress(100);
 
       console.log('API Response:', res);
@@ -312,11 +328,12 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
         toast.error(t.tips.generateEmpty);
       }
     } catch (error: any) {
+      stopProgressPoller();
       console.error('Image generation failed:', error);
       toast.error(`${t.tips.generateFailed}: ${error.message || 'Unknown error'}`);
     } finally {
       setIsGenerating(false);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopProgressPoller();
       setTimeout(() => setProgress(0), 1000);
     }
   };
