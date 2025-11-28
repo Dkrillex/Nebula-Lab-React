@@ -235,7 +235,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 播放/暂停切换
   const togglePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isSubmittingMask) return;
 
     if (videoRef.current.paused) {
       videoRef.current.play();
@@ -244,11 +244,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       videoRef.current.pause();
       setIsPlaying(false);
     }
-  }, []);
+  }, [isSubmittingMask]);
 
   // 时间轴点击
   const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current || !timelineTrackRef.current) return;
+    if (!videoRef.current || !timelineTrackRef.current || isSubmittingMask) return;
 
     const trackRect = timelineTrackRef.current.getBoundingClientRect();
     const clickX = e.clientX - trackRect.left;
@@ -266,10 +266,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         setShouldShowMask(true);
       }
     }
-  }, [duration]);
+  }, [duration, isSubmittingMask]);
 
   // 开始拖拽时间轴
   const startDragging = useCallback((e: React.MouseEvent) => {
+    if (isSubmittingMask) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     setIsDragging(true);
     setShouldShowMask(false); // 拖拽时隐藏遮罩层
@@ -304,7 +308,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [duration]);
+  }, [duration, isSubmittingMask]);
 
   // 当模态框打开时初始化视频
   useEffect(() => {
@@ -334,6 +338,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      // 确保视频被暂停并重置到开始位置
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
     };
 
     video.addEventListener('play', handlePlay);
@@ -587,6 +596,17 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     setMarkers([]);
     setSelectedMarkId(null);
     setHoveredMarkId(null);
+    // 清除已提交的标记ID集合
+    setSubmittedMarkIds(new Set());
+    // 清除所有遮罩层数据
+    setFrameMaskMap(new Map());
+    // 清除画布上的遮罩层显示
+    if (maskCanvasRef.current) {
+      const ctx = maskCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+      }
+    }
   }, []);
 
   // 清除所有标记和遮罩层（不提交）- 借鉴 Nebula1
@@ -1334,6 +1354,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               }}
               onLoadedMetadata={handleVideoLoaded}
               onTimeUpdate={handleTimeUpdate}
+              onEnded={() => {
+                setIsPlaying(false);
+                setCurrentTime(0);
+                if (videoRef.current) {
+                  videoRef.current.pause();
+                  videoRef.current.currentTime = 0;
+                }
+              }}
               onError={(e) => {
                 console.error('视频加载错误:', e);
                 setIsLoading(false);
@@ -1423,30 +1451,39 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         <div className="px-6 py-4 bg-[#2a2a2a] border-t border-b border-[#3a3a3a]">
           <div
             ref={timelineTrackRef}
-            className="relative w-full h-[60px] bg-[#1a1a1a] rounded cursor-pointer overflow-hidden"
+            className={`relative w-full h-[60px] bg-[#1a1a1a] rounded overflow-hidden ${
+              isSubmittingMask ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
             onClick={handleTimelineClick}
           >
             {/* 视频缩略图和播放按钮 */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-20 rounded-l overflow-hidden cursor-pointer flex items-center justify-center transition-opacity hover:opacity-100"
+              className={`absolute left-0 top-0 bottom-0 w-20 rounded-l overflow-hidden flex items-center justify-center transition-opacity hover:opacity-100 ${
+                isSubmittingMask ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              }`}
               style={{
                 backgroundImage: videoThumbnail ? `url(${videoThumbnail})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                opacity: videoThumbnail ? 0.9 : 1,
+                opacity: videoThumbnail ? (isSubmittingMask ? 0.45 : 0.9) : (isSubmittingMask ? 0.5 : 1),
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                togglePlayPause();
+                if (!isSubmittingMask) {
+                  togglePlayPause();
+                }
               }}
             >
               {!videoThumbnail && (
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2c2c2c] to-[#111]"></div>
               )}
               <button
-                className={`relative z-10 w-10 h-10 rounded-full bg-white/95 border-2 border-white/80 text-[#1a1a1a] flex items-center justify-center transition-all hover:scale-110 hover:bg-white shadow-lg ${
-                  isPlaying ? '' : ''
-                }`}
+                disabled={isSubmittingMask}
+                className={`relative z-10 w-10 h-10 rounded-full bg-white/95 border-2 border-white/80 text-[#1a1a1a] flex items-center justify-center transition-all shadow-lg ${
+                  isSubmittingMask 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:scale-110 hover:bg-white'
+                } ${isPlaying ? '' : ''}`}
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5" />
@@ -1468,7 +1505,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               style={{ left: `${indicatorPosition}px`, transform: 'translateX(-50%)' }}
             >
               <div
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md cursor-grab active:cursor-grabbing hover:scale-110 transition-transform z-10 pointer-events-auto"
+                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md transition-transform z-10 pointer-events-auto ${
+                  isSubmittingMask 
+                    ? 'cursor-not-allowed opacity-50' 
+                    : 'cursor-grab active:cursor-grabbing hover:scale-110'
+                }`}
                 onMouseDown={startDragging}
               />
             </div>
