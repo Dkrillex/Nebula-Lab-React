@@ -106,6 +106,35 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     return `${(progressPercentage / 100) * (availableWidth / trackWidth) * 100}%`;
   }, [progressPercentage]);
 
+  // 计算标记点在进度条上的位置
+  const markerPositions = React.useMemo(() => {
+    if (!timelineTrackRef.current || duration <= 0 || markers.length === 0) {
+      return [];
+    }
+    
+    const trackWidth = timelineTrackRef.current.clientWidth;
+    const availableWidth = trackWidth - 80; // thumbnailWidth
+    const thumbnailWidth = 80;
+    
+    // 去重：同一个时间点只显示一个标记（优先显示修改区域）
+    const timeMap = new Map<number, VideoMarker>();
+    markers.forEach((mark) => {
+      const existing = timeMap.get(mark.time);
+      if (!existing || (existing.type === 'protect' && mark.type === 'modify')) {
+        timeMap.set(mark.time, mark);
+      }
+    });
+    
+    return Array.from(timeMap.values()).map((mark) => {
+      const percent = duration > 0 ? (mark.time / duration) * 100 : 0;
+      const position = thumbnailWidth + (percent / 100) * availableWidth;
+      return {
+        ...mark,
+        position,
+      };
+    });
+  }, [markers, duration]);
+
   // 初始化视频
   const initVideo = useCallback(async () => {
     if (!videoRef.current || !currentVideoUrl) return;
@@ -1530,6 +1559,27 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               className="absolute left-20 top-0 bottom-0 bg-white/10 pointer-events-none transition-all"
               style={{ width: progressWidth }}
             />
+
+            {/* 标记点指示器 */}
+            {markerPositions.map((marker) => (
+              <div
+                key={marker.id}
+                className="absolute top-0 bottom-0 w-0.5 pointer-events-none"
+                style={{
+                  left: `${marker.position}px`,
+                  transform: 'translateX(-50%)',
+                  backgroundColor: marker.type === 'modify' ? '#ff4d4f' : '#52c41a',
+                  zIndex: 5,
+                }}
+              >
+                <div
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full shadow-sm"
+                  style={{
+                    backgroundColor: marker.type === 'modify' ? '#ff4d4f' : '#52c41a',
+                  }}
+                />
+              </div>
+            ))}
 
             {/* 时间轴指示器 */}
             <div
