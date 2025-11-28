@@ -563,6 +563,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     }
     
     if (isGenerating) return;
+
+    // 1. Pre-validation
+    if (selectedMode === 'creative') {
+        if (!productImage) return toast.error('请上传产品图片');
+        if (!prompt.trim()) return toast.error('请输入提示词');
+    } else if (selectedMode === 'standard') {
+        if (!productImage) return toast.error('请上传产品图片');
+        if (!templateImage && !selectedTemplate) return toast.error('请上传模板图片或选择模板');
+    } else if (selectedMode === 'clothing') {
+        if (garmentImages.length === 0) return toast.error('请上传服装图片');
+        if (!modelImage) return toast.error('请上传模特图片');
+        if (clothingType === 'full' && garmentImages.length < 2) return toast.error('全身模式需要上传两张图片（上衣和下衣）');
+        if (clothingType !== 'full' && garmentImages.length !== 1) return toast.error(`${clothingType === 'top' ? '上衣' : '下衣'}模式只能上传一张图片`);
+    }
     
     stopTaskPolling();
     setIsGenerating(true);
@@ -571,49 +585,25 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
     try {
       if (selectedMode === 'creative') {
-        // 创意模式
-        if (!productImage) {
-          toast.error('请上传产品图片');
-          setIsGenerating(false);
-          return;
-        }
-
-        if (!prompt.trim()) {
-          toast.error('请输入提示词');
-          setIsGenerating(false);
-          return;
-        }
-
         // 构建parts数组
         const parts: Array<{ text?: string; image?: string }> = [];
-        
-        // 添加文本提示词
         parts.push({ text: prompt });
 
         // 添加产品图片（Base64）
-        // 创意模式直接使用Base64，不上传到OSS
         let productBase64;
         if (creativeMaskCanvasRef.current) {
-            // Use edited image if available (contains drawings)
             const editedImage = await creativeMaskCanvasRef.current.getEditedImageBase64();
-            if (editedImage) {
-                // 使用完整的 Data URL，不移除前缀
-                productBase64 = editedImage;
-            } else {
-                productBase64 = await urlToBase64(productImage.fileUrl);
-            }
+            productBase64 = editedImage || await urlToBase64(productImage!.fileUrl);
         } else {
-            productBase64 = await urlToBase64(productImage.fileUrl);
+            productBase64 = await urlToBase64(productImage!.fileUrl);
         }
         parts.push({ image: productBase64 });
 
-        // 如果有参考图片，也添加进去
         if (referenceImage) {
           const refBase64 = await urlToBase64(referenceImage.fileUrl);
           parts.push({ image: refBase64 });
         }
 
-        // 提交创意模式任务
         const res = await styleTransferService.submitCreative({
           size: '2K',
           contents: [{ parts }]
@@ -624,9 +614,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         let images: GeneratedImage[] = [];
         let taskId: string | undefined;
 
-        // Handle various response formats (unwrapped by request interceptor)
         if (Array.isArray(res)) {
-             // Direct array of images
              images = res.map((item: any, index: number) => ({
                key: `${Date.now()}_${index}`,
                url: item.url || item.image_url || '',
@@ -634,7 +622,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                b64_json: item.b64_json
              }));
         } else if (res && res.data && Array.isArray(res.data)) {
-             // Wrapped in data object
              images = res.data.map((item: any, index: number) => ({
                key: `${Date.now()}_${index}`,
                url: item.url || item.image_url || '',
@@ -657,23 +644,11 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         }
 
       } else if (selectedMode === 'standard') {
-        // 标准模式
-        if (!productImage) {
-          toast.error('请上传产品图片');
-          setIsGenerating(false);
-          return;
-        }
-        if (!templateImage && !selectedTemplate) {
-          toast.error('请上传模板图片或选择模板');
-          setIsGenerating(false);
-          return;
-        }
-
-        // Optimize: Parallel Uploads using Promise.all (标准模式使用TopView上传)
+        // Parallel Uploads
         const uploadPromises = [];
 
         // 1. Product Image
-        uploadPromises.push(uploadImageToTopView(productImage).then(res => {
+        uploadPromises.push(uploadImageToTopView(productImage!).then(res => {
           setProductImage(res);
           return res.fileId;
         }));
@@ -688,258 +663,101 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
           uploadPromises.push(Promise.resolve(templateImage?.fileId));
         }
 
-        // 3. Product Mask (if canvas active)
-        if (productMaskCanvasRef.current) {
-          uploadPromises.push(productMaskCanvasRef.current.getMask().then(async (maskBlob) => {
-            if (maskBlob) {
-              const maskFile = new File([maskBlob], 'product_mask.png', { type: 'image/png' });
-              console.log('准备上传产品蒙版, size:', maskFile.size);
-              
-              // Use TopView upload for mask
-              const credRes = await avatarService.getUploadCredential('png');
-              if (credRes.code === '200' && credRes.result) {
-                const { uploadUrl, fileId } = credRes.result;
-                console.log('产品蒙版上传凭证获取成功:', fileId);
-                
-                const uploadRes = await fetch(uploadUrl, {
-                  method: 'PUT',
-                  body: maskFile,
-                  headers: { 'Content-Type': 'image/png' }
-                });
-                
-                if (uploadRes.ok) {
-                  console.log('产品蒙版上传成功:', fileId);
-                  return fileId;
-                } else {
-                  console.error('产品蒙版上传失败:', uploadRes.status);
+        // Helper for Mask Upload
+        const uploadMask = async (ref: React.RefObject<MaskCanvasRef>, name: string) => {
+            if (ref.current) {
+                const maskBlob = await ref.current.getMask();
+                if (maskBlob) {
+                    const maskFile = new File([maskBlob], name, { type: 'image/png' });
+                    const credRes = await avatarService.getUploadCredential('png');
+                    if (credRes.code === '200' && credRes.result) {
+                        const { uploadUrl, fileId } = credRes.result;
+                        const uploadRes = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            body: maskFile,
+                            headers: { 'Content-Type': 'image/png' }
+                        });
+                        if (uploadRes.ok) return fileId;
+                    }
                 }
-              }
             }
             return undefined;
-          }));
-        } else {
-          uploadPromises.push(Promise.resolve(undefined));
-        }
+        };
 
-        // 4. Template Mask (if canvas active)
-        if (templateMaskCanvasRef.current) {
-          uploadPromises.push(templateMaskCanvasRef.current.getMask().then(async (maskBlob) => {
-            if (maskBlob) {
-              const maskFile = new File([maskBlob], 'template_mask.png', { type: 'image/png' });
-              console.log('准备上传模板蒙版, size:', maskFile.size);
-              
-              // Use TopView upload for mask
-              const credRes = await avatarService.getUploadCredential('png');
-              if (credRes.code === '200' && credRes.result) {
-                const { uploadUrl, fileId } = credRes.result;
-                console.log('模板蒙版上传凭证获取成功:', fileId);
-                
-                const uploadRes = await fetch(uploadUrl, {
-                  method: 'PUT',
-                  body: maskFile,
-                  headers: { 'Content-Type': 'image/png' }
-                });
-                
-                if (uploadRes.ok) {
-                  console.log('模板蒙版上传成功:', fileId);
-                  return fileId;
-                } else {
-                  console.error('模板蒙版上传失败:', uploadRes.status);
-                }
-              }
-            }
-            return undefined;
-          }));
-        } else {
-          uploadPromises.push(Promise.resolve(undefined));
-        }
+        uploadPromises.push(uploadMask(productMaskCanvasRef, 'product_mask.png'));
+        uploadPromises.push(uploadMask(templateMaskCanvasRef, 'template_mask.png'));
 
-        const [
-          productImageFileId, 
-          templateImageFileId, 
-          productMaskFileId, 
-          templateMaskFileId
-        ] = await Promise.all(uploadPromises);
+        const [pId, tId, pmId, tmId] = await Promise.all(uploadPromises);
 
-        if (!productImageFileId) throw new Error('Failed to upload product image');
-
-        console.log('所有上传完成, 准备提交任务:');
-        console.log('- productImageFileId:', productImageFileId);
-        console.log('- templateImageFileId:', templateImageFileId);
-        console.log('- productMaskFileId:', productMaskFileId);
-        console.log('- templateMaskFileId:', templateMaskFileId);
+        if (!pId) throw new Error('Failed to upload product image');
 
         const submitParams = {
-          productImageFileId: productImageFileId!,
-          productMaskFileId,
-          templateImageFileId,
-          templateMaskFileId,
+          productImageFileId: pId!,
+          productMaskFileId: pmId,
+          templateImageFileId: tId,
+          templateMaskFileId: tmId,
           templateId: selectedTemplate?.templateId,
           generatingCount,
           score: String(generatingCount),
           location: location.length > 0 ? location : undefined
         };
-        console.log('提交参数:', submitParams);
 
         const res = await styleTransferService.submitStandard(submitParams);
-        console.log('提交任务响应:', res);
-
-        // requestClient 已处理外层,返回格式:
-        // { result: { taskId: '...', status: 'success', ... } }
-        // 或者如果有 data 字段: { data: { ... } }
+        
         let taskId;
         if (res.result && res.result.taskId) {
-          // TopView 格式: { result: { taskId: ... } }
           taskId = res.result.taskId;
         } else if (res.taskId) {
-          // 直接格式
           taskId = res.taskId;
         } else if (res.id) {
           taskId = res.id;
         }
 
-        if (!taskId) {
-          console.error('未找到 taskId:', res);
-          throw new Error('Task ID not found in response');
-        }
-
-        console.log('提交成功, taskId:', taskId);
+        if (!taskId) throw new Error('Task ID not found in response');
         startPolling(taskId, 'standard');
 
       } else if (selectedMode === 'clothing') {
-        // 服装模式 - 上传到OSS
-        if (garmentImages.length === 0) {
-          toast.error('请上传服装图片');
-          setIsGenerating(false);
-          return;
-        }
-        if (!modelImage) {
-          toast.error('请上传模特图片');
-          setIsGenerating(false);
-          return;
-        }
-
-        // 验证图片数量
-        if (clothingType === 'full' && garmentImages.length < 2) {
-          toast.error('全身模式需要上传两张图片（上衣和下衣）');
-          setIsGenerating(false);
-          return;
-        }
-        if (clothingType !== 'full' && garmentImages.length !== 1) {
-          toast.error(`${clothingType === 'top' ? '上衣' : '下衣'}模式只能上传一张图片`);
-          setIsGenerating(false);
-          return;
-        }
-
-        console.log('开始上传服装模式图片到OSS...');
-        
-        // Parallel Uploads for Clothing Mode - 上传到OSS
-        // 上传所有服装图片
-        const uploadedGarments = await Promise.all(
-          garmentImages.map(img => uploadImageToOss(img))
-        );
-        const uploadedModel = await uploadImageToOss(modelImage);
+        // Uploads
+        const uploadedGarments = await Promise.all(garmentImages.map(img => uploadImageToOss(img)));
+        const uploadedModel = await uploadImageToOss(modelImage!);
         
         setGarmentImages(uploadedGarments);
         setModelImage(uploadedModel);
 
-        console.log('服装图片上传完成:', uploadedGarments);
-        console.log('模特图片上传完成:', uploadedModel);
-
-        // Logic for inference_config based on clothingType
-        // React uses 'top'/'bottom'/'full', API expects 'upper'/'bottom'/'full'
-        // Vue Logic:
-        // hasUpperType: type === 'upper' || type === 'full'
-        // hasBottomType: type === 'bottom' || type === 'full'
-        // keepUpper: !(hasUpperType)
-        // keepLower: !(hasBottomType)
-        
-        // 构建 garments 数据数组
-        // 对于 full 模式，需要将两张图片分别标记为 'upper' 和 'bottom'
-        // 对于其他模式，使用对应的类型
         const garmentsForRequest = uploadedGarments.map((img, index) => {
           if (clothingType === 'full') {
-            // 全身模式：第一张是上衣，第二张是下衣
-            return {
-              type: index === 0 ? 'upper' : 'bottom',
-              url: img.fileUrl
-            };
+            return { type: index === 0 ? 'upper' : 'bottom', url: img.fileUrl };
           } else {
-            // 上衣/下衣模式：使用对应的类型
             const apiClothingType = clothingType === 'top' ? 'upper' : clothingType;
-            return {
-              type: apiClothingType,
-              url: img.fileUrl
-            };
+            return { type: apiClothingType, url: img.fileUrl };
           }
         });
 
-        // 根据实际图片类型计算 inference_config
         const hasUpperType = garmentsForRequest.some(item => item.type === 'upper' || item.type === 'full');
         const hasBottomType = garmentsForRequest.some(item => item.type === 'bottom' || item.type === 'full');
-        
-        const keepUpper = !hasUpperType;
-        const keepLower = !hasBottomType;
-
-        console.log('服装类型配置:', {
-          clothingType,
-          garmentsForRequest,
-          hasUpperType,
-          hasBottomType,
-          keepUpper,
-          keepLower
-        });
 
         const submitData = {
-          score: '1', // 默认积分
+          score: '1', 
           volcDressingV2Bo: {
-            garment: {
-              data: garmentsForRequest
-            },
-            model: {
-              id: '1', // ID is required
-              url: uploadedModel.fileUrl
-            },
-            req_key: 'dressing_diffusionV2', // Fixed key as per Vue
+            garment: { data: garmentsForRequest },
+            model: { id: '1', url: uploadedModel.fileUrl },
+            req_key: 'dressing_diffusionV2',
             inference_config: {
-              do_sr: false,
-              seed: -1,
-              keep_head: true,
-              keep_hand: false,
-              keep_foot: false,
-              num_steps: 16,
-              keep_upper: keepUpper,
-              keep_lower: keepLower,
-              tight_mask: 'loose',
-              p_bbox_iou_ratio: 0.3,
-              p_bbox_expand_ratio: 1.1,
-              max_process_side_length: 1920,
+              do_sr: false, seed: -1, keep_head: true, keep_hand: false, keep_foot: false, num_steps: 16,
+              keep_upper: !hasUpperType,
+              keep_lower: !hasBottomType,
+              tight_mask: 'loose', p_bbox_iou_ratio: 0.3, p_bbox_expand_ratio: 1.1, max_process_side_length: 1920,
             }
           }
         };
 
-        console.log('提交服装换装任务:', submitData);
-
         const res = await styleTransferService.submitClothing(submitData);
-        
-        console.log('服装换装任务提交响应:', res);
-
-        // 处理响应格式
         let taskId;
-        if (res.data && res.data.task_id) {
-          taskId = res.data.task_id;
-        } else if (res.data && res.data.taskId) {
-          taskId = res.data.taskId;
-        } else if (res.data && res.data.id) {
-          taskId = res.data.id;
-        }
+        if (res.data && res.data.task_id) taskId = res.data.task_id;
+        else if (res.data && res.data.taskId) taskId = res.data.taskId;
+        else if (res.data && res.data.id) taskId = res.data.id;
 
-        if (!taskId) {
-          console.error('未找到taskId:', res);
-          throw new Error('Task ID not found in response');
-        }
-
-        console.log('服装换装任务提交成功, taskId:', taskId);
+        if (!taskId) throw new Error('Task ID not found in response');
         startPolling(taskId, 'clothing');
       }
     } catch (error: any) {
@@ -1095,6 +913,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         onError={(error) => toast.error(error.message)}
         uploadType="oss" // Or 'tv' if needed, but we manually upload in generate
         immediate={false}
+        showConfirmButton={false} // Hide confirm button, upload on submit
         accept={acceptTypes}
         className={customClass || "h-full min-h-[200px] w-full"}
         disabled={disabled} // 传递禁用状态

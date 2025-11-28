@@ -4,7 +4,7 @@ import { Upload, Loader2, CheckCircle, AlertCircle, Info, Copy, Video, FileVideo
 import { avatarService, UploadedFile, CustomAvatarTaskResult } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
 import { useAuthStore } from '../../../stores/authStore';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
 import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
@@ -56,6 +56,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
   // Modals
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const pollerRef = useRef<PollingController | null>(null);
+  const uploadRef = useRef<UploadComponentRef>(null);
   const stopActivePoller = useCallback(() => {
     if (pollerRef.current) {
       pollerRef.current.stop();
@@ -197,7 +198,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
           stopActivePoller();
         },
         intervalMs: 10_000,
-        progressMode: 'slow',
+        progressMode: 'medium',
         continueOnError: () => false,
       });
 
@@ -212,7 +213,54 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       toast.error('请先登录');
       return;
     }
-    if (!validateForm()) return;
+    
+    // Handle manual upload before validation/submission
+    let currentVideoFileId = formData.videoFileId;
+    
+    if (!formData.avatarName.trim()) {
+      toast.error(t?.script?.errors?.e1 || '请输入数字人名称');
+      return;
+    }
+    if (formData.avatarName.length < 2 || formData.avatarName.length > 20) {
+      toast.error(t?.script?.errors?.e2 || '名称长度在2-20个字符之间');
+      return;
+    }
+
+    // Check if file is selected (either uploaded or waiting to upload)
+    if (!currentVideoFileId && (!uploadRef.current || !uploadRef.current.file)) {
+       toast.error(t?.script?.errors?.e3 || '请上传视频文件');
+       return;
+    }
+    
+    if (uploadRef.current && uploadRef.current.file && !currentVideoFileId) {
+       try {
+          setLoading(true);
+          const uploaded = await uploadRef.current.triggerUpload();
+          if (uploaded) {
+             currentVideoFileId = uploaded.fileId;
+             // Sync state
+             setFormData(prev => ({
+               ...prev,
+               videoFileId: uploaded.fileId,
+               avatarName: prev.avatarName || uploaded.fileName.replace(/\.[^/.]+$/, '').slice(0, 20)
+             }));
+             setUploadedFile(uploaded);
+          } else {
+             throw new Error('Upload failed');
+          }
+       } catch (error) {
+          console.error('Manual upload failed:', error);
+          setLoading(false);
+          toast.error('视频上传失败');
+          return;
+       }
+    }
+
+    if (!currentVideoFileId) {
+      toast.error(t?.script?.errors?.e3 || '请上传视频文件');
+      setLoading(false);
+      return;
+    }
 
     try {
       stopActivePoller();
@@ -223,7 +271,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       const res = await avatarService.submitCustomAvatarTask({
         avatarName: formData.avatarName,
         noticeUrl: formData.noticeUrl,
-        videoFileId: formData.videoFileId,
+        videoFileId: currentVideoFileId,
         score: formData.score
       });
 
@@ -297,13 +345,30 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                   {t?.tips?.form?.label || '视频文件'}
                 </label>
                 <UploadComponent
+                  ref={uploadRef}
                   onUploadComplete={handleUploadComplete}
                   uploadType="tv"
                   accept=".mp4,.mov"
                   maxSize={100}
-                  immediate={true}
+                  immediate={false}
+                  showConfirmButton={false}
                   className="h-64"
                   initialUrl={uploadedFile?.fileUrl}
+                  onFileSelected={(file) => {
+                      setUploadedFile({
+                        fileId: '',
+                        fileName: file.name,
+                        fileUrl: URL.createObjectURL(file),
+                        format: file.name.split('.').pop() || '',
+                      });
+                      // Auto fill name if empty
+                      if (!formData.avatarName) {
+                        setFormData(prev => ({
+                          ...prev,
+                          avatarName: file.name.replace(/\.[^/.]+$/, '').slice(0, 20)
+                        }));
+                      }
+                  }}
                 >
                     <div className="flex flex-col items-center justify-center text-gray-500">
                         <Upload className="w-10 h-10 mb-2 text-gray-400" />
@@ -341,8 +406,8 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                   onClick={handleSubmit}
                   disabled={
                     loading ||
-                    taskStatus !== 'idle' ||
-                    !formData.videoFileId ||
+                    taskStatus === 'running' ||
+                    !uploadedFile ||
                     !formData.avatarName
                   }
                   className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"

@@ -74,7 +74,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
 
   // Audio upload
-  const [audioFile, setAudioFile] = useState<{ fileId: string; fileName: string; url: string } | null>(null);
+  const [audioFile, setAudioFile] = useState<{ fileId?: string; fileName: string; url: string; file?: File } | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -246,7 +246,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           stopImagePolling();
         },
         intervalMs: 10_000,
-        progressMode: 'slow',
+        progressMode: 'medium',
         initialProgress: Math.min(progressRef.current || 0, 99),
       });
 
@@ -415,26 +415,50 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
 
   // Handle image to video submit
   const handleImage2VideoSubmit = async () => {
+    // Handle manual audio upload if needed
+    let currentAudioFileId = imageGeneration.audioFileId;
+    
+    if (isV2 && imageGeneration.scriptMode === 'audio' && audioFile?.file && !currentAudioFileId) {
+        try {
+            setPageLoading(true);
+            setTip('正在上传音频文件...');
+            const uploaded = await uploadTVFile(audioFile.file);
+            currentAudioFileId = uploaded.fileId;
+            
+            // Update state
+            setAudioFile(prev => prev ? ({ ...prev, fileId: uploaded.fileId }) : null);
+            setImageGeneration(prev => ({ ...prev, audioFileId: uploaded.fileId }));
+        } catch (error) {
+            console.error('Audio upload failed:', error);
+            toast.error('音频上传失败');
+            setPageLoading(false);
+            return;
+        }
+    }
+
     if (isV2) {
       if (imageGeneration.scriptMode === 'text' && !imageGeneration.voiceId) {
         toast.error(t?.selectVoiceFirst || '请选择音色');
+        setPageLoading(false);
         return;
       }
-      if (imageGeneration.scriptMode === 'audio' && !audioFile) {
+      if (imageGeneration.scriptMode === 'audio' && !currentAudioFileId) {
         toast.error(t?.selectAudioFirst || '请选择音频文件');
+        setPageLoading(false);
         return;
       }
     } else {
       if (!imageGeneration.voiceoverId) {
         toast.error(t?.selectVoiceFirst || '请选择合成视频音色');
+        setPageLoading(false);
         return;
       }
     }
 
     try {
       setProgress(0);
-        setPageLoading(true);
-        setTip(t?.tip1 || '合成视频中大约需要1~2分钟...');
+      setPageLoading(true);
+      setTip(t?.tip1 || '合成视频中大约需要1~2分钟...');
 
       let params: any;
       if (isV2) {
@@ -444,7 +468,7 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
           scriptMode: imageGeneration.scriptMode || 'text',
           ttsText: imageGeneration.scriptMode === 'text' ? imageGeneration.ttsText : undefined,
           voiceId: imageGeneration.voiceId,
-          audioFileId: imageGeneration.scriptMode === 'audio' ? audioFile?.fileId : undefined,
+          audioFileId: imageGeneration.scriptMode === 'audio' ? currentAudioFileId : undefined,
           captionId: imageGeneration.captionId,
           score: String(pointsTip()),
         };
@@ -508,23 +532,19 @@ const ProductReplacePage: React.FC<ProductReplacePageProps> = ({ t }) => {
       return;
     }
 
-    try {
-      const uploadedFile = await uploadTVFile(file);
-      setAudioFile({
-        fileId: uploadedFile.fileId,
-        fileName: file.name,
-        url: URL.createObjectURL(file),
-      });
-      setImageGeneration(prev => ({
-        ...prev,
-        audioFileId: uploadedFile.fileId,
-        scriptMode: 'audio',
-      }));
-      toast.success('文件上传成功');
-    } catch (error) {
-      console.error('文件上传失败:', error);
-      toast.error('文件上传失败，请重试');
-    }
+    // Cancel auto upload, just set file state
+    setAudioFile({
+      fileId: '',
+      fileName: file.name,
+      url: URL.createObjectURL(file),
+      file: file
+    });
+    setImageGeneration(prev => ({
+      ...prev,
+      audioFileId: '',
+      scriptMode: 'audio',
+    }));
+    // toast.success('文件已选择');
   };
 
   // Handle image preview

@@ -63,10 +63,19 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false); // 是否已上传成功
+  const [uploadResult, setUploadResult] = useState<UploadedFile | null>(null); // 缓存上传结果
   const [useIframe, setUseIframe] = useState(false); // 是否使用 iframe（遇到跨域问题时）
   const [isDragging, setIsDragging] = useState(false); // 拖拽状态
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isAuthenticated } = useAuthStore();
+
+  // 监听 uploadType 变化，如果变化则重置上传状态（因为不同通道需要不同的 ID）
+  React.useEffect(() => {
+    if (file && uploaded) {
+      setUploaded(false);
+      setUploadResult(null);
+    }
+  }, [uploadType]);
 
   // Update preview URL when initialUrl changes
   React.useEffect(() => {
@@ -81,6 +90,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   useImperativeHandle(ref, () => ({
     triggerUpload: async () => {
       if (file && !uploading) {
+        if (uploaded && uploadResult) {
+          return uploadResult;
+        }
         return await uploadFile(file);
       }
       return null;
@@ -89,6 +101,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         setFile(null);
         setPreviewUrl('');
         setUploaded(false);
+        setUploadResult(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
     },
     file: file
@@ -185,6 +198,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     setPreviewUrl(objectUrl);
     setUseIframe(false); // 重置 iframe 状态，新文件先尝试 video 标签
     setUploaded(false); // 重置上传状态
+    setUploadResult(null);
 
     if (onFileSelected) {
       onFileSelected(selectedFile);
@@ -279,6 +293,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       
       // 标记为已上传成功
       setUploaded(true);
+      setUploadResult(uploadedFile);
       
       // 确保 onUploadComplete 被调用
       if (onUploadComplete) {
@@ -302,6 +317,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       setFile(null);
       setPreviewUrl('');
       setUploaded(false);
+      setUploadResult(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (onClear) onClear();
   };

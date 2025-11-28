@@ -3,7 +3,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
 import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
 import AddMaterialModal from '../../../components/AddMaterialModal';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
 import { useAuthStore } from '../../../stores/authStore';
 import { showAuthModal } from '../../../lib/authModalManager';
@@ -122,7 +122,9 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
   
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  
+  const uploadRef = useRef<UploadComponentRef>(null);
+  const [tempFile, setTempFile] = useState<File | null>(null); // 暂存未上传的文件
+
   const progressPollerRef = useRef<PollingController | null>(null);
   const stopProgressPoller = useCallback(() => {
     if (progressPollerRef.current) {
@@ -216,10 +218,10 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
 
   // 处理文件选择，验证宽高比
   const handleFileSelected = async (file: File) => {
+    const objectUrl = URL.createObjectURL(file);
     // Validate aspect ratio [1/3, 3]
     try {
       const img = new Image();
-      const objectUrl = URL.createObjectURL(file);
       img.src = objectUrl;
       await new Promise((resolve, reject) => {
         img.onload = resolve;
@@ -229,27 +231,30 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       const ratio = img.width / img.height;
       if (ratio < 1/3 || ratio > 3) {
         toast.error(`${t.tips.imageRatioLimit} (Current: ${ratio.toFixed(2)})`);
-        URL.revokeObjectURL(objectUrl);
-        throw new Error('Invalid aspect ratio');
+        uploadRef.current?.clear(); // Clear the invalid file
+        return;
       }
-      URL.revokeObjectURL(objectUrl);
+      
+      setTempFile(file); 
+      setReferenceImage(objectUrl);
     } catch (error) {
-      if (error instanceof Error && error.message === 'Invalid aspect ratio') {
-        throw error;
-      }
       console.error('Image validation failed:', error);
+      uploadRef.current?.clear();
     }
   };
 
   // 处理上传完成
   const handleUploadComplete = (uploadedFile: { fileId: string; fileName: string; fileUrl: string; format: string }) => {
-    setReferenceImage(uploadedFile.fileUrl);
-    toast.success(t.tips.uploadSuccess);
+    // 只有当 fileUrl 变化或之前没有 referenceImage 时才更新，避免循环更新
+    if (uploadedFile.fileUrl && uploadedFile.fileUrl !== referenceImage) {
+        setReferenceImage(uploadedFile.fileUrl);
+    }
   };
 
   // 处理清除
   const handleClear = () => {
     setReferenceImage(null);
+    setTempFile(null);
   };
 
   const handleGenerate = async (e?: React.MouseEvent) => {
@@ -263,13 +268,50 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
       return;
     }
     if (!prompt || isGenerating) return;
-    if (mode === 'image' && !referenceImage) return;
-
-    setIsGenerating(true);
-    setProgress(0);
-    startProgressPoller();
+    
+    // 校验：图生图模式下，必须有参考图
+    if (mode === 'image') {
+        if (!referenceImage && !uploadRef.current?.file) {
+            toast.error(t.tips.selectImageTip || '请选择参考图');
+            return;
+        }
+    }
 
     try {
+      setIsGenerating(true);
+      setProgress(0);
+      startProgressPoller();
+
+      let currentReferenceImage = referenceImage;
+
+      // 延迟上传处理
+      if (mode === 'image') {
+          if (uploadRef.current && uploadRef.current.file) {
+              try {
+                  const uploaded = await uploadRef.current.triggerUpload();
+                  if (uploaded && uploaded.fileUrl) {
+                      currentReferenceImage = uploaded.fileUrl;
+                      setReferenceImage(currentReferenceImage);
+                  } else {
+                      throw new Error(t.tips.uploadFailed || 'Upload failed');
+                  }
+              } catch (e) {
+                  console.error(e);
+                  toast.error(t.tips.uploadFailed || '上传失败');
+                  setIsGenerating(false);
+                  stopProgressPoller();
+                  return;
+              }
+          }
+          
+          if (!currentReferenceImage || currentReferenceImage.startsWith('blob:')) {
+               toast.error(t.tips.selectImageTip || '请确保参考图已上传');
+               setIsGenerating(false);
+               stopProgressPoller();
+               return;
+          }
+      }
+
       let res;
       if (mode === 'text') {
         // Handle 2K/4K special cases where split might return undefined height
@@ -289,7 +331,7 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
         res = await textToImageService.submitImageToImage({
           score: '1',
           volcImageBo: {
-            image_urls: [referenceImage!],
+            image_urls: [currentReferenceImage!], // 使用最新的 URL
             prompt: prompt,
             size: selectedSize,
             style: 'general'
@@ -429,13 +471,15 @@ const TextToImagePage: React.FC<TextToImagePageProps> = ({ t }) => {
               <h3 className="font-bold text-foreground mb-3">{t.imageToImage.uploadTitle}</h3>
               
               <UploadComponent
+                ref={uploadRef}
                 onUploadComplete={handleUploadComplete}
                 onFileSelected={handleFileSelected}
                 onClear={handleClear}
                 uploadType="oss"
                  accept=".png,.jpg,.jpeg,.webp"
                 maxSize={10}
-                immediate={true}
+                immediate={false}
+                showConfirmButton={false}
                 showPreview={true}
                 initialUrl={referenceImage || ''}
                 className="h-40"
