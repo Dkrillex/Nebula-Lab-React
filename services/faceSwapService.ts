@@ -154,7 +154,7 @@ export interface ImageMaskDrawingQueryParams {
 export interface ImageMaskDrawingQueryResult {
   result: {
     taskId: string;
-    status: 'success' | 'failed' | 'processing' | 'pending';
+    status: 'success' | 'failed' | 'fail' | 'processing' | 'pending';
     mask?: string; // base64 编码的遮罩图片（修改区域，红色）
     protectMask?: string; // base64 编码的遮罩图片（保护区域，绿色）
     costCredit?: number;

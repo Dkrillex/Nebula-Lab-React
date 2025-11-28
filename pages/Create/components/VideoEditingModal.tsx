@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Send, Shield, Trash2, Eye } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { videoMaskDrawingService, imageMaskDrawingService } from '../../../services/faceSwapService';
 import { useAppOutletContext } from '../../../router/context';
 import { translations } from '../../../translations';
@@ -808,8 +809,39 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
                   console.log('已保存帧', inputInfo.index, '的遮罩数据');
                   
                   break;
-                } else if (queryResult.result?.status === 'failed') {
+                } else if (queryResult.result?.status === 'fail') {
                   console.log('获取帧', inputInfo.index, '的图像掩码绘制查询任务失败');
+                  
+                  // 清除该帧相关的标记点
+                  setMarkers((prev) => {
+                    return prev.filter((mark) => !inputInfo.markIds.includes(mark.id));
+                  });
+                  
+                  // 从已提交集合中移除该帧的标记ID
+                  setSubmittedMarkIds((prev) => {
+                    const newSet = new Set(prev);
+                    inputInfo.markIds.forEach(markId => newSet.delete(markId));
+                    return newSet;
+                  });
+                  
+                  // 清除该帧的遮罩数据
+                  setFrameMaskMap((prev) => {
+                    const newMap = new Map(prev);
+                    newMap.delete(inputInfo.index);
+                    return newMap;
+                  });
+                  
+                  // 清除画布上的遮罩层显示
+                  if (maskCanvasRef.current) {
+                    const ctx = maskCanvasRef.current.getContext('2d');
+                    if (ctx) {
+                      ctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+                    }
+                  }
+                  
+                  // 提示用户重新标记
+                  toast.error(t.markFailed || '标记失败，请重新标记该区域');
+                  
                   break;
                 } else {
                   // 其他状态（如 'processing', 'pending' 等）继续轮询
@@ -1321,13 +1353,13 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         </div>
 
         {/* 视频预览区域 */}
-        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden aaa" style={{ height : '600px' }}>
           <div
             ref={videoContainerRef}
-            className="relative w-full max-w-[400px] flex items-center justify-center"
+            className="relative w-full h-full max-w-[400px] max-h-[600px] flex items-center justify-center"
             style={{ 
-              height: '600px',
-              aspectRatio: 'auto'
+              minHeight: 0,
+              minWidth: 0
             }}
             onClick={handleVideoContainerClick}
           >
