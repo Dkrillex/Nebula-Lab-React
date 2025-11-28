@@ -338,6 +338,14 @@ const Header: React.FC<HeaderProps> = ({
                 </a>
               );
             })}
+            {/* 充值链接 */}
+            <a 
+              href="/pricing" 
+              onClick={(e) => handleNavClick(e, '/pricing')}
+              className={`transition-colors ${currentView === 'pricing' ? 'text-foreground font-semibold' : 'hover:text-foreground'}`}
+            >
+              {lang === 'zh' ? '充值' : lang === 'id' ? 'Isi Ulang' : 'Recharge'}
+            </a>
           </nav>
           
           <div className="flex items-center gap-3 pl-2 border-l border-border">

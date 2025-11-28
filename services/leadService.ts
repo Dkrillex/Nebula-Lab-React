@@ -13,13 +13,15 @@ export interface LeadFormData {
 
 // 线索渠道选项
 export const LEAD_CHANNELS = [
-  { value: 'wechat', label: '微信' },
+  { value: 'wechat_group', label: '微信群' },
+  { value: 'wechat_official', label: '公众号' },
+  { value: 'wechat_video', label: '视频号' },
   { value: 'xiaohongshu', label: '小红书' },
-  { value: 'gongzhonghao', label: '公众号' },
+  { value: 'kuaishou', label: '快手' },
   { value: 'douyin', label: '抖音' },
-  { value: 'weibo', label: '微博' },
   { value: 'search', label: '搜索引擎' },
   { value: 'friend', label: '朋友推荐' },
+  { value: 'community', label: '社区文章' },
   { value: 'other', label: '其他' },
 ];
 

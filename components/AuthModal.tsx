@@ -3,6 +3,7 @@ import { X, Smartphone, Lock, Mail, KeyRound, Loader2, Globe } from 'lucide-reac
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import { authService } from '../services/authService';
+import { LEAD_CHANNELS } from '../services/leadService';
 import ConfirmDialog from './ConfirmDialog';
 import toast from 'react-hot-toast';
 
@@ -85,16 +86,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
     return countryCodeOptions[0]?.value ?? '+86';
   }, [countryCodeOptions]);
 
-  // 渠道来源选项
-  const channelSourceOptions = [
-    { value: 'wechat_official', label: '公众号' },
-    { value: 'wechat_video', label: '视频号' },
-    { value: 'douyin', label: '抖音' },
-    { value: 'xiaohongshu', label: '小红书' },
-    { value: 'kuaishou', label: '快手' },
-    { value: 'community', label: '社区文章' },
-    { value: 'other', label: '其他' },
-  ];
+  // 渠道来源选项（使用统一的渠道数据）
+  const channelSourceOptions = LEAD_CHANNELS;
 
   // Form States
   const [username, setUsername] = useState('');

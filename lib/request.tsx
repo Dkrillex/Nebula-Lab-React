@@ -227,6 +227,7 @@ const SKIP_AUTH_APIS: string[] = [
   '/auth/logout',
   '/api/models/list',
   '/api/pricing/list',
+  '/system/priceList/list', // 定价列表页面不需要登录
   '/ads/labTemplate/list',
 ];
 
