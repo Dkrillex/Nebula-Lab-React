@@ -68,7 +68,6 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
       pollerRef.current.stop();
       pollerRef.current = null;
     }
-    setGenerating(false);
   }, []);
 
   // Cleanup on unmount
