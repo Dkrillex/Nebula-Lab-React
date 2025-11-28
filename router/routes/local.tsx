@@ -22,6 +22,7 @@ const RankPage = React.lazy(() => import('../../pages/Rank'));
 // Create Page Sub-components
 const TextToImagePage = React.lazy(() => import('../../pages/Create/components/TextToImagePage'));
 const ViralVideoPage = React.lazy(() => import('../../pages/Create/components/ViralVideoPage/index'));
+const ViralVideoPageOld = React.lazy(() => import('../../pages/Create/components/ViralVideoPage/old'));
 const ImageToVideoPage = React.lazy(() => import('../../pages/Create/components/ImageToVideoPage'));
 const DigitalHumanPage = React.lazy(() => import('../../pages/Create/components/DigitalHumanPage'));
 const StyleTransferPage = React.lazy(() => import('../../pages/Create/components/StyleTransferPage'));
@@ -69,6 +70,11 @@ export const localRoutes: AppRouteObject[] = [
             path: 'viralVideo',
             element: <RouteWrapper component={ViralVideoPage} translationKey="createPage.viralVideo" />,
             meta: { title: 'Viral Video', keepAlive: true }
+          },
+          {
+            path: 'viralVideo-old',
+            element: <RouteWrapper component={ViralVideoPageOld} translationKey="createPage.viralVideo" />,
+            meta: { title: 'Viral Video (Old)', keepAlive: true }
           },
           {
             path: 'imgToVideo',

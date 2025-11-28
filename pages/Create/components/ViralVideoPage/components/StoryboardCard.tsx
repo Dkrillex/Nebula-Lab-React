@@ -51,11 +51,23 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
         )}
       </div>
       <div className="p-3 flex gap-2 h-64 bg-surface/50">
-        {images.map((img, idx) => (
-          <div key={idx} className="flex-1 h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50">
-            <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+        {/* 如果视频生成成功，显示视频；否则显示图片 */}
+        {videoStatus === 'succeeded' && videoUrl ? (
+          <div className="w-full h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50">
+            <video 
+              src={videoUrl} 
+              controls
+              className="w-full h-full object-cover"
+              preload="metadata"
+            />
           </div>
-        ))}
+        ) : (
+          images.map((img, idx) => (
+            <div key={idx} className="flex-1 h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50">
+              <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+            </div>
+          ))
+        )}
       </div>
       <div className="p-4 bg-background border-t border-border flex-1 flex flex-col">
         <div className="flex items-center justify-between mb-2">

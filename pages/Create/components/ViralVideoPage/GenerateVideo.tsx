@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, BookOpen, Trash2, Play, Volume2, Download, MoreHorizontal, Copy, Loader } from 'lucide-react';
 import { WorkflowProgress } from './components/WorkflowProgress';
-import { formatDuration, downloadVideo } from '../../../../../utils/videoUtils';
+import { formatDuration, downloadVideo } from '../../../../utils/videoUtils';
 import toast from 'react-hot-toast';
 import { ProductAnalysis, Storyboard, UploadedImage, ViralVideoPageProps } from './types';
 

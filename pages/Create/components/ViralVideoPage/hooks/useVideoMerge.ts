@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { mergeVideos } from '../../../../../utils/videoUtils';
+import { mergeVideos } from '@/utils/videoUtils';
 import toast from 'react-hot-toast';
 import { Storyboard } from '../types';
 import { StoryboardVideo } from '../types';

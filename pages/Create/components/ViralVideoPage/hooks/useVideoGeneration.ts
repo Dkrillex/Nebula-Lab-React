@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { videoGenerateService } from '../../../../../services/videoGenerateService';
+import { videoGenerateService } from '@/services/videoGenerateService';
 import toast from 'react-hot-toast';
 import { StoryboardVideo, VideoStatus, Storyboard, StoryboardScene } from '../types';
 import { UploadedImage } from '../types';
@@ -41,32 +41,67 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
     try {
       // 构建视频生成prompt（使用分镜的图片和台词）
       const imageUrl = scene.shots[0]?.img || uploadedImages[0]?.url || '';
-      const prompt = `${scene.lines} --ratio 3:4 --dur 5`;
+      const prompt = scene.lines || '生成视频';
+
+      // doubao-seedance-1-0-lite-i2v-250428 模型参数配置
+      // 根据分镜特点：3:4 宽高比，720p 分辨率，5秒时长
+      const videoAspectRatio = '3:4';
+      const videoResolution = '720p';
+      const videoDuration = 5;
+      
+      // 计算视频尺寸（3:4 宽高比，720p 分辨率）
+      const [width, height] = videoAspectRatio === '3:4'
+        ? videoResolution === '720p' ? [720, 960] : [1080, 1440]
+        : [720, 960]; // 默认值
+
+      // 构建 content 数组（doubao-seedance 系列使用 content 格式）
+      const content: Array<{
+        type: 'text' | 'image_url';
+        text?: string;
+        image_url?: {
+          url: string;
+        };
+        role?: 'first_frame' | 'last_frame' | 'reference_image';
+      }> = [
+        {
+          type: 'text',
+          text: prompt,
+        },
+      ];
+
+      // 添加图片（首帧模式）
+      if (imageUrl) {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: imageUrl,
+          },
+          role: 'first_frame', // 使用首帧模式
+        });
+      }
 
       // 提交视频生成任务
       const submitResponse = await videoGenerateService.submitVideoTask({
-        model: 'doubao-seedance-1-0-pro-250528',
+        model: 'doubao-seedance-1-0-lite-i2v-250428',
         prompt,
-        content: [
-          {
-            type: 'text',
-            text: prompt,
-          },
-          ...(imageUrl ? [{
-            type: 'image_url' as const,
-            image_url: {
-              url: imageUrl,
-            },
-            role: 'reference_image' as const,
-          }] : []),
-        ],
+        width,
+        height,
+        seconds: videoDuration,
+        resolution: videoResolution,
+        aspectRatio: videoAspectRatio,
+        duration: videoDuration,
+        watermark: false, // 默认不加水印
+        content,
       });
 
-      if (submitResponse.code !== 200 || !submitResponse.data?.task_id) {
-        throw new Error(submitResponse.msg || '提交视频生成任务失败');
+      // request.ts 在成功时会返回 resData.data，所以 submitResponse 已经是 data 对象
+      // 根据实际响应结构，task_id 可能在 submitResponse.task_id 或 submitResponse.output.task_id
+      const taskId = (submitResponse as any)?.task_id || (submitResponse as any)?.output?.task_id;
+        
+      if (!taskId) {
+        throw new Error('提交视频生成任务失败：未返回 task_id');
       }
 
-      const taskId = submitResponse.data.task_id;
       setStoryboardVideos((prev) => ({
         ...prev,
         [sceneId]: { taskId, status: 'processing', progress: 0 },
@@ -100,12 +135,15 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
       try {
         const response = await videoGenerateService.queryVideoTask(taskId);
         
-        if (response.code !== 200 || !response.data) {
-          throw new Error(response.msg || '查询任务状态失败');
-        }
+        // request.ts 在成功时会返回 resData.data，所以 response 已经是 data 对象
+        // 如果请求失败，request.ts 会抛出 ApiError，不会到达这里
+        // 使用 video_url 或 url（不同模型可能使用不同的字段名）
+        const { status, video_url, url, error, progress } = response as any;
+        const finalVideoUrl = video_url || url;
+        
+        console.log('📊 分镜视频任务状态:', status, '完整结果:', response);
 
-        const { status, video_url, progress, error } = response.data;
-
+        // 更新状态和进度
         setStoryboardVideos((prev) => ({
           ...prev,
           [sceneId]: {
@@ -115,39 +153,91 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
           },
         }));
 
-        if (status === 'succeeded' && video_url) {
-          setStoryboardVideos((prev) => ({
-            ...prev,
-            [sceneId]: {
-              url: video_url,
-              status: 'succeeded',
-              progress: 100,
-            },
-          }));
-          setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-          clearInterval(videoPollingIntervals.current[sceneId]);
-          delete videoPollingIntervals.current[sceneId];
-          toast.success(`分镜 ${sceneId} 视频生成完成`);
-        } else if (status === 'failed') {
-          setStoryboardVideos((prev) => ({
-            ...prev,
-            [sceneId]: { status: 'failed' },
-          }));
-          setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-          clearInterval(videoPollingIntervals.current[sceneId]);
-          delete videoPollingIntervals.current[sceneId];
-          toast.error(`分镜 ${sceneId} 视频生成失败: ${error || '未知错误'}`);
-        } else {
-          pollCount++;
-          if (pollCount >= maxPolls) {
+        switch (status) {
+          case 'queued':
+          case 'submitted': {
+            console.log('📋 任务排队中...');
+            pollCount++;
+            if (pollCount >= maxPolls) {
+              clearInterval(videoPollingIntervals.current[sceneId]);
+              delete videoPollingIntervals.current[sceneId];
+              setStoryboardVideos((prev) => ({
+                ...prev,
+                [sceneId]: { status: 'failed' },
+              }));
+              setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
+              toast.error(`分镜 ${sceneId} 视频生成超时`);
+            }
+            break;
+          }
+
+          case 'in_progress':
+          case 'processing': {
+            console.log('⚙️ 任务执行中...');
+            pollCount++;
+            if (pollCount >= maxPolls) {
+              clearInterval(videoPollingIntervals.current[sceneId]);
+              delete videoPollingIntervals.current[sceneId];
+              setStoryboardVideos((prev) => ({
+                ...prev,
+                [sceneId]: { status: 'failed' },
+              }));
+              setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
+              toast.error(`分镜 ${sceneId} 视频生成超时`);
+            }
+            break;
+          }
+
+          case 'succeeded': {
+            console.log('✅ 视频生成成功:', response);
+            setStoryboardVideos((prev) => ({
+              ...prev,
+              [sceneId]: {
+                url: finalVideoUrl || '',
+                status: 'succeeded',
+                progress: 100,
+              },
+            }));
+            setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
             clearInterval(videoPollingIntervals.current[sceneId]);
             delete videoPollingIntervals.current[sceneId];
+            toast.success(`分镜 ${sceneId} 视频生成完成`);
+            return; // 停止轮询
+          }
+
+          case 'failed': {
+            console.error('❌ 视频生成失败:', response);
+            // 提取错误消息
+            const errorMsg = typeof error === 'string' 
+              ? error 
+              : error?.message || (response as any).metadata?.reason || '视频生成失败';
+            
             setStoryboardVideos((prev) => ({
               ...prev,
               [sceneId]: { status: 'failed' },
             }));
             setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-            toast.error(`分镜 ${sceneId} 视频生成超时`);
+            clearInterval(videoPollingIntervals.current[sceneId]);
+            delete videoPollingIntervals.current[sceneId];
+            toast.error(`分镜 ${sceneId} 视频生成失败: ${errorMsg}`);
+            return; // 停止轮询
+          }
+
+          default: {
+            // 未知状态，继续轮询
+            console.log(`⚠️ 未知状态: ${status}，继续轮询...`);
+            pollCount++;
+            if (pollCount >= maxPolls) {
+              clearInterval(videoPollingIntervals.current[sceneId]);
+              delete videoPollingIntervals.current[sceneId];
+              setStoryboardVideos((prev) => ({
+                ...prev,
+                [sceneId]: { status: 'failed' },
+              }));
+              setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
+              toast.error(`分镜 ${sceneId} 视频生成超时`);
+            }
+            break;
           }
         }
       } catch (error: any) {

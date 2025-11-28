@@ -25,7 +25,16 @@ interface HomePageProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onStartMaking: () => void;
+  onStartTemplate: () => void;
 }
+
+// 示例图片数据
+const SAMPLE_IMAGES = [
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/9ee5707ca2a547e9a180969f001bcf73.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/0c94104a202a4859aff2565addf4dea2.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/7f00b2d43a2746fb85f8566a3624fa9a.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/646472b066114711a2b787d4101e2345.png',
+];
 
 export const HomePage: React.FC<HomePageProps> = ({
   t,
@@ -48,6 +57,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   fileInputRef,
   onFileChange,
   onStartMaking,
+  onStartTemplate,
 }) => {
   return (
     <div className="bg-background min-h-full flex flex-col pb-12">
@@ -60,113 +70,51 @@ export const HomePage: React.FC<HomePageProps> = ({
       <div className="px-4 md:px-8 max-w-7xl mx-auto w-full mb-12">
         <div className="flex flex-col lg:flex-row gap-6">
           
-          {/* Left Panel: Visual Process Flow */}
-          <div className="flex-1 bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col items-center justify-center shadow-sm">
-            <div className="flex items-center justify-center gap-4 md:gap-8 w-full mb-8">
-              {/* Images Stack */}
-              <div className="flex flex-col gap-2">
-                {uploadedImages.length > 0 ? (
-                  <>
-                    {uploadedImages.slice(0, 2).map((img, idx) => (
-                      <div 
-                        key={idx}
-                        className={`w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative ${
-                          idx === 0 ? 'transform -rotate-3' : 'transform rotate-3 -mt-20 ml-8 z-10'
-                        }`}
-                      >
-                        <div className="w-full h-full rounded overflow-hidden relative group">
-                          <img src={img.url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            onClick={() => onRemoveImage(idx)}
-                            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X size={12} className="text-white" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {uploadedImages.length > 2 && (
-                      <div className="text-center text-xs text-muted mt-2">
-                        +{uploadedImages.length - 2} 张
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform -rotate-3 border border-border">
-                      <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
-                        <ImageIcon size={24} className="text-muted/50" />
-                      </div>
-                    </div>
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform rotate-3 -mt-20 ml-8 z-10 border border-border">
-                      <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
-                        <ImageIcon size={24} className="text-muted/50" />
-                      </div>
-                    </div>
-                  </>
-                )}
-                <div className="text-center mt-4 text-sm text-muted font-medium">{t.process.uploadImages}</div>
-              </div>
-
-              {/* Arrow */}
-              <div className="text-orange-500">
-                <ArrowRight size={32} strokeWidth={3} />
-              </div>
-
-              {/* Output Video / Analysis Result */}
-              <div className="flex flex-col gap-2">
-                {analysisResult ? (
-                  <div className="w-40 h-72 md:w-48 md:h-80 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-4 border border-border overflow-y-auto">
-                    <div className="space-y-3">
-                      <div>
-                        <div className="text-xs text-muted mb-1">商品名称</div>
-                        <div className="text-sm font-bold text-foreground">{analysisResult.productName}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs text-muted mb-1">主要卖点</div>
-                        <div className="text-xs text-foreground">
-                          {analysisResult.sellingPoints.map((point: string, idx: number) => (
-                            <span key={idx} className="inline-block mr-2 mb-1 px-2 py-0.5 bg-primary/10 rounded">
-                              {point}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      {analysisResult.scenes.length > 0 && (
-                        <div>
-                          <div className="text-xs text-muted mb-1">适用场景</div>
-                          <div className="text-xs text-foreground">
-                            {analysisResult.scenes.join('、')}
-                          </div>
-                        </div>
-                      )}
-                    </div>
+          {/* Left Panel: 一键做同款 */}
+          <div className="flex-1 bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col shadow-sm">
+            <div className="flex items-center gap-4 md:gap-6 w-full mb-6">
+              {/* 左边：四张示例图片 */}
+              <div className="flex-1 grid grid-cols-2 gap-2 md:gap-3">
+                {SAMPLE_IMAGES.map((image, index) => (
+                  <div 
+                    key={index}
+                    className="aspect-[3/4] rounded-lg overflow-hidden bg-gray-100 dark:bg-zinc-800 border border-border"
+                  >
+                    <img 
+                      src={image} 
+                      alt={`示例${index + 1}`} 
+                      className="w-full h-full object-cover" 
+                    />
                   </div>
-                ) : (
-                  <div className="w-40 h-72 md:w-48 md:h-80 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative group cursor-pointer">
-                    <div className="w-full h-full bg-gray-900 rounded overflow-hidden relative">
-                      <img src="https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=400&auto=format&fit=crop" alt="Video Result" className="w-full h-full object-cover opacity-90" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
-                          <Play fill="white" className="text-white" size={20} />
-                        </div>
+                ))}
+              </div>
+
+              {/* 右边：视频 */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="w-full max-w-[200px] md:max-w-[240px] aspect-[9/16] bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative group cursor-pointer">
+                  <div className="w-full h-full bg-gray-900 rounded overflow-hidden relative">
+                    <img 
+                      src="https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=400&auto=format&fit=crop" 
+                      alt="示例视频" 
+                      className="w-full h-full object-cover opacity-90" 
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
+                        <Play fill="white" className="text-white" size={20} />
                       </div>
                     </div>
                   </div>
-                )}
-                <div className="text-center mt-4 text-sm text-muted font-medium">
-                  {isAnalyzing ? '分析中...' : analysisResult ? '分析完成' : t.process.generateVideo}
                 </div>
               </div>
             </div>
 
-            <div className="w-full max-w-sm space-y-3">
+            {/* 一键做同款按钮 */}
+            <div className="w-full">
               <button 
-                onClick={onStartMaking}
-                disabled={!analysisResult || uploadedImages.length === 0}
-                className="w-full py-3 rounded-lg border border-border bg-background hover:bg-surface transition-colors text-foreground font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={onStartTemplate}
+                className="w-full py-3 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium shadow-sm"
               >
-                {t.process.makeSame}
+                一键做同款
               </button>
               <div className="flex justify-center gap-1 mt-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
@@ -321,14 +269,17 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </div>
 
-      {/* Footer: Excellent Cases */}
+      {/* Footer: 优秀案例 */}
       <div className="px-4 md:px-8 max-w-7xl mx-auto w-full">
         <h2 className="text-xl font-bold text-foreground mb-6">{t.examples}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <ExampleCard image="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1529139574466-a302c27e3844?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1485230946086-1d99d529c750?q=80&w=400&auto=format&fit=crop" />
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/02176017944046161ee2447fb8673108fd2fdb6d547618f70a45a_0.jpeg" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/%E6%88%AA%E5%B1%8F2025-10-22%2015.58.00.png" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/%E6%88%AA%E5%B1%8F2025-10-22%2016.07.28.png" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/%E6%88%AA%E5%B1%8F2025-10-22%2016.12.00.png" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/0217611211393692e69aac892d0563f4efbf7c1eafe43913384f7_0.jpeg" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/template/0217611217671903604af2171ff3afef2a58b8f6d52508ae3ae7b_0.jpeg" />
+          <ExampleCard image="https://lab-oss.ai-nebula.com/2025/10/30/25c78becf76547eeae78e420c220a750.jpeg" />
         </div>
       </div>
     </div>

@@ -1,8 +1,7 @@
-import React from 'react';
-import { Upload, FolderOpen, Image as ImageIcon, X, Loader, Play, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, FolderOpen, Image as ImageIcon, X, Loader, ChevronRight, PenTool } from 'lucide-react';
 import { UploadedImage, ProductAnalysis, ViralVideoPageProps } from './types';
 import { WorkflowProgress } from './components/WorkflowProgress';
-import { ExampleCard } from './components/ExampleCard';
 
 interface MaterialsAndSellingPointsProps {
   t: ViralVideoPageProps['t'];
@@ -27,6 +26,10 @@ interface MaterialsAndSellingPointsProps {
   onGoToStep2: () => void;
   fileInputRef: React.RefObject<HTMLInputElement>;
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onProductNameChange?: (name: string) => void;
+  onSellingPointsChange?: (points: string) => void;
+  onGenerateScript?: () => void;
+  onBack?: () => void;
 }
 
 export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps> = ({
@@ -52,305 +55,270 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
   onGoToStep2,
   fileInputRef,
   onFileChange,
+  onProductNameChange,
+  onSellingPointsChange,
+  onGenerateScript,
+  onBack,
 }) => {
+  const [productName, setProductName] = useState(analysisResult?.productName || '');
+  const [sellingPoints, setSellingPoints] = useState(
+    analysisResult?.sellingPoints?.join(';') || ''
+  );
+
+  // 当分析结果更新时，同步更新商品名称和卖点
+  useEffect(() => {
+    if (analysisResult) {
+      setProductName(analysisResult.productName || '');
+      setSellingPoints(analysisResult.sellingPoints?.join(';') || '');
+    }
+  }, [analysisResult]);
+
+  const handleProductNameChange = (value: string) => {
+    if (value.length <= 40) {
+      setProductName(value);
+      if (onProductNameChange) {
+        onProductNameChange(value);
+      }
+    }
+  };
+
+  const handleSellingPointsChange = (value: string) => {
+    if (value.length <= 100) {
+      setSellingPoints(value);
+      if (onSellingPointsChange) {
+        onSellingPointsChange(value);
+      }
+    }
+  };
+
+  const handleHelpWrite = () => {
+    // 使用AI分析结果自动填充卖点
+    if (analysisResult && analysisResult.sellingPoints.length > 0) {
+      const points = analysisResult.sellingPoints.join(';');
+      handleSellingPointsChange(points);
+    }
+  };
+
   return (
-    <div className="bg-background min-h-full flex flex-col pb-12">
+    <div className="bg-background min-h-full flex flex-col">
       {/* 工作流进度条 */}
-      <WorkflowProgress step={step} videoId={videoId} />
+      <WorkflowProgress step={step} videoId={videoId} onBack={step === 1 ? onBack : undefined} />
 
-      {/* Header Title */}
-      <div className="py-8 text-center">
-        <h1 className="text-2xl md:text-3xl font-bold text-foreground">素材与卖点</h1>
-      </div>
-
-      {/* Main Content - Split Layout */}
-      <div className="px-4 md:px-8 max-w-7xl mx-auto w-full mb-12">
-        <div className="flex flex-col lg:flex-row gap-6">
-          
-          {/* Left Panel: Visual Process Flow */}
-          <div className="flex-1 bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col items-center justify-center shadow-sm">
-            <div className="flex items-center justify-center gap-4 md:gap-8 w-full mb-8">
-              {/* Images Stack */}
-              <div className="flex flex-col gap-2">
-                {uploadedImages.length > 0 ? (
-                  <>
-                    {uploadedImages.slice(0, 2).map((img, idx) => (
-                      <div 
-                        key={idx}
-                        className={`w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative ${
-                          idx === 0 ? 'transform -rotate-3' : 'transform rotate-3 -mt-20 ml-8 z-10'
-                        }`}
-                      >
-                        <div className="w-full h-full rounded overflow-hidden relative group">
-                          <img src={img.url} alt={`Upload ${idx + 1}`} className="w-full h-full object-cover" />
-                          <button
-                            onClick={() => onRemoveImage(idx)}
-                            className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                          >
-                            <X size={12} className="text-white" />
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    {uploadedImages.length > 2 && (
-                      <div className="text-center text-xs text-muted mt-2">
-                        +{uploadedImages.length - 2} 张
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <>
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform -rotate-3 border border-border">
-                      <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
-                        <ImageIcon size={24} className="text-muted/50" />
-                      </div>
-                    </div>
-                    <div className="w-32 h-32 md:w-40 md:h-40 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 transform rotate-3 -mt-20 ml-8 z-10 border border-border">
-                      <div className="w-full h-full bg-gray-100 dark:bg-zinc-700 rounded overflow-hidden flex items-center justify-center">
-                        <ImageIcon size={24} className="text-muted/50" />
-                      </div>
-                    </div>
-                  </>
-                )}
-                <div className="text-center mt-4 text-sm text-muted font-medium">{t.process.uploadImages}</div>
-              </div>
-
-              {/* Arrow */}
-              <div className="text-orange-500">
-                <ArrowRight size={32} strokeWidth={3} />
-              </div>
-
-              {/* Output Video */}
-              <div className="flex flex-col gap-2">
-                <div className="w-40 h-72 md:w-48 md:h-80 bg-white dark:bg-zinc-800 rounded-lg shadow-md p-1.5 border border-border relative group cursor-pointer">
-                  <div className="w-full h-full bg-gray-900 rounded overflow-hidden relative">
-                    {analysisResult && uploadedImages.length > 0 ? (
-                      <>
-                        <img 
-                          src={uploadedImages[0].url} 
-                          alt="Video Result" 
-                          className="w-full h-full object-cover opacity-90" 
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
-                            <Play fill="white" className="text-white" size={20} />
-                          </div>
-                        </div>
-                        {/* Captions simulation - 显示商品名称或第一个卖点 */}
-                        {analysisResult.productName && (
-                          <div className="absolute bottom-8 left-0 w-full text-center text-white text-xs font-bold shadow-black drop-shadow-md px-2">
-                            {analysisResult.productName}
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <>
-                        <img 
-                          src="https://images.unsplash.com/photo-1595341888016-a392ef81b7de?q=80&w=400&auto=format&fit=crop" 
-                          alt="Video Result" 
-                          className="w-full h-full object-cover opacity-90" 
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-12 h-12 bg-white/30 backdrop-blur rounded-full flex items-center justify-center pl-1">
-                            <Play fill="white" className="text-white" size={20} />
-                          </div>
-                        </div>
-                        {/* Default caption */}
-                        <div className="absolute bottom-8 left-0 w-full text-center text-white text-xs font-bold shadow-black drop-shadow-md">
-                          就好像穿上一双对的靴子
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="text-center mt-4 text-sm text-muted font-medium">
-                  {isAnalyzing ? '分析中...' : analysisResult ? '分析完成' : t.process.generateVideo}
-                </div>
-              </div>
-            </div>
-
-            <div className="w-full max-w-sm space-y-3">
-              <button 
-                onClick={onGoToStep2}
-                disabled={!analysisResult || uploadedImages.length === 0}
-                className="w-full py-3 rounded-lg border border-border bg-background hover:bg-surface transition-colors text-foreground font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {t.process.makeSame}
-              </button>
-              <div className="flex justify-center gap-1 mt-3">
-                <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-border"></div>
-                <div className="w-1.5 h-1.5 rounded-full bg-border"></div>
-              </div>
-            </div>
+      {/* Main Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 md:px-8 py-8">
+          {/* Page Title */}
+          <div className="mb-8">
+            <h1 className="text-2xl md:text-3xl font-bold text-foreground">商品素材与卖点</h1>
           </div>
 
-          {/* Right Panel: Upload Interface */}
-          <div className="flex-1 bg-surface border border-border rounded-xl overflow-hidden shadow-sm flex flex-col">
-            {/* Tabs */}
-            <div className="flex border-b border-border">
-              <button 
-                onClick={() => onTabChange('upload')}
-                className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'upload' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
-              >
-                {t.tabs.upload}
-              </button>
-              <button 
-                onClick={() => onTabChange('link')}
-                className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'link' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
-              >
-                {t.tabs.link}
-              </button>
+          {/* Section 1: 商品素材 */}
+          <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-foreground">
+                商品素材 ({uploadedImages.length}/{MAX_IMAGES})
+              </h2>
             </div>
+            
+            <p className="text-sm text-muted mb-6">
+              请上传4-10张有肖像权的商品上身图 图片规则;每张图生成5s视频,图片比例即视频比例
+            </p>
 
-            {/* Content */}
-            <div className="p-6 md:p-10 flex-1 flex flex-col">
-              {activeTab === 'upload' ? (
-                <div className="flex-1 border-2 border-dashed border-border rounded-xl bg-background flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                  {uploadedImages.length > 0 ? (
-                    <div className="w-full space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        {uploadedImages.map((img, idx) => (
-                          <div key={idx} className="relative group">
-                            <img 
-                              src={img.url} 
-                              alt={`Upload ${idx + 1}`} 
-                              className="w-full h-32 object-cover rounded-lg border border-border"
-                            />
-                            <button
-                              onClick={() => onRemoveImage(idx)}
-                              className="absolute top-1 right-1 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <X size={14} className="text-white" />
-                            </button>
-                          </div>
-                        ))}
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Left: Upload Area */}
+              <div className="lg:w-1/3">
+                {uploadedImages.length === 0 ? (
+                  <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-background">
+                    <div className="mb-4">
+                      <ImageIcon size={48} className="text-muted/50 mx-auto" />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <button 
+                        onClick={onSelectFromPortfolio}
+                        className="w-full py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
+                      >
+                        <FolderOpen size={16} />
+                        从作品选择
+                      </button>
+                      <button 
+                        onClick={onLocalUpload}
+                        disabled={isUploading}
+                        className="w-full py-2.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
+                      >
+                        {isUploading ? (
+                          <Loader className="animate-spin" size={16} />
+                        ) : (
+                          <Upload size={16} />
+                        )}
+                        从本地上传
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Product Thumbnail and Name */}
+                    <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
+                      <div className="w-12 h-12 rounded overflow-hidden flex-shrink-0">
+                        <img 
+                          src={uploadedImages[0]?.url} 
+                          alt="Product" 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                      
-                      {/* 继续上传按钮 - 如果未达到最大数量 */}
-                      {uploadedImages.length < MAX_IMAGES && (
-                        <button
-                          onClick={onLocalUpload}
-                          disabled={isUploading}
-                          className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
-                        >
-                          {isUploading ? (
-                            <Loader className="animate-spin" size={16} />
-                          ) : (
-                            <Upload size={16} />
-                          )}
-                          继续上传 ({uploadedImages.length}/{MAX_IMAGES})
-                        </button>
-                      )}
-                      
-                      {/* 修改视频拟合比例按钮 */}
-                      <button
-                        onClick={onEditModalOpen}
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-foreground truncate">
+                          {productName || '商品名称'}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Upload Buttons */}
+                    <div className="flex flex-col gap-2">
+                      <button 
+                        onClick={onSelectFromPortfolio}
                         className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
                       >
-                        修改图片拟合比例
+                        <FolderOpen size={16} />
+                        从作品选择
                       </button>
-                      
-                      {/* 完成提交按钮 - 放在右侧上传区域，至少4张图片才显示 */}
-                      {uploadedImages.length >= MIN_IMAGES && !analysisResult && !isAnalyzing && (
-                        <button 
-                          onClick={onAnalyzeAllImages}
-                          disabled={isAnalyzing || uploadedImages.length < MIN_IMAGES}
-                          className="w-full py-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-2"
-                        >
-                          完成提交
-                        </button>
-                      )}
-                      
-                      {/* 分析中提示 */}
-                      {isAnalyzing && (
-                        <div className="w-full py-3 rounded-lg border border-border bg-white dark:bg-zinc-800 flex flex-col items-center justify-center gap-2 text-sm">
-                          <Loader className="animate-spin text-indigo-600" size={16} />
-                          <div>正在分析 {uploadedImages.length} 张图片...</div>
-                          <div className="text-xs text-muted">AI正在综合分析所有图片</div>
-                        </div>
-                      )}
+                      <button 
+                        onClick={onLocalUpload}
+                        disabled={isUploading}
+                        className="w-full py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
+                      >
+                        {isUploading ? (
+                          <Loader className="animate-spin" size={16} />
+                        ) : (
+                          <Upload size={16} />
+                        )}
+                        从本地上传
+                      </button>
                     </div>
-                  ) : (
-                    <>
-                      <div className="mb-6 p-4 rounded-full bg-surface border border-border">
-                        <ImageIcon size={48} className="text-muted/50" />
-                      </div>
-                      <h3 className="text-lg font-medium text-foreground mb-2">{t.uploadArea.title}</h3>
-                      <p className="text-xs text-muted max-w-md mb-6">{t.uploadArea.desc}</p>
-                      <p className="text-[10px] text-muted/70 max-w-xs mb-8">{t.uploadArea.limitation}</p>
-                      
-                      <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
-                        <button 
-                          onClick={onSelectFromPortfolio}
-                          className="flex-1 py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 font-medium text-sm"
-                        >
-                          <FolderOpen size={16} />
-                          {t.uploadArea.selectFromPortfolio}
-                        </button>
-                        <button 
-                          onClick={onLocalUpload}
-                          disabled={isUploading}
-                          className="flex-1 py-2.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors flex items-center justify-center gap-2 font-medium text-sm disabled:opacity-50"
-                        >
-                          {isUploading ? (
-                            <Loader className="animate-spin" size={16} />
-                          ) : (
-                            <Upload size={16} />
-                          )}
-                          {t.uploadArea.uploadLocal}
-                        </button>
-                      </div>
-                    </>
-                  )}
-                  
-                  {/* 隐藏的文件输入 - 始终存在 */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={onFileChange}
-                    className="hidden"
-                  />
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                  <div className="w-full max-w-md">
-                    <input
-                      type="text"
-                      placeholder="https://..."
-                      value={linkInput}
-                      onChange={(e) => onLinkInputChange(e.target.value)}
-                      className="w-full p-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none mb-4"
-                    />
-                    <button 
-                      onClick={onLinkImport}
-                      disabled={!linkInput || isUploading}
-                      className="w-full py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Import
-                    </button>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+
+              {/* Right: Image Carousel */}
+              <div className="lg:flex-1">
+                {uploadedImages.length > 0 ? (
+                  <div className="relative">
+                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                      {uploadedImages.map((img, idx) => (
+                        <div key={idx} className="flex-shrink-0 relative group">
+                          <div className="w-32 h-48 md:w-40 md:h-56 rounded-lg overflow-hidden border border-border bg-gray-100">
+                            <img 
+                              src={img.url} 
+                              alt={`Product ${idx + 1}`} 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <button
+                            onClick={() => onRemoveImage(idx)}
+                            className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X size={14} className="text-white" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    {uploadedImages.length > 4 && (
+                      <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg">
+                        <ChevronRight size={20} className="text-muted" />
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center h-48 bg-gray-50 dark:bg-zinc-900 rounded-lg border border-border">
+                    <p className="text-muted">请上传商品图片</p>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Modify Video Ratio Button */}
+            {uploadedImages.length > 0 && (
+              <div className="mt-4">
+                <button
+                  onClick={onEditModalOpen}
+                  className="px-4 py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium"
+                >
+                  修改视频比例
+                </button>
+              </div>
+            )}
           </div>
 
+          {/* Section 2: 商品详情 */}
+          <div className="bg-surface border border-border rounded-xl p-6">
+            <h2 className="text-lg font-bold text-foreground mb-6">商品详情</h2>
+
+            {/* Product Name Input */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground">商品名称:</label>
+                <span className="text-xs text-muted">{productName.length}/40</span>
+              </div>
+              <input
+                type="text"
+                value={productName}
+                onChange={(e) => handleProductNameChange(e.target.value)}
+                placeholder="请输入商品名称"
+                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm"
+                maxLength={40}
+              />
+            </div>
+
+            {/* Selling Points Input */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground">商品卖点:</label>
+                <span className="text-xs text-muted">{sellingPoints.length}/100</span>
+              </div>
+              <textarea
+                value={sellingPoints}
+                onChange={(e) => handleSellingPointsChange(e.target.value)}
+                placeholder="请输入商品卖点，多个卖点用分号(;)分隔"
+                className="w-full px-4 py-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none text-sm resize-none"
+                rows={3}
+                maxLength={100}
+              />
+              <div className="mt-2">
+                <button
+                  onClick={handleHelpWrite}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm"
+                >
+                  <PenTool size={14} />
+                  帮我写
+                </button>
+              </div>
+            </div>
+
+            {/* Generate Script Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={onGenerateScript || onGoToStep2}
+                disabled={!productName || !sellingPoints || uploadedImages.length < MIN_IMAGES}
+                className="relative px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full">
+                  热门
+                </span>
+                生成脚本
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Footer: Excellent Cases */}
-      <div className="px-4 md:px-8 max-w-7xl mx-auto w-full">
-        <h2 className="text-xl font-bold text-foreground mb-6">{t.examples}</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <ExampleCard image="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1529139574466-a302c27e3844?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=400&auto=format&fit=crop" />
-          <ExampleCard image="https://images.unsplash.com/photo-1485230946086-1d99d529c750?q=80&w=400&auto=format&fit=crop" />
-        </div>
-      </div>
+      {/* Hidden File Input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={onFileChange}
+        className="hidden"
+      />
     </div>
   );
 };
-

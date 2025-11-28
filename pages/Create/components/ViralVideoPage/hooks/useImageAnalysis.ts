@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
-import { uploadService } from '../../../../../services/uploadService';
-import { viralVideoService, ProductAnalysis } from '../../../../../services/viralVideoService';
+import { uploadService } from '@/services/uploadService';
+import { viralVideoService, ProductAnalysis } from '@/services/viralVideoService';
 import toast from 'react-hot-toast';
 import { UploadedImage } from '../types';
 

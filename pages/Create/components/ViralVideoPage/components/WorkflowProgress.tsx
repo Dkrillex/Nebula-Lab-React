@@ -1,13 +1,14 @@
 import React from 'react';
-import { ChevronRight, CheckCircle2, Copy } from 'lucide-react';
+import { ChevronRight, CheckCircle2, Copy, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface WorkflowProgressProps {
   step: number;
   videoId?: string;
+  onBack?: () => void;
 }
 
-export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoId }) => {
+export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoId, onBack }) => {
   const steps = [
     { id: 1, name: '素材与卖点', active: step === 1, completed: step > 1 },
     { id: 2, name: '选择脚本', active: step === 2, completed: step > 2 },
@@ -20,6 +21,16 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoI
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4 flex-1">
+            {/* 返回按钮 - 仅在 step === 1 时显示 */}
+            {step === 1 && onBack && (
+              <button
+                onClick={onBack}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 transition-colors text-sm font-medium text-foreground"
+              >
+                <ArrowLeft size={16} />
+                返回
+              </button>
+            )}
             {steps.map((s, idx) => (
               <React.Fragment key={s.id}>
                 <div className="flex items-center gap-2">

@@ -23,6 +23,20 @@ import {
   Storyboard 
 } from './types';
 
+// 示例图片数据
+const SAMPLE_IMAGES = [
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/9ee5707ca2a547e9a180969f001bcf73.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/0c94104a202a4859aff2565addf4dea2.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/7f00b2d43a2746fb85f8566a3624fa9a.png',
+  'https://lab-oss.ai-nebula.com/nebula-lab/2025/11/28/646472b066114711a2b787d4101e2345.png',
+];
+
+// 示例商品信息
+const SAMPLE_PRODUCT_INFO = {
+  productName: '条纹衬衫裙',
+  sellingPoints: '显瘦；青春活力；上班也能穿；女大学生即视感',
+};
+
 const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [step, setStep] = useState(0); // 0=首页, 1=素材与卖点, 2=选择脚本, 3=编辑分镜, 4=生成视频
   const [activeTab, setActiveTab] = useState<'upload' | 'link'>('upload');
@@ -50,6 +64,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const MAX_IMAGES = 10;
   const [showEditModal, setShowEditModal] = useState(false);
   const [videoId, setVideoId] = useState<string>('');
+  const [productName, setProductName] = useState<string>('');
+  const [sellingPoints, setSellingPoints] = useState<string>('');
 
   // 使用hooks管理业务逻辑
   const { 
@@ -314,6 +330,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       if (result && result.finalImages) {
         setUploadedImages(result.finalImages);
       }
+      // 分析成功后跳转到 Step 1
+      if (result && result.result) {
+        setStep(1);
+      }
     } catch (error) {
       // 错误已在hook中处理
     }
@@ -377,11 +397,16 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
       return;
     }
-    if (!analysisResult) {
-      toast.error('请先完成图片分析');
+    if (!productName || !sellingPoints) {
+      toast.error('请填写商品名称和卖点');
       return;
     }
     setStep(2);
+  };
+
+  // 生成脚本（从Step 1）
+  const handleGenerateScript = () => {
+    handleGoToStep2();
   };
 
   // 确认脚本进入下一步
@@ -400,6 +425,48 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     } else {
       fileInputRef.current?.click();
     }
+  };
+
+  // 返回首页
+  const handleBackToHome = () => {
+    setStep(0);
+  };
+
+  // 一键做同款（从首页示例图片）
+  const handleStartTemplate = () => {
+    // 将示例图片添加到 uploadedImages
+    const sampleImages: UploadedImage[] = SAMPLE_IMAGES.map((url, index) => ({
+      url,
+      id: `sample-${index}`,
+    }));
+    
+    // 设置上传的图片
+    setUploadedImages(sampleImages);
+    
+    // 创建示例商品分析结果
+    // 支持中文分号和英文分号分割卖点
+    const sellingPointsArray = SAMPLE_PRODUCT_INFO.sellingPoints
+      .split(/[；;]/)
+      .map(p => p.trim())
+      .filter(p => p.length > 0);
+    
+    const sampleAnalysisResult: ProductAnalysis = {
+      productName: SAMPLE_PRODUCT_INFO.productName,
+      sellingPoints: sellingPointsArray,
+      scenes: ['日常穿搭', '上班通勤', '校园生活'],
+      category: '服装',
+      style: '青春活力',
+    };
+    
+    // 设置分析结果
+    setAnalysisResult(sampleAnalysisResult);
+    
+    // 设置商品名称和卖点
+    setProductName(SAMPLE_PRODUCT_INFO.productName);
+    setSellingPoints(SAMPLE_PRODUCT_INFO.sellingPoints);
+    
+    // 跳转到 Step 1：选择素材与卖点
+    setStep(1);
   };
 
   return (
@@ -426,6 +493,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
           onStartMaking={handleStartMaking}
+          onStartTemplate={handleStartTemplate}
         />
       )}
       
@@ -453,6 +521,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onGoToStep2={handleGoToStep2}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
+          onProductNameChange={setProductName}
+          onSellingPointsChange={setSellingPoints}
+          onGenerateScript={handleGenerateScript}
+          onBack={handleBackToHome}
         />
       )}
 
