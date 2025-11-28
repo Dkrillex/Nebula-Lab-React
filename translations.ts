@@ -1108,6 +1108,46 @@ interface Translation {
       customSolution: string;
       techSupport: string;
       dataAnalysis: string;
+      form?: {
+        title: string;
+        description: string;
+        name: string;
+        namePlaceholder: string;
+        email: string;
+        emailPlaceholder: string;
+        phone: string;
+        phonePlaceholder: string;
+        company: string;
+        companyPlaceholder: string;
+        channel: string;
+        channelPlaceholder: string;
+        channels?: {
+          wechat: string;
+          xiaohongshu: string;
+          gongzhonghao: string;
+          douyin: string;
+          weibo: string;
+          search: string;
+          friend: string;
+          other: string;
+        };
+        message: string;
+        messagePlaceholder: string;
+        submit: string;
+        submitting: string;
+        submitSuccess: string;
+        submitError: string;
+        successTitle: string;
+        successMessage: string;
+        submitAnother: string;
+        errors?: {
+          nameRequired: string;
+          phoneRequired: string;
+          phoneInvalid: string;
+          emailInvalid: string;
+          channelRequired: string;
+        };
+      };
     };
     errors?: {
       loginRequired: string;
@@ -3252,7 +3292,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: 'Scan to add WeChat',
         customSolution: '🎯 Custom Solutions',
         techSupport: '🔧 Technical Support',
-        dataAnalysis: '📊 Data Analysis'
+        dataAnalysis: '📊 Data Analysis',
+        form: {
+          title: 'Leave Your Information',
+          description: 'Our consultant will contact you soon',
+          name: 'Name',
+          namePlaceholder: 'Please enter your name',
+          email: 'Email',
+          emailPlaceholder: 'Please enter your email (optional)',
+          phone: 'Phone',
+          phonePlaceholder: 'Please enter your phone number',
+          company: 'Company',
+          companyPlaceholder: 'Please enter your company name (optional)',
+          channel: 'How did you find us',
+          channelPlaceholder: 'Please select how you found us',
+          channels: {
+            wechat: 'WeChat',
+            xiaohongshu: 'Xiaohongshu',
+            gongzhonghao: 'WeChat Official Account',
+            douyin: 'Douyin/TikTok',
+            weibo: 'Weibo',
+            search: 'Search Engine',
+            friend: 'Friend Referral',
+            other: 'Other'
+          },
+          message: 'Message',
+          messagePlaceholder: 'Please describe your needs (optional)',
+          submit: 'Submit Now',
+          submitting: 'Submitting...',
+          submitSuccess: 'Submitted successfully, we will contact you soon!',
+          submitError: 'Submission failed, please try again later',
+          successTitle: 'Submitted Successfully!',
+          successMessage: 'Thank you for your inquiry, our professional consultant will contact you within 1-2 business days.',
+          submitAnother: 'Submit Another',
+          errors: {
+            nameRequired: 'Please enter your name',
+            phoneRequired: 'Please enter your phone number',
+            phoneInvalid: 'Please enter a valid phone number',
+            emailInvalid: 'Please enter a valid email address',
+            channelRequired: 'Please select how you found us'
+          }
+        }
       },
       errors: {
         loginRequired: 'Please login first',
@@ -5239,7 +5319,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: '扫码添加企业微信',
         customSolution: '🎯 定制化方案',
         techSupport: '🔧 技术支持',
-        dataAnalysis: '📊 数据分析'
+        dataAnalysis: '📊 数据分析',
+        form: {
+          title: '留下您的信息',
+          description: '专业顾问将尽快与您联系',
+          name: '姓名',
+          namePlaceholder: '请输入您的姓名',
+          email: '邮箱',
+          emailPlaceholder: '请输入您的邮箱（选填）',
+          phone: '电话',
+          phonePlaceholder: '请输入您的手机号码',
+          company: '公司名称',
+          companyPlaceholder: '请输入您的公司名称（选填）',
+          channel: '了解渠道',
+          channelPlaceholder: '请选择您是如何了解我们的',
+          channels: {
+            wechat: '微信',
+            xiaohongshu: '小红书',
+            gongzhonghao: '公众号',
+            douyin: '抖音',
+            weibo: '微博',
+            search: '搜索引擎',
+            friend: '朋友推荐',
+            other: '其他'
+          },
+          message: '留言',
+          messagePlaceholder: '请描述您的需求（选填）',
+          submit: '立即提交',
+          submitting: '提交中...',
+          submitSuccess: '提交成功，我们会尽快与您联系！',
+          submitError: '提交失败，请稍后重试',
+          successTitle: '提交成功！',
+          successMessage: '感谢您的咨询，我们的专业顾问会在1-2个工作日内与您联系。',
+          submitAnother: '继续提交',
+          errors: {
+            nameRequired: '请输入姓名',
+            phoneRequired: '请输入电话',
+            phoneInvalid: '请输入有效的手机号码',
+            emailInvalid: '请输入有效的邮箱地址',
+            channelRequired: '请选择了解渠道'
+          }
+        }
       },
       errors: {
         loginRequired: '请先登录',
@@ -6963,7 +7083,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: 'Pindai untuk menambahkan WeChat',
         customSolution: '🎯 Solusi Kustom',
         techSupport: '🔧 Dukungan Teknis',
-        dataAnalysis: '📊 Analisis Data'
+        dataAnalysis: '📊 Analisis Data',
+        form: {
+          title: 'Tinggalkan Informasi Anda',
+          description: 'Konsultan kami akan segera menghubungi Anda',
+          name: 'Nama',
+          namePlaceholder: 'Masukkan nama Anda',
+          email: 'Email',
+          emailPlaceholder: 'Masukkan email Anda (opsional)',
+          phone: 'Telepon',
+          phonePlaceholder: 'Masukkan nomor telepon Anda',
+          company: 'Perusahaan',
+          companyPlaceholder: 'Masukkan nama perusahaan Anda (opsional)',
+          channel: 'Bagaimana Anda menemukan kami',
+          channelPlaceholder: 'Pilih bagaimana Anda menemukan kami',
+          channels: {
+            wechat: 'WeChat',
+            xiaohongshu: 'Xiaohongshu',
+            gongzhonghao: 'Akun Resmi WeChat',
+            douyin: 'Douyin/TikTok',
+            weibo: 'Weibo',
+            search: 'Mesin Pencari',
+            friend: 'Referensi Teman',
+            other: 'Lainnya'
+          },
+          message: 'Pesan',
+          messagePlaceholder: 'Jelaskan kebutuhan Anda (opsional)',
+          submit: 'Kirim Sekarang',
+          submitting: 'Mengirim...',
+          submitSuccess: 'Berhasil dikirim, kami akan segera menghubungi Anda!',
+          submitError: 'Pengiriman gagal, silakan coba lagi nanti',
+          successTitle: 'Berhasil Dikirim!',
+          successMessage: 'Terima kasih atas pertanyaan Anda, konsultan profesional kami akan menghubungi Anda dalam 1-2 hari kerja.',
+          submitAnother: 'Kirim Lagi',
+          errors: {
+            nameRequired: 'Masukkan nama Anda',
+            phoneRequired: 'Masukkan nomor telepon Anda',
+            phoneInvalid: 'Masukkan nomor telepon yang valid',
+            emailInvalid: 'Masukkan alamat email yang valid',
+            channelRequired: 'Pilih bagaimana Anda menemukan kami'
+          }
+        }
       },
       errors: {
         loginRequired: 'Silakan login terlebih dahulu',
