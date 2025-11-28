@@ -13,14 +13,14 @@ interface ModelSquarePageProps {
   t?: any;
 }
 
-const getBillingTypeLabel = (quotaType?: number): string => {
-  if (quotaType === 0) return '按量计费';
-  if (quotaType === 1) return '按次计费';
-  if (quotaType === 2) return '按资源类型计费';
-  if (quotaType === 3) return '按秒计费';
-  if (quotaType === 4) return '按全模态计费';
-  if (quotaType === 5) return '按张计费';
-  return '未知';
+const getBillingTypeLabel = (quotaType: number | undefined, t: any): string => {
+  if (quotaType === 0) return t?.compare?.billingTypes?.payPerUse || '按量计费';
+  if (quotaType === 1) return t?.compare?.billingTypes?.payPerCall || '按次计费';
+  if (quotaType === 2) return t?.compare?.billingTypes?.payPerResource || '按资源类型计费';
+  if (quotaType === 3) return t?.compare?.billingTypes?.payPerSecond || '按秒计费';
+  if (quotaType === 4) return t?.compare?.billingTypes?.payPerMultimodal || '按全模态计费';
+  if (quotaType === 5) return t?.compare?.billingTypes?.payPerImage || '按张计费';
+  return t?.compare?.billingTypes?.unknown || '未知';
 };
 
 const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
@@ -915,8 +915,8 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors bg-white dark:bg-zinc-900 shadow-sm"
              >
                <Compare size={14} />
-               <span className="hidden sm:inline">模型对比</span>
-               <span className="sm:hidden">对比</span>
+               <span className="hidden sm:inline">{t.compare.button}</span>
+               <span className="sm:hidden">{t.compare.buttonShort}</span>
              </button>
              {/* 筛选按钮 */}
              <button 
@@ -925,9 +925,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
              >
                <SlidersHorizontal size={14} />
                <span className="hidden sm:inline">
-                 {showFilterPanel ? t.filters.hideFilters : '显示筛选'}
+                 {showFilterPanel ? t.filters.hideFilters : t.filters.showFilters}
                </span>
-               <span className="sm:hidden">{showFilterPanel ? '隐藏' : '筛选'}</span>
+               <span className="sm:hidden">{showFilterPanel ? t.filters.hideFilters : t.filters.showFilters}</span>
              </button>
            </div>
         </div>
@@ -945,13 +945,13 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
             {loading ? (
               <div className="col-span-full flex flex-col items-center justify-center py-32 text-zinc-400">
                 <div className="w-8 h-8 border-4 border-zinc-200 border-t-zinc-500 rounded-full animate-spin mb-4"></div>
-                <span className="text-sm font-medium">正在加载模型广场...</span>
+                <span className="text-sm font-medium">{t.compare.loading}</span>
               </div>
             ) : paginatedModels.length === 0 ? (
               <div className="col-span-full flex flex-col items-center justify-center py-32 text-zinc-400">
                 <Box size={48} strokeWidth={1.5} className="mb-4 opacity-50" />
                 <span className="text-sm font-medium">
-                  {models.length === 0 ? '暂无模型数据' : '没有找到匹配的模型'}
+                  {models.length === 0 ? t.compare.noModels : t.compare.noMatchModels}
                 </span>
               </div>
             ) : (
@@ -973,7 +973,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
           {!loading && filteredModels.length > 0 && (
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-zinc-500">
-                共 {filteredModels.length} 个模型，第 {currentPage} / {totalPages} 页
+                {t.pagination.total} {filteredModels.length} {t.totalModels}，{t.pagination.page} {currentPage} / {totalPages} {t.pagination.perPage}
               </div>
               <div className="flex items-center gap-2">
                 <button
@@ -991,9 +991,9 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
                   }}
                   className="px-3 py-1.5 rounded-lg border border-zinc-200 dark:border-zinc-700 text-sm bg-white dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 outline-none focus:ring-2 focus:ring-zinc-100 cursor-pointer"
                 >
-                  <option value={12}>12 / 页</option>
-                  <option value={24}>24 / 页</option>
-                  <option value={48}>48 / 页</option>
+                  <option value={12}>12 {t.pagination.perPage}</option>
+                  <option value={24}>24 {t.pagination.perPage}</option>
+                  <option value={48}>48 {t.pagination.perPage}</option>
                 </select>
                 <button
                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
@@ -1014,6 +1014,7 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
           model={selectedModel}
           visible={detailVisible}
           onClose={() => setDetailVisible(false)}
+          t={t}
           formatPrice={formatPrice}
           formatPriceUnit={formatPriceUnit}
           currency={currency}
@@ -1136,7 +1137,7 @@ const ModelCard: React.FC<{
             {model.name}
            </h3>
            <p className="text-sm text-zinc-500 dark:text-zinc-400 line-clamp-2 h-10 leading-relaxed">
-             {model.description || '暂无描述'}
+             {model.description || t.detail.noDescription}
            </p>
         </div>
 
@@ -1156,7 +1157,7 @@ const ModelCard: React.FC<{
                </span>
              )}
              <span className="text-xs text-zinc-500 dark:text-zinc-400 bg-zinc-50 dark:bg-zinc-800/50 px-2 py-0.5 rounded border border-zinc-100 dark:border-zinc-700/50">
-               {getBillingTypeLabel(model.quotaType)}
+               {getBillingTypeLabel(model.quotaType, t)}
              </span>
            </div>
         </div>
@@ -1170,6 +1171,7 @@ const ModelDetailDrawer = ({
   model,
   visible,
   onClose,
+  t,
   formatPrice,
   formatPriceUnit,
   currency,
@@ -1191,6 +1193,7 @@ const ModelDetailDrawer = ({
   model: AIModel;
   visible: boolean;
   onClose: () => void;
+  t: ModelSquarePageProps['t'];
   formatPrice: (model: AIModel, priceType?: 'discount' | 'origin') => string;
   formatPriceUnit: (model: AIModel) => string;
   currency: 'USD' | 'CNY';
@@ -1274,7 +1277,7 @@ const ModelDetailDrawer = ({
       {/* Drawer */}
       <div className="absolute right-0 top-0 bottom-0 w-full max-w-[520px] bg-background shadow-2xl flex flex-col transform transition-transform duration-300 ease-in-out bg-white dark:bg-zinc-900">
         <div className="flex-none bg-white dark:bg-zinc-900 border-b border-zinc-100 dark:border-zinc-800 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">模型详情</h2>
+          <h2 className="text-lg font-bold text-zinc-900 dark:text-zinc-100">{t.detail.title}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-full transition-colors text-zinc-500"
@@ -1317,23 +1320,23 @@ const ModelDetailDrawer = ({
           {/* Meta Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-lg p-3">
-              <div className="text-xs text-zinc-500 mb-1">类型</div>
+              <div className="text-xs text-zinc-500 mb-1">{t.detail.type}</div>
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{(model as any).modelType || '-'}</div>
             </div>
             <div className="bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-100 dark:border-zinc-800 rounded-lg p-3">
-              <div className="text-xs text-zinc-500 mb-1">定价</div>
+              <div className="text-xs text-zinc-500 mb-1">{t.detail.pricing}</div>
               <div className="text-sm font-medium text-zinc-900 dark:text-zinc-100">{formatPrice(model)}</div>
             </div>
           </div>
 
           {/* Pricing Details Block */}
           <div>
-            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">价格详情</h4>
+            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">{t.detail.priceDetails}</h4>
             
             {/* 按全模态计费 */}
             {(model as any).quotaType === 4 ? (
               <div className="space-y-2 text-sm">
-                <div className="font-medium mb-2 text-zinc-700 dark:text-zinc-300">价格表</div>
+                <div className="font-medium mb-2 text-zinc-700 dark:text-zinc-300">{t.detail.priceTable}</div>
                 {[
                   { label: '输入文本', key: 'text_input_price' },
                   { label: '输入音频', key: 'audio_input_price' },
@@ -1362,10 +1365,10 @@ const ModelDetailDrawer = ({
                  {/* 音频选项价格 */}
                  {hasVideoAudioPricing(model) && (
                    <div className="mb-3">
-                     <div className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">音频选项价格</div>
+                     <div className="text-sm font-semibold mb-2 text-zinc-700 dark:text-zinc-300">{t.detail.audioOptions}</div>
                      {getVideoAudioPrice(model, 'noAudio') !== undefined && (
                        <div className="flex justify-between items-center mb-1">
-                         <span className="text-zinc-500">不含音频:</span>
+                         <span className="text-zinc-500">{t.detail.noAudio}</span>
                          <div>
                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                              {formatVideoAudioPrice(model, 'noAudio')}
@@ -1381,7 +1384,7 @@ const ModelDetailDrawer = ({
                      )}
                      {getVideoAudioPrice(model, 'audio') !== undefined && (
                        <div className="flex justify-between items-center mb-1">
-                         <span className="text-zinc-500">含音频:</span>
+                         <span className="text-zinc-500">{t.detail.withAudio}</span>
                          <div>
                            <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                              {formatVideoAudioPrice(model, 'audio')}
@@ -1400,7 +1403,7 @@ const ModelDetailDrawer = ({
                  {/* 分辨率价格表 */}
                  {(model as any).videoResolutionPricing ? (
                    <>
-                    <div className="font-medium mb-2 text-zinc-700 dark:text-zinc-300">分辨率价格表</div>
+                    <div className="font-medium mb-2 text-zinc-700 dark:text-zinc-300">{t.detail.resolutionTable}</div>
                     {Object.entries(parseVideoResolutions(model)).map(([res, price]) => {
                       const originPrices = parseOriginVideoResolutions(model);
                       return (
@@ -1423,7 +1426,7 @@ const ModelDetailDrawer = ({
                    </>
                  ) : !hasVideoAudioPricing(model) ? (
                    <div className="flex justify-between items-center py-1">
-                     <span className="text-zinc-500">单秒价格:</span>
+                     <span className="text-zinc-500">{t.detail.singleSecondPrice}</span>
                      <div>
                         <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                           {formatDetailPrice(model, 'call')}
@@ -1440,7 +1443,7 @@ const ModelDetailDrawer = ({
               /* 按资源类型 (图像Token表) */
               <div className="space-y-4 text-sm">
                  <div className="space-y-2">
-                   <div className="font-medium text-zinc-700 dark:text-zinc-300">基础价格表</div>
+                   <div className="font-medium text-zinc-700 dark:text-zinc-300">{t.detail.priceTable}</div>
                    {[
                      { label: '输入文本', type: 'input_text', originType: 'origin_input_text' },
                      { label: '输入图像', type: 'input_image', originType: 'origin_input_image' },
@@ -1461,12 +1464,12 @@ const ModelDetailDrawer = ({
                  </div>
 
                  <div className="space-y-2">
-                    <div className="font-medium text-zinc-700 dark:text-zinc-300">Token 消耗表</div>
+                    <div className="font-medium text-zinc-700 dark:text-zinc-300">{t.detail.tokenConsumption}</div>
                     <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-700 rounded-lg">
                       <table className="w-full text-xs text-left">
                         <thead className="bg-zinc-50 dark:bg-zinc-800 border-b border-zinc-200 dark:border-zinc-700">
                           <tr>
-                            <th className="p-2 font-medium">质量</th>
+                            <th className="p-2 font-medium">{t.detail.quality}</th>
                             <th className="p-2 font-medium">1024×1024</th>
                             <th className="p-2 font-medium">1024×1536</th>
                             <th className="p-2 font-medium">1536×1024</th>
@@ -1482,7 +1485,7 @@ const ModelDetailDrawer = ({
                  </div>
 
                  <div className="space-y-2">
-                   <div className="font-medium text-zinc-700 dark:text-zinc-300">📝 单张成本示例 (文生图)</div>
+                   <div className="font-medium text-zinc-700 dark:text-zinc-300">📝 {t.detail.exampleCost}</div>
                    {[
                      { label: 'Low 1024×1024', quality: 'low', color: 'text-emerald-600' },
                      { label: 'Medium 1024×1024', quality: 'medium', color: 'text-blue-600' },
@@ -1498,7 +1501,7 @@ const ModelDetailDrawer = ({
                  </div>
 
                  <div className="space-y-2">
-                   <div className="font-medium text-zinc-700 dark:text-zinc-300">🖼️ 单张成本示例 (图生图)</div>
+                   <div className="font-medium text-zinc-700 dark:text-zinc-300">🖼️ {t.detail.imageEditCost}</div>
                    <div className="text-xs text-zinc-400 mb-1">含输入图像 (编辑场景)</div>
                    {[
                      { label: 'Low 1024×1024', quality: 'low', color: 'text-emerald-600' },
@@ -1518,7 +1521,7 @@ const ModelDetailDrawer = ({
               /* 按次/按张计费 */
               <div className="flex justify-between items-center py-1 text-sm">
                  <span className="text-zinc-500">
-                   {(model as any).quotaType === 5 ? '单张生成:' : '单次调用:'}
+                   {(model as any).quotaType === 5 ? t.detail.singleImagePrice : t.detail.singleCallPrice}
                  </span>
                  <div>
                    <span className="text-indigo-600 dark:text-indigo-400 font-medium">
@@ -1533,7 +1536,7 @@ const ModelDetailDrawer = ({
               /* 默认：按量计费 (Type 0) */
               <div className="space-y-3 text-sm">
                  <div className="flex justify-between items-center">
-                   <span className="text-zinc-500">输入:</span>
+                   <span className="text-zinc-500">{t.detail.input}</span>
                    <div>
                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                        {formatDetailPrice(model, 'input')}
@@ -1545,7 +1548,7 @@ const ModelDetailDrawer = ({
                    </div>
                  </div>
                  <div className="flex justify-between items-center">
-                   <span className="text-zinc-500">输出:</span>
+                   <span className="text-zinc-500">{t.detail.output}</span>
                    <div>
                      <span className="text-indigo-600 dark:text-indigo-400 font-medium">
                        {formatDetailPrice(model, 'output')}
@@ -1563,10 +1566,10 @@ const ModelDetailDrawer = ({
           {/* Cache Price Info (如果适用) - 只有CacheRatio配置中存在的claude模型才显示 */}
           {(model as any).quotaType !== 1 && (model as any).quotaType !== 5 && (model as any).createCacheRatio != null && (model as any).cacheRatio != null && (
             <div>
-              <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">缓存价格</h4>
+              <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-3">{t.detail.cachePrice}</h4>
               <div className="space-y-3 text-sm">
                  <div className="flex justify-between items-center">
-                   <span className="text-zinc-500">缓存写入:</span>
+                   <span className="text-zinc-500">{t.detail.cacheWrite}</span>
                    <div>
                      <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                        {formatDetailPrice(model, 'cacheInput')}
@@ -1575,7 +1578,7 @@ const ModelDetailDrawer = ({
                    </div>
                  </div>
                  <div className="flex justify-between items-center">
-                   <span className="text-zinc-500">缓存读取:</span>
+                   <span className="text-zinc-500">{t.detail.cacheRead}</span>
                    <div>
                      <span className="text-zinc-900 dark:text-zinc-100 font-medium">
                        {formatDetailPrice(model, 'cacheOutput')}
@@ -1589,15 +1592,15 @@ const ModelDetailDrawer = ({
 
           {/* Description */}
           <div>
-            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">模型描述</h4>
+            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">{t.detail.modelDescription}</h4>
             <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed whitespace-pre-wrap">
-              {model.description || '暂无描述'}
+              {model.description || t.detail.noDescription}
             </p>
           </div>
           
           {/* Capability Tags */}
           <div>
-            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">能力标签</h4>
+            <h4 className="text-base font-semibold text-zinc-900 dark:text-zinc-100 mb-2">{t.detail.capabilityTags}</h4>
             <div className="flex flex-wrap gap-2">
               {(() => {
                 const caps = (model as any).capabilities;
@@ -1625,7 +1628,7 @@ const ModelDetailDrawer = ({
               className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
             >
               <MessageSquare size={16} />
-              使用该模型对话
+              {t.detail.useForChat}
             </button>
           )}
           
@@ -1635,7 +1638,7 @@ const ModelDetailDrawer = ({
               className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
             >
               <ImageIcon size={16} />
-              使用该模型生成图片
+              {t.detail.useForImage}
             </button>
           )}
           
@@ -1645,7 +1648,7 @@ const ModelDetailDrawer = ({
               className="px-4 py-2 bg-gradient-to-r from-indigo-500 to-violet-600 text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 text-sm font-medium shadow-sm shadow-indigo-200 dark:shadow-none"
             >
               <VideoIcon size={16} />
-              使用该模型生成视频
+              {t.detail.useForVideo}
             </button>
           )}
         </div>

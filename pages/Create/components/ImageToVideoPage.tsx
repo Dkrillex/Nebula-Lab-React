@@ -9,7 +9,7 @@ import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { AdsAssetsVO } from '../../../services/assetsService';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import { UploadedFile } from '../../../services/avatarService';
 
 import demoProduct from '../../../assets/demo/1111.png';
@@ -90,6 +90,9 @@ interface ImageToVideoPageProps {
     };
     generating?: string;
     progressStatusShort?: string;
+    messages?: {
+      requestFailed: string;
+    };
   };
 }
 
@@ -142,6 +145,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
   // --- Refs ---
   // const advancedFileInputRef = useRef<HTMLInputElement>(null); // Advanced Mode not open to public yet
+  const startUploadRef = useRef<UploadComponentRef>(null);
+  const endUploadRef = useRef<UploadComponentRef>(null);
   const pollingInterval = useRef<NodeJS.Timeout | null>(null);
   const progressInterval = useRef<NodeJS.Timeout | null>(null);
 
@@ -307,6 +312,24 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const handleStartClear = () => setStartImage(null);
   const handleEndClear = () => setEndImage(null);
 
+  const handleStartFileSelected = (file: File) => {
+    setStartImage({
+      fileId: '', // Pending upload
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file),
+      file: file
+    });
+  };
+
+  const handleEndFileSelected = (file: File) => {
+    setEndImage({
+      fileId: '', // Pending upload
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file),
+      file: file
+    });
+  };
+
   // Advanced Mode functions (commented out - Advanced Mode not open to public yet)
   // const removeAdvancedImage = (index: number) => {
   //   setAdvancedImages(prev => prev.filter((_, i) => i !== index));
@@ -368,6 +391,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         } else {
            res = await imageToVideoService.queryStartEnd(taskId);
         }
+        
         // Handle different response structures
         const responseData = res.data || (res as any).result || res;
         if (!responseData) return;
@@ -466,10 +490,42 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     try {
       let taskId = '';
       
+      // --- Upload Step ---
+      let currentStartImage = startImage;
+      let currentEndImage = endImage;
+
+      // Upload Start Image if local file exists
+      if (startUploadRef.current && startUploadRef.current.file) {
+         const uploaded = await startUploadRef.current.triggerUpload();
+         if (uploaded) {
+            currentStartImage = mapUploadedFile(uploaded);
+            setStartImage(currentStartImage);
+         }
+      }
+      
+      // Upload End Image if local file exists
+      if (activeTab === 'startEnd' && endUploadRef.current && endUploadRef.current.file) {
+         const uploaded = await endUploadRef.current.triggerUpload();
+         if (uploaded) {
+            currentEndImage = mapUploadedFile(uploaded);
+            setEndImage(currentEndImage);
+         }
+      }
+
+      // Re-validate presence of fileId after potential upload
+      if (activeTab === 'traditional' && (!currentStartImage || !currentStartImage.fileId)) {
+          // If it's a local file pending upload and upload failed/didn't return fileId
+          throw new Error('Start image upload failed');
+      }
+      if (activeTab === 'startEnd') {
+          if (!currentStartImage?.fileId) throw new Error('Start image upload failed');
+          if (!currentEndImage?.fileId) throw new Error('End image upload failed');
+      }
+
       if (activeTab === 'traditional') {
          const res = await imageToVideoService.submitTraditional({
-           imageFileId: startImage!.fileId,
-           imageUrl: startImage!.fileUrl,
+           imageFileId: currentStartImage!.fileId,
+           imageUrl: currentStartImage!.fileUrl,
            prompt,
            negativePrompt,
            mode: quality,
@@ -482,9 +538,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          const isVolcano = ['lite', 'plus', 'pro'].includes(quality); 
          
          // Normalize response data (handle potential unwrapped response)
-         const responseData = (res as any).data || res;
-         
-         if ((res as any).code === 200 || responseData.id || responseData.taskId) {
+         const responseData = (res as any).data || (res as any).result || res;
+         if (responseData.id || responseData.taskId) {
             // Support both id (Volcano) and taskId (Topview)
             taskId = responseData.taskId || responseData.id || '';
             if (!taskId) {
@@ -496,19 +551,13 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          }
 
       } else if (activeTab === 'startEnd') {
-         if (!startImage?.fileUrl) {
-            toast.error('Please upload start image');
-            setIsGenerating(false);
-            return;
-         }
-         if (!endImage?.fileUrl) {
-            toast.error('Please upload end image');
-            setIsGenerating(false);
-            return;
+         // For startEnd, ensure we have valid URLs
+         if (!currentStartImage?.fileUrl || !currentEndImage?.fileUrl) {
+             throw new Error('Missing image URLs');
          }
          
          const res = await imageToVideoService.submitStartEnd({
-           imageUrls: [startImage.fileUrl, endImage.fileUrl],
+           imageUrls: [currentStartImage.fileUrl, currentEndImage.fileUrl],
            prompt,
            duration: duration,
            score: calculatedScore
@@ -525,7 +574,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(error.message || 'Generation failed');
+    toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
       setIsGenerating(false);
       if (progressInterval.current) clearInterval(progressInterval.current);
       setProgress(0);
@@ -627,13 +676,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                   <div className="flex gap-4">
                      <div className="flex-1 relative">
                         <UploadComponent
+                          ref={startUploadRef}
                           onUploadComplete={handleStartUploadComplete}
+                          onFileSelected={handleStartFileSelected}
                           onClear={handleStartClear}
                           onError={handleUploadError}
-                          uploadType="oss"
+                          uploadType={quality === 'best' ? 'tv' : 'oss'}
                           accept=".png,.jpg,.jpeg,.webp"
                           maxSize={10}
-                          immediate={true}
+                          immediate={false}
+                          showConfirmButton={false}
                           initialUrl={startImage?.fileUrl || ''}
                           className="h-32"
                         >
@@ -653,13 +705,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                      {activeTab === 'startEnd' && (
                         <div className="flex-1 relative">
                            <UploadComponent
+                             ref={endUploadRef}
                              onUploadComplete={handleEndUploadComplete}
+                             onFileSelected={handleEndFileSelected}
                              onClear={handleEndClear}
                              onError={handleUploadError}
-                             uploadType="oss"
+                             uploadType={quality === 'best' ? 'tv' : 'oss'}
                              accept=".png,.jpg,.jpeg,.webp"
                              maxSize={10}
-                             immediate={true}
+                             immediate={false}
+                             showConfirmButton={false}
                              initialUrl={endImage?.fileUrl || ''}
                              className="h-32"
                            >

@@ -1780,6 +1780,70 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 可以添加提示消息
   };
 
+  // 复制图片到剪贴板并添加到输入框
+  const handleCopyImage = async (imageUrl: string, textContent?: string) => {
+    try {
+      // 将图片URL转换为blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // 复制图片到剪贴板
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+
+      // 将图片转换为base64并添加到输入框
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          // 图片模式下，最多只显示一张图片，替换已有图片
+          setUploadedImages([base64]);
+          // 如果有文字内容，同时设置到输入框
+          if (textContent && textContent.trim()) {
+            setInputValue(textContent.trim());
+            // 如果同时有文字和图片，显示引用消息的提示
+            toast.success('已引用消息内容到输入框');
+          } else {
+            // 只有图片时，显示图片复制的提示
+            toast.success('图片已复制并添加到输入框');
+          }
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('复制图片失败:', error);
+      // 如果复制失败，至少尝试添加到输入框
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+          const base64 = event.target?.result as string;
+          if (base64) {
+            // 图片模式下，最多只显示一张图片，替换已有图片
+            setUploadedImages([base64]);
+            // 如果有文字内容，同时设置到输入框
+            if (textContent && textContent.trim()) {
+              setInputValue(textContent.trim());
+              // 如果同时有文字和图片，显示引用消息的提示
+              toast.success('已引用消息内容到输入框');
+            } else {
+              // 只有图片时，显示图片添加的提示
+              toast.success('图片已添加到输入框');
+            }
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (fallbackError) {
+        console.error('添加图片到输入框失败:', fallbackError);
+        toast.error('复制图片失败');
+      }
+    }
+  };
+
   // 处理代码引用
   const handleQuoteCode = (code: string) => {
     setInputValue(code);
@@ -1837,6 +1901,42 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
     // 直接发送
     await handleSend();
+  };
+
+  // 删除消息
+  const handleDeleteMessage = (messageId: string) => {
+    // 不允许删除欢迎消息和system消息
+    if (messageId === 'welcome') {
+      return;
+    }
+
+    setMessages(prev => {
+      const messageToDelete = prev.find(msg => msg.id === messageId);
+      // 不允许删除system消息
+      if (messageToDelete?.role === 'system') {
+        return prev;
+      }
+
+      const filtered = prev.filter(msg => msg.id !== messageId);
+      // 如果删除后没有消息了，且不是system消息，显示欢迎消息
+      if (filtered.length === 0 || (filtered.length === 1 && filtered[0].role === 'system')) {
+        if (currentMode === 'chat') {
+          const hasSystemMessage = filtered.some(msg => msg.role === 'system');
+          if (hasSystemMessage) {
+            return filtered;
+          }
+          return [{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }];
+        } else {
+          return [];
+        }
+      }
+      return filtered;
+    });
   };
 
   // 清空消息
@@ -4711,6 +4811,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               key={msg.id} 
               message={msg}
               onCopy={handleCopy}
+              onCopyImage={handleCopyImage}
               onQuoteCode={handleQuoteCode}
               onPreview={(type, url) => setPreviewModal({ isOpen: true, type, url })}
               onDownloadImage={handleDownloadImage}
@@ -4721,6 +4822,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
+              onDelete={handleDeleteMessage}
               onDefineAIRole={handleDefineAIRole}
               currentMode={currentMode}
               isLoading={isLoading}
@@ -5053,6 +5155,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 interface MessageBubbleProps {
   message: ExtendedChatMessage;
   onCopy: (content: string) => void;
+  onCopyImage?: (imageUrl: string, textContent?: string) => Promise<void>; // 复制图片到剪贴板并添加到输入框
   onQuoteCode?: (code: string) => void;
   onPreview?: (type: 'image' | 'video', url: string) => void;
   onDownloadImage?: (url: string) => void;
@@ -5063,6 +5166,7 @@ interface MessageBubbleProps {
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
+  onDelete?: (messageId: string) => void; // 删除消息
   onDefineAIRole?: (messageId: string) => void; // 定义AI助手角色
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
   isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
@@ -5118,6 +5222,7 @@ const VideoPlayer: React.FC<{ url: string }> = ({ url }) => {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
   onCopy, 
+  onCopyImage,
   onQuoteCode, 
   onPreview,
   onDownloadImage,
@@ -5129,6 +5234,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   progress = 0,
   onQuote,
   onResend,
+  onDelete,
   onDefineAIRole,
   currentMode = 'chat',
   isLoading = false,
@@ -5606,9 +5712,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span>{formatTime(message.timestamp)}</span>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
             {/* 复制按钮 */}
-            {(message.content || message.generatedImages?.length || message.generatedVideos?.length) && (
+            {(message.content || message.generatedImages?.length || message.generatedVideos?.length || (isUser && message.images?.length)) && (
             <button
-                onClick={() => {
+                onClick={async () => {
+                  // 图片模式下，优先复制图片（无论是用户上传的图片还是AI生成的图片）
+                  if (currentMode === 'image' && onCopyImage) {
+                    // 优先检查AI生成的图片
+                    if (message.generatedImages?.length && message.generatedImages[0]?.url) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.generatedImages[0].url, message.content);
+                      return;
+                    }
+                    // 其次检查用户上传的图片
+                    if (isUser && message.images?.length && message.images[0]) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.images[0], message.content);
+                      return;
+                    }
+                  }
+                  
+                  // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
                     toast.success('已复制到剪贴板');
@@ -5656,6 +5779,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 title="重新发送"
               >
                 <RefreshCw size={12} />
+              </button>
+            )}
+            {/* 删除按钮 - 只在对话模式下显示，用户消息和AI消息都显示，但不显示在欢迎消息和system消息上 */}
+            {onDelete && currentMode === 'chat' && !isWelcomeMessage && !isSystem && (
+              <button
+                onClick={() => onDelete(message.id)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title={t?.deleteMessage || '删除消息'}
+              >
+                <Trash2 size={12} />
               </button>
             )}
           </div>

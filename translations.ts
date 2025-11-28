@@ -45,6 +45,7 @@ interface Translation {
       all: string;
       reset: string;
       hideFilters: string;
+      showFilters: string;
     };
     display: {
       currency: string;
@@ -59,7 +60,77 @@ interface Translation {
         calculate: string;
         chat: string;
       };
-    }
+    };
+    compare: {
+      button: string;
+      buttonShort: string;
+      title: string;
+      subtitle: string;
+      modelLabel: string;
+      searchPlaceholder: string;
+      noResults: string;
+      selectAtLeastOne: string;
+      compareFields: {
+        provider: string;
+        inputPrice: string;
+        outputPrice: string;
+        contextLength: string;
+        billingType: string;
+        tags: string;
+        description: string;
+      };
+      tableHeader: string;
+      selectedCount: string;
+      clearSelection: string;
+      finishCompare: string;
+      loading: string;
+      noModels: string;
+      noMatchModels: string;
+      billingTypes: {
+        payPerUse: string;
+        payPerCall: string;
+        payPerResource: string;
+        payPerSecond: string;
+        payPerMultimodal: string;
+        payPerImage: string;
+        unknown: string;
+      };
+    };
+    detail: {
+      title: string;
+      type: string;
+      pricing: string;
+      priceDetails: string;
+      priceTable: string;
+      audioOptions: string;
+      noAudio: string;
+      withAudio: string;
+      resolutionTable: string;
+      singleSecondPrice: string;
+      singleCallPrice: string;
+      singleImagePrice: string;
+      input: string;
+      output: string;
+      cachePrice: string;
+      cacheWrite: string;
+      cacheRead: string;
+      modelDescription: string;
+      capabilityTags: string;
+      useForChat: string;
+      useForImage: string;
+      useForVideo: string;
+      noDescription: string;
+      exampleCost: string;
+      imageEditCost: string;
+      tokenTable: string;
+      quality: string;
+      tokenConsumption: string;
+    };
+    pagination: {
+      total: string;
+      page: string;
+      perPage: string;
+    };
   };
   createPage: {
     greeting: string;
@@ -765,6 +836,18 @@ interface Translation {
       price: string;
     };
     fetchError: string;
+    metrics: {
+      intelligence: string;
+      coding: string;
+      math: string;
+      speed: string;
+    };
+    best: string;
+    allModels: string;
+    bestIndicator: string;
+    showMore: string;
+    collapse: string;
+    top10: string;
   };
   chatPage: {
     settingsTitle: string;
@@ -1446,6 +1529,7 @@ export const translations: Record<string, Translation> = {
         all: 'All',
         reset: 'Reset',
         hideFilters: 'Hide Filters',
+        showFilters: 'Show Filters',
       },
       display: {
         currency: 'Currency',
@@ -1460,7 +1544,77 @@ export const translations: Record<string, Translation> = {
           calculate: 'Calculate',
           chat: 'Chat',
         }
-      }
+      },
+      compare: {
+        button: 'Model Compare',
+        buttonShort: 'Compare',
+        title: 'Model Comparison',
+        subtitle: 'Select up to 3 models for comparison analysis',
+        modelLabel: 'Model',
+        searchPlaceholder: 'Search and select model...',
+        noResults: 'No matching models found',
+        selectAtLeastOne: 'Please select at least one model to compare',
+        compareFields: {
+          provider: 'Provider',
+          inputPrice: 'Input Price',
+          outputPrice: 'Output Price',
+          contextLength: 'Context Length',
+          billingType: 'Billing Type',
+          tags: 'Tags',
+          description: 'Description',
+        },
+        tableHeader: 'Comparison Item',
+        selectedCount: 'Selected',
+        clearSelection: 'Clear Selection',
+        finishCompare: 'Finish Comparison',
+        loading: 'Loading model plaza...',
+        noModels: 'No model data available',
+        noMatchModels: 'No matching models found',
+        billingTypes: {
+          payPerUse: 'Pay per Use',
+          payPerCall: 'Pay per Call',
+          payPerResource: 'Pay per Resource',
+          payPerSecond: 'Pay per Second',
+          payPerMultimodal: 'Pay per Multimodal',
+          payPerImage: 'Pay per Image',
+          unknown: 'Unknown',
+        },
+      },
+      detail: {
+        title: 'Model Details',
+        type: 'Type',
+        pricing: 'Pricing',
+        priceDetails: 'Price Details',
+        priceTable: 'Price Table',
+        audioOptions: 'Audio Options Price',
+        noAudio: 'No Audio:',
+        withAudio: 'With Audio:',
+        resolutionTable: 'Resolution Price Table',
+        singleSecondPrice: 'Single Second Price:',
+        singleCallPrice: 'Single Call Price:',
+        singleImagePrice: 'Single Image Price:',
+        input: 'Input:',
+        output: 'Output:',
+        cachePrice: 'Cache Price',
+        cacheWrite: 'Cache Write:',
+        cacheRead: 'Cache Read:',
+        modelDescription: 'Model Description',
+        capabilityTags: 'Capability Tags',
+        useForChat: 'Use this model for chat',
+        useForImage: 'Use this model for image generation',
+        useForVideo: 'Use this model for video generation',
+        noDescription: 'No description available',
+        exampleCost: 'Single Image Cost Example (Text to Image)',
+        imageEditCost: 'Single Image Cost Example (Image to Image)',
+        tokenTable: 'Token Consumption Table',
+        quality: 'Quality',
+        tokenConsumption: 'Token Consumption Table',
+      },
+      pagination: {
+        total: 'Total',
+        page: 'Page',
+        perPage: '/ page',
+      },
     },
     createPage: {
       greeting: 'Hi! What do you want to',
@@ -1689,7 +1843,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Generating your masterpiece...',
-        progressStatusShort: 'Generating'
+        progressStatusShort: 'Generating',
+        messages: {
+          requestFailed: 'Request failed, please try again later'
+        }
       },
       digitalHuman: {
         title: 'Digital Human Video Creation',
@@ -2692,7 +2849,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Speed',
         price: 'Price (1M)'
       },
-      fetchError: 'Failed to load ranking data'
+      fetchError: 'Failed to load ranking data',
+      metrics: {
+        intelligence: 'Intelligence',
+        coding: 'Coding',
+        math: 'Math',
+        speed: 'Speed'
+      },
+      best: 'Best',
+      allModels: 'All Models',
+      bestIndicator: '(Crown indicates best in this metric)',
+      showMore: 'Show More',
+      collapse: 'Collapse',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Dialogue Settings',
@@ -3469,6 +3638,7 @@ export const translations: Record<string, Translation> = {
         all: '全部',
         reset: '重置',
         hideFilters: '隐藏筛选',
+        showFilters: '显示筛选',
       },
       display: {
         currency: '货币:',
@@ -3483,7 +3653,77 @@ export const translations: Record<string, Translation> = {
           calculate: '按量计费',
           chat: '对话',
         }
-      }
+      },
+      compare: {
+        button: '模型对比',
+        buttonShort: '对比',
+        title: '模型对比',
+        subtitle: '选择最多3个模型进行对比分析',
+        modelLabel: '模型',
+        searchPlaceholder: '搜索并选择模型...',
+        noResults: '没有找到匹配的模型',
+        selectAtLeastOne: '请选择至少一个模型进行对比',
+        compareFields: {
+          provider: '供应商',
+          inputPrice: '输入价格',
+          outputPrice: '输出价格',
+          contextLength: '上下文长度',
+          billingType: '计费类型',
+          tags: '标签',
+          description: '描述',
+        },
+        tableHeader: '对比项',
+        selectedCount: '已选择',
+        clearSelection: '清空选择',
+        finishCompare: '完成对比',
+        loading: '正在加载模型广场...',
+        noModels: '暂无模型数据',
+        noMatchModels: '没有找到匹配的模型',
+        billingTypes: {
+          payPerUse: '按量计费',
+          payPerCall: '按次计费',
+          payPerResource: '按资源类型计费',
+          payPerSecond: '按秒计费',
+          payPerMultimodal: '按全模态计费',
+          payPerImage: '按张计费',
+          unknown: '未知',
+        },
+      },
+      detail: {
+        title: '模型详情',
+        type: '类型',
+        pricing: '定价',
+        priceDetails: '价格详情',
+        priceTable: '价格表',
+        audioOptions: '音频选项价格',
+        noAudio: '不含音频:',
+        withAudio: '含音频:',
+        resolutionTable: '分辨率价格表',
+        singleSecondPrice: '单秒价格:',
+        singleCallPrice: '单次调用:',
+        singleImagePrice: '单张生成:',
+        input: '输入:',
+        output: '输出:',
+        cachePrice: '缓存价格',
+        cacheWrite: '缓存写入:',
+        cacheRead: '缓存读取:',
+        modelDescription: '模型描述',
+        capabilityTags: '能力标签',
+        useForChat: '使用该模型对话',
+        useForImage: '使用该模型生成图片',
+        useForVideo: '使用该模型生成视频',
+        noDescription: '暂无描述',
+        exampleCost: '单张成本示例 (文生图)',
+        imageEditCost: '单张成本示例 (图生图)',
+        tokenTable: 'Token 消耗表',
+        quality: '质量',
+        tokenConsumption: 'Token 消耗表',
+      },
+      pagination: {
+        total: '共',
+        page: '第',
+        perPage: '/ 页',
+      },
     },
     createPage: {
       greeting: 'Hi! 今天想',
@@ -3713,7 +3953,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: '正在生成您的杰作...',
-        progressStatusShort: '生成中'
+        progressStatusShort: '生成中',
+        messages: {
+          requestFailed: '请求失败, 请稍后重试'
+        }
       },
       digitalHuman: {
         title: '数字人视频创作',
@@ -4716,7 +4959,19 @@ export const translations: Record<string, Translation> = {
         speed: '速度',
         price: '价格（1M）'
       },
-      fetchError: '排行榜数据加载失败'
+      fetchError: '排行榜数据加载失败',
+      metrics: {
+        intelligence: '智能指数',
+        coding: '编码能力',
+        math: '数学能力',
+        speed: '推理速度'
+      },
+      best: '最佳',
+      allModels: '全部模型',
+      bestIndicator: '（表示该指标最佳）',
+      showMore: '展示更多',
+      collapse: '收起',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: '对话设置',
@@ -5526,6 +5781,7 @@ export const translations: Record<string, Translation> = {
         all: 'Semua',
         reset: 'Reset',
         hideFilters: 'Sembunyikan Filter',
+        showFilters: 'Tampilkan Filter',
       },
       display: {
         currency: 'Mata Uang',
@@ -5540,7 +5796,77 @@ export const translations: Record<string, Translation> = {
           calculate: 'Hitung',
           chat: 'Chat',
         }
-      }
+      },
+      compare: {
+        button: 'Bandingkan Model',
+        buttonShort: 'Bandingkan',
+        title: 'Perbandingan Model',
+        subtitle: 'Pilih hingga 3 model untuk analisis perbandingan',
+        modelLabel: 'Model',
+        searchPlaceholder: 'Cari dan pilih model...',
+        noResults: 'Tidak ada model yang cocok ditemukan',
+        selectAtLeastOne: 'Silakan pilih setidaknya satu model untuk dibandingkan',
+        compareFields: {
+          provider: 'Penyedia',
+          inputPrice: 'Harga Input',
+          outputPrice: 'Harga Output',
+          contextLength: 'Panjang Konteks',
+          billingType: 'Jenis Penagihan',
+          tags: 'Tag',
+          description: 'Deskripsi',
+        },
+        tableHeader: 'Item Perbandingan',
+        selectedCount: 'Dipilih',
+        clearSelection: 'Hapus Pilihan',
+        finishCompare: 'Selesai Membandingkan',
+        loading: 'Memuat plaza model...',
+        noModels: 'Tidak ada data model tersedia',
+        noMatchModels: 'Tidak ada model yang cocok ditemukan',
+        billingTypes: {
+          payPerUse: 'Bayar per Penggunaan',
+          payPerCall: 'Bayar per Panggilan',
+          payPerResource: 'Bayar per Sumber Daya',
+          payPerSecond: 'Bayar per Detik',
+          payPerMultimodal: 'Bayar per Multimodal',
+          payPerImage: 'Bayar per Gambar',
+          unknown: 'Tidak Diketahui',
+        },
+      },
+      detail: {
+        title: 'Detail Model',
+        type: 'Jenis',
+        pricing: 'Harga',
+        priceDetails: 'Detail Harga',
+        priceTable: 'Tabel Harga',
+        audioOptions: 'Harga Opsi Audio',
+        noAudio: 'Tanpa Audio:',
+        withAudio: 'Dengan Audio:',
+        resolutionTable: 'Tabel Harga Resolusi',
+        singleSecondPrice: 'Harga Per Detik:',
+        singleCallPrice: 'Harga Per Panggilan:',
+        singleImagePrice: 'Harga Per Gambar:',
+        input: 'Input:',
+        output: 'Output:',
+        cachePrice: 'Harga Cache',
+        cacheWrite: 'Tulis Cache:',
+        cacheRead: 'Baca Cache:',
+        modelDescription: 'Deskripsi Model',
+        capabilityTags: 'Tag Kemampuan',
+        useForChat: 'Gunakan model ini untuk chat',
+        useForImage: 'Gunakan model ini untuk pembuatan gambar',
+        useForVideo: 'Gunakan model ini untuk pembuatan video',
+        noDescription: 'Tidak ada deskripsi tersedia',
+        exampleCost: 'Contoh Biaya Gambar Tunggal (Teks ke Gambar)',
+        imageEditCost: 'Contoh Biaya Gambar Tunggal (Gambar ke Gambar)',
+        tokenTable: 'Tabel Konsumsi Token',
+        quality: 'Kualitas',
+        tokenConsumption: 'Tabel Konsumsi Token',
+      },
+      pagination: {
+        total: 'Total',
+        page: 'Halaman',
+        perPage: '/ halaman',
+      },
     },
     createPage: {
       greeting: 'Hai! Apa yang ingin Anda',
@@ -5769,7 +6095,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Membuat karya agung Anda...',
-        progressStatusShort: 'Membuat'
+        progressStatusShort: 'Membuat',
+        messages: {
+          requestFailed: 'Permintaan gagal, silakan coba lagi nanti'
+        }
       },
       digitalHuman: {
         title: 'Pembuatan Video Manusia Digital',
@@ -6311,7 +6640,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Kecepatan',
         price: 'Harga (1M)'
       },
-      fetchError: 'Gagal memuat data peringkat'
+      fetchError: 'Gagal memuat data peringkat',
+      metrics: {
+        intelligence: 'Kecerdasan',
+        coding: 'Pemrograman',
+        math: 'Matematika',
+        speed: 'Kecepatan'
+      },
+      best: 'Terbaik',
+      allModels: 'Semua Model',
+      bestIndicator: '(Mahkota menunjukkan yang terbaik dalam metrik ini)',
+      showMore: 'Tampilkan Lebih Banyak',
+      collapse: 'Tutup',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Pengaturan Dialog',

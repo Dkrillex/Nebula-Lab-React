@@ -11,6 +11,8 @@ import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
 import { TOOLS_DATA } from '../pages/Create/data';
 import { showAuthModal } from '../lib/authModalManager';
+import { getStorageKey } from '../utils/storageNamespace';
+import { useVersionWatcher } from '../hooks/useVersionWatcher';
 
 import MobileSidebar from './MobileSidebar';
 
@@ -20,7 +22,7 @@ const Layout: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   // 初始化时从 localStorage 读取语言，如果没有则默认为 'zh'
   const [lang, setLang] = useState<Language>(() => {
-    const savedLang = localStorage.getItem('language') as Language;
+    const savedLang = localStorage.getItem(getStorageKey('language')) as Language;
     return (savedLang === 'en' || savedLang === 'id' || savedLang === 'zh') ? savedLang : 'zh';
   });
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -29,10 +31,12 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
+  const { hasUpdate, reload } = useVersionWatcher();
+  const [isVersionIgnored, setIsVersionIgnored] = useState(false);
 
   // 同步语言到 localStorage，确保 request.tsx 中的 getLanguage() 能读取到最新值
   useEffect(() => {
-    localStorage.setItem('language', lang);
+    localStorage.setItem(getStorageKey('language'), lang);
   }, [lang]);
 
   // Theme handling
@@ -349,6 +353,18 @@ const Layout: React.FC = () => {
         onCancel={() => {
           clearFirstLoginInfo();
         }}
+        type="info"
+      />
+
+      {/* 版本更新提示 */}
+      <ConfirmDialog
+        isOpen={hasUpdate && !isVersionIgnored}
+        title="版本更新提示"
+        message="检测到系统有新版本发布，为保证功能正常使用，请刷新页面。"
+        confirmText="立即刷新"
+        cancelText="稍后"
+        onConfirm={reload}
+        onCancel={() => setIsVersionIgnored(true)}
         type="info"
       />
 

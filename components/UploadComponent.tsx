@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 import { showAuthModal } from '../lib/authModalManager';
 
 export interface UploadComponentRef {
-  triggerUpload: () => Promise<void>;
+  triggerUpload: () => Promise<UploadedFile | null>;
   clear: () => void;
   file: File | null;
 }
@@ -81,8 +81,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   useImperativeHandle(ref, () => ({
     triggerUpload: async () => {
       if (file && !uploading) {
-        await uploadFile(file);
+        return await uploadFile(file);
       }
+      return null;
     },
     clear: () => {
         setFile(null);
@@ -199,7 +200,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     await processFile(selectedFile!);
   };
 
-  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string) => {
+  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string): Promise<UploadedFile | null> => {
     console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
     try {
@@ -285,10 +286,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       } else {
         console.warn('onUploadComplete 回调未定义');
       }
+      return uploadedFile;
     } catch (error: any) {
       console.error('Upload error:', error);
       const err = error instanceof Error ? error : new Error('文件上传失败');
       onError ? onError(err) : toast.error(err.message);
+      return null;
     } finally {
       setUploading(false);
     }

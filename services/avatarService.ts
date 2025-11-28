@@ -514,7 +514,7 @@ export const avatarService = {
    * 获取语音列表（营销视频）
    * Endpoint: GET /tp/v1/VoiceQuery
    */
-  getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string }) => {
+  getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string; age?: string }) => {
     return request.get<{ result: { data: Voice[]; total: number } }>(
       '/tp/v1/VoiceQuery',
       { params }
