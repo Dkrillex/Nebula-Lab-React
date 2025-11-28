@@ -59,7 +59,7 @@ export interface VideoGenerateSubmitResponse {
 export interface VideoGenerateQueryResponse {
   task_id?: string;
   status: string; // 'succeeded' | 'failed' | 'processing' | 'pending' | 'queued' | 'in_progress'
-    video_url?: string;
+  video_url?: string;
   url?: string; // 有些模型使用 url 而不是 video_url
   format?: string; // 视频格式（如 mp4）
   error?: string | {
@@ -67,13 +67,14 @@ export interface VideoGenerateQueryResponse {
     message?: string;
     type?: string;
   };
-    progress?: number;
+  progress?: number;
   metadata?: {
     id?: string;
     model?: string;
     status?: string;
     seconds?: number | string;
     n_seconds?: number;
+    size?: string; // Added size
     width?: number;
     height?: number;
     prompt?: string;
@@ -100,7 +101,7 @@ export const videoGenerateService = {
    */
   submitVideoTask: async (data: VideoGenerateRequest): Promise<VideoGenerateSubmitResponse> => {
     const { user } = useAuthStore.getState();
-    
+
     const requestData = {
       ...data,
       user_id: user?.nebulaApiId || '',
@@ -113,12 +114,33 @@ export const videoGenerateService = {
   },
 
   /**
+   * 下载 Sora 视频
+   * Endpoint: GET /ads/playground/video/generations/download?id={videoId}&userId={userId}
+   */
+  downloadSoraVideo: async (taskId: string, genId?: string, signal?: AbortSignal): Promise<any> => {
+    const { user } = useAuthStore.getState();
+
+    // 对于 Sora2，taskId 即为 video_id，也就是接口参数 id
+    const videoId = taskId;
+
+    return request.get<any>('/ads/playground/video/generations/download', {
+      params: {
+        id: videoId,
+        userId: user?.nebulaApiId || '',
+      },
+      timeout: 120000, // 下载可能比较慢，设置较长超时(2分钟)
+      signal, // 支持 AbortSignal
+      _skipErrorDisplay: true, // 跳过默认错误提示
+    });
+  },
+
+  /**
    * 查询视频生成任务状态
    * Endpoint: GET /ads/playground/video/generations?userId={userId}&taskId={taskId}
    */
   queryVideoTask: async (taskId: string, signal?: AbortSignal): Promise<VideoGenerateQueryResponse> => {
     const { user } = useAuthStore.getState();
-    
+
     return request.get<VideoGenerateQueryResponse>('/ads/playground/video/generations', {
       params: {
         userId: user?.nebulaApiId || '',

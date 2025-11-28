@@ -52,6 +52,7 @@ interface ExtendedChatMessage extends ChatMessage {
     id: string;
     url: string;
     taskId?: string;
+    genId?: string;
     prompt?: string;
     timestamp: number;
     status?: string; // 'processing' | 'succeeded' | 'failed'
@@ -82,6 +83,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [currentMode, setCurrentMode] = useState<Mode>('chat');
   // 用于标记从图生视频跳转过来的图片，避免被自动清除
   const imageToVideoImageRef = useRef<string | null>(null);
+  // 用于记录已处理的URL model_name 参数，避免重复处理
+  const processedModelNameRef = useRef<string | null>(null);
   
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([
     {
@@ -446,6 +449,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   useEffect(() => {
     const urlModelName = searchParams.get('model_name');
     if (!urlModelName) return;
+
+    // 如果该 model_name 已经被处理过，不再重复处理
+    if (processedModelNameRef.current === urlModelName) {
+      return;
+    }
 
     // 根据当前模式选择对应的模型列表
     let currentModels: ModelsVO[] = [];
@@ -3720,23 +3728,160 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
             case 'succeeded': {
               console.log('✅ 视频生成成功:', result);
-            setProgress(100);
+              
+              let finalVideoUrl = '';
+
+              // 检查是否是 sora-2 模型（需要下载 base64）
+              if (selectedModel === 'sora-2') {
+                // sora-2 模型：轮询完成后进入下载阶段
+                setProgress(100);
+                
+                console.log('🎬 检测到 sora-2 模型，开始下载视频...');
+                console.log('📦 任务结果:', result);
+
+                try {
+                  // Sora 2: 从返回的 task_id 或 metadata.id 获取 video_id
+                  const videoId = result.task_id || result.metadata?.id || taskId;
+                  console.log('🎥 使用 video_id 下载:', videoId);
+                  
+                  // 使用 video_id 作为 genId 下载
+                  const genId = videoId;
+                  
+                  console.log('📥 下载参数:', { taskId, genId });
+                  
+                  // 调用下载接口获取 base64 视频
+                  let downloadResult: any;
+                  try {
+                    downloadResult = await videoGenerateService.downloadSoraVideo(taskId, genId, abortControllerRef.current?.signal);
+                  } catch (err: any) {
+                    if (err?.name === 'AbortError') {
+                      isPolling = false;
+                      return;
+                    }
+                    throw err;
+                  }
+                  
+                  if (downloadResult && downloadResult.data_url) {
+                    finalVideoUrl = downloadResult.data_url;
+                    console.log('✅ Sora 视频下载成功，使用 data_url');
+                  } else {
+                    throw new Error('下载的视频数据格式不正确');
+                  }
+
+                  // Sora-2 视频信息更新到消息中
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages[newMessages.length - 1];
+                    if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
+                      const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                      if (video) {
+                        video.url = finalVideoUrl;
+                        video.status = 'succeeded';
+                        video.genId = videoId; // Sora 2: 使用 video_id
+                      }
+                      lastMsg.content = '视频生成完成！';
+                    }
+                    return newMessages;
+                  });
+
+                } catch (downloadError: any) {
+                   console.error('❌ Sora 视频下载失败:', downloadError);
+                   
+                   // 友好的错误提示
+                   const errorMsg = String(downloadError?.message || downloadError || '');
+                   
+                   // 构造错误信息
+                   const errorInfo = handleVideoError({ 
+                     message: errorMsg.includes('下载服务异常') ? '视频已生成成功，但下载服务暂时异常，请稍后刷新页面重试或联系管理员' :
+                              (errorMsg.includes('timeout') || errorMsg.includes('超时') || errorMsg.includes('Network')) ? '视频已生成成功，但下载时网络连接失败，请检查网络后重试' :
+                              '视频下载遇到问题，请稍后重试'
+                   });
+                   
+                   setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages[newMessages.length - 1];
+                    if (lastMsg && lastMsg.id === aiMessageId) {
+                        lastMsg.content = errorInfo.message;
+                        lastMsg.isHtml = errorInfo.isHtml; // Ensure HTML flag is set if needed
+                        if (lastMsg.generatedVideos) {
+                            const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                            if (video) video.status = 'failed';
+                        }
+                    }
+                    return newMessages;
+                   });
+                   
+                   isPolling = false;
+                   setProgress(0);
+                   return;
+                }
+              } else {
+                 // Veo 和其他模型（非 sora-2）直接使用返回的 URL（data URI 或 HTTP URL）
+                 const { video_url, url } = result;
+                 finalVideoUrl = video_url || url || '';
+
+                 if (finalVideoUrl) {
+                   setProgress(100);
+                   
+                   setMessages(prev => {
+                      const newMessages = [...prev];
+                      const lastMsg = newMessages[newMessages.length - 1];
+                      if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
+                        const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                        if (video) {
+                          video.url = finalVideoUrl;
+                          video.status = 'succeeded';
+                        }
+                        lastMsg.content = '视频生成完成';
+                      }
+                      return newMessages;
+                   });
+                 } else {
+                   throw new Error('任务成功但未返回视频URL');
+                 }
+              }
+
               isPolling = false;
 
-              // 更新消息
-            setMessages(prev => {
-              const newMessages = [...prev];
-              const lastMsg = newMessages[newMessages.length - 1];
-              if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
-                const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
-                if (video) {
-                    video.url = finalVideoUrl || '';
-                  video.status = 'succeeded';
+              // 显示任务元数据 (Console log)
+              if (result.metadata) {
+                const videoId = result.task_id || result.metadata?.id || taskId;
+                const genId = result.metadata.generations?.[0]?.id || videoId;
+                
+                const actualSeconds = result.metadata.seconds
+                  ? typeof result.metadata.seconds === 'string'
+                    ? parseInt(result.metadata.seconds)
+                    : result.metadata.seconds
+                  : result.metadata.n_seconds;
+                  
+                console.log('📊 生成统计:', {
+                  task_id: taskId,
+                  video_id: videoId,
+                  gen_id: genId,
+                  model: result.metadata.model,
+                  status: result.metadata.status,
+                  seconds: actualSeconds,
+                  size: result.metadata.size,
+                  n_seconds: result.metadata.n_seconds,
+                  width: result.metadata.width,
+                  height: result.metadata.height,
+                  prompt: result.metadata.prompt,
+                  resolution: result.metadata.resolution,
+                  duration: result.metadata.duration,
+                  ratio: result.metadata.ratio,
+                  framespersecond: result.metadata.framespersecond,
+                });
+                
+                 // 警告：如果请求时长与实际时长不符
+                const expectedSeconds = actualSeconds || result.metadata.n_seconds;
+                if (expectedSeconds && videoDuration && expectedSeconds !== videoDuration) {
+                   console.warn('⚠️ 时长不匹配:', {
+                    请求时长: `${videoDuration}秒`,
+                    实际时长: `${expectedSeconds}秒`,
+                    可能原因: 'API限制、remix特殊处理或后端调整',
+                  });
                 }
-                lastMsg.content = '视频生成完成';
               }
-              return newMessages;
-            });
 
               // 视频生成成功后自动保存历史记录
               // 使用 setTimeout 确保消息状态已更新后再保存
@@ -3746,9 +3891,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   console.error('❌ 视频生成后自动保存失败:', error);
                   // 静默失败，不影响用户体验
                 });
+                scrollToBottom();
               }, 500);
             
-            return;
+              return;
             }
 
             case 'failed': {
