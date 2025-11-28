@@ -57,7 +57,7 @@ export interface PollingController {
     isRunning: () => boolean;
 }
 
-const defaultPendingStatuses = ['running', 'init', 'processing', 'pending', 'in_queue', 'queued'];
+const defaultPendingStatuses = ['running', 'init', 'processing', 'pending', 'in_queue', 'queued', 'generating'];
 const defaultSuccessStatuses = ['success', 'succeeded', 'completed', 'done', 'finished'];
 const defaultFailureStatuses = ['fail', 'failed', 'error', 'timeout', 'expired'];
 
@@ -70,6 +70,8 @@ const defaultParseStatus = (response: any): PollingStatus =>
 
 const defaultIsPending = (status?: PollingStatus) => {
     if (!status) return true;
+    console.log(status, defaultPendingStatuses.includes(String(status).toLowerCase()));
+
     return defaultPendingStatuses.includes(String(status).toLowerCase());
 };
 
@@ -79,7 +81,10 @@ const defaultIsSuccess = (status?: PollingStatus) => {
 };
 
 const defaultIsFailure = (status?: PollingStatus) => {
+    console.log(status);
     if (!status) return false;
+
+
     return defaultFailureStatuses.includes(String(status).toLowerCase());
 };
 
@@ -209,7 +214,10 @@ export const createTaskPoller = <TResponse = any>(
             }
 
             if (isPending(status, response)) {
+
+
                 progress = Math.min(99, simulator(progress));
+                console.log('---------', progress);
                 onProgress?.(progress, ctx);
             }
         } catch (error) {

@@ -380,7 +380,6 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const startPolling = useCallback((taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
     if (!taskId) return;
     stopActivePoller();
-    setIsGenerating(true);
     setProgress(0);
 
     const extractResponseData = (res: any) => res.data || (res as any).result || res;
@@ -497,7 +496,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     }
 
     stopActivePoller();
-
+    setIsGenerating(true);
     try {
       let taskId = '';
       
