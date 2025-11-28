@@ -347,9 +347,9 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     };
   }, []);
 
-  // 获取视频帧率（默认30fps）
+  // 获取视频帧率（默认24.2fps）
   const getVideoFrameRate = useCallback((): number => {
-    if (!videoRef.current) return 30;
+    if (!videoRef.current) return 24;
     
     // 尝试从视频播放质量获取帧率
     if (typeof videoRef.current.getVideoPlaybackQuality === 'function') {
@@ -362,7 +362,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       }
     }
     
-    return 30;
+    return 24;
   }, []);
 
   // 根据时间计算帧索引
