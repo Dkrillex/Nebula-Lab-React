@@ -151,7 +151,7 @@ export const createTaskPoller = <TResponse = any>(
         onTimeout,
         onError,
         progressSimulator,
-        progressMode = 'medium',
+        progressMode = 'fast',
         initialProgress = 0,
         immediate = true,
     } = options;

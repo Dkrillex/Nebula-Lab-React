@@ -542,7 +542,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         stopTaskPolling();
       },
       intervalMs: 10_000,
-      progressMode: 'medium',
+      progressMode: 'fast',
       continueOnError: () => false,
     });
 

@@ -461,7 +461,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
         stopActivePoller();
       },
       intervalMs: 10_000,
-      progressMode: 'medium',
+      progressMode: 'fast',
       continueOnError: () => false,
     });
 

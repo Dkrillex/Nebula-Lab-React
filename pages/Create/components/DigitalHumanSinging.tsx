@@ -320,7 +320,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                    showConfirmButton={false}
                    initialUrl={imageFile?.url || ''}
                    uploadType="oss"
-                   className="max-h-[500px] w-[100%] aspect-[9/16]"
+                   className="max-h-[300px] w-[100%] aspect-[9/16]"
                    showPreview={true}
                    onClear={() => setImageFile(null)}
                >
