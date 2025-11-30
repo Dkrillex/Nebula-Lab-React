@@ -1569,6 +1569,7 @@ interface Translation {
       deleteTeamFailed: string;
       inviteLinkCopied: string;
       inviteLinkTip: string;
+      inviteLinkTipText: string;
       selectMembers: string;
       addMembersSuccess: string;
       addMembersFailed: string;
@@ -3796,6 +3797,7 @@ export const translations: Record<string, Translation> = {
         deleteTeamFailed: 'Failed to delete team',
         inviteLinkCopied: 'Invite link copied to clipboard',
         inviteLinkTip: 'Invite Link: {url}\n\nTip: If the invited account is currently logged in, please log out first before using the invite link to join the team.',
+        inviteLinkTipText: 'If the invited account is currently logged in, please log out first before using the invite link to join the team.',
         selectMembers: 'Please select members to add',
         addMembersSuccess: 'Successfully added {count} members',
         addMembersFailed: 'Failed to add members',
@@ -6111,6 +6113,7 @@ export const translations: Record<string, Translation> = {
         deleteTeamFailed: '删除团队失败',
         inviteLinkCopied: '邀请链接已复制到剪贴板',
         inviteLinkTip: '邀请链接：{url}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。',
+        inviteLinkTipText: '提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。',
         selectMembers: '请选择要添加的成员',
         addMembersSuccess: '成功添加 {count} 个成员',
         addMembersFailed: '添加成员失败',
@@ -7875,6 +7878,7 @@ export const translations: Record<string, Translation> = {
         deleteTeamFailed: 'Gagal menghapus tim',
         inviteLinkCopied: 'Tautan undangan disalin ke clipboard',
         inviteLinkTip: 'Tautan Undangan: {url}\n\nTip: Jika akun yang diundang saat ini masuk, silakan keluar terlebih dahulu sebelum menggunakan tautan undangan untuk bergabung dengan tim.',
+        inviteLinkTipText: 'Tip: Jika akun yang diundang saat ini masuk, silakan keluar terlebih dahulu sebelum menggunakan tautan undangan untuk bergabung dengan tim.',
         selectMembers: 'Silakan pilih anggota untuk ditambahkan',
         addMembersSuccess: 'Berhasil menambahkan {count} anggota',
         addMembersFailed: 'Gagal menambahkan anggota',

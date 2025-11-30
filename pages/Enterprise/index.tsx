@@ -542,7 +542,7 @@ const EnterprisePage: React.FC = () => {
 
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      toast.success('邀请链接已复制到剪贴板');
+      toast.success(t.messages.inviteLinkCopied);
       setInviteTypeModalVisible(false);
     } catch (error) {
       toast(t.messages.inviteLinkTip.replace('{url}', inviteUrl), { duration: 5000 });
@@ -561,7 +561,7 @@ const EnterprisePage: React.FC = () => {
     }
 
     // 添加提示信息到链接后面（作为注释说明）
-    const inviteUrlWithTip = t.messages.inviteLinkTip.replace('{url}', inviteUrl);
+    const inviteUrlWithTip = `${inviteUrl}\n\n${t.messages.inviteLinkTipText}`;
     
     try {
       await navigator.clipboard.writeText(inviteUrlWithTip);
