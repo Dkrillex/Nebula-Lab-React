@@ -55,7 +55,9 @@ export const threeDModelService = {
    * Endpoint: POST /aiTool/v1/threeDTask
    */
   createThreeDTask: (data: ThreeDTaskRequest) => {
-    return request.post<ApiResponse<ThreeDTaskResponse>>('/aiTool/v1/threeDTask', data);
+    return request.post<ApiResponse<ThreeDTaskResponse>>('/aiTool/v1/threeDTask', data, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -64,7 +66,8 @@ export const threeDModelService = {
    */
   queryThreeDTask: (taskId: string) => {
     return request.get<ApiResponse<ThreeDTaskResult>>('/aiTool/v1/threeDTaskQuery', {
-      params: { taskId }
+      params: { taskId },
+      errorMessageMode: 'message',
     });
   },
 
@@ -73,7 +76,9 @@ export const threeDModelService = {
    * Endpoint: POST /ads/adsAssets/download
    */
   downloadAssets: (data: AdsAssetsDownloadRequest) => {
-    return request.post<ApiResponse<AdsAssetsDownloadResponse>>('/ads/adsAssets/download', data);
+    return request.post<ApiResponse<AdsAssetsDownloadResponse>>('/ads/adsAssets/download', data, {
+      errorMessageMode: 'message',
+    });
   }
 };
 
