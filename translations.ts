@@ -821,6 +821,18 @@ interface Translation {
         unknownError: string;
       };
     };
+    addMaterialModal: {
+      messages: {
+        selectTeamFirst: string;
+        sharedFolderRequired: string;
+        enterName: string;
+        uploadFileOrLink: string;
+        selectTeam: string;
+        selectSharedFolder: string;
+        uploadingFile: string;
+        uploadingMaterial: string;
+      };
+    };
   };
   rankPage: {
     title: string;
@@ -2341,6 +2353,18 @@ export const translations: Record<string, Translation> = {
           uploadReferenceImage: 'Please upload reference image',
           generateFailed: 'Generation failed: No valid image URL returned',
           unknownError: 'Unknown error occurred'
+        }
+      },
+      addMaterialModal: {
+        messages: {
+          selectTeamFirst: 'Please select a team first',
+          sharedFolderRequired: 'Shared files must select a folder, cannot save to root directory',
+          enterName: 'Please enter name',
+          uploadFileOrLink: 'Please upload material file or ensure material link exists',
+          selectTeam: 'Please select team',
+          selectSharedFolder: 'Please select shared folder (cannot save to root directory)',
+          uploadingFile: 'Uploading file...',
+          uploadingMaterial: 'Uploading material...'
         }
       },
       workshop: {
@@ -4453,6 +4477,18 @@ export const translations: Record<string, Translation> = {
           unknownError: '发生未知错误'
         }
       },
+      addMaterialModal: {
+        messages: {
+          selectTeamFirst: '请先选择团队',
+          sharedFolderRequired: '共享文件必须选择文件夹，不能保存到根目录',
+          enterName: '请输入名称',
+          uploadFileOrLink: '请上传素材文件或确保素材链接存在',
+          selectTeam: '请选择团队',
+          selectSharedFolder: '请选择共享文件夹（不能保存到根目录）',
+          uploadingFile: '正在上传文件...',
+          uploadingMaterial: '正在上传素材...'
+        }
+      },
       workshop: {
         title: '创作工坊',
         description: '我能帮你创造什么?',
@@ -6529,6 +6565,18 @@ export const translations: Record<string, Translation> = {
           uploadReferenceImage: 'Silakan unggah gambar referensi',
           generateFailed: 'Pembuatan gagal, silakan coba lagi',
           useImageFailed: 'Gagal menggunakan gambar sebagai input'
+        }
+      },
+      addMaterialModal: {
+        messages: {
+          selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
+          sharedFolderRequired: 'File bersama harus memilih folder, tidak dapat menyimpan ke direktori root',
+          enterName: 'Silakan masukkan nama',
+          uploadFileOrLink: 'Silakan unggah file materi atau pastikan tautan materi ada',
+          selectTeam: 'Silakan pilih tim',
+          selectSharedFolder: 'Silakan pilih folder bersama (tidak dapat menyimpan ke direktori root)',
+          uploadingFile: 'Mengunggah file...',
+          uploadingMaterial: 'Mengunggah materi...'
         }
       },
       workshop: {

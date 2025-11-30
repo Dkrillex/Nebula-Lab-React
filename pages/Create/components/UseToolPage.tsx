@@ -220,7 +220,8 @@ const UseToolPage: React.FC<UseToolPageProps> = () => {
       }
     } catch (err: any) {
       console.error(err);
-      setError(err.message || t.errors.unknownError);
+      // 错误消息已由后端返回的动态消息处理（通过 errorMessageMode: 'message'），避免重复提示
+      // 只保留页面状态重置，不设置错误消息
     } finally {
       setGenerating(false);
     }

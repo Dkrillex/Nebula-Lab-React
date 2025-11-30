@@ -10,6 +10,8 @@ import { dictService } from '../services/dictService';
 import { UploadedFile } from '../services/avatarService';
 import FolderSelectModal from './FolderSelectModal';
 import { formatDateForBackend } from '../utils/dateUtils';
+import { useAppOutletContext } from '../router/context';
+import { translations } from '../translations';
 
 
 interface AddMaterialModalProps {
@@ -37,6 +39,9 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
 }) => {
   const { user } = useAuthStore();
   const { dictCache, setDict, getDict } = useDictStore();
+  const { t: rootT } = useAppOutletContext();
+  // 获取多语言翻译，如果 context 中没有则使用默认中文翻译
+  const t = (rootT?.createPage as any)?.addMaterialModal || (translations['zh'].createPage as any).addMaterialModal;
   const [isFolderMode, setIsFolderMode] = useState(initialIsFolder);
   const [loading, setLoading] = useState(false);
   
@@ -220,7 +225,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
 
   const handleSelectFolder = (type: 'personal' | 'shared') => {
     if (type === 'shared' && !selectedTeamId) {
-      toast.error('请先选择团队');
+      toast.error(t?.messages?.selectTeamFirst || '请先选择团队');
       return;
     }
     setFolderSelectorType(type);
@@ -233,7 +238,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       setSelectedPersonalFolderName(folderName || '根目录');
     } else {
       if (!folderId) {
-         toast.error('共享文件必须选择文件夹，不能保存到根目录');
+         toast.error(t?.messages?.sharedFolderRequired || '共享文件必须选择文件夹，不能保存到根目录');
          return;
       }
       setSelectedFolderId(folderId);
@@ -245,12 +250,12 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   const handleSubmit = async () => {
     // Validation
     if (!formData.assetName) {
-      toast.error('请输入名称');
+      toast.error(t?.messages?.enterName || '请输入名称');
       return;
     }
     // Validate file upload for types that require files (only for new files, not editing)
     if (!isEdit && !isFolderMode && !formData.assetUrl && !selectedFile) {
-      toast.error('请上传素材文件或确保素材链接存在');
+      toast.error(t?.messages?.uploadFileOrLink || '请上传素材文件或确保素材链接存在');
         return;
     }
     
@@ -258,11 +263,11 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
     if (!isEdit && !initialFolderId) {
         if ((storageLocation === 'shared' || storageLocation === 'both')) {
              if (!selectedTeamId) {
-      toast.error('请选择团队');
+      toast.error(t?.messages?.selectTeam || '请选择团队');
       return;
              }
              if (!selectedFolderId) {
-                 toast.error('请选择共享文件夹（不能保存到根目录）');
+                 toast.error(t?.messages?.selectSharedFolder || '请选择共享文件夹（不能保存到根目录）');
                  return;
              }
         }
@@ -277,7 +282,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       // 如果有选中的文件但还没有上传到 OSS，先上传到 OSS
       if (selectedFile && !isEdit && !isFolderMode) {
         try {
-          toast.loading('正在上传文件...', { id: 'upload-oss' });
+          toast.loading(t?.messages?.uploadingFile || '正在上传文件...', { id: 'upload-oss' });
           
           // 上传文件到 OSS
           const uploadResult = await uploadService.uploadFile(selectedFile);
@@ -285,7 +290,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           if (uploadResult && uploadResult.url && uploadResult.ossId) {
             finalAssetUrl = uploadResult.url;
             finalAssetId = uploadResult.ossId;
-            toast.success('文件上传成功', { id: 'upload-oss' });
+            // toast.success('文件上传成功', { id: 'upload-oss' });
             
             // 清理临时预览 URL
             if (formData.assetUrl && formData.assetUrl.startsWith('blob:')) {
@@ -296,7 +301,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           }
         } catch (uploadError: any) {
           console.error('OSS upload error:', uploadError);
-          toast.error(uploadError?.message || '文件上传失败，请重试', { id: 'upload-oss' });
+          // toast.error(uploadError?.message || '文件上传失败，请重试', { id: 'upload-oss' });
           setLoading(false);
           return; // 上传失败，不继续保存
         }
@@ -311,7 +316,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         
         if (needsOSSUpload) {
           try {
-            toast.loading('正在上传素材...', { id: 'upload-oss' });
+            toast.loading(t?.messages?.uploadingMaterial || '正在上传素材...', { id: 'upload-oss' });
             
             // Determine file type from URL
             const urlExt = finalAssetUrl.split('.').pop()?.split('?')[0]?.toLowerCase() || 'jpg';
@@ -332,7 +337,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
             }
           } catch (uploadError) {
             console.error('OSS upload error:', uploadError);
-            toast.error('素材上传失败，但将继续保存', { id: 'upload-oss' });
+            // toast.error('素材上传失败，但将继续保存', { id: 'upload-oss' });
             // Continue with original URL if upload fails
           }
         }
