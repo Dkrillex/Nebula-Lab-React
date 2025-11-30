@@ -3451,7 +3451,8 @@ export const translations: Record<string, Translation> = {
         quantity: 'Purchase Quantity',
         custom: 'Custom',
         buy: 'Buy Now',
-        contact: 'Contact Us'
+        contact: 'Contact Us',
+        times: 'x'
       },
       serviceAdvantages: {
         title: 'Service Advantages',
@@ -5667,7 +5668,8 @@ export const translations: Record<string, Translation> = {
         quantity: '购买数量',
         custom: '自定义',
         buy: '立即购买',
-        contact: '联系我们'
+        contact: '联系我们',
+        times: '倍'
       },
       serviceAdvantages: {
         title: '服务优势',
@@ -7620,7 +7622,8 @@ export const translations: Record<string, Translation> = {
         quantity: 'Jumlah Pembelian',
         custom: 'Kustom',
         buy: 'Beli Sekarang',
-        contact: 'Hubungi Kami'
+        contact: 'Hubungi Kami',
+        times: 'x'
       },
       serviceAdvantages: {
         title: 'Keunggulan Layanan',

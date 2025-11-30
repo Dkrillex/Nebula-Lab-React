@@ -158,7 +158,7 @@ const PricingCard: React.FC<PricingCardProps> = ({
                   <div key={step} className="flex flex-col items-center gap-2 cursor-pointer" onClick={() => onQuantityChange(step)}>
                     <div className={`w-3 h-3 rounded-full border-2 transition-all ${step <= quantity ? 'bg-primary border-primary' : 'bg-background border-secondary/40'}`}></div>
                     <span className={`text-[10px] ${step === quantity ? 'text-foreground font-bold' : 'text-muted'}`}>
-                    {step}倍
+                    {step}{labels.times || '倍'}
                   </span>
                 </div>
               ))}

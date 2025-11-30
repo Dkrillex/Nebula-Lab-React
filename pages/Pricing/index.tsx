@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { Check, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
@@ -14,13 +13,14 @@ import { translations } from '../../translations';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import PricingCard from './components/PricingCard';
 import ModelCenterCard from './components/ModelCenterCard';
+import { useAppOutletContext } from '../../router/context';
 
 interface PricingPageProps {}
 
 const PricingPage: React.FC<PricingPageProps> = () => {
-  const outletContext = useOutletContext<{ t: any }>();
+  const { t: rootT } = useAppOutletContext();
   const defaultPricingT = translations['zh'].pricingPage;
-  const t = outletContext?.t?.pricingPage || defaultPricingT;
+  const t = rootT?.pricingPage || defaultPricingT;
   const { user } = useAuthStore();
 
   // Hooks must be called unconditionally at the top level
