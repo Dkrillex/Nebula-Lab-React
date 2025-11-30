@@ -1478,6 +1478,138 @@ interface Translation {
       videoLoadFailed: string;
     };
   };
+  enterprisePage: {
+    title: string;
+    subtitle: string;
+    notSupported: string;
+    notSupportedDesc: string;
+    buttons: {
+      addTeam: string;
+      refresh: string;
+      viewMembers: string;
+      edit: string;
+      inviteMember: string;
+      addMember: string;
+      delete: string;
+      cancel: string;
+      confirm: string;
+      close: string;
+      newUser: string;
+      oldUser: string;
+      editRole: string;
+      editAuth: string;
+      allocate: string;
+      remove: string;
+    };
+      table: {
+        teamName: string;
+        searchPlaceholder: string;
+        createTime: string;
+      status: string;
+      actions: string;
+      normal: string;
+      disabled: string;
+      noData: string;
+      userInfo: string;
+      nickName: string;
+      phoneNumber: string;
+      userAuth: string;
+      userRole: string;
+      remainingQuota: string;
+      usedQuota: string;
+      joinTime: string;
+      userName: string;
+      account: string;
+      registerTime: string;
+    };
+    modals: {
+      addTeam: string;
+      editTeam: string;
+      teamName: string;
+      teamNamePlaceholder: string;
+      teamRoles: string;
+      teamRolesPlaceholder: string;
+      teamRolesHint: string;
+      remark: string;
+      remarkPlaceholder: string;
+      membersList: string;
+      noRole: string;
+      selectInviteType: string;
+      inviteTypeDesc: string;
+      addMembers: string;
+      searchUserPlaceholder: string;
+      selectedCount: string;
+      editMemberRole: string;
+      memberInfo: string;
+      currentRole: string;
+      selectNewRole: string;
+      editMemberAuth: string;
+      currentAuth: string;
+      selectNewAuth: string;
+      allocateQuota: string;
+      memberInfoTitle: string;
+      currentBalance: string;
+      score: string;
+      memberLevel: string;
+      myBalance: string;
+      quotaAmount: string;
+      quotaAmountPlaceholder: string;
+      quotaAmountHint: string;
+    };
+    messages: {
+      fetchTeamListFailed: string;
+      enterTeamName: string;
+      setTeamRoles: string;
+      maxRolesLimit: string;
+      updateTeamSuccess: string;
+      createTeamSuccess: string;
+      deleteTeamConfirm: string;
+      deleteTeamMessage: string;
+      deleteTeamSuccess: string;
+      deleteTeamFailed: string;
+      inviteLinkCopied: string;
+      inviteLinkTip: string;
+      selectMembers: string;
+      addMembersSuccess: string;
+      addMembersFailed: string;
+      updateRoleSuccess: string;
+      updateRoleFailed: string;
+      adminAuthDisabled: string;
+      updateAuthSuccess: string;
+      updateAuthFailed: string;
+      enterValidQuota: string;
+      quotaExceeded: string;
+      getUserIdFailed: string;
+      allocateQuotaSuccess: string;
+      allocateQuotaFailed: string;
+      removeMemberConfirm: string;
+      removeMemberMessage: string;
+      removeMemberSuccess: string;
+      removeMemberFailed: string;
+      getChannelIdFailed: string;
+      fetchInviteUserListFailed: string;
+      noMemberData: string;
+      noUserData: string;
+      isMember: string;
+    };
+    authTypes: {
+      member: string;
+      leader: string;
+      admin: string;
+      unknown: string;
+    };
+    pagination: {
+      totalRecords: string;
+      previous: string;
+      next: string;
+    };
+    quota: {
+      balance: string;
+      score: string;
+      level: string;
+      normalMember: string;
+    };
+  };
   error: {
     sessionExpired: string;
     unknownError: string;
@@ -3571,6 +3703,138 @@ export const translations: Record<string, Translation> = {
           lastPage: 'Last Page'
         },
         fetchFailed: 'Failed to get invitation records'
+      }
+    },
+    enterprisePage: {
+      title: 'Team Management',
+      subtitle: 'Manage team information, member invitations and role assignments',
+      notSupported: 'Feature Not Supported',
+      notSupportedDesc: 'You have not joined any team yet, please join an enterprise first',
+      buttons: {
+        addTeam: 'Add Team',
+        refresh: 'Refresh',
+        viewMembers: 'View Members',
+        edit: 'Edit',
+        inviteMember: 'Invite Member',
+        addMember: 'Add Member',
+        delete: 'Delete',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        close: 'Close',
+        newUser: 'New User (Register)',
+        oldUser: 'Existing User (Login)',
+        editRole: 'Edit Role',
+        editAuth: 'Edit Permission',
+        allocate: 'Allocate',
+        remove: 'Remove'
+      },
+      table: {
+        teamName: 'Team Name',
+        searchPlaceholder: 'Search team name',
+        createTime: 'Created Time',
+        status: 'Status',
+        actions: 'Actions',
+        normal: 'Normal',
+        disabled: 'Disabled',
+        noData: 'No team data',
+        userInfo: 'User Info',
+        nickName: 'Nickname',
+        phoneNumber: 'Phone Number',
+        userAuth: 'User Permission',
+        userRole: 'User Role',
+        remainingQuota: 'Remaining Quota',
+        usedQuota: 'Used Quota',
+        joinTime: 'Join Time',
+        userName: 'User Name',
+        account: 'Account',
+        registerTime: 'Register Time'
+      },
+      modals: {
+        addTeam: 'Add Team',
+        editTeam: 'Edit Team',
+        teamName: 'Team Name',
+        teamNamePlaceholder: 'Please enter team name',
+        teamRoles: 'Team Roles',
+        teamRolesPlaceholder: 'Please enter team roles, e.g.: Developer, Tester, Observer',
+        teamRolesHint: '(Please enter team roles, press Enter or comma to add, a team supports up to 10 roles)',
+        remark: 'Remark',
+        remarkPlaceholder: 'Please enter team remark',
+        membersList: 'Team Members List',
+        noRole: 'No Role',
+        selectInviteType: 'Select Invite Type',
+        inviteTypeDesc: 'Please select whether to invite a new user or an existing user to join the team',
+        addMembers: 'Add Team Members',
+        searchUserPlaceholder: 'Search username or email',
+        selectedCount: 'Selected {count} members',
+        editMemberRole: 'Edit Member Role',
+        memberInfo: 'Member Information',
+        currentRole: 'Current Role:',
+        selectNewRole: 'Select New Role',
+        editMemberAuth: 'Edit Member Permission',
+        currentAuth: 'Current Permission:',
+        selectNewAuth: 'Select New Permission',
+        allocateQuota: 'Allocate Quota to Team Member',
+        memberInfoTitle: 'Member Information',
+        currentBalance: 'Current Balance:',
+        score: 'Score:',
+        memberLevel: 'Member Level:',
+        myBalance: 'My Balance',
+        quotaAmount: 'Quota Amount (RMB)',
+        quotaAmountPlaceholder: 'Please enter quota amount',
+        quotaAmountHint: 'Quota amount cannot exceed your remaining balance ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: 'Failed to fetch team list',
+        enterTeamName: 'Please enter team name',
+        setTeamRoles: 'Please set team roles',
+        maxRolesLimit: 'Team roles support up to 10',
+        updateTeamSuccess: 'Team updated successfully',
+        createTeamSuccess: 'Team created successfully',
+        deleteTeamConfirm: 'Confirm Delete',
+        deleteTeamMessage: 'Are you sure you want to delete team "{teamName}"?\nThis will also delete all related data including team roles, team members, team folders, etc. This operation cannot be undone!',
+        deleteTeamSuccess: 'Team deleted successfully',
+        deleteTeamFailed: 'Failed to delete team',
+        inviteLinkCopied: 'Invite link copied to clipboard',
+        inviteLinkTip: 'Invite Link: {url}\n\nTip: If the invited account is currently logged in, please log out first before using the invite link to join the team.',
+        selectMembers: 'Please select members to add',
+        addMembersSuccess: 'Successfully added {count} members',
+        addMembersFailed: 'Failed to add members',
+        updateRoleSuccess: 'Role updated successfully',
+        updateRoleFailed: 'Failed to update role',
+        adminAuthDisabled: 'Admin permission has been disabled. Channel owners are administrators by default',
+        updateAuthSuccess: 'Permission updated successfully',
+        updateAuthFailed: 'Failed to update permission',
+        enterValidQuota: 'Please enter a valid quota amount',
+        quotaExceeded: 'Quota amount cannot exceed ¥{amount} (0.01 RMB precision margin reserved)',
+        getUserIdFailed: 'Unable to get user ID',
+        allocateQuotaSuccess: 'Quota allocated successfully',
+        allocateQuotaFailed: 'Failed to allocate quota',
+        removeMemberConfirm: 'Confirm Remove',
+        removeMemberMessage: 'Are you sure you want to remove member "{userName}"?',
+        removeMemberSuccess: 'Member removed successfully',
+        removeMemberFailed: 'Failed to remove member',
+        getChannelIdFailed: 'Failed to get channel ID, please confirm the team has been associated with a channel',
+        fetchInviteUserListFailed: 'Failed to fetch invite user list',
+        noMemberData: 'No member data',
+        noUserData: 'No user data',
+        isMember: 'Already a member'
+      },
+      authTypes: {
+        member: 'Member',
+        leader: 'Leader',
+        admin: 'Admin',
+        unknown: 'Unknown'
+      },
+      pagination: {
+        totalRecords: 'Total {total} records',
+        previous: 'Previous',
+        next: 'Next'
+      },
+      quota: {
+        balance: 'Balance:',
+        score: 'Score:',
+        level: 'Level:',
+        normalMember: 'Normal Member'
       }
     },
     footer: {
@@ -5756,6 +6020,138 @@ export const translations: Record<string, Translation> = {
         indonesia: '印度尼西亚'
       }
     },
+    enterprisePage: {
+      title: '团队管理',
+      subtitle: '管理团队信息、成员邀请和角色分配',
+      notSupported: '暂不支持该功能',
+      notSupportedDesc: '您还未加入任何团队，请先加入企业',
+      buttons: {
+        addTeam: '新增团队',
+        refresh: '刷新',
+        viewMembers: '查看成员',
+        edit: '编辑',
+        inviteMember: '邀请成员',
+        addMember: '添加成员',
+        delete: '删除',
+        cancel: '取消',
+        confirm: '确定',
+        close: '关闭',
+        newUser: '新用户（注册）',
+        oldUser: '老用户（登录）',
+        editRole: '编辑角色',
+        editAuth: '修改权限',
+        allocate: '配额',
+        remove: '移除'
+      },
+      table: {
+        teamName: '团队名称',
+        searchPlaceholder: '搜索团队名称',
+        createTime: '创建时间',
+        status: '状态',
+        actions: '操作',
+        normal: '正常',
+        disabled: '禁用',
+        noData: '暂无团队数据',
+        userInfo: '用户信息',
+        nickName: '昵称',
+        phoneNumber: '手机号码',
+        userAuth: '用户权限',
+        userRole: '用户角色',
+        remainingQuota: '剩余额度',
+        usedQuota: '已用额度',
+        joinTime: '加入时间',
+        userName: '用户名',
+        account: '用户账号',
+        registerTime: '注册时间'
+      },
+      modals: {
+        addTeam: '新增团队',
+        editTeam: '编辑团队',
+        teamName: '团队名称',
+        teamNamePlaceholder: '请输入团队名称',
+        teamRoles: '团队角色',
+        teamRolesPlaceholder: '请输入团队角色，如:开发者、测试员、观察者',
+        teamRolesHint: '（请输入团队角色，按回车或逗号添加，一个团队最多支持10个角色）',
+        remark: '备注',
+        remarkPlaceholder: '请输入团队备注',
+        membersList: '团队成员列表',
+        noRole: '暂无角色',
+        selectInviteType: '选择邀请对象',
+        inviteTypeDesc: '请选择要邀请新用户还是老用户加入团队',
+        addMembers: '添加团队成员',
+        searchUserPlaceholder: '搜索用户名或邮箱',
+        selectedCount: '已选择 {count} 个成员',
+        editMemberRole: '编辑成员角色',
+        memberInfo: '成员信息',
+        currentRole: '当前角色：',
+        selectNewRole: '选择新角色',
+        editMemberAuth: '修改成员权限',
+        currentAuth: '当前权限：',
+        selectNewAuth: '选择新权限',
+        allocateQuota: '配额给团队成员',
+        memberInfoTitle: '成员信息',
+        currentBalance: '当前余额：',
+        score: '积分：',
+        memberLevel: '会员等级：',
+        myBalance: '我的余额',
+        quotaAmount: '配额金额（人民币）',
+        quotaAmountPlaceholder: '请输入配额金额',
+        quotaAmountHint: '配额金额不能超过您的剩余余额 ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: '获取团队列表失败',
+        enterTeamName: '请输入团队名称',
+        setTeamRoles: '请设置团队角色',
+        maxRolesLimit: '团队角色最多支持10个',
+        updateTeamSuccess: '编辑团队成功',
+        createTeamSuccess: '新增团队成功',
+        deleteTeamConfirm: '确认删除',
+        deleteTeamMessage: '确定要删除团队"{teamName}"吗？\n删除后将同时删除团队角色、团队成员、团队文件夹等所有相关数据，此操作不可恢复！',
+        deleteTeamSuccess: '删除团队成功',
+        deleteTeamFailed: '删除团队失败',
+        inviteLinkCopied: '邀请链接已复制到剪贴板',
+        inviteLinkTip: '邀请链接：{url}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。',
+        selectMembers: '请选择要添加的成员',
+        addMembersSuccess: '成功添加 {count} 个成员',
+        addMembersFailed: '添加成员失败',
+        updateRoleSuccess: '角色更新成功',
+        updateRoleFailed: '角色更新失败',
+        adminAuthDisabled: '管理员权限已下架，渠道拥有者默认为管理员',
+        updateAuthSuccess: '权限更新成功',
+        updateAuthFailed: '权限更新失败',
+        enterValidQuota: '请输入有效的配额金额',
+        quotaExceeded: '配额金额不能超过 ¥{amount}（已预留0.01元精度余量）',
+        getUserIdFailed: '无法获取用户ID',
+        allocateQuotaSuccess: '配额成功',
+        allocateQuotaFailed: '配额失败',
+        removeMemberConfirm: '确认移除',
+        removeMemberMessage: '确认要移除成员"{userName}"吗？',
+        removeMemberSuccess: '移除成员成功',
+        removeMemberFailed: '移除成员失败',
+        getChannelIdFailed: '获取渠道ID失败，请确认团队已关联渠道',
+        fetchInviteUserListFailed: '获取邀请用户列表失败',
+        noMemberData: '暂无成员数据',
+        noUserData: '暂无用户数据',
+        isMember: '已是成员'
+      },
+      authTypes: {
+        member: '成员',
+        leader: 'leader',
+        admin: '管理员',
+        unknown: '未知'
+      },
+      pagination: {
+        totalRecords: '共 {total} 条记录',
+        previous: '上一页',
+        next: '下一页'
+      },
+      quota: {
+        balance: '余额：',
+        score: '积分：',
+        level: '等级：',
+        normalMember: '普通会员'
+      }
+    },
     error: {
       sessionExpired: '无效的会话，或者会话已过期，请重新登录。',
       unknownError: '未知错误',
@@ -7386,6 +7782,138 @@ export const translations: Record<string, Translation> = {
           lastPage: 'Halaman Terakhir'
         },
         fetchFailed: 'Gagal mendapatkan catatan undangan'
+      }
+    },
+    enterprisePage: {
+      title: 'Manajemen Tim',
+      subtitle: 'Kelola informasi tim, undangan anggota dan penugasan peran',
+      notSupported: 'Fitur Tidak Didukung',
+      notSupportedDesc: 'Anda belum bergabung dengan tim mana pun, silakan bergabung dengan perusahaan terlebih dahulu',
+      buttons: {
+        addTeam: 'Tambahkan Tim',
+        refresh: 'Segarkan',
+        viewMembers: 'Lihat Anggota',
+        edit: 'Edit',
+        inviteMember: 'Undang Anggota',
+        addMember: 'Tambahkan Anggota',
+        delete: 'Hapus',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        close: 'Tutup',
+        newUser: 'Pengguna Baru (Daftar)',
+        oldUser: 'Pengguna Lama (Login)',
+        editRole: 'Edit Peran',
+        editAuth: 'Edit Izin',
+        allocate: 'Alokasi',
+        remove: 'Hapus'
+      },
+      table: {
+        teamName: 'Nama Tim',
+        searchPlaceholder: 'Cari nama tim',
+        createTime: 'Waktu Dibuat',
+        status: 'Status',
+        actions: 'Tindakan',
+        normal: 'Normal',
+        disabled: 'Dinonaktifkan',
+        noData: 'Tidak ada data tim',
+        userInfo: 'Info Pengguna',
+        nickName: 'Nama Panggilan',
+        phoneNumber: 'Nomor Telepon',
+        userAuth: 'Izin Pengguna',
+        userRole: 'Peran Pengguna',
+        remainingQuota: 'Kuota Tersisa',
+        usedQuota: 'Kuota yang Digunakan',
+        joinTime: 'Waktu Bergabung',
+        userName: 'Nama Pengguna',
+        account: 'Akun',
+        registerTime: 'Waktu Registrasi'
+      },
+      modals: {
+        addTeam: 'Tambahkan Tim',
+        editTeam: 'Edit Tim',
+        teamName: 'Nama Tim',
+        teamNamePlaceholder: 'Silakan masukkan nama tim',
+        teamRoles: 'Peran Tim',
+        teamRolesPlaceholder: 'Silakan masukkan peran tim, misalnya: Pengembang, Penguji, Pengamat',
+        teamRolesHint: '(Silakan masukkan peran tim, tekan Enter atau koma untuk menambahkan, satu tim mendukung hingga 10 peran)',
+        remark: 'Keterangan',
+        remarkPlaceholder: 'Silakan masukkan keterangan tim',
+        membersList: 'Daftar Anggota Tim',
+        noRole: 'Tidak Ada Peran',
+        selectInviteType: 'Pilih Jenis Undangan',
+        inviteTypeDesc: 'Silakan pilih apakah akan mengundang pengguna baru atau pengguna lama untuk bergabung dengan tim',
+        addMembers: 'Tambahkan Anggota Tim',
+        searchUserPlaceholder: 'Cari nama pengguna atau email',
+        selectedCount: 'Dipilih {count} anggota',
+        editMemberRole: 'Edit Peran Anggota',
+        memberInfo: 'Informasi Anggota',
+        currentRole: 'Peran Saat Ini:',
+        selectNewRole: 'Pilih Peran Baru',
+        editMemberAuth: 'Edit Izin Anggota',
+        currentAuth: 'Izin Saat Ini:',
+        selectNewAuth: 'Pilih Izin Baru',
+        allocateQuota: 'Alokasikan Kuota ke Anggota Tim',
+        memberInfoTitle: 'Informasi Anggota',
+        currentBalance: 'Saldo Saat Ini:',
+        score: 'Skor:',
+        memberLevel: 'Level Anggota:',
+        myBalance: 'Saldo Saya',
+        quotaAmount: 'Jumlah Kuota (RMB)',
+        quotaAmountPlaceholder: 'Silakan masukkan jumlah kuota',
+        quotaAmountHint: 'Jumlah kuota tidak boleh melebihi saldo tersisa Anda ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: 'Gagal mengambil daftar tim',
+        enterTeamName: 'Silakan masukkan nama tim',
+        setTeamRoles: 'Silakan atur peran tim',
+        maxRolesLimit: 'Peran tim mendukung hingga 10',
+        updateTeamSuccess: 'Tim berhasil diperbarui',
+        createTeamSuccess: 'Tim berhasil dibuat',
+        deleteTeamConfirm: 'Konfirmasi Hapus',
+        deleteTeamMessage: 'Apakah Anda yakin ingin menghapus tim "{teamName}"?\nIni juga akan menghapus semua data terkait termasuk peran tim, anggota tim, folder tim, dll. Operasi ini tidak dapat dibatalkan!',
+        deleteTeamSuccess: 'Tim berhasil dihapus',
+        deleteTeamFailed: 'Gagal menghapus tim',
+        inviteLinkCopied: 'Tautan undangan disalin ke clipboard',
+        inviteLinkTip: 'Tautan Undangan: {url}\n\nTip: Jika akun yang diundang saat ini masuk, silakan keluar terlebih dahulu sebelum menggunakan tautan undangan untuk bergabung dengan tim.',
+        selectMembers: 'Silakan pilih anggota untuk ditambahkan',
+        addMembersSuccess: 'Berhasil menambahkan {count} anggota',
+        addMembersFailed: 'Gagal menambahkan anggota',
+        updateRoleSuccess: 'Peran berhasil diperbarui',
+        updateRoleFailed: 'Gagal memperbarui peran',
+        adminAuthDisabled: 'Izin admin telah dinonaktifkan. Pemilik saluran adalah administrator secara default',
+        updateAuthSuccess: 'Izin berhasil diperbarui',
+        updateAuthFailed: 'Gagal memperbarui izin',
+        enterValidQuota: 'Silakan masukkan jumlah kuota yang valid',
+        quotaExceeded: 'Jumlah kuota tidak boleh melebihi ¥{amount} (margin presisi 0,01 RMB dicadangkan)',
+        getUserIdFailed: 'Tidak dapat mendapatkan ID pengguna',
+        allocateQuotaSuccess: 'Kuota berhasil dialokasikan',
+        allocateQuotaFailed: 'Gagal mengalokasikan kuota',
+        removeMemberConfirm: 'Konfirmasi Hapus',
+        removeMemberMessage: 'Apakah Anda yakin ingin menghapus anggota "{userName}"?',
+        removeMemberSuccess: 'Anggota berhasil dihapus',
+        removeMemberFailed: 'Gagal menghapus anggota',
+        getChannelIdFailed: 'Gagal mendapatkan ID saluran, harap konfirmasi tim telah dikaitkan dengan saluran',
+        fetchInviteUserListFailed: 'Gagal mengambil daftar pengguna undangan',
+        noMemberData: 'Tidak ada data anggota',
+        noUserData: 'Tidak ada data pengguna',
+        isMember: 'Sudah menjadi anggota'
+      },
+      authTypes: {
+        member: 'Anggota',
+        leader: 'Pemimpin',
+        admin: 'Admin',
+        unknown: 'Tidak Diketahui'
+      },
+      pagination: {
+        totalRecords: 'Total {total} catatan',
+        previous: 'Sebelumnya',
+        next: 'Selanjutnya'
+      },
+      quota: {
+        balance: 'Saldo:',
+        score: 'Skor:',
+        level: 'Level:',
+        normalMember: 'Anggota Normal'
       }
     },
     footer: {
