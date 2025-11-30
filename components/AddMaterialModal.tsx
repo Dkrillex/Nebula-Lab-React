@@ -123,7 +123,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   const [selectedFolderName, setSelectedFolderName] = useState<string>('');
   
   const [selectedPersonalFolderId, setSelectedPersonalFolderId] = useState<string | null>(null);
-  const [selectedPersonalFolderName, setSelectedPersonalFolderName] = useState<string>('根目录');
+  const [selectedPersonalFolderName, setSelectedPersonalFolderName] = useState<string>('');
   
   const [showFolderSelector, setShowFolderSelector] = useState(false);
   const [folderSelectorType, setFolderSelectorType] = useState<'personal' | 'shared'>('personal');
@@ -165,7 +165,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         setStorageLocation('personal');
         setSelectedTeamId('');
         setSelectedPersonalFolderId(null);
-        setSelectedPersonalFolderName('根目录');
+        setSelectedPersonalFolderName(t?.rootDirectory || '根目录');
         setSelectedFolderId(null);
         setSelectedFolderName('');
       } else if (initialData?.isShare === 1) {
@@ -177,17 +177,17 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
             // Note: We might not have folder name here without fetching it, 
             // but typically edit happens in context where we might know it or just show ID/Placeholder
             // For now leaving name empty or generic if unknown
-             setSelectedFolderName('已选文件夹'); 
+             setSelectedFolderName(t?.selectedFolder || '已选文件夹'); 
         }
       } else {
       setStorageLocation('personal');
         setSelectedTeamId('');
         if(initialData?.assetPackageId) {
              setSelectedPersonalFolderId(String(initialData.assetPackageId));
-             setSelectedPersonalFolderName('已选文件夹');
+             setSelectedPersonalFolderName(t?.selectedFolder || '已选文件夹');
         } else {
              setSelectedPersonalFolderId(null);
-             setSelectedPersonalFolderName('根目录');
+             setSelectedPersonalFolderName(t?.rootDirectory || '根目录');
         }
       }
       
@@ -235,7 +235,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
   const handleFolderConfirm = (folderId: string | null, folderName: string) => {
     if (folderSelectorType === 'personal') {
       setSelectedPersonalFolderId(folderId);
-      setSelectedPersonalFolderName(folderName || '根目录');
+      setSelectedPersonalFolderName(folderName || t?.rootDirectory || '根目录');
     } else {
       if (!folderId) {
          toast.error(t?.messages?.sharedFolderRequired || '共享文件必须选择文件夹，不能保存到根目录');
@@ -267,7 +267,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       return;
              }
              if (!selectedFolderId) {
-                 toast.error(t?.messages?.selectSharedFolder || '请选择共享文件夹（不能保存到根目录）');
+                 toast.error(t?.messages?.sharedFolderRequired || t?.sharedFolderCannotBeRoot || '请选择共享文件夹（不能保存到根目录）');
                  return;
              }
         }
@@ -461,7 +461,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 dark:border-gray-800">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {isEdit ? (isFolderMode ? '编辑文件夹' : '编辑素材') : (isFolderMode ? '新建文件夹' : '添加素材')}
+            {isEdit ? (isFolderMode ? t?.editFolder : t?.editMaterial) : (isFolderMode ? t?.newFolder : t?.addMaterial)}
           </h2>
           <button 
             onClick={onClose}
@@ -478,7 +478,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {!isFolderMode && (
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                素材类型
+                {t?.assetType}
               </label>
               {disableAssetTypeSelection ? (
                 // 只读模式：只显示当前选中的素材类型
@@ -486,7 +486,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                   {assetTypesLoading ? (
                     <div className="text-sm text-gray-500 flex items-center gap-2">
                       <Loader className="animate-spin" size={16} />
-                      加载中...
+                      {t?.loading}
                     </div>
                   ) : (() => {
                     const selectedType = assetTypes.find(t => t.value === formData.assetType);
@@ -495,7 +495,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                         {selectedType.label}
                       </div>
                     ) : (
-                      <div className="text-sm text-gray-500">未选择素材类型</div>
+                      <div className="text-sm text-gray-500">{t?.noAssetType}</div>
                     );
                   })()}
                 </div>
@@ -523,7 +523,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                     </button>
                     ))
                   ) : (
-                    <div className="text-sm text-gray-500 col-span-5">暂无素材类型</div>
+                    <div className="text-sm text-gray-500 col-span-5">{t?.noAssetTypes}</div>
                   )}
                 </div>
               )}
@@ -534,7 +534,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {!isFolderMode && (
             <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                上传文件
+                {t?.uploadFile}
               </label>
               <UploadComponent 
                 onUploadComplete={handleUploadComplete}
@@ -546,6 +546,14 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                 disabled={isEdit || isImportMode} // 导入模式下禁用上传
                 showConfirmButton={false} // 不显示确认上传按钮，在点击确定时统一上传
                 immediate={false} // 不立即上传
+                translations={{
+                  uploading: t?.uploading,
+                  clickOrDragToUpload: t?.clickOrDragToUpload,
+                  releaseToUpload: t?.releaseToUpload,
+                  supportedFormats: t?.supportedFormats,
+                  confirmUpload: t?.confirmUpload,
+                  audioFile: t?.audioFile,
+                }}
               />
             </div>
           )}
@@ -553,13 +561,13 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {/* Name */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {isFolderMode ? '文件夹名称' : '素材名称'} <span className="text-red-500">*</span>
+              {isFolderMode ? t?.folderName : t?.materialName} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.assetName}
               onChange={(e) => setFormData({ ...formData, assetName: e.target.value })}
-              placeholder={isFolderMode ? "请输入文件夹名称" : "请输入素材名称"}
+              placeholder={isFolderMode ? t?.enterFolderName : t?.enterMaterialName}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
             />
           </div>
@@ -567,29 +575,29 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {/* Tag */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {isFolderMode ? '文件夹标签' : '素材标签'} <span className="text-red-500">*</span>
+              {isFolderMode ? t?.folderTag : t?.materialTag} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               value={formData.assetTag}
               onChange={(e) => setFormData({ ...formData, assetTag: e.target.value })}
-              placeholder={isFolderMode ? "文件夹标签" : "素材标签，多个标签用逗号分隔"}
+              placeholder={isFolderMode ? t?.folderTag : t?.materialTagPlaceholder}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
             />
              <div className="text-xs text-red-500">
-                 素材标签格式：标签1,标签2，标签之间用英文逗号隔开！
+                 {t?.materialTagFormat}
             </div>
           </div>
 
           {/* Description */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-               {isFolderMode ? '文件夹描述' : '素材描述'}
+               {isFolderMode ? t?.folderDescription : t?.materialDescription}
             </label>
             <textarea
               value={formData.assetDesc}
               onChange={(e) => setFormData({ ...formData, assetDesc: e.target.value })}
-              placeholder={isFolderMode ? "请输入文件夹描述" : "请输入素材描述"}
+              placeholder={isFolderMode ? t?.enterFolderDescription : t?.enterMaterialDescription}
               rows={3}
               className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all resize-none"
             />
@@ -606,7 +614,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                   className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                />
                <label htmlFor="isPrivateModel" className="text-sm text-gray-700 dark:text-gray-300 select-none cursor-pointer">
-                  私有模型 (仅自己可见)
+                  {t?.privateModel}
                </label>
             </div>
           )}
@@ -616,7 +624,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && user?.team && user.team.length > 0 && (
              <div className="space-y-2 pt-3 border-t border-gray-100 dark:border-gray-800">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  存储位置
+                  {t?.storageLocation}
                 </label>
                 <div className="flex gap-3">
                   <label className="flex items-center gap-2 cursor-pointer">
@@ -628,7 +636,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                       onChange={() => setStorageLocation('personal')}
                       className="text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">个人文件</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t?.personalFiles}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
@@ -639,7 +647,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                       onChange={() => setStorageLocation('shared')}
                       className="text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">共享文件</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t?.sharedFiles}</span>
                   </label>
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input 
@@ -650,7 +658,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                       onChange={() => setStorageLocation('both')}
                       className="text-indigo-600 focus:ring-indigo-500"
                     />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">两者都放</span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{t?.both}</span>
                   </label>
                 </div>
              </div>
@@ -660,14 +668,14 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
            {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'personal' || storageLocation === 'both') && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                 {storageLocation === 'both' ? '个人文件夹' : '存储文件夹'}
+                 {storageLocation === 'both' ? t?.personalFolder : t?.storageFolder}
                </label>
                <div className="flex gap-2">
                  <input
                    type="text"
                    value={selectedPersonalFolderName}
                    readOnly
-                   placeholder="请选择文件夹"
+                   placeholder={t?.selectFolder}
                    onClick={() => handleSelectFolder('personal')}
                    className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer outline-none"
                  />
@@ -677,7 +685,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                    className="px-4 py-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2 flex-shrink-0"
                  >
                    <Folder size={16} />
-                   选择
+                   {t?.selectFolder}
                  </button>
                 </div>
              </div>
@@ -687,7 +695,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'shared' || storageLocation === 'both') && user?.team && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                 选择团队 <span className="text-red-500">*</span>
+                 {t?.selectTeam} <span className="text-red-500">*</span>
                </label>
                <select
                   value={selectedTeamId}
@@ -698,7 +706,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                   }}
                   className="w-full px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all"
                >
-                  <option value="">请选择团队</option>
+                  <option value="">{t?.selectTeam}</option>
                   {user.team.map((t: any) => (
                     <option key={t.teamId} value={t.teamId}>{t.teamName}</option>
                   ))}
@@ -710,14 +718,14 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
           {!isEdit && !initialFolderId && !isFolderMode && !isImportMode && (storageLocation === 'shared' || storageLocation === 'both') && selectedTeamId && (
              <div className="space-y-2">
                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                 {storageLocation === 'both' ? '共享文件夹' : '存储文件夹'} <span className="text-red-500">*</span>
+                 {storageLocation === 'both' ? t?.sharedFolder : t?.storageFolder} <span className="text-red-500">*</span>
                </label>
                <div className="flex gap-2">
                  <input
                    type="text"
-                   value={selectedFolderName || '请选择文件夹'}
+                   value={selectedFolderName || t?.selectFolder}
                    readOnly
-                   placeholder="请选择文件夹"
+                   placeholder={t?.selectFolder}
                    onClick={() => handleSelectFolder('shared')}
                    className="flex-1 px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 cursor-pointer outline-none"
                  />
@@ -727,11 +735,11 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
                    className="px-4 py-2 bg-indigo-100 text-indigo-600 rounded-lg hover:bg-indigo-200 transition-colors flex items-center gap-2 flex-shrink-0"
                  >
                    <Folder size={16} />
-                   选择
+                   {t?.selectFolder}
                  </button>
                </div>
                <p className="text-xs text-orange-500">
-                 共享文件必须选择文件夹，不允许保存到根目录
+                 {t?.sharedFolderCannotBeRoot}
                </p>
              </div>
           )}
@@ -744,7 +752,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           >
-            取消
+            {t?.cancel}
           </button>
           <button
             onClick={handleSubmit}
@@ -752,7 +760,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
             className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
             {loading && <span className="animate-spin">⏳</span>}
-            确定
+            {t?.confirm}
           </button>
         </div>
 
@@ -764,7 +772,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         onClose={() => setShowFolderSelector(false)}
         onConfirm={handleFolderConfirm}
         teamId={folderSelectorType === 'shared' ? selectedTeamId : undefined}
-        title={folderSelectorType === 'shared' ? '选择共享文件夹' : '选择个人文件夹'}
+        title={folderSelectorType === 'shared' ? t?.selectSharedFolder : t?.selectPersonalFolder}
       />
 
     </div>

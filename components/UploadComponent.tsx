@@ -41,6 +41,15 @@ interface UploadComponentProps {
   disabled?: boolean;
   // Optional: Whether to show the confirm upload button (default: true)
   showConfirmButton?: boolean;
+  // Optional: Translation texts
+  translations?: {
+    uploading?: string;
+    clickOrDragToUpload?: string;
+    releaseToUpload?: string;
+    supportedFormats?: string;
+    confirmUpload?: string;
+    audioFile?: string;
+  };
 }
 
 const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
@@ -57,7 +66,8 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onFileSelected,
   onClear,
   disabled = false,
-  showConfirmButton = true
+  showConfirmButton = true,
+  translations = {}
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
@@ -420,7 +430,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
           <div className="absolute inset-0 bg-white/50 dark:bg-black/50 flex items-center justify-center z-10 rounded-xl backdrop-blur-[1px]">
               <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
                   <Loader className="animate-spin text-indigo-600 mb-2" />
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">上传中...</span>
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{translations.uploading || '上传中...'}</span>
               </div>
           </div>
       )}
@@ -496,7 +506,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             ) : fileType === 'audio' ? (
                 <div className="flex flex-col items-center justify-center w-full h-full p-4">
                     <FileIcon size={32} className="text-indigo-500 mb-2" />
-                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || translations.audioFile || '音频文件'}</span>
                     <audio 
                       src={previewUrl} 
                       className="w-full mt-2 h-8" 
@@ -543,7 +553,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
                     onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
                     className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"
                  >
-                    确认上传
+                    {translations.confirmUpload || '确认上传'}
                  </button>
             )}
         </>
@@ -552,9 +562,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             <div className="text-center text-gray-500 p-4">
                 <Upload size={24} className={`mx-auto mb-2 ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
                 <p className={`text-xs font-medium ${isDragging ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
-                  {isDragging ? '松开以上传文件' : '点击或拖拽文件到此处上传'}
+                  {isDragging ? (translations.releaseToUpload || '松开以上传文件') : (translations.clickOrDragToUpload || '点击或拖拽文件到此处上传')}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">支持 {accept.replace(/image\/|video\/|audio\//g, '').toUpperCase()}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{translations.supportedFormats || '支持'} {accept.replace(/image\/|video\/|audio\//g, '').toUpperCase()}</p>
             </div>
         )
       )}
