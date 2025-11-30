@@ -605,7 +605,10 @@ export const avatarService = {
   submitVideoCreationTask: (data: SubmitVideoCreationTaskParams) => {
     return request.post<ApiResponse<{ taskId: string; status: string; errorMsg?: string }>>(
       '/tp/v1/VideoAvatar/submitTask',
-      data
+      data,
+      {
+        successMessageMode: 'message', // 使用动态接口返回的成功消息
+      }
     );
   },
 

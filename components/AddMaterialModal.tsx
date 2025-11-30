@@ -359,7 +359,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
         // When editing, we generally don't change location (personal/shared/folder) via this modal easily 
         // (usually that's move operation), but we might update name/desc/tag/url.
         await assetsService.updateAssets(baseData);
-        toast.success('更新成功');
+        // 成功提示已由接口返回的动态消息处理，避免重复提示
       } else {
         // Add mode
         const requests: Promise<any>[] = [];

@@ -994,7 +994,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           isOpen={showMaterialModal}
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
-              toast.success('已添加到素材库');
+              // 成功提示已由接口返回的动态消息处理，避免重复提示
               setShowMaterialModal(false);
           }}
           initialData={{
