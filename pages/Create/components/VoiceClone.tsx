@@ -653,7 +653,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         format: format || prev.format
       }) : prev);
 
-      toast.success(t.recordUploadSuccess);
+      // 成功提示已由接口返回的动态消息处理，避免重复提示
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(t.recordUploadFail);
@@ -1384,7 +1384,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         onSuccess={() => {
           setShowAddMaterialModal(false);
           setIsAddedToLib(true);
-          toast.success(t.addedToLibrary || '已添加到素材库');
+          // 成功提示已由接口返回的动态消息处理，避免重复提示
         }}
         initialData={addMaterialData}
         disableAssetTypeSelection={true}

@@ -480,7 +480,9 @@ export const avatarService = {
   // --- Voice Clone ---
 
   submitVoiceCloneTask: (data: VoiceCloneSubmitParams) => {
-    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/submitTask', data);
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/submitTask', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   },
 
   queryVoiceCloneTask: (taskId: string) => {
@@ -490,7 +492,9 @@ export const avatarService = {
   },
 
   submitText2VoiceTask: (data: Text2VoiceSubmitParams) => {
-    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/submitTask', data);
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/submitTask', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   },
 
   queryText2VoiceTask: (taskId: string) => {

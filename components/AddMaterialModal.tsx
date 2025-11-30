@@ -407,7 +407,7 @@ const AddMaterialModal: React.FC<AddMaterialModalProps> = ({
       onClose();
     } catch (error) {
       console.error('Failed to save material:', error);
-      toast.error(isEdit ? '更新失败' : '添加失败');
+      // toast.error(isEdit ? '更新失败' : '添加失败');
     } finally {
       setLoading(false);
     }
