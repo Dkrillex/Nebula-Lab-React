@@ -40,6 +40,9 @@ export interface VideoProcessQueryResult {
     status: 'success' | 'failed' | 'processing' | 'pending';
     resizedVideoUrl?: string;
     trackingVideoPath?: string;
+    duration?: number; // 视频时长（秒）
+    fps?: number; // 视频帧率
+    frames?: number; // 视频总帧数
   };
 }
 

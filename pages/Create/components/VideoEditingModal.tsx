@@ -23,6 +23,7 @@ export interface VideoEditingModalProps {
   videoProcessTaskId?: string;
   onSave?: (markers: VideoMarker[]) => void;
   onVideoMaskSuccess?: (data: { taskId: string; trackingVideoPath: string }) => void;
+  videoFps?: number; // 从接口获取的fps值
 }
 
 // 格式化时间显示（秒转换为 MM:SS）
@@ -41,6 +42,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   videoProcessTaskId,
   onSave,
   onVideoMaskSuccess,
+  videoFps,
 }) => {
   const { t: rootT } = useAppOutletContext();
   // 添加空值保护，防止页面崩溃
@@ -386,9 +388,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     };
   }, []);
 
-  // 获取视频帧率（默认24.2fps）
+  // 获取视频帧率（优先使用接口返回的fps）
   const getVideoFrameRate = useCallback((): number => {
-    if (!videoRef.current) return 24;
+    // 优先使用接口返回的fps
+    if (videoFps !== undefined && videoFps !== null && videoFps > 0 && videoFps <= 120) {
+      return videoFps;
+    }
+    
+    if (!videoRef.current) return videoFps && videoFps > 0 ? videoFps : 24;
     
     // 尝试从视频播放质量获取帧率
     if (typeof videoRef.current.getVideoPlaybackQuality === 'function') {
@@ -401,8 +408,9 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       }
     }
     
-    return 24;
-  }, []);
+    // 如果都没有，使用接口返回的fps作为默认值（如果存在），否则使用24
+    return videoFps && videoFps > 0 ? videoFps : 24;
+  }, [videoFps]);
 
   // 根据时间计算帧索引
   const calculateFrameIndex = useCallback((time: number): number => {
