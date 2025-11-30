@@ -122,7 +122,9 @@ export const videoProcessService = {
    * @returns 任务ID
    */
   taskSubmit: async (params: VideoProcessSubmitParams): Promise<VideoProcessSubmitResult> => {
-    return request.post<VideoProcessSubmitResult>('/tp/v1/VideoProcessSubmit', params);
+    return request.post<VideoProcessSubmitResult>('/tp/v1/VideoProcessSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -134,6 +136,7 @@ export const videoProcessService = {
   queryTask: async (taskId: string, needCloudFrontUrl: boolean = true): Promise<VideoProcessQueryResult> => {
     return request.get<VideoProcessQueryResult>('/tp/v1/VideoProcessQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -200,7 +203,9 @@ export const imageMaskDrawingService = {
    * @returns 任务ID
    */
   submit: async (params: ImageMaskDrawingSubmitParams) => {
-    return request.post<{ result: { taskId: string } }>('/tp/v1/ImageMaskDrawingSubmit', params);
+    return request.post<{ result: { taskId: string } }>('/tp/v1/ImageMaskDrawingSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -212,6 +217,7 @@ export const imageMaskDrawingService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<ImageMaskDrawingQueryResult>('/tp/v1/ImageMaskDrawingQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -226,7 +232,9 @@ export const videoMaskDrawingService = {
    * @returns 任务ID
    */
   submit: async (params: VideoMaskDrawingSubmitParams) => {
-    return request.post<{ result: { taskId: string } }>('/tp/v1/VideoMaskDrawingSubmit', params);
+    return request.post<{ result: { taskId: string } }>('/tp/v1/VideoMaskDrawingSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -238,6 +246,7 @@ export const videoMaskDrawingService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<VideoMaskDrawingQueryResult>('/tp/v1/VideoMaskDrawingQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -252,7 +261,9 @@ export const videoCharacterSwapService = {
    * @returns 任务ID
    */
   submit: async (params: VideoCharacterSwapSubmitParams): Promise<VideoCharacterSwapSubmitResult> => {
-    return request.post<VideoCharacterSwapSubmitResult>('/tp/v1/VideoCharacterSwapSubmit', params);
+    return request.post<VideoCharacterSwapSubmitResult>('/tp/v1/VideoCharacterSwapSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -264,6 +275,7 @@ export const videoCharacterSwapService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<VideoCharacterSwapQueryResult>('/tp/v1/VideoCharacterSwapQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
