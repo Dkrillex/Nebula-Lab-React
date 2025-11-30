@@ -46,6 +46,8 @@ const AiFaceSwapPage: React.FC = () => {
   const [videoMaskDrawingTaskId, setVideoMaskDrawingTaskId] = useState<string | null>(null); // 视频掩码绘制任务ID（从 videoMaskDrawingQuery 返回的 taskId，用于后续视频角色交换）
   const [trackingVideoPath, setTrackingVideoPath] = useState<string | null>(null); // 跟踪视频路径（从 videoMaskDrawingQuery 返回的 trackingVideoPath）
   const [isVideoUploading, setIsVideoUploading] = useState(false);
+  // 从接口获取的fps值
+  const [videoFps, setVideoFps] = useState<number | null>(null);
   
   // 图片状态
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -126,6 +128,12 @@ const AiFaceSwapPage: React.FC = () => {
               const taskId = queryResult.result.taskId;
               setVideoProcessTaskId(taskId);
               setError(null);
+              
+              // 保存从接口获取的fps值
+              if (queryResult.result.fps !== undefined) {
+                setVideoFps(queryResult.result.fps);
+                console.log('保存视频fps:', queryResult.result.fps);
+              }
               
               // 借鉴 Nebula1：上传成功后自动打开视频编辑器
               // 使用处理后的视频URL打开编辑器
@@ -355,6 +363,7 @@ const AiFaceSwapPage: React.FC = () => {
     setGeneratedVideoUrl(null);
     setError(null);
     setCountPoints(0); // 清除积分
+    setVideoFps(null); // 清除fps
   };
 
   // 清除图片
@@ -703,6 +712,7 @@ const AiFaceSwapPage: React.FC = () => {
           onClose={() => setIsVideoEditorOpen(false)}
           videoUrl={trackingVideoPath || videoUploadedUrl} // 借鉴 Nebula1：如果有 trackingVideoPath 则使用它
           videoProcessTaskId={videoProcessTaskId || undefined}
+          videoFps={videoFps || undefined} // 传递从接口获取的fps值
           onSave={(markers) => {
             setVideoMarkers(markers);
             console.log('保存的视频标记点:', markers);

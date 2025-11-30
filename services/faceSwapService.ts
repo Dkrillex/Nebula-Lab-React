@@ -40,6 +40,9 @@ export interface VideoProcessQueryResult {
     status: 'success' | 'failed' | 'processing' | 'pending';
     resizedVideoUrl?: string;
     trackingVideoPath?: string;
+    duration?: number; // 视频时长（秒）
+    fps?: number; // 视频帧率
+    frames?: number; // 视频总帧数
   };
 }
 
@@ -154,7 +157,7 @@ export interface ImageMaskDrawingQueryParams {
 export interface ImageMaskDrawingQueryResult {
   result: {
     taskId: string;
-    status: 'success' | 'failed' | 'processing' | 'pending';
+    status: 'success' | 'failed' | 'fail' | 'processing' | 'pending';
     mask?: string; // base64 编码的遮罩图片（修改区域，红色）
     protectMask?: string; // base64 编码的遮罩图片（保护区域，绿色）
     costCredit?: number;
