@@ -312,19 +312,22 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
 
   // 删除处理
   const handleDelete = async (asset: AdsAssetsVO) => {
+    const itemType = asset.dataType === 2 ? (t.folder || '文件夹') : (t.material || '素材');
+    const message = (t.confirmDeleteItem || '确认删除该{type}吗？').replace('{type}', itemType);
+    
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确认删除该${asset.dataType === 2 ? '文件夹' : '素材'}吗？`,
+      title: t.confirmDelete || '确认删除',
+      message: message,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
           await assetsService.removeAssets(asset.id);
           await fetchAssets();
-          toast.success('删除成功');
+          toast.success(t.messages?.deleteSuccess || '删除成功');
         } catch (error) {
           console.error('Delete failed:', error);
-          toast.error('删除失败');
+          toast.error(t.messages?.deleteFailed || '删除失败');
         }
       },
     });
@@ -332,10 +335,14 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
 
   const handleMultiDelete = async () => {
     if (selectedAssets.size === 0) return;
+    const message = (t.confirmDeleteSelected || '确认删除选中的 {count} 个素材吗？')
+      .replace('{count}', String(selectedAssets.size))
+      .replace('{item}', t.material || '素材');
+    
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确认删除选中的 ${selectedAssets.size} 个素材吗？`,
+      title: t.confirmDelete || '确认删除',
+      message: message,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
@@ -343,10 +350,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
           await assetsService.removeAssets(ids);
           setSelectedAssets(new Set());
           await fetchAssets();
-          toast.success('删除成功');
+          toast.success(t.messages?.deleteSuccess || '删除成功');
         } catch (error) {
           console.error('Multi delete failed:', error);
-          toast.error('删除失败');
+          toast.error(t.messages?.deleteFailed || '删除失败');
         }
       },
     });
@@ -380,7 +387,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
       if (isShare) {
         // 分享（复制）
         if (targetTab === 'shared' && !teamId) {
-          toast.error('无法获取团队信息，分享失败');
+          toast.error(t.messages?.shareFailedNoTeam || '无法获取团队信息，分享失败');
           return;
         }
         
@@ -420,11 +427,11 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
           await assetsService.addAssets(shareData as AdsAssetsVO);
         }
         
-        toast.success('分享成功');
+        toast.success(t.messages?.shareSuccess || '分享成功');
       } else {
         // 移动文件（在同一 tab 内移动，或同团队内移动）
         await assetsService.moveAssets(ids as (string | number)[], targetFolderId || undefined);
-        toast.success('移动成功');
+        toast.success(t.messages?.moveSuccess || '移动成功');
       }
 
       setSelectedAssets(new Set());
@@ -432,7 +439,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
       await fetchAssets();
     } catch (error) {
       console.error('操作失败:', error);
-      toast.error('操作失败');
+      toast.error(t.messages?.operationFailed || '操作失败');
     }
   };
 
@@ -474,10 +481,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], folderId);
       await fetchAssets();
-      toast.success('移动成功');
+      toast.success(t.messages?.moveSuccess || '移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      toast.error('移动失败');
+      toast.error(t.messages?.moveFailed || '移动失败');
     } finally {
       handleDragEnd();
     }
@@ -490,7 +497,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     if (!draggedAsset) return;
 
     if (activeTab === 'shared') {
-      toast.error('共享文件不支持拖拽到根目录');
+      toast.error(t.messages?.sharedFilesCannotDragToRoot || '共享文件不支持拖拽到根目录');
       handleDragEnd();
       return;
     }
@@ -498,10 +505,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], undefined);
       await fetchAssets();
-      toast.success('移动成功');
+      toast.success(t.messages?.moveSuccess || '移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      toast.error('移动失败');
+      toast.error(t.messages?.moveFailed || '移动失败');
     } finally {
       handleDragEnd();
     }
@@ -516,7 +523,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
   // 下载功能
   const handleDownload = async (asset: AdsAssetsVO) => {
     if (!asset.assetUrl || !asset.assetName) {
-      toast.error('素材URL或名称不存在');
+      toast.error(t.messages?.assetUrlOrNameMissing || '素材URL或名称不存在');
       return;
     }
     const a = document.createElement('a');
@@ -718,7 +725,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
                   : 'border-transparent text-muted hover:text-foreground'
               }`}
             >
-              个人文件
+              {t.personalFiles || '个人文件'}
             </button>
             {hasTeams && (
               <button
@@ -729,7 +736,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
                     : 'border-transparent text-muted hover:text-foreground'
                 }`}
               >
-                共享文件
+                {t.sharedFiles || '共享文件'}
               </button>
             )}
           </div>
@@ -951,6 +958,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
             .filter(a => a && a.dataType === 2)
             .map(a => Number(a!.id))}
           currentFolderId={currentFolderId}
+          translations={t.moveModal}
         />
       )}
       
@@ -959,6 +967,8 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
+        confirmText={t.confirm || '确定'}
+        cancelText={t.cancel || '取消'}
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
         type="danger"

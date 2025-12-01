@@ -108,6 +108,7 @@ export interface TeamLogsQuery {
   types?: string; // 费用类型，逗号分隔：'1'=充值，'2'=消费
   startTime?: number; // 开始时间（Unix时间戳，秒）
   endTime?: number; // 结束时间（Unix时间戳，秒）
+  language?: string; // 语言：zh_CN, en_US, id_ID
   [key: string]: any;
 }
 

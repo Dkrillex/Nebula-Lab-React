@@ -1018,9 +1018,28 @@ interface Translation {
     consumption: string;
     recharge: string;
     netAmount: string;
-    total: string;
-    consumedPoints: string;
-    record: {
+      total: string;
+      consumedPoints: string;
+      points: string;
+      pointsBill: string;
+      exportHeaders: {
+        time: string;
+        serviceType: string;
+        points: string;
+        status: string;
+        taskId: string;
+      };
+      balanceExportHeaders: {
+        time: string;
+        serviceModel: string;
+        type: string;
+        cost: string;
+        duration: string;
+        inputToken: string;
+        outputToken: string;
+      };
+      balanceBill: string;
+      record: {
       type: string;
       duration: string;
       input: string;
@@ -1057,12 +1076,16 @@ interface Translation {
       nextPage: string;
       lastPage: string;
       recordsPerPage: string;
+      logsBill: string;
     };
-    exportError: string;
-    exportSuccess: string;
-    selectTeamFirst: string;
-    unknownService: string;
-  };
+      exportError: string;
+      exportSuccess: string;
+      selectTeamFirst: string;
+      unknownService: string;
+      serviceTypes: {
+        [key: number]: string;
+      };
+    };
   pricingPage: {
     title: string;
     subtitle: string;
@@ -1264,6 +1287,46 @@ interface Translation {
     totalFolders: string;
     totalFiles: string;
     searchInResult: string;
+    personalFiles: string;
+    sharedFiles: string;
+    confirmDelete: string;
+    confirmDeleteItem: string;
+    confirmDeleteSelected: string;
+    confirm: string;
+    cancel: string;
+    folder: string;
+    material: string;
+    moveModal: {
+      title: string;
+      personalFolder: string;
+      sharedFolder: string;
+      allFiles: string;
+      loading: string;
+      newFolder: string;
+      newFolderPlaceholder: string;
+      unnamedFolder: string;
+      noFolders: string;
+      enterTeamFolderFirst: string;
+      enterTeamFolderBeforeSave: string;
+      fileAlreadyInCurrentFolder: string;
+      moveToHere: string;
+      cancel: string;
+      fetchFoldersFailed: string;
+      enterFolderName: string;
+      folderCreatedSuccess: string;
+      folderCreateFailed: string;
+    };
+    messages: {
+      deleteSuccess: string;
+      deleteFailed: string;
+      shareSuccess: string;
+      shareFailedNoTeam: string;
+      moveSuccess: string;
+      moveFailed: string;
+      operationFailed: string;
+      sharedFilesCannotDragToRoot: string;
+      assetUrlOrNameMissing: string;
+    };
   };
   profilePage: {
     title: string;
@@ -3315,6 +3378,25 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Net Amount',
       total: 'Total',
       consumedPoints: 'Consumed Points',
+      points: 'Points',
+      pointsBill: 'Points Bill',
+      exportHeaders: {
+        time: 'Time',
+        serviceType: 'Service Type',
+        points: 'Points',
+        status: 'Status',
+        taskId: 'Task ID',
+      },
+      balanceExportHeaders: {
+        time: 'Time',
+        serviceModel: 'Service/Model',
+        type: 'Type',
+        cost: 'Cost(¥)',
+        duration: 'Duration',
+        inputToken: 'Input Token',
+        outputToken: 'Output Token',
+      },
+      balanceBill: 'Balance Bill',
       record: {
         type: 'Type',
         duration: 'Duration',
@@ -3352,11 +3434,26 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Next Page',
         lastPage: 'Last Page',
         recordsPerPage: 'records/page',
+        logsBill: 'Logs Bill',
       },
       exportError: 'Export failed, please try again later',
       exportSuccess: 'Export successful',
       selectTeamFirst: 'Please select a team first',
       unknownService: 'Unknown Service',
+      serviceTypes: {
+        1: 'AI Video Mixing',
+        2: 'Product Digital Human',
+        3: 'Digital Human Video',
+        4: 'Image to Video',
+        5: 'Original Video',
+        6: 'Style Transfer',
+        7: 'AI Image Generation',
+        8: 'Voice Clone',
+        9: 'Custom Digital Human',
+        10: 'Singing Digital Human',
+        11: 'AI Video Face Swap',
+        15: 'Creation Workshop',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -3665,6 +3762,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folders',
       totalFiles: 'Files',
       searchInResult: 'Search in result',
+      personalFiles: 'Personal Files',
+      sharedFiles: 'Shared Files',
+      confirmDelete: 'Confirm Deletion',
+      confirmDeleteItem: 'Are you sure you want to delete this {type}?',
+      confirmDeleteSelected: 'Are you sure you want to delete {count} selected {item}?',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      folder: 'folder',
+      material: 'material',
+      moveModal: {
+        title: 'Move to',
+        personalFolder: 'Personal Folder',
+        sharedFolder: 'Shared Folder',
+        allFiles: 'All Files',
+        loading: 'Loading...',
+        newFolder: 'New Folder',
+        newFolderPlaceholder: 'New Folder',
+        unnamedFolder: 'Unnamed Folder',
+        noFolders: 'No folders in this directory',
+        enterTeamFolderFirst: 'Please enter team folder before operation',
+        enterTeamFolderBeforeSave: 'Please enter team folder before saving',
+        fileAlreadyInCurrentFolder: 'File is already in current folder, please select another folder',
+        moveToHere: 'Move to here',
+        cancel: 'Cancel',
+        fetchFoldersFailed: 'Failed to get folder list',
+        enterFolderName: 'Please enter folder name',
+        folderCreatedSuccess: 'Folder created successfully',
+        folderCreateFailed: 'Failed to create folder',
+      },
+      messages: {
+        deleteSuccess: 'Deleted successfully',
+        deleteFailed: 'Delete failed',
+        shareSuccess: 'Shared successfully',
+        shareFailedNoTeam: 'Unable to get team information, share failed',
+        moveSuccess: 'Moved successfully',
+        moveFailed: 'Move failed',
+        operationFailed: 'Operation failed',
+        sharedFilesCannotDragToRoot: 'Shared files cannot be dragged to root directory',
+        assetUrlOrNameMissing: 'Asset URL or name does not exist',
+      },
     },
     profilePage: {
       title: 'Personal Center',
@@ -5908,6 +6045,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: '个文件夹',
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
+      personalFiles: '个人文件',
+      sharedFiles: '共享文件',
+      confirmDelete: '确认删除',
+      confirmDeleteItem: '确认删除该{type}吗？',
+      confirmDeleteSelected: '确认删除选中的 {count} 个素材吗？',
+      confirm: '确定',
+      cancel: '取消',
+      folder: '文件夹',
+      material: '素材',
+      moveModal: {
+        title: '移动到',
+        personalFolder: '个人文件夹',
+        sharedFolder: '共享文件夹',
+        allFiles: '全部文件',
+        loading: '加载中...',
+        newFolder: '新建文件夹',
+        newFolderPlaceholder: '新建文件夹',
+        unnamedFolder: '未命名文件夹',
+        noFolders: '该目录下没有文件夹',
+        enterTeamFolderFirst: '请进入团队文件夹后再进行操作',
+        enterTeamFolderBeforeSave: '请进入团队文件夹后再保存',
+        fileAlreadyInCurrentFolder: '文件已在当前文件夹中，请选择其他文件夹',
+        moveToHere: '移动到此处',
+        cancel: '取消',
+        fetchFoldersFailed: '获取文件夹列表失败',
+        enterFolderName: '请输入文件夹名称',
+        folderCreatedSuccess: '文件夹创建成功',
+        folderCreateFailed: '创建文件夹失败',
+      },
+      messages: {
+        deleteSuccess: '删除成功',
+        deleteFailed: '删除失败',
+        shareSuccess: '分享成功',
+        shareFailedNoTeam: '无法获取团队信息，分享失败',
+        moveSuccess: '移动成功',
+        moveFailed: '移动失败',
+        operationFailed: '操作失败',
+        sharedFilesCannotDragToRoot: '共享文件不支持拖拽到根目录',
+        assetUrlOrNameMissing: '素材URL或名称不存在',
+      },
     },
     expensesPage: {
       title: '费用中心',
@@ -5949,6 +6126,25 @@ export const translations: Record<string, Translation> = {
       netAmount: '净额',
       total: '合计',
       consumedPoints: '消耗积分',
+      points: '积分',
+      pointsBill: '积分账单',
+      exportHeaders: {
+        time: '时间',
+        serviceType: '服务类型',
+        points: '积分',
+        status: '状态',
+        taskId: '任务ID',
+      },
+      balanceExportHeaders: {
+        time: '时间',
+        serviceModel: '服务/模型',
+        type: '类型',
+        cost: '费用(¥)',
+        duration: '用时',
+        inputToken: '输入Token',
+        outputToken: '输出Token',
+      },
+      balanceBill: '余额账单',
       record: {
         type: '类型',
         duration: '用时',
@@ -5986,11 +6182,26 @@ export const translations: Record<string, Translation> = {
         nextPage: '下一页',
         lastPage: '最后一页',
         recordsPerPage: '条/页',
+        logsBill: '日志账单',
       },
       exportError: '导出失败，请稍后重试',
       exportSuccess: '导出成功',
       selectTeamFirst: '请先选择团队',
       unknownService: '未知服务',
+      serviceTypes: {
+        1: 'AI混剪视频',
+        2: '产品数字人',
+        3: '数字人视频',
+        4: '图生视频',
+        5: '原创视频',
+        6: '万物迁移',
+        7: 'AI生图',
+        8: '声音克隆',
+        9: '自定义数字人',
+        10: '唱歌数字人',
+        11: 'AI视频换脸',
+        15: '创作工坊',
+      },
     },
     profilePage: {
       title: '个人中心',
@@ -7538,6 +7749,25 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Jumlah Bersih',
       total: 'Total',
       consumedPoints: 'Poin yang Dikonsumsi',
+      points: 'Poin',
+      pointsBill: 'Tagihan Poin',
+      exportHeaders: {
+        time: 'Waktu',
+        serviceType: 'Jenis Layanan',
+        points: 'Poin',
+        status: 'Status',
+        taskId: 'ID Tugas',
+      },
+      balanceExportHeaders: {
+        time: 'Waktu',
+        serviceModel: 'Layanan/Model',
+        type: 'Jenis',
+        cost: 'Biaya(¥)',
+        duration: 'Durasi',
+        inputToken: 'Token Input',
+        outputToken: 'Token Output',
+      },
+      balanceBill: 'Tagihan Saldo',
       record: {
         type: 'Jenis',
         duration: 'Durasi',
@@ -7575,11 +7805,26 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Halaman Berikutnya',
         lastPage: 'Halaman Terakhir',
         recordsPerPage: 'catatan/halaman',
+        logsBill: 'Tagihan Log',
       },
       exportError: 'Ekspor gagal, silakan coba lagi nanti',
       exportSuccess: 'Ekspor berhasil',
       selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
       unknownService: 'Layanan Tidak Diketahui',
+      serviceTypes: {
+        1: 'Pencampuran Video AI',
+        2: 'Manusia Digital Produk',
+        3: 'Video Manusia Digital',
+        4: 'Gambar ke Video',
+        5: 'Video Orisinil',
+        6: 'Transfer Gaya',
+        7: 'Pembuatan Gambar AI',
+        8: 'Kloning Suara',
+        9: 'Manusia Digital Kustom',
+        10: 'Manusia Digital Bernyanyi',
+        11: 'Tukar Wajah Video AI',
+        15: 'Workshop Kreatif',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -7888,6 +8133,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folder',
       totalFiles: 'File',
       searchInResult: 'Cari dalam hasil',
+      personalFiles: 'File Pribadi',
+      sharedFiles: 'File Bersama',
+      confirmDelete: 'Konfirmasi Hapus',
+      confirmDeleteItem: 'Apakah Anda yakin ingin menghapus {type} ini?',
+      confirmDeleteSelected: 'Apakah Anda yakin ingin menghapus {count} {item} yang dipilih?',
+      confirm: 'Konfirmasi',
+      cancel: 'Batal',
+      folder: 'folder',
+      material: 'materi',
+      moveModal: {
+        title: 'Pindahkan ke',
+        personalFolder: 'Folder Pribadi',
+        sharedFolder: 'Folder Bersama',
+        allFiles: 'Semua File',
+        loading: 'Memuat...',
+        newFolder: 'Folder Baru',
+        newFolderPlaceholder: 'Folder Baru',
+        unnamedFolder: 'Folder Tanpa Nama',
+        noFolders: 'Tidak ada folder di direktori ini',
+        enterTeamFolderFirst: 'Silakan masuk ke folder tim terlebih dahulu sebelum melakukan operasi',
+        enterTeamFolderBeforeSave: 'Silakan masuk ke folder tim terlebih dahulu sebelum menyimpan',
+        fileAlreadyInCurrentFolder: 'File sudah ada di folder saat ini, silakan pilih folder lain',
+        moveToHere: 'Pindahkan ke sini',
+        cancel: 'Batal',
+        fetchFoldersFailed: 'Gagal mendapatkan daftar folder',
+        enterFolderName: 'Silakan masukkan nama folder',
+        folderCreatedSuccess: 'Folder berhasil dibuat',
+        folderCreateFailed: 'Gagal membuat folder',
+      },
+      messages: {
+        deleteSuccess: 'Berhasil dihapus',
+        deleteFailed: 'Gagal menghapus',
+        shareSuccess: 'Berhasil dibagikan',
+        shareFailedNoTeam: 'Tidak dapat mendapatkan informasi tim, berbagi gagal',
+        moveSuccess: 'Berhasil dipindahkan',
+        moveFailed: 'Gagal memindahkan',
+        operationFailed: 'Operasi gagal',
+        sharedFilesCannotDragToRoot: 'File bersama tidak dapat diseret ke direktori root',
+        assetUrlOrNameMissing: 'URL atau nama aset tidak ada',
+      },
     },
     profilePage: {
       title: 'Pusat Pribadi',
