@@ -746,6 +746,24 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
   return (
     <div className="w-full">
+      <style>{`
+        /* 隐藏主滚动容器的滚动条 */
+        #dashboard-main-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        #dashboard-main-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        /* 隐藏横向滚动区域的滚动条 */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
       <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl">
             {/* Hero Greeting */}
             <div className="text-center mb-8">
@@ -828,7 +846,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
             </div>
 
             {/* Creative Types (Horizontal Scroll) */}
-            <div className="mb-8 overflow-x-auto pb-4 custom-scrollbar">
+            <div className="mb-8 overflow-x-auto pb-4 hide-scrollbar">
               <div className="flex gap-4 min-w-max px-1">
                 {creativeTypes.map((item) => (
                   <div 
