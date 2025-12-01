@@ -1005,9 +1005,18 @@ interface Translation {
     consumption: string;
     recharge: string;
     netAmount: string;
-    total: string;
-    consumedPoints: string;
-    record: {
+      total: string;
+      consumedPoints: string;
+      points: string;
+      pointsBill: string;
+      exportHeaders: {
+        time: string;
+        serviceType: string;
+        points: string;
+        status: string;
+        taskId: string;
+      };
+      record: {
       type: string;
       duration: string;
       input: string;
@@ -1045,11 +1054,14 @@ interface Translation {
       lastPage: string;
       recordsPerPage: string;
     };
-    exportError: string;
-    exportSuccess: string;
-    selectTeamFirst: string;
-    unknownService: string;
-  };
+      exportError: string;
+      exportSuccess: string;
+      selectTeamFirst: string;
+      unknownService: string;
+      serviceTypes: {
+        [key: number]: string;
+      };
+    };
   pricingPage: {
     title: string;
     subtitle: string;
@@ -3318,6 +3330,15 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Net Amount',
       total: 'Total',
       consumedPoints: 'Consumed Points',
+      points: 'Points',
+      pointsBill: 'Points Bill',
+      exportHeaders: {
+        time: 'Time',
+        serviceType: 'Service Type',
+        points: 'Points',
+        status: 'Status',
+        taskId: 'Task ID',
+      },
       record: {
         type: 'Type',
         duration: 'Duration',
@@ -3360,6 +3381,20 @@ export const translations: Record<string, Translation> = {
       exportSuccess: 'Export successful',
       selectTeamFirst: 'Please select a team first',
       unknownService: 'Unknown Service',
+      serviceTypes: {
+        1: 'AI Video Mixing',
+        2: 'Product Digital Human',
+        3: 'Digital Human Video',
+        4: 'Image to Video',
+        5: 'Original Video',
+        6: 'Style Transfer',
+        7: 'AI Image Generation',
+        8: 'Voice Clone',
+        9: 'Custom Digital Human',
+        10: 'Singing Digital Human',
+        11: 'AI Video Face Swap',
+        15: 'Creation Workshop',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -6008,6 +6043,15 @@ export const translations: Record<string, Translation> = {
       netAmount: '净额',
       total: '合计',
       consumedPoints: '消耗积分',
+      points: '积分',
+      pointsBill: '积分账单',
+      exportHeaders: {
+        time: '时间',
+        serviceType: '服务类型',
+        points: '积分',
+        status: '状态',
+        taskId: '任务ID',
+      },
       record: {
         type: '类型',
         duration: '用时',
@@ -6050,6 +6094,20 @@ export const translations: Record<string, Translation> = {
       exportSuccess: '导出成功',
       selectTeamFirst: '请先选择团队',
       unknownService: '未知服务',
+      serviceTypes: {
+        1: 'AI混剪视频',
+        2: '产品数字人',
+        3: '数字人视频',
+        4: '图生视频',
+        5: '原创视频',
+        6: '万物迁移',
+        7: 'AI生图',
+        8: '声音克隆',
+        9: '自定义数字人',
+        10: '唱歌数字人',
+        11: 'AI视频换脸',
+        15: '创作工坊',
+      },
     },
     profilePage: {
       title: '个人中心',
@@ -7573,6 +7631,15 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Jumlah Bersih',
       total: 'Total',
       consumedPoints: 'Poin yang Dikonsumsi',
+      points: 'Poin',
+      pointsBill: 'Tagihan Poin',
+      exportHeaders: {
+        time: 'Waktu',
+        serviceType: 'Jenis Layanan',
+        points: 'Poin',
+        status: 'Status',
+        taskId: 'ID Tugas',
+      },
       record: {
         type: 'Jenis',
         duration: 'Durasi',
@@ -7615,6 +7682,20 @@ export const translations: Record<string, Translation> = {
       exportSuccess: 'Ekspor berhasil',
       selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
       unknownService: 'Layanan Tidak Diketahui',
+      serviceTypes: {
+        1: 'Pencampuran Video AI',
+        2: 'Manusia Digital Produk',
+        3: 'Video Manusia Digital',
+        4: 'Gambar ke Video',
+        5: 'Video Orisinil',
+        6: 'Transfer Gaya',
+        7: 'Pembuatan Gambar AI',
+        8: 'Kloning Suara',
+        9: 'Manusia Digital Kustom',
+        10: 'Manusia Digital Bernyanyi',
+        11: 'Tukar Wajah Video AI',
+        15: 'Workshop Kreatif',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',

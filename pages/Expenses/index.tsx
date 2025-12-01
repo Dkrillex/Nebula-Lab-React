@@ -476,25 +476,17 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const scores = res.rows || res.data || [];
       
       // 转换为 CSV 格式
-      const headers = ['时间', '服务类型', '积分', '状态', '任务ID'];
+      const headers = [
+        t.exportHeaders?.time || '时间',
+        t.exportHeaders?.serviceType || '服务类型',
+        t.exportHeaders?.points || '积分',
+        t.exportHeaders?.status || '状态',
+        t.exportHeaders?.taskId || '任务ID'
+      ];
       const rows = scores.map((score: ScoreRecord) => {
         const scoreValue = Number(score.score) || 0;
         const displayValue = -scoreValue; // 扣积分取反显示
-        const assetTypeMap: Record<number, string> = {
-          1: 'AI混剪视频',
-          2: '产品数字人',
-          3: '数字人视频',
-          4: '图生视频',
-          5: '原创视频',
-          6: '万物迁移',
-          7: 'AI生图',
-          8: '声音克隆',
-          9: '自定义数字人',
-          10: '唱歌数字人',
-          11: 'AI视频换脸',
-          15: '创作工坊',
-        };
-        const typeText = assetTypeMap[score.assetType] || t.unknownService;
+        const typeText = t.serviceTypes?.[score.assetType] || t.unknownService;
         const statusText = {
           '1': t.status.paid,
           '0': t.status.unpaid,
@@ -522,7 +514,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `积分账单_${formatDateToLocalString(new Date())}.csv`;
+      a.download = `${t.pointsBill || '积分账单'}_${formatDateToLocalString(new Date())}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1666,22 +1658,24 @@ const ScoreListItem: React.FC<{
   // score 是扣积分，所以取反显示
   const displayValue = -scoreValue;
   const isPositive = displayValue > 0;
-  const assetTypeMap: Record<number, { text: string; icon: string }> = {
-    1: { text: 'AI混剪视频', icon: '🎬' },
-    2: { text: '产品数字人', icon: '🤖' },
-    3: { text: '数字人视频', icon: '🎥' },
-    4: { text: '图生视频', icon: '🎞️' },
-    5: { text: '原创视频', icon: '📹' },
-    6: { text: '万物迁移', icon: '🌟' },
-    7: { text: 'AI生图', icon: '🎨' },
-    8: { text: '声音克隆', icon: '🎤' },
-    9: { text: '自定义数字人', icon: '🤖' },
-    10: { text: '唱歌数字人', icon: '🤖' },
-    11: { text: 'AI视频换脸', icon: '🤖' },
-    15: { text: '创作工坊', icon: '🤖' },
+  const assetTypeIcons: Record<number, string> = {
+    1: '🎬',
+    2: '🤖',
+    3: '🎥',
+    4: '🎞️',
+    5: '📹',
+    6: '🌟',
+    7: '🎨',
+    8: '🎤',
+    9: '🤖',
+    10: '🤖',
+    11: '🤖',
+    15: '🤖',
   };
   
-  const typeInfo = assetTypeMap[score.assetType] || { text: '未知服务', icon: '❓' };
+  const typeText = t.serviceTypes?.[score.assetType] || t.unknownService || '未知服务';
+  const typeIcon = assetTypeIcons[score.assetType] || '❓';
+  const typeInfo = { text: typeText, icon: typeIcon };
   
   // 格式化时间戳
   const formatTimestamp = (timeStr: string) => {
@@ -1735,7 +1729,7 @@ const ScoreListItem: React.FC<{
       <div className="flex flex-col items-end gap-1">
         {/* 积分值 - 扣积分显示为红色 */}
         <div className={`text-sm font-medium ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-          {isPositive ? '+' : ''}{displayValue} 积分
+          {isPositive ? '+' : ''}{displayValue} {t.points || '积分'}
         </div>
         {/* 状态 */}
         <div className={`text-xs ${statusInfo.class}`}>
@@ -1897,7 +1891,7 @@ const ScoreCard: React.FC<{
         <div className="flex items-center justify-between">
           {/* 左侧：积分值 - 扣积分显示为红色 */}
           <div className={`text-base font-bold ${isPositive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-            {isPositive ? '+' : ''}{displayValue} 积分
+            {isPositive ? '+' : ''}{displayValue} {t.points || '积分'}
           </div>
           {/* 右侧：状态按钮 */}
           <span className={`inline-flex items-center px-3 py-1 rounded text-xs font-medium ${
