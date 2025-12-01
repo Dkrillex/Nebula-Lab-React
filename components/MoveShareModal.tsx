@@ -267,7 +267,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       }
       
       await assetsService.addAssets(folderData as AdsAssetsVO);
-      toast.success(t.folderCreatedSuccess || '文件夹创建成功');
+      // toast.success(t.folderCreatedSuccess || '文件夹创建成功');
       
       // 等待一小段时间确保数据已写入
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -280,7 +280,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       setNewFolderName('');
     } catch (error) {
       console.error('创建文件夹失败:', error);
-      toast.error(t.folderCreateFailed || '创建文件夹失败');
+      // toast.error(t.folderCreateFailed || '创建文件夹失败');
     } finally {
       setCreating(false);
     }

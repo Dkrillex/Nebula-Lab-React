@@ -88,6 +88,7 @@ export const assetsService = {
   addAssets: (data: AdsAssetsForm) => {
     return request.post<ApiResponse<void>>('/ads/adsAssets', data, {
       successMessageMode: 'message', // 使用动态接口返回的成功消息
+      errorMessageMode: 'message'
     });
   },
 
