@@ -5631,20 +5631,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* AI生成的图片 */}
         {isAssistant && message.generatedImages && message.generatedImages.length > 0 && 
-         message.generatedImages.some(img => img.url && img.url.trim() !== '') && (
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {message.generatedImages
-              .filter(img => img.url && img.url.trim() !== '')
-              .map((img) => (
-              <div key={img.id} className="relative group">
-                <img 
-                  src={img.url} 
-                  alt={img.prompt || '生成的图片'}
-                  className="w-full rounded-lg border border-border cursor-pointer"
-                  onClick={() => onPreview?.('image', img.url)}
-                />
-                {/* 操作按钮 - 右上角 */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
+         message.generatedImages.some(img => img.url && img.url.trim() !== '') && (() => {
+           const validImages = message.generatedImages.filter(img => img.url && img.url.trim() !== '');
+           const imageCount = validImages.length;
+           const useGrid = imageCount >= 2;
+           
+           return (
+             <div className={`mt-2 grid grid-cols-1 ${useGrid ? 'sm:grid-cols-2' : ''} gap-3`}>
+               {validImages.map((img) => (
+                 <div key={img.id} className={`relative group flex flex-col ${!useGrid ? 'items-center' : ''}`}>
+                   <div className={`relative ${!useGrid ? 'flex justify-center' : ''}`}>
+                     <img 
+                       src={img.url} 
+                       alt={img.prompt || '生成的图片'}
+                       className={`${!useGrid ? 'w-auto h-auto max-w-full max-h-[75vh] object-contain' : 'w-full'} rounded-lg border border-border cursor-pointer`}
+                       onClick={() => onPreview?.('image', img.url)}
+                     />
+                    {/* 操作按钮 - 右上角 */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -5700,14 +5704,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       <Video size={16} className="text-gray-700 dark:text-gray-300" />
                     </button>
                   )}
-                </div>
-                {img.prompt && (
-                  <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                    </div>
+                   </div>
+                   {img.prompt && (
+                     <div className={`mt-1 text-xs text-muted ${!useGrid ? 'text-center' : 'truncate'}`}>{img.prompt}</div>
+                   )}
+                 </div>
+               ))}
+             </div>
+           );
+         })()}
 
         {/* 没有图片URL但有revised_prompt时显示文本卡片 */}
         {isAssistant && currentMode === 'image' && message.generatedImages && message.generatedImages.length > 0 && 
