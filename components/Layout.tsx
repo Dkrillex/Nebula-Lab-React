@@ -60,6 +60,19 @@ const LayoutContent: React.FC = () => {
     }
   }, [isAuthenticated, user, loading, fetchUserInfo]);
 
+  // 处理已登录用户访问带邀请参数的链接
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const channelId = urlParams.get('channelId');
+    const teamId = urlParams.get('teamId');
+    const inviteCode = urlParams.get('inviteCode');
+    // 只有当 URL 中存在邀请相关参数，且用户已登录且不在加载中时才触发
+    // fetchUserInfo 内部会处理这些参数并调用加入接口
+    if ((channelId || teamId || inviteCode) && isAuthenticated && !loading) {
+      fetchUserInfo();
+    }
+  }, [location.search, isAuthenticated, loading, fetchUserInfo]);
+
   const t = translations[lang];
 
   // Helper to map path to View type and Tool
