@@ -126,6 +126,7 @@ export const keyService = {
   createToken: (data: TokenForm) => {
     return request.post<ApiResponse<void>>('/llm/tokens', data, {
       successMessageMode: 'message',
+      errorMessageMode: 'message'
     });
   },
 
@@ -137,6 +138,7 @@ export const keyService = {
   updateToken: (data: TokenForm) => {
     return request.put<ApiResponse<void>>('/llm/tokens', data, {
       successMessageMode: 'message',
+      errorMessageMode: 'message'
     });
   },
 
@@ -149,6 +151,7 @@ export const keyService = {
     const ids = Array.isArray(id) ? id.join(',') : id;
     return request.delete<ApiResponse<void>>(`/llm/tokens/${ids}`, {
       successMessageMode: 'message',
+      errorMessageMode: 'message'
     });
   },
 

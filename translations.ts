@@ -1108,6 +1108,7 @@ interface Translation {
       paySuccess: string;
       thankYou: string;
       payAmount: string;
+      invoiceInfo: string;
       generatingQR: string;
       pleaseWait: string;
       step1: string;
@@ -1228,6 +1229,7 @@ interface Translation {
         taxNumberRequired: string;
         emailRequired: string;
         emailInvalid: string;
+        emailMissingAt: string;
       };
       cancel: string;
       confirm: string;
@@ -3507,6 +3509,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: 'Payment Successful!',
         thankYou: 'Thank you for your purchase',
         payAmount: 'Payment Amount',
+        invoiceInfo: 'Invoice Information',
         generatingQR: 'Generating QR Code',
         pleaseWait: 'Please wait...',
         step1: 'Open WeChat Scan',
@@ -3626,7 +3629,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: 'Please enter invoice header name',
           taxNumberRequired: 'Please enter taxpayer identification number',
           emailRequired: 'Please enter email',
-          emailInvalid: 'Please enter a valid email address'
+          emailInvalid: 'Please enter a valid email address',
+          emailMissingAt: "Please include '@' in the email address. '@' is missing in '{email}'"
         },
         cancel: 'Cancel',
         confirm: 'Confirm'
@@ -5748,6 +5752,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: '支付成功！',
         thankYou: '感谢您的购买',
         payAmount: '支付金额',
+        invoiceInfo: '发票信息',
         generatingQR: '正在生成支付二维码',
         pleaseWait: '请稍候...',
         step1: '打开微信扫一扫',
@@ -5867,7 +5872,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: '请输入发票抬头名称',
           taxNumberRequired: '请输入纳税人识别号',
           emailRequired: '请输入邮箱',
-          emailInvalid: '请输入有效的邮箱地址'
+          emailInvalid: '请输入有效的邮箱地址',
+          emailMissingAt: "邮箱地址中必须包含 '@' 符号，'{email}' 中缺少 '@'"
         },
         cancel: '取消',
         confirm: '确定'
@@ -7726,6 +7732,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: 'Pembayaran Berhasil!',
         thankYou: 'Terima kasih atas pembelian Anda',
         payAmount: 'Jumlah Pembayaran',
+        invoiceInfo: 'Informasi Faktur',
         generatingQR: 'Membuat Kode QR',
         pleaseWait: 'Mohon tunggu...',
         step1: 'Buka WeChat Scan',
@@ -7845,7 +7852,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: 'Silakan masukkan nama header faktur',
           taxNumberRequired: 'Silakan masukkan nomor identifikasi wajib pajak',
           emailRequired: 'Silakan masukkan email',
-          emailInvalid: 'Silakan masukkan alamat email yang valid'
+          emailInvalid: 'Silakan masukkan alamat email yang valid',
+          emailMissingAt: "Harap sertakan '@' dalam alamat email. '@' tidak ada di '{email}'"
         },
         cancel: 'Batal',
         confirm: 'Konfirmasi'
