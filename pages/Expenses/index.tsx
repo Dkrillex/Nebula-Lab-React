@@ -414,7 +414,15 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const logs = res.rows || res.data || [];
       
       // 转换为 CSV 格式
-      const headers = ['时间', '服务/模型', '类型', '费用(¥)', '用时', '输入Token', '输出Token'];
+      const headers = [
+        t.balanceExportHeaders?.time || '时间',
+        t.balanceExportHeaders?.serviceModel || '服务/模型',
+        t.balanceExportHeaders?.type || '类型',
+        t.balanceExportHeaders?.cost || '费用(¥)',
+        t.balanceExportHeaders?.duration || '用时',
+        t.balanceExportHeaders?.inputToken || '输入Token',
+        t.balanceExportHeaders?.outputToken || '输出Token'
+      ];
       const rows = logs.map((log: ExpenseLog) => {
         const isConsumption = String(log.type) === '2';
         const timeStr = log.createTime || (log.createdAt ? new Date(log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000).toLocaleString('zh-CN') : '-');
@@ -444,14 +452,14 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `余额账单_${formatDateToLocalString(new Date())}.csv`;
+      a.download = `${t.balanceBill || '余额账单'}_${formatDateToLocalString(new Date())}.csv`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请稍后重试');
+      alert(t.exportError || '导出失败，请稍后重试');
     }
   };
 
@@ -521,7 +529,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请稍后重试');
+      alert(t.exportError || '导出失败，请稍后重试');
     }
   };
 
@@ -575,7 +583,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error('导出失败:', error);
-      alert('导出失败，请稍后重试');
+      alert(t.exportError || '导出失败，请稍后重试');
     }
   };
 

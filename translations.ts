@@ -1016,6 +1016,16 @@ interface Translation {
         status: string;
         taskId: string;
       };
+      balanceExportHeaders: {
+        time: string;
+        serviceModel: string;
+        type: string;
+        cost: string;
+        duration: string;
+        inputToken: string;
+        outputToken: string;
+      };
+      balanceBill: string;
       record: {
       type: string;
       duration: string;
@@ -3339,6 +3349,16 @@ export const translations: Record<string, Translation> = {
         status: 'Status',
         taskId: 'Task ID',
       },
+      balanceExportHeaders: {
+        time: 'Time',
+        serviceModel: 'Service/Model',
+        type: 'Type',
+        cost: 'Cost(¥)',
+        duration: 'Duration',
+        inputToken: 'Input Token',
+        outputToken: 'Output Token',
+      },
+      balanceBill: 'Balance Bill',
       record: {
         type: 'Type',
         duration: 'Duration',
@@ -6052,6 +6072,16 @@ export const translations: Record<string, Translation> = {
         status: '状态',
         taskId: '任务ID',
       },
+      balanceExportHeaders: {
+        time: '时间',
+        serviceModel: '服务/模型',
+        type: '类型',
+        cost: '费用(¥)',
+        duration: '用时',
+        inputToken: '输入Token',
+        outputToken: '输出Token',
+      },
+      balanceBill: '余额账单',
       record: {
         type: '类型',
         duration: '用时',
@@ -7640,6 +7670,16 @@ export const translations: Record<string, Translation> = {
         status: 'Status',
         taskId: 'ID Tugas',
       },
+      balanceExportHeaders: {
+        time: 'Waktu',
+        serviceModel: 'Layanan/Model',
+        type: 'Jenis',
+        cost: 'Biaya(¥)',
+        duration: 'Durasi',
+        inputToken: 'Token Input',
+        outputToken: 'Token Output',
+      },
+      balanceBill: 'Tagihan Saldo',
       record: {
         type: 'Jenis',
         duration: 'Durasi',
