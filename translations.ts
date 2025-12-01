@@ -1253,6 +1253,17 @@ interface Translation {
     searchInResult: string;
     personalFiles: string;
     sharedFiles: string;
+    messages: {
+      deleteSuccess: string;
+      deleteFailed: string;
+      shareSuccess: string;
+      shareFailedNoTeam: string;
+      moveSuccess: string;
+      moveFailed: string;
+      operationFailed: string;
+      sharedFilesCannotDragToRoot: string;
+      assetUrlOrNameMissing: string;
+    };
   };
   profilePage: {
     title: string;
@@ -3632,6 +3643,17 @@ export const translations: Record<string, Translation> = {
       searchInResult: 'Search in result',
       personalFiles: 'Personal Files',
       sharedFiles: 'Shared Files',
+      messages: {
+        deleteSuccess: 'Deleted successfully',
+        deleteFailed: 'Delete failed',
+        shareSuccess: 'Shared successfully',
+        shareFailedNoTeam: 'Unable to get team information, share failed',
+        moveSuccess: 'Moved successfully',
+        moveFailed: 'Move failed',
+        operationFailed: 'Operation failed',
+        sharedFilesCannotDragToRoot: 'Shared files cannot be dragged to root directory',
+        assetUrlOrNameMissing: 'Asset URL or name does not exist',
+      },
     },
     profilePage: {
       title: 'Personal Center',
@@ -5853,6 +5875,17 @@ export const translations: Record<string, Translation> = {
       searchInResult: '筛选搜索',
       personalFiles: '个人文件',
       sharedFiles: '共享文件',
+      messages: {
+        deleteSuccess: '删除成功',
+        deleteFailed: '删除失败',
+        shareSuccess: '分享成功',
+        shareFailedNoTeam: '无法获取团队信息，分享失败',
+        moveSuccess: '移动成功',
+        moveFailed: '移动失败',
+        operationFailed: '操作失败',
+        sharedFilesCannotDragToRoot: '共享文件不支持拖拽到根目录',
+        assetUrlOrNameMissing: '素材URL或名称不存在',
+      },
     },
     expensesPage: {
       title: '费用中心',
@@ -7811,6 +7844,17 @@ export const translations: Record<string, Translation> = {
       searchInResult: 'Cari dalam hasil',
       personalFiles: 'File Pribadi',
       sharedFiles: 'File Bersama',
+      messages: {
+        deleteSuccess: 'Berhasil dihapus',
+        deleteFailed: 'Gagal menghapus',
+        shareSuccess: 'Berhasil dibagikan',
+        shareFailedNoTeam: 'Tidak dapat mendapatkan informasi tim, berbagi gagal',
+        moveSuccess: 'Berhasil dipindahkan',
+        moveFailed: 'Gagal memindahkan',
+        operationFailed: 'Operasi gagal',
+        sharedFilesCannotDragToRoot: 'File bersama tidak dapat diseret ke direktori root',
+        assetUrlOrNameMissing: 'URL atau nama aset tidak ada',
+      },
     },
     profilePage: {
       title: 'Pusat Pribadi',

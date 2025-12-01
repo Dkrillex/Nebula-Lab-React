@@ -321,10 +321,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
         try {
           await assetsService.removeAssets(asset.id);
           await fetchAssets();
-          toast.success('删除成功');
+          toast.success(t.messages?.deleteSuccess || '删除成功');
         } catch (error) {
           console.error('Delete failed:', error);
-          toast.error('删除失败');
+          toast.error(t.messages?.deleteFailed || '删除失败');
         }
       },
     });
@@ -343,10 +343,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
           await assetsService.removeAssets(ids);
           setSelectedAssets(new Set());
           await fetchAssets();
-          toast.success('删除成功');
+          toast.success(t.messages?.deleteSuccess || '删除成功');
         } catch (error) {
           console.error('Multi delete failed:', error);
-          toast.error('删除失败');
+          toast.error(t.messages?.deleteFailed || '删除失败');
         }
       },
     });
@@ -380,7 +380,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
       if (isShare) {
         // 分享（复制）
         if (targetTab === 'shared' && !teamId) {
-          toast.error('无法获取团队信息，分享失败');
+          toast.error(t.messages?.shareFailedNoTeam || '无法获取团队信息，分享失败');
           return;
         }
         
@@ -420,11 +420,11 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
           await assetsService.addAssets(shareData as AdsAssetsVO);
         }
         
-        toast.success('分享成功');
+        toast.success(t.messages?.shareSuccess || '分享成功');
       } else {
         // 移动文件（在同一 tab 内移动，或同团队内移动）
         await assetsService.moveAssets(ids as (string | number)[], targetFolderId || undefined);
-        toast.success('移动成功');
+        toast.success(t.messages?.moveSuccess || '移动成功');
       }
 
       setSelectedAssets(new Set());
@@ -432,7 +432,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
       await fetchAssets();
     } catch (error) {
       console.error('操作失败:', error);
-      toast.error('操作失败');
+      toast.error(t.messages?.operationFailed || '操作失败');
     }
   };
 
@@ -474,10 +474,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], folderId);
       await fetchAssets();
-      toast.success('移动成功');
+      toast.success(t.messages?.moveSuccess || '移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      toast.error('移动失败');
+      toast.error(t.messages?.moveFailed || '移动失败');
     } finally {
       handleDragEnd();
     }
@@ -490,7 +490,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     if (!draggedAsset) return;
 
     if (activeTab === 'shared') {
-      toast.error('共享文件不支持拖拽到根目录');
+      toast.error(t.messages?.sharedFilesCannotDragToRoot || '共享文件不支持拖拽到根目录');
       handleDragEnd();
       return;
     }
@@ -498,10 +498,10 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
     try {
       await assetsService.moveAssets([String(draggedAsset.id)], undefined);
       await fetchAssets();
-      toast.success('移动成功');
+      toast.success(t.messages?.moveSuccess || '移动成功');
     } catch (error) {
       console.error('拖拽移动失败:', error);
-      toast.error('移动失败');
+      toast.error(t.messages?.moveFailed || '移动失败');
     } finally {
       handleDragEnd();
     }
@@ -516,7 +516,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
   // 下载功能
   const handleDownload = async (asset: AdsAssetsVO) => {
     if (!asset.assetUrl || !asset.assetName) {
-      toast.error('素材URL或名称不存在');
+      toast.error(t.messages?.assetUrlOrNameMissing || '素材URL或名称不存在');
       return;
     }
     const a = document.createElement('a');
