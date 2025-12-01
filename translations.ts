@@ -1260,6 +1260,26 @@ interface Translation {
     cancel: string;
     folder: string;
     material: string;
+    moveModal: {
+      title: string;
+      personalFolder: string;
+      sharedFolder: string;
+      allFiles: string;
+      loading: string;
+      newFolder: string;
+      newFolderPlaceholder: string;
+      unnamedFolder: string;
+      noFolders: string;
+      enterTeamFolderFirst: string;
+      enterTeamFolderBeforeSave: string;
+      fileAlreadyInCurrentFolder: string;
+      moveToHere: string;
+      cancel: string;
+      fetchFoldersFailed: string;
+      enterFolderName: string;
+      folderCreatedSuccess: string;
+      folderCreateFailed: string;
+    };
     messages: {
       deleteSuccess: string;
       deleteFailed: string;
@@ -3657,6 +3677,26 @@ export const translations: Record<string, Translation> = {
       cancel: 'Cancel',
       folder: 'folder',
       material: 'material',
+      moveModal: {
+        title: 'Move to',
+        personalFolder: 'Personal Folder',
+        sharedFolder: 'Shared Folder',
+        allFiles: 'All Files',
+        loading: 'Loading...',
+        newFolder: 'New Folder',
+        newFolderPlaceholder: 'New Folder',
+        unnamedFolder: 'Unnamed Folder',
+        noFolders: 'No folders in this directory',
+        enterTeamFolderFirst: 'Please enter team folder before operation',
+        enterTeamFolderBeforeSave: 'Please enter team folder before saving',
+        fileAlreadyInCurrentFolder: 'File is already in current folder, please select another folder',
+        moveToHere: 'Move to here',
+        cancel: 'Cancel',
+        fetchFoldersFailed: 'Failed to get folder list',
+        enterFolderName: 'Please enter folder name',
+        folderCreatedSuccess: 'Folder created successfully',
+        folderCreateFailed: 'Failed to create folder',
+      },
       messages: {
         deleteSuccess: 'Deleted successfully',
         deleteFailed: 'Delete failed',
@@ -5896,6 +5936,26 @@ export const translations: Record<string, Translation> = {
       cancel: '取消',
       folder: '文件夹',
       material: '素材',
+      moveModal: {
+        title: '移动到',
+        personalFolder: '个人文件夹',
+        sharedFolder: '共享文件夹',
+        allFiles: '全部文件',
+        loading: '加载中...',
+        newFolder: '新建文件夹',
+        newFolderPlaceholder: '新建文件夹',
+        unnamedFolder: '未命名文件夹',
+        noFolders: '该目录下没有文件夹',
+        enterTeamFolderFirst: '请进入团队文件夹后再进行操作',
+        enterTeamFolderBeforeSave: '请进入团队文件夹后再保存',
+        fileAlreadyInCurrentFolder: '文件已在当前文件夹中，请选择其他文件夹',
+        moveToHere: '移动到此处',
+        cancel: '取消',
+        fetchFoldersFailed: '获取文件夹列表失败',
+        enterFolderName: '请输入文件夹名称',
+        folderCreatedSuccess: '文件夹创建成功',
+        folderCreateFailed: '创建文件夹失败',
+      },
       messages: {
         deleteSuccess: '删除成功',
         deleteFailed: '删除失败',
@@ -7872,6 +7932,26 @@ export const translations: Record<string, Translation> = {
       cancel: 'Batal',
       folder: 'folder',
       material: 'materi',
+      moveModal: {
+        title: 'Pindahkan ke',
+        personalFolder: 'Folder Pribadi',
+        sharedFolder: 'Folder Bersama',
+        allFiles: 'Semua File',
+        loading: 'Memuat...',
+        newFolder: 'Folder Baru',
+        newFolderPlaceholder: 'Folder Baru',
+        unnamedFolder: 'Folder Tanpa Nama',
+        noFolders: 'Tidak ada folder di direktori ini',
+        enterTeamFolderFirst: 'Silakan masuk ke folder tim terlebih dahulu sebelum melakukan operasi',
+        enterTeamFolderBeforeSave: 'Silakan masuk ke folder tim terlebih dahulu sebelum menyimpan',
+        fileAlreadyInCurrentFolder: 'File sudah ada di folder saat ini, silakan pilih folder lain',
+        moveToHere: 'Pindahkan ke sini',
+        cancel: 'Batal',
+        fetchFoldersFailed: 'Gagal mendapatkan daftar folder',
+        enterFolderName: 'Silakan masukkan nama folder',
+        folderCreatedSuccess: 'Folder berhasil dibuat',
+        folderCreateFailed: 'Gagal membuat folder',
+      },
       messages: {
         deleteSuccess: 'Berhasil dihapus',
         deleteFailed: 'Gagal menghapus',

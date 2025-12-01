@@ -958,6 +958,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
             .filter(a => a && a.dataType === 2)
             .map(a => Number(a!.id))}
           currentFolderId={currentFolderId}
+          translations={t.moveModal}
         />
       )}
       
