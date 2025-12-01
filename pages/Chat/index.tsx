@@ -37,6 +37,7 @@ import {
   VIDEO_RATIOS,
   getImageUploadRestrictions
 } from './modelConstants';
+import { showImageCrop } from '../../components/use-image-crop';
 
 // 扩展消息类型，支持图片和视频
 interface ExtendedChatMessage extends ChatMessage {
@@ -72,6 +73,7 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
   const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
+  const componentsT = rawT?.components || translations['zh'].components;
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -486,7 +488,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         (m) =>
           m.modelName?.toLowerCase() === urlModelName.toLowerCase() ||
           m.modelName?.toLowerCase().includes(urlModelName.toLowerCase()) ||
-          urlModelName.toLowerCase().includes(m.modelName?.toLowerCase() || '')
+          urlModelName.toLowerCase().includes(m.modelName || '')
       );
     }
 
@@ -517,7 +519,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       previousModeRef.current = currentMode;
     }
     
-    setSelectedModel(''); // 切换模式时清空选中的模型
+    // 如果当前URL指定了model_name且已处理，则不清空选中的模型（防止切换模式时覆盖URL指定的模型）
+    // 注意：这通常发生在初始化加载或URL直接跳转时
+    const urlModelName = new URLSearchParams(window.location.search).get('model_name');
+    const isUrlProcessed = processedModelNameRef.current === urlModelName;
+    
+    if (!isUrlProcessed || !urlModelName) {
+      setSelectedModel(''); // 切换模式时清空选中的模型
+    } else {
+      console.log('🔄 模式切换，但保留URL指定的模型:', urlModelName);
+    }
+    
     setChatRecords([]); // 切换模式时清空历史记录
     setSelectedRecordId(null); // 清空选中的记录ID
     // updateModelsForCurrentMode 已由上面的 useEffect 监听 currentMode 变化自动调用
@@ -567,6 +579,15 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 监听模型列表变化，自动选择第一个模型
   useEffect(() => {
+    // 检查是否有URL参数且已处理
+    const urlModelName = searchParams.get('model_name');
+    const isUrlProcessed = processedModelNameRef.current === urlModelName;
+
+    // 如果有URL参数且已处理，不要自动选择第一个模型，避免覆盖
+    if (urlModelName && isUrlProcessed) {
+      return;
+    }
+
     if (models.length > 0 && !selectedModel) {
       const firstModel = models[0].modelName;
       if (firstModel) {
@@ -574,7 +595,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         console.log('✅ 自动选择第一个模型:', firstModel);
       }
     }
-  }, [models, selectedModel]);
+  }, [models, selectedModel, searchParams]);
 
   // 调试：监听chatRecords变化
   useEffect(() => {
@@ -2652,7 +2673,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const validateImageFile = async (
     file: File,
     restrictions: ReturnType<typeof getImageUploadRestrictions>
-  ): Promise<{ valid: boolean; error?: string }> => {
+  ): Promise<{ valid: boolean; error?: string; base64?: string }> => {
     // 验证文件格式
     const fileType = file.type.toLowerCase();
     const normalizedType = fileType.replace(/^image\//, '');
@@ -2664,7 +2685,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         .join('、');
       return {
         valid: false,
-        error: `图片格式不支持。仅支持：${formatList}`,
+        error: `${t.imageValidation.formatNotSupported}${formatList}`,
       };
     }
 
@@ -2673,14 +2694,28 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     if (file.size > maxSizeBytes) {
       return {
         valid: false,
-        error: `文件大小超过限制。最大允许：${restrictions.maxFileSize}MB`,
+        error: `${t.imageValidation.sizeExceeded}${restrictions.maxFileSize}MB`,
       };
     }
 
     // 验证图片尺寸
-    return new Promise((resolve) => {
+    return validateImageDimensions(await fileToBase64(file), restrictions);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const validateImageDimensions = (
+    base64: string,
+    restrictions: ReturnType<typeof getImageUploadRestrictions>
+  ): Promise<{ valid: boolean; error?: string; base64?: string }> => {
+    return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
           const width = img.width;
@@ -2690,7 +2725,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (restrictions.minImageSize && (width < restrictions.minImageSize || height < restrictions.minImageSize)) {
             resolve({
               valid: false,
-              error: `图片分辨率不符合要求：宽高需至少 ${restrictions.minImageSize} 像素`,
+              error: t.imageValidation.minResolution.replace('{0}', restrictions.minImageSize.toString()),
             });
             return;
           }
@@ -2698,7 +2733,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (restrictions.maxImageSize && (width > restrictions.maxImageSize || height > restrictions.maxImageSize)) {
             resolve({
               valid: false,
-              error: `图片分辨率不符合要求：宽高需不超过 ${restrictions.maxImageSize} 像素`,
+              error: t.imageValidation.maxResolution.replace('{0}', restrictions.maxImageSize.toString()),
             });
             return;
           }
@@ -2709,15 +2744,73 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               dim => dim.width === width && dim.height === height
             );
             if (!matches) {
+              // sora-2 模型：弹出裁剪弹窗
+              if (selectedModel === 'sora-2') {
+                let targetDim = restrictions.requiredDimensions[0];
+                // 如果有多个目标尺寸，尝试智能匹配
+                if (restrictions.requiredDimensions.length > 1) {
+                   const imgRatio = width / height;
+                   // 图片横屏优先匹配横屏目标
+                   if (imgRatio > 1) {
+                       const landscape = restrictions.requiredDimensions.find(d => d.width > d.height);
+                       if (landscape) targetDim = landscape;
+                   } else {
+                       // 图片竖屏优先匹配竖屏目标
+                       const portrait = restrictions.requiredDimensions.find(d => d.width < d.height);
+                       if (portrait) targetDim = portrait;
+                   }
+                }
+
+                showImageCrop({
+                    src: base64,
+                    targetWidth: targetDim.width,
+                    targetHeight: targetDim.height,
+                    aspectRatio: targetDim.width / targetDim.height,
+                    title: t.imageValidation.sora2CropTitle,
+                    texts: {
+                      title: componentsT.imageCrop.title,
+                      ratio: componentsT.imageCrop.ratio,
+                      reset: componentsT.imageCrop.reset,
+                      cancel: componentsT.imageCrop.cancel,
+                      confirm: componentsT.imageCrop.confirm,
+                    }
+                }).then(result => {
+                    resolve({ valid: true, base64: result.base64 });
+                }).catch(() => {
+                    const dimsList = restrictions.requiredDimensions!
+                        .map(d => `${d.width}×${d.height}`)
+                        .join(' 或 ');
+                    resolve({
+                        valid: false,
+                        error: `${t.imageValidation.sora2Requirements}: ${dimsList} (${t.imageValidation.sora2CropCancel})`,
+                    });
+                });
+                return;
+              }
+
               const dimsList = restrictions.requiredDimensions
                 .map(d => `${d.width}×${d.height}`)
                 .join(' 或 ');
               resolve({
                 valid: false,
-                error: `图片尺寸必须完全匹配输出尺寸：${dimsList}`,
+                error: `${t.imageValidation.sora2Requirements}: ${dimsList}`,
               });
               return;
             }
+          }
+
+          // doubao- 模型检查宽高比
+          if (selectedModel.startsWith('doubao-')) {
+             const aspectRatio = width / height;
+             const minAspectRatio = 1 / 3;
+             const maxAspectRatio = 3;
+             if (aspectRatio < minAspectRatio || aspectRatio > maxAspectRatio) {
+                 resolve({
+                     valid: false,
+                     error: `${t.imageValidation.doubaoRequirements}。${t.imageValidation.doubaoRatioHint}，当前宽高比：${aspectRatio.toFixed(2)}`
+                 });
+                 return;
+             }
           }
 
           resolve({ valid: true });
@@ -2725,20 +2818,55 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         img.onerror = () => {
           resolve({
             valid: false,
-            error: '图片加载失败，请检查文件是否损坏',
+            error: t.imageValidation.loadFailed,
           });
         };
-        img.src = event.target?.result as string;
-      };
-      reader.onerror = () => {
-        resolve({
-          valid: false,
-          error: '文件读取失败',
-        });
-      };
-      reader.readAsDataURL(file);
+        img.src = base64;
     });
   };
+
+  // 监听 selectedModel 变化，重新检查已上传的图片
+  useEffect(() => {
+    if (uploadedImages.length === 0) return;
+    
+    const checkImages = async () => {
+        const newImages = [...uploadedImages];
+        let hasChanges = false;
+        
+        const restrictions = getImageUploadRestrictions(
+          selectedModel,
+          currentMode as 'image' | 'video',
+          videoAspectRatio,
+          videoResolution
+        );
+
+        if (selectedModel === 'sora-2' || selectedModel.startsWith('doubao-') || selectedModel === 'wan2.5-i2v-preview') {
+             // 倒序遍历，方便删除
+             for (let i = newImages.length - 1; i >= 0; i--) {
+                 const result = await validateImageDimensions(newImages[i], restrictions);
+                 if (!result.valid) {
+                     if (result.base64) {
+                         // 裁剪成功，替换
+                         newImages[i] = result.base64;
+                         hasChanges = true;
+                     } else {
+                         // 验证失败（且无裁剪结果），删除
+                         toast.error(result.error || '图片不符合当前模型要求，已移除');
+                         newImages.splice(i, 1);
+                         hasChanges = true;
+                     }
+                 }
+             }
+             
+             if (hasChanges) {
+                 setUploadedImages(newImages);
+             }
+        }
+    };
+    
+    checkImages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModel, videoAspectRatio, videoResolution]);
 
   const processImageFiles = async (filesInput: FileList | File[] | null) => {
     if (!filesInput || !selectedModel) return;
@@ -2788,6 +2916,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           continue;
         }
 
+        // 如果有裁剪后的 base64，直接使用
+        if (validation.base64) {
+          setUploadedImages(prev => {
+            const newImages = [...prev, validation.base64!];
+            if (newImages.length > maxImages) {
+              return prev;
+            }
+            return newImages;
+          });
+          continue;
+        }
+
         const reader = new FileReader();
         reader.onload = (event: ProgressEvent<FileReader>) => {
           const base64 = event.target?.result as string;
@@ -2831,6 +2971,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
           toast.error(validation.error || '图片验证失败');
+          continue;
+        }
+
+        // 如果有裁剪后的 base64，直接使用
+        if (validation.base64) {
+          setUploadedImages(prev => {
+            const newImages = [...prev, validation.base64!];
+            if (newImages.length > maxImages) {
+              return prev;
+            }
+            return newImages;
+          });
           continue;
         }
 

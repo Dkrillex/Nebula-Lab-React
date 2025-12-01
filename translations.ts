@@ -941,6 +941,19 @@ interface Translation {
       inputRequired: string;
       updateSuccess: string;
     };
+    imageValidation: {
+      sora2Requirements: string;
+      sora2CropTitle: string;
+      sora2CropCancel: string;
+      doubaoRequirements: string;
+      doubaoRatioHint: string;
+      minResolution: string;
+      maxResolution: string;
+      loadFailed: string;
+      formatNotSupported: string;
+      sizeExceeded: string;
+      readFailed: string;
+    };
   };
   keysPage: {
     title: string;
@@ -1566,10 +1579,10 @@ interface Translation {
       allocate: string;
       remove: string;
     };
-      table: {
-        teamName: string;
-        searchPlaceholder: string;
-        createTime: string;
+    table: {
+      teamName: string;
+      searchPlaceholder: string;
+      createTime: string;
       status: string;
       actions: string;
       normal: string;
@@ -1674,6 +1687,17 @@ interface Translation {
       score: string;
       level: string;
       normalMember: string;
+    };
+  };
+  components: {
+    imageCrop: {
+      title: string;
+      ratio: string;
+      reset: string;
+      cancel: string;
+      confirm: string;
+      cropFailed: string;
+      loadFailed: string;
     };
   };
   error: {
@@ -3212,6 +3236,19 @@ export const translations: Record<string, Translation> = {
         defaultContent: 'You are an excellent AI assistant expert, with rich knowledge and experience, capable of helping users solve various problems.',
         inputRequired: 'Please enter AI role definition',
         updateSuccess: 'AI role definition updated'
+      },
+      imageValidation: {
+        sora2Requirements: 'Image dimensions must exactly match output dimensions',
+        sora2CropTitle: 'Crop image to match sora-2 requirements',
+        sora2CropCancel: 'You cancelled cropping',
+        doubaoRequirements: 'Image aspect ratio requirement not met',
+        doubaoRatioHint: 'Please use an image with aspect ratio between 1/3 and 3',
+        minResolution: 'Image resolution too low: width and height must be at least {0} pixels',
+        maxResolution: 'Image resolution too high: width and height must not exceed {0} pixels',
+        loadFailed: 'Failed to load image, please check if file is corrupted',
+        formatNotSupported: 'Image format not supported. Supported formats: ',
+        sizeExceeded: 'File size exceeded limit. Max allowed: ',
+        readFailed: 'Failed to read file',
       }
     },
     keysPage: {
@@ -4024,6 +4061,17 @@ export const translations: Record<string, Translation> = {
         level: 'Level:',
         normalMember: 'Normal Member'
       }
+    },
+    components: {
+      imageCrop: {
+        title: 'Crop Image',
+        ratio: 'Aspect Ratio',
+        reset: 'Reset',
+        cancel: 'Cancel',
+        confirm: 'Confirm Crop',
+        cropFailed: 'Crop failed',
+        loadFailed: 'Failed to load image',
+      },
     },
     footer: {
       privacy: 'Privacy',
@@ -5588,6 +5636,19 @@ export const translations: Record<string, Translation> = {
         defaultContent: '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。',
         inputRequired: '请输入AI角色定义',
         updateSuccess: 'AI角色定义已更新'
+      },
+      imageValidation: {
+        sora2Requirements: '图片尺寸必须完全匹配输出尺寸',
+        sora2CropTitle: '裁剪图片以符合 sora-2 要求',
+        sora2CropCancel: '您已取消裁剪',
+        doubaoRequirements: '图片宽高比不符合要求',
+        doubaoRatioHint: '请使用宽高比在 1/3 到 3 之间的图片',
+        minResolution: '图片分辨率不符合要求：宽高需至少 {0} 像素',
+        maxResolution: '图片分辨率不符合要求：宽高需不超过 {0} 像素',
+        loadFailed: '图片加载失败，请检查文件是否损坏',
+        readFailed: '文件读取失败',
+        formatNotSupported: '图片格式不支持。仅支持：',
+        sizeExceeded: '文件大小超过限制。最大允许：',
       }
     },
     keysPage: {
@@ -6461,6 +6522,17 @@ export const translations: Record<string, Translation> = {
         level: '等级：',
         normalMember: '普通会员'
       }
+    },
+    components: {
+      imageCrop: {
+        title: '裁剪图片',
+        ratio: '裁剪比例',
+        reset: '重置',
+        cancel: '取消',
+        confirm: '确认裁剪',
+        cropFailed: '裁剪失败',
+        loadFailed: '图片加载失败',
+      },
     },
     error: {
       sessionExpired: '无效的会话，或者会话已过期，请重新登录。',
@@ -7535,6 +7607,19 @@ export const translations: Record<string, Translation> = {
         defaultContent: 'Anda adalah ahli asisten AI yang sangat baik, dengan pengetahuan dan pengalaman yang kaya, mampu membantu pengguna menyelesaikan berbagai masalah.',
         inputRequired: 'Silakan masukkan definisi peran AI',
         updateSuccess: 'Definisi peran AI diperbarui'
+      },
+      imageValidation: {
+        sora2Requirements: 'Dimensi gambar harus persis sesuai dengan dimensi keluaran',
+        sora2CropTitle: 'Pangkas gambar agar sesuai dengan persyaratan sora-2',
+        sora2CropCancel: 'Anda membatalkan pemangkasan',
+        doubaoRequirements: 'Persyaratan rasio aspek gambar tidak terpenuhi',
+        doubaoRatioHint: 'Harap gunakan gambar dengan rasio aspek antara 1/3 dan 3',
+        minResolution: 'Resolusi gambar terlalu rendah: lebar dan tinggi minimal harus {0} piksel',
+        maxResolution: 'Resolusi gambar terlalu tinggi: lebar dan tinggi tidak boleh melebihi {0} piksel',
+        loadFailed: 'Gagal memuat gambar, periksa apakah file rusak',
+        formatNotSupported: 'Format gambar tidak didukung. Format yang didukung: ',
+        sizeExceeded: 'Ukuran file melebihi batas. Maksimal diizinkan: ',
+        readFailed: 'Gagal membaca file',
       }
     },
     keysPage: {
@@ -8347,6 +8432,17 @@ export const translations: Record<string, Translation> = {
         level: 'Level:',
         normalMember: 'Anggota Normal'
       }
+    },
+    components: {
+      imageCrop: {
+        title: 'Pangkas Gambar',
+        ratio: 'Rasio Aspek',
+        reset: 'Atur Ulang',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi Pangkas',
+        cropFailed: 'Pemangkasan gagal',
+        loadFailed: 'Gagal memuat gambar',
+      },
     },
     footer: {
       privacy: 'Privasi',
