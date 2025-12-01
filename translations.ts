@@ -1253,6 +1253,13 @@ interface Translation {
     searchInResult: string;
     personalFiles: string;
     sharedFiles: string;
+    confirmDelete: string;
+    confirmDeleteItem: string;
+    confirmDeleteSelected: string;
+    confirm: string;
+    cancel: string;
+    folder: string;
+    material: string;
     messages: {
       deleteSuccess: string;
       deleteFailed: string;
@@ -3643,6 +3650,13 @@ export const translations: Record<string, Translation> = {
       searchInResult: 'Search in result',
       personalFiles: 'Personal Files',
       sharedFiles: 'Shared Files',
+      confirmDelete: 'Confirm Deletion',
+      confirmDeleteItem: 'Are you sure you want to delete this {type}?',
+      confirmDeleteSelected: 'Are you sure you want to delete {count} selected {item}?',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      folder: 'folder',
+      material: 'material',
       messages: {
         deleteSuccess: 'Deleted successfully',
         deleteFailed: 'Delete failed',
@@ -5875,6 +5889,13 @@ export const translations: Record<string, Translation> = {
       searchInResult: '筛选搜索',
       personalFiles: '个人文件',
       sharedFiles: '共享文件',
+      confirmDelete: '确认删除',
+      confirmDeleteItem: '确认删除该{type}吗？',
+      confirmDeleteSelected: '确认删除选中的 {count} 个素材吗？',
+      confirm: '确定',
+      cancel: '取消',
+      folder: '文件夹',
+      material: '素材',
       messages: {
         deleteSuccess: '删除成功',
         deleteFailed: '删除失败',
@@ -7844,6 +7865,13 @@ export const translations: Record<string, Translation> = {
       searchInResult: 'Cari dalam hasil',
       personalFiles: 'File Pribadi',
       sharedFiles: 'File Bersama',
+      confirmDelete: 'Konfirmasi Hapus',
+      confirmDeleteItem: 'Apakah Anda yakin ingin menghapus {type} ini?',
+      confirmDeleteSelected: 'Apakah Anda yakin ingin menghapus {count} {item} yang dipilih?',
+      confirm: 'Konfirmasi',
+      cancel: 'Batal',
+      folder: 'folder',
+      material: 'materi',
       messages: {
         deleteSuccess: 'Berhasil dihapus',
         deleteFailed: 'Gagal menghapus',

@@ -312,10 +312,13 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
 
   // 删除处理
   const handleDelete = async (asset: AdsAssetsVO) => {
+    const itemType = asset.dataType === 2 ? (t.folder || '文件夹') : (t.material || '素材');
+    const message = (t.confirmDeleteItem || '确认删除该{type}吗？').replace('{type}', itemType);
+    
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确认删除该${asset.dataType === 2 ? '文件夹' : '素材'}吗？`,
+      title: t.confirmDelete || '确认删除',
+      message: message,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
@@ -332,10 +335,14 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
 
   const handleMultiDelete = async () => {
     if (selectedAssets.size === 0) return;
+    const message = (t.confirmDeleteSelected || '确认删除选中的 {count} 个素材吗？')
+      .replace('{count}', String(selectedAssets.size))
+      .replace('{item}', t.material || '素材');
+    
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确认删除选中的 ${selectedAssets.size} 个素材吗？`,
+      title: t.confirmDelete || '确认删除',
+      message: message,
       onConfirm: async () => {
         setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         try {
@@ -959,6 +966,8 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
         isOpen={confirmDialog.isOpen}
         title={confirmDialog.title}
         message={confirmDialog.message}
+        confirmText={t.confirm || '确定'}
+        cancelText={t.cancel || '取消'}
         onConfirm={confirmDialog.onConfirm}
         onCancel={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
         type="danger"
