@@ -9,6 +9,7 @@ import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import DailySummaryTable from './components/DailySummaryTable';
+import { getStorageKey } from '../../utils/storageNamespace';
 
 interface ExpensesPageProps {
   t?: any;
@@ -555,6 +556,15 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const startTime = getTimestamp(dateRange[0]);
       const endTime = getTimestamp(dateRange[1]);
       
+      // 获取当前语言（与 request.tsx 中的 getLanguage 保持一致）
+      const getLanguage = (): string => {
+        const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
+        // 转换为后端格式：zh -> zh_CN, en -> en_US, id -> id_ID
+        if (lang === 'zh') return 'zh_CN';
+        if (lang === 'id') return 'id_ID';
+        return 'en_US';
+      };
+      
       // 借鉴 Nebula1 的传参方式（与查询接口保持一致）
       const params: TeamLogsQuery = {
         // teamIds: 单选值，转换为字符串
@@ -566,6 +576,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         // startTime/endTime: Unix 时间戳（秒）
         startTime,
         endTime,
+        // 传递语言参数，确保后端生成多语言的 Excel 表头
+        language: getLanguage(),
       };
       
       console.log('导出日志参数（借鉴 Nebula1）:', params);
@@ -576,7 +588,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `日志账单_${formatDateToLocalString(new Date())}.xlsx`;
+      a.download = `${t.teamLogs?.logsBill || '日志账单'}_${formatDateToLocalString(new Date())}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

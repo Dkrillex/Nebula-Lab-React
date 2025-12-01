@@ -1063,6 +1063,7 @@ interface Translation {
       nextPage: string;
       lastPage: string;
       recordsPerPage: string;
+      logsBill: string;
     };
       exportError: string;
       exportSuccess: string;
@@ -3396,6 +3397,7 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Next Page',
         lastPage: 'Last Page',
         recordsPerPage: 'records/page',
+        logsBill: 'Logs Bill',
       },
       exportError: 'Export failed, please try again later',
       exportSuccess: 'Export successful',
@@ -6119,6 +6121,7 @@ export const translations: Record<string, Translation> = {
         nextPage: '下一页',
         lastPage: '最后一页',
         recordsPerPage: '条/页',
+        logsBill: '日志账单',
       },
       exportError: '导出失败，请稍后重试',
       exportSuccess: '导出成功',
@@ -7717,6 +7720,7 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Halaman Berikutnya',
         lastPage: 'Halaman Terakhir',
         recordsPerPage: 'catatan/halaman',
+        logsBill: 'Tagihan Log',
       },
       exportError: 'Ekspor gagal, silakan coba lagi nanti',
       exportSuccess: 'Ekspor berhasil',
