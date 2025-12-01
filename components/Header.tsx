@@ -266,17 +266,21 @@ const Header: React.FC<HeaderProps> = ({
                 (currentView === 'home' || currentView === 'models-intro' || (currentView === 'create' && !activeTool));
               
               const isActive = isHomeActive || (tab.view === currentView && 
-                               (tab.view !== 'create' || (tab.activeTool === activeTool && 
-                                compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined))));
+                               (tab.view === 'create' 
+                                 ? (tab.activeTool === activeTool && compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined))
+                                 : tab.view === 'chat'
+                                   ? compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined)
+                                   : true
+                               ));
               
               // 生成唯一的 key，包含所有查询参数（如果存在）
               let tabKey = `${tab.view}-${tab.activeTool || index}`;
-              if (tab.view === 'create' && tab.activeTool && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
+              if ((tab.view === 'create' || tab.view === 'chat') && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
                 const paramsKey = Object.entries(tab.searchParams)
                   .sort(([a], [b]) => a.localeCompare(b))
                   .map(([key, value]) => `${key}=${value}`)
                   .join('&');
-                tabKey = `${tab.view}-${tab.activeTool}-${paramsKey}`;
+                tabKey = `${tab.view}-${tab.activeTool || ''}-${paramsKey}`;
               }
               return (
                 <div 

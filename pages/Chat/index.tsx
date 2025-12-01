@@ -228,7 +228,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   });
   
   // 跟踪上一个模式，用于在切换时保存消息
-  const previousModeRef = useRef<Mode>('chat');
+  const previousModeRef = useRef<Mode>(
+    (new URLSearchParams(window.location.search).get('mode') as Mode) || 'chat'
+  );
 
   // 初始化时同时获取所有模式的模型
   useEffect(() => {
@@ -347,31 +349,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       setModels(currentModels);
       
-      // 检查URL中是否有model_name参数
-      if (urlModelName && currentModels.length > 0) {
-        // 在模型列表中查找匹配的模型
-        const matchedModel = currentModels.find(
-          (m) =>
-            m.modelName === urlModelName ||
-            m.modelName?.includes(urlModelName) ||
-            urlModelName.includes(m.modelName || '')
-        );
-        
-        if (matchedModel && matchedModel.modelName) {
-          console.log('✅ 从URL参数自动选择模型:', matchedModel.modelName);
-          setSelectedModel(matchedModel.modelName);
-        } else {
-          console.warn('⚠️ 未找到匹配的模型:', urlModelName, '，使用第一个可用模型');
-          // 如果找不到匹配的模型，使用第一个可用模型
-          setSelectedModel(currentModels[0].modelName || '');
-        }
-      } else {
-        // 没有URL参数时，检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
-        const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
-        if (currentModels.length > 0 && !isSelectedValid) {
-          setSelectedModel(currentModels[0].modelName || '');
-        }
-      }
+      // 注意：不再此处自动选择第一个模型，因为 fetchAllModels 闭包可能持有旧的 selectedModel
+      // 导致即使外部已经设置了正确的模型（如从URL），这里也会认为无效而覆盖
+      // 自动选择逻辑统一由 useEffect(auto-select) 处理，该 useEffect 依赖了 selectedModel，能感知最新值
       
       console.log('✅ 已同时加载所有模式的模型:', {
         chat: chatModelList.length,
@@ -403,31 +383,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     
     setModels(currentModels);
     
-    // 检查URL中是否有model_name参数
-    const urlModelName = new URLSearchParams(window.location.search).get('model_name');
-    
-    if (urlModelName && currentModels.length > 0) {
-      // 在模型列表中查找匹配的模型
-      const matchedModel = currentModels.find(
-        (m) =>
-          m.modelName === urlModelName ||
-          m.modelName?.includes(urlModelName) ||
-          urlModelName.includes(m.modelName || '')
-      );
-      
-      if (matchedModel && matchedModel.modelName) {
-        console.log('✅ updateModelsForCurrentMode: 从URL参数自动选择模型:', matchedModel.modelName);
-        setSelectedModel(matchedModel.modelName);
-        return; // 如果找到了匹配的模型，就不需要后续逻辑了
-      }
-    }
-    
-    // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
-    const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
-    
-    if (currentModels.length > 0 && !isSelectedValid) {
-      setSelectedModel(currentModels[0].modelName || '');
-    }
+    // 注意：不再此处自动选择第一个模型，理由同 fetchAllModels
+    // 自动选择逻辑统一由 useEffect(auto-select) 处理
   };
 
   // 当模型列表更新后，自动更新当前模式的模型列表
@@ -473,12 +430,6 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       return;
     }
 
-    // 检查当前选中的模型是否已经是目标模型
-    if (selectedModel === urlModelName) {
-      console.log('✅ 模型已经正确选择:', selectedModel);
-      return;
-    }
-
     // 尝试精确匹配
     let matchedModel = currentModels.find(m => m.modelName === urlModelName);
     
@@ -500,57 +451,47 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         availableModels: currentModels.map(m => m.modelName)
       });
       setSelectedModel(matchedModel.modelName);
+      // 标记该 model_name 已处理
+      processedModelNameRef.current = urlModelName;
     } else {
       console.warn('⚠️ useEffect: 未找到匹配的模型:', {
         urlModelName,
         currentMode,
         availableModels: currentModels.map(m => m.modelName),
-        currentSelected: selectedModel
       });
     }
-  }, [searchParams, currentMode, chatModels, imageModels, videoModels, selectedModel]);
+  }, [searchParams, currentMode, chatModels, imageModels, videoModels]);
 
   // 监听模式切换，更新模型列表和历史记录，并切换消息缓存
   useEffect(() => {
-    // 如果模式真的改变了，保存上一个模式的消息到缓存
+    // 如果模式真的改变了，才进行切换逻辑
     if (previousModeRef.current !== currentMode) {
       // 保存上一个模式的消息（这里需要从messages状态获取，但messages可能还没更新）
       // 所以我们会在messages变化时自动保存，这里主要是切换逻辑
       previousModeRef.current = currentMode;
-    }
-    
-    // 如果当前URL指定了model_name且已处理，则不清空选中的模型（防止切换模式时覆盖URL指定的模型）
-    // 注意：这通常发生在初始化加载或URL直接跳转时
-    const urlModelName = new URLSearchParams(window.location.search).get('model_name');
-    const isUrlProcessed = processedModelNameRef.current === urlModelName;
-    
-    if (!isUrlProcessed || !urlModelName) {
-      setSelectedModel(''); // 切换模式时清空选中的模型
-    } else {
-      console.log('🔄 模式切换，但保留URL指定的模型:', urlModelName);
-    }
-    
-    setChatRecords([]); // 切换模式时清空历史记录
-    setSelectedRecordId(null); // 清空选中的记录ID
-    // updateModelsForCurrentMode 已由上面的 useEffect 监听 currentMode 变化自动调用
-    
-    // 从缓存中恢复新模式的消息
-    const cachedMessages = messagesCacheRef.current[currentMode];
-    if (cachedMessages && cachedMessages.length > 0) {
-      setMessages(cachedMessages);
-      console.log(`📦 从缓存恢复${currentMode}模式的消息，共${cachedMessages.length}条`);
-    } else {
-      // 如果没有缓存，只在对话模式显示欢迎消息
-      if (currentMode === 'chat') {
-      setMessages([{
-        id: 'welcome',
-        role: 'assistant',
-        content: t.welcomeMessage,
-        timestamp: Date.now()
-      }]);
+      
+      // 切换模式时清空选中的模型
+      setSelectedModel(''); 
+      
+      setChatRecords([]); // 切换模式时清空历史记录
+      setSelectedRecordId(null); // 清空选中的记录ID
+      
+      // 从缓存中恢复新模式的消息
+      const cachedMessages = messagesCacheRef.current[currentMode];
+      if (cachedMessages && cachedMessages.length > 0) {
+        setMessages(cachedMessages);
       } else {
-        // 图片和视频模式不显示欢迎消息
-        setMessages([]);
+        if (currentMode === 'chat') {
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }]);
+        } else {
+          // 图片和视频模式不显示欢迎消息
+          setMessages([]);
+        }
       }
     }
     
@@ -579,20 +520,41 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 监听模型列表变化，自动选择第一个模型
   useEffect(() => {
-    // 检查是否有URL参数且已处理
+    // 检查是否有URL参数
     const urlModelName = searchParams.get('model_name');
-    const isUrlProcessed = processedModelNameRef.current === urlModelName;
-
-    // 如果有URL参数且已处理，不要自动选择第一个模型，避免覆盖
-    if (urlModelName && isUrlProcessed) {
+    
+    // 1. 如果 URL 包含 model_name，且尚未处理，跳过（等待 model_name effect）
+    if (urlModelName && processedModelNameRef.current !== urlModelName) {
       return;
+    }
+
+    // 2. 如果 URL 包含 model_name，且已处理（Ref匹配），但 selectedModel 仍为空
+    // 这可能是 State 更新延迟，也可能是该 model_name 无效。
+    // 我们尝试在模型列表中查找该模型（支持模糊匹配逻辑）
+    if (urlModelName && processedModelNameRef.current === urlModelName && !selectedModel) {
+      // 复用模糊匹配逻辑
+      let matched = models.find(m => m.modelName === urlModelName);
+      if (!matched) {
+        matched = models.find(
+          (m) =>
+            m.modelName?.toLowerCase() === urlModelName.toLowerCase() ||
+            m.modelName?.toLowerCase().includes(urlModelName.toLowerCase()) ||
+            urlModelName.toLowerCase().includes(m.modelName || '')
+        );
+      }
+      
+      // 如果 URL 指定的模型在当前列表中是有效的，说明现在 selectedModel 为空只是 State 更新延迟
+      // 我们应该跳过自动选择，等待 State 更新完成
+      if (matched) {
+        return; 
+      }
+      // 如果无效，则继续执行下方的自动选择逻辑
     }
 
     if (models.length > 0 && !selectedModel) {
       const firstModel = models[0].modelName;
       if (firstModel) {
         setSelectedModel(firstModel);
-        console.log('✅ 自动选择第一个模型:', firstModel);
       }
     }
   }, [models, selectedModel, searchParams]);
@@ -1368,7 +1330,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
         // 恢复设置（如果有的话）
         if (settings) {
-          if (settings.model) setSelectedModel(settings.model);
+          if (settings.model) {
+            console.log('🔍 fetchChatRecords: 恢复历史设置模型:', settings.model);
+            setSelectedModel(settings.model);
+          }
           if (settings.temperature !== undefined) setTemperature(settings.temperature);
           if (settings.presence_penalty !== undefined) setPresencePenalty(settings.presence_penalty);
           console.log('⚙️ 已恢复对话设置');
@@ -1441,7 +1406,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
       // 恢复设置（如果有的话）
       if (settings) {
-        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.selectedModel) {
+          setSelectedModel(settings.selectedModel);
+        }
         if (settings.selectedSize) setImageSize(settings.selectedSize);
         if (settings.selectedStyle) setImageStyle(settings.selectedStyle);
         if (settings.temperature !== undefined) setTemperature(settings.temperature);
@@ -1534,7 +1501,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
       // 恢复设置（如果有的话）
       if (settings) {
-        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.selectedModel) {
+          setSelectedModel(settings.selectedModel);
+        }
         if (settings.videoDuration !== undefined) setVideoDuration(settings.videoDuration);
         if (settings.videoAspectRatio) setVideoAspectRatio(settings.videoAspectRatio);
         if (settings.videoResolution) setVideoResolution(settings.videoResolution);
@@ -4200,7 +4169,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             <label className="text-sm font-medium text-muted">{t.selectModel}</label>
             <ModelSelect
               value={selectedModel}
-              onChange={setSelectedModel}
+              onChange={(val) => {
+                setSelectedModel(val);
+              }}
               models={models}
               loading={modelsLoading}
               placeholder="暂无可用模型"

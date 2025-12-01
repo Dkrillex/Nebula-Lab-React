@@ -18,7 +18,7 @@ import MobileSidebar from './MobileSidebar';
 
 import { AliveScope, useAliveController } from './KeepAlive';
 
-const Layout: React.FC = () => {
+const LayoutContent: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   // 初始化时从 localStorage 读取语言，如果没有则默认为 'zh'
   const [lang, setLang] = useState<Language>(() => {
@@ -155,6 +155,10 @@ const Layout: React.FC = () => {
           // Compare all search params dynamically
           return compareSearchParams(t.searchParams, currentSearchParams);
         }
+        // For chat view, check searchParams
+        if (t.view === 'chat') {
+          return compareSearchParams(t.searchParams, currentSearchParams);
+        }
         return true;
       });
       
@@ -163,7 +167,7 @@ const Layout: React.FC = () => {
       return [...prev, { 
         view: currentView, 
         activeTool: currentView === 'create' ? activeTool : undefined,
-        searchParams: currentView === 'create' ? currentSearchParams : undefined
+        searchParams: (currentView === 'create' || currentView === 'chat') ? currentSearchParams : undefined
       }];
     });
   }, [currentView, activeTool, currentSearchParams]);
@@ -234,6 +238,16 @@ const Layout: React.FC = () => {
     if (tab.activeTool) {
       path += `?tool=${tab.activeTool}`;
     }
+    
+    // Support query params for chat view
+    if (tab.view === 'chat' && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
+      const searchParams = new URLSearchParams();
+      Object.entries(tab.searchParams).forEach(([key, value]) => {
+        searchParams.set(key, value);
+      });
+      path += `?${searchParams.toString()}`;
+    }
+
     navigate(path, { replace: false });
   };
 
@@ -263,6 +277,14 @@ const Layout: React.FC = () => {
       }
     } else {
       cacheKey = targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
+      // Support query params for chat view cache key
+      if (targetTab.view === 'chat' && targetTab.searchParams && Object.keys(targetTab.searchParams).length > 0) {
+        const searchParams = new URLSearchParams();
+        Object.entries(targetTab.searchParams).forEach(([key, value]) => {
+          searchParams.set(key, String(value));
+        });
+        cacheKey = `${cacheKey}?${searchParams.toString()}`;
+      }
     }
     
     // 确保没有双斜杠 (除根路径外)
@@ -275,10 +297,11 @@ const Layout: React.FC = () => {
 
     // If closing active tab, navigate to last available
     const isActive = targetTab.view === currentView && (
-      targetTab.view !== 'create'
-        ? true
-        : (targetTab.activeTool === activeTool &&
-           compareSearchParams(targetTab.searchParams, currentSearchParams))
+      targetTab.view === 'create'
+        ? (targetTab.activeTool === activeTool && compareSearchParams(targetTab.searchParams, currentSearchParams))
+        : targetTab.view === 'chat'
+          ? compareSearchParams(targetTab.searchParams, currentSearchParams)
+          : true
     );
 
     if (isActive) {
@@ -297,7 +320,6 @@ const Layout: React.FC = () => {
   const safeT = t || translations['zh'];
   
   return (
-    <AliveScope>
       <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
         <Header 
           isDark={isDark} 
@@ -376,9 +398,15 @@ const Layout: React.FC = () => {
       {/* 全局登录弹窗 - 用于 request.tsx 和其他地方通过全局方法调用 */}
       <GlobalAuthModal />
       </div>
+  );
+};
+
+const Layout: React.FC = () => {
+  return (
+    <AliveScope>
+      <LayoutContent />
     </AliveScope>
   );
 };
 
 export default Layout;
-    
