@@ -718,7 +718,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
                   : 'border-transparent text-muted hover:text-foreground'
               }`}
             >
-              个人文件
+              {t.personalFiles || '个人文件'}
             </button>
             {hasTeams && (
               <button
@@ -729,7 +729,7 @@ const AssetsPage: React.FC<AssetsPageProps> = (props) => {
                     : 'border-transparent text-muted hover:text-foreground'
                 }`}
               >
-                共享文件
+                {t.sharedFiles || '共享文件'}
               </button>
             )}
           </div>

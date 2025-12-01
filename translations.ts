@@ -1251,6 +1251,8 @@ interface Translation {
     totalFolders: string;
     totalFiles: string;
     searchInResult: string;
+    personalFiles: string;
+    sharedFiles: string;
   };
   profilePage: {
     title: string;
@@ -3628,6 +3630,8 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folders',
       totalFiles: 'Files',
       searchInResult: 'Search in result',
+      personalFiles: 'Personal Files',
+      sharedFiles: 'Shared Files',
     },
     profilePage: {
       title: 'Personal Center',
@@ -5847,6 +5851,8 @@ export const translations: Record<string, Translation> = {
       totalFolders: '个文件夹',
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
+      personalFiles: '个人文件',
+      sharedFiles: '共享文件',
     },
     expensesPage: {
       title: '费用中心',
@@ -7803,6 +7809,8 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folder',
       totalFiles: 'File',
       searchInResult: 'Cari dalam hasil',
+      personalFiles: 'File Pribadi',
+      sharedFiles: 'File Bersama',
     },
     profilePage: {
       title: 'Pusat Pribadi',
