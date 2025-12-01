@@ -30,8 +30,6 @@ const GlobalAuthModal: React.FC = () => {
 
   // 处理登录成功
   const handleLoginSuccess = () => {
-    // 获取用户信息
-    fetchUserInfo();
     // 触发所有登录成功回调
     manager.triggerLoginSuccess();
     // 关闭弹窗

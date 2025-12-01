@@ -118,15 +118,23 @@ function processRoutes(routes: AppRouteObject[], parentPath = ''): any[] {
 // localRoutes[0] 是 DashboardLayout，包含 Dashboard 子页面
 // 我们需要把 DashboardLayout 放到 Layout 的 children 中
 
-const layoutRoute = coreRoutes.find(r => r.path === '/');
-if (layoutRoute && layoutRoute.children) {
-  layoutRoute.children.push(...localRoutes);
-} else {
-  console.error('Failed to merge routes: Layout route not found');
-}
+// 使用 map 创建新数组，避免直接修改导入的 coreRoutes 对象（防止 HMR 或重执行导致重复添加）
+const routesWithDashboard = coreRoutes.map(route => {
+  if (route.path === '/') {
+    // 找到 Layout 路由，创建一个新对象，并合并 children
+    return {
+      ...route,
+      children: [
+        ...(route.children || []),
+        ...localRoutes
+      ]
+    };
+  }
+  return route;
+});
 
 // 处理后的路由配置
-const finalRoutes = processRoutes(coreRoutes);
+const finalRoutes = processRoutes(routesWithDashboard);
 
 export const router = createHashRouter(finalRoutes);
 

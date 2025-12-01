@@ -52,26 +52,22 @@ const LayoutContent: React.FC = () => {
   // Auth handling
   // 注意：登录成功后，login/phoneLogin 方法中已经调用了 fetchUserInfo()
   // 这里只在用户已经登录但还没有用户信息时调用（比如页面刷新后）
+  // 合并了常规用户信息获取和邀请参数处理逻辑
   useEffect(() => {
-    if (isAuthenticated && !user && !loading) {
-      // 只在用户已登录但没有用户信息且不在加载中时调用
-      // 避免在登录过程中重复调用 fetchUserInfo
-      fetchUserInfo();
-    }
-  }, [isAuthenticated, user, loading, fetchUserInfo]);
+    if (!isAuthenticated || loading) return;
 
-  // 处理已登录用户访问带邀请参数的链接
-  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const channelId = urlParams.get('channelId');
     const teamId = urlParams.get('teamId');
     const inviteCode = urlParams.get('inviteCode');
-    // 只有当 URL 中存在邀请相关参数，且用户已登录且不在加载中时才触发
-    // fetchUserInfo 内部会处理这些参数并调用加入接口
-    if ((channelId || teamId || inviteCode) && isAuthenticated && !loading) {
+    const hasInviteParams = !!(channelId || teamId || inviteCode);
+
+    // 1. 如果没有用户信息，需要获取
+    // 2. 如果有邀请参数，需要获取（fetchUserInfo 内部会处理邀请逻辑）
+    if (!user || hasInviteParams) {
       fetchUserInfo();
     }
-  }, [location.search, isAuthenticated, loading, fetchUserInfo]);
+  }, [isAuthenticated, user, loading, location.search, fetchUserInfo]);
 
   const t = translations[lang];
 
@@ -339,7 +335,7 @@ const LayoutContent: React.FC = () => {
           toggleTheme={() => setIsDark(!isDark)} 
           lang={lang} 
           setLang={setLang} 
-          onSignIn={() => showAuthModal(() => fetchUserInfo())}
+          onSignIn={() => showAuthModal()}
           onOpenNotification={() => setIsNotificationOpen(true)}
           onNavClick={handleNavClick}
           currentView={currentView}
@@ -354,7 +350,7 @@ const LayoutContent: React.FC = () => {
         />
         
         <main className="flex-1">
-          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal(() => fetchUserInfo()) }} />
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal() }} />
         </main>
         
         <MobileSidebar 
@@ -366,7 +362,7 @@ const LayoutContent: React.FC = () => {
           user={useAuthStore.getState().user}
           onSignIn={() => {
             setIsMobileMenuOpen(false);
-            showAuthModal(() => fetchUserInfo());
+            showAuthModal();
           }}
           logout={() => {
              useAuthStore.getState().logout();
