@@ -30,6 +30,7 @@ export interface InvoiceFormProps {
       taxNumberRequired?: string;
       emailRequired?: string;
       emailInvalid?: string;
+      emailMissingAt?: string;
     };
     cancel?: string;
     confirm?: string;
@@ -81,8 +82,15 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
         // 验证邮箱
         if (!formData.email || formData.email.trim() === '') {
           newErrors.email = translations?.errors?.emailRequired || '请输入邮箱';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
+        } else {
+          const email = formData.email.trim();
+          // 检查是否包含 @ 符号
+          if (!email.includes('@')) {
+            const errorMsg = translations?.errors?.emailMissingAt || `邮箱地址中必须包含 '@' 符号，'${email}' 中缺少 '@'`;
+            newErrors.email = errorMsg.replace('{email}', email);
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
+          }
         }
 
         setErrors(newErrors);
@@ -138,8 +146,15 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
         // 验证邮箱
         if (!formData.email || formData.email.trim() === '') {
           newErrors.email = translations?.errors?.emailRequired || '请输入邮箱';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-          newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
+        } else {
+          const email = formData.email.trim();
+          // 检查是否包含 @ 符号
+          if (!email.includes('@')) {
+            const errorMsg = translations?.errors?.emailMissingAt || `邮箱地址中必须包含 '@' 符号，'${email}' 中缺少 '@'`;
+            newErrors.email = errorMsg.replace('{email}', email);
+          } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            newErrors.email = translations?.errors?.emailInvalid || '请输入有效的邮箱地址';
+          }
         }
 
         setErrors(newErrors);
@@ -214,7 +229,7 @@ const InvoiceForm = forwardRef<InvoiceFormRef, InvoiceFormProps>(
               {translations?.email || '邮箱'} <span className="text-red-500">*</span>
             </label>
             <input
-              type="email"
+              type="text"
               value={formData.email || ''}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder={translations?.placeholders?.email || "请输入邮箱"}
