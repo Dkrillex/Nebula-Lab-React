@@ -80,16 +80,67 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
 
     setLoading(true);
     try {
+      // 计算输出尺寸
+      let outputWidth: number | undefined;
+      let outputHeight: number | undefined;
+
+      // 如果提供了 targetWidth 和 targetHeight
+      if (targetWidth && targetHeight) {
+        const targetRatio = targetWidth / targetHeight;
+        const currentRatio = currentAspectRatio;
+        
+        // 如果当前比例与目标比例匹配，直接使用目标尺寸
+        if (Math.abs(targetRatio - currentRatio) < 0.01) {
+          outputWidth = targetWidth;
+          outputHeight = targetHeight;
+        } else {
+          // 如果比例不匹配，根据当前比例和原始目标尺寸重新计算
+          // 优先保持原始目标尺寸中较大的那个维度
+          if (currentRatio > 1) {
+            // 当前是横屏，使用原始目标中较大的尺寸作为宽度
+            const maxDimension = Math.max(targetWidth, targetHeight);
+            outputWidth = maxDimension;
+            outputHeight = Math.round(maxDimension / currentRatio);
+          } else {
+            // 当前是竖屏，使用原始目标中较大的尺寸作为高度
+            const maxDimension = Math.max(targetWidth, targetHeight);
+            outputHeight = maxDimension;
+            outputWidth = Math.round(maxDimension * currentRatio);
+          }
+        }
+      } else if (targetWidth) {
+        // 只提供了宽度，根据当前比例计算高度
+        outputWidth = targetWidth;
+        outputHeight = Math.round(targetWidth / currentAspectRatio);
+      } else if (targetHeight) {
+        // 只提供了高度，根据当前比例计算宽度
+        outputHeight = targetHeight;
+        outputWidth = Math.round(targetHeight * currentAspectRatio);
+      }
+      // 如果都没有提供，getCroppedCanvas 会使用裁剪区域的原始尺寸
+
+      // 确保 outputWidth 和 outputHeight 都有值
+      if (!outputWidth || !outputHeight) {
+        // 如果都没有值，使用裁剪区域的原始尺寸
+        const canvasData = cropper.getCanvasData();
+        outputWidth = canvasData.width;
+        outputHeight = canvasData.height;
+      }
+
+      console.log('裁剪输出尺寸:', { outputWidth, outputHeight, targetWidth, targetHeight, currentAspectRatio });
+
       // 获取裁剪后的 canvas
       const canvas = cropper.getCroppedCanvas({
-        width: targetWidth,
-        height: targetHeight,
+        width: outputWidth,
+        height: outputHeight,
         imageSmoothingQuality: 'high',
       });
 
       if (!canvas) {
         throw new Error('无法获取裁剪画布');
       }
+
+      console.log('实际输出尺寸:', { width: canvas.width, height: canvas.height });
 
       const base64 = canvas.toDataURL('image/png');
       onConfirm(base64);
