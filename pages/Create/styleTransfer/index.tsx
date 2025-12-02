@@ -1,39 +1,141 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Gem, Palette, Loader2, Download, FolderPlus, Video, Eye } from 'lucide-react';
-import ImagePreviewModal, { ImagePreviewAction } from '@/components/ImagePreviewModal';
-import { styleTransferService } from '@/services/styleTransferService';
+import { Upload, Target, Sparkles, Shirt, Gem, Palette, Wand2, Image as ImageIcon, X, Loader2, Download, Check, AlertCircle, Square, Circle, ArrowRight, Type, Bold, Italic, FolderPlus, Video, Pencil, Eye } from 'lucide-react';
+import ImagePreviewModal, { ImagePreviewAction } from '../../../components/ImagePreviewModal';
+import { styleTransferService, AnyShootTaskResult, Template } from '@/services/styleTransferService';
+import { uploadService } from '@/services/uploadService';
+import { avatarService } from '@/services/avatarService';
+import { textToImageService } from '@/services/textToImageService';
+  import { request } from '@/lib/request';
+import TemplateSelectModal from '../components/TemplateSelectModal';
+import ProductCanvas from '../components/ProductCanvas';
+import MaskCanvas, { MaskCanvasRef, ToolType, TextOptions } from '../components/MaskCanvas';
+import UploadComponent from '@/components/UploadComponent';
 import AddMaterialModal from '@/components/AddMaterialModal';
 import { useVideoGenerationStore } from '@/stores/videoGenerationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
 import { createTaskPoller, PollingController } from '@/utils/taskPolling';
-import { 
-  StyleTransferPageProps, 
-  GeneratedImage, 
-  ModeType,
-  getModes 
-} from './data';
-import StandardMode, { StandardModeRef } from './standard';
-import CreativeMode, { CreativeModeRef } from './creative';
-import ClothingMode, { ClothingModeRef } from './clothing';
+
+interface StyleTransferPageProps {
+  t: {
+    title: string;
+    subtitle: string;
+    modes: {
+      standard: { title: string; desc: string };
+      creative: { title: string; desc: string };
+      clothing: { title: string; desc: string };
+    };
+    standard: {
+      productTitle: string;
+      productDesc: string;
+      uploadProduct: string;
+      areaTitle: string;
+      areaDesc: string;
+      uploadTemplate: string;
+      selectTemplate: string;
+      support: string;
+    };
+    clothing: {
+      garmentTitle: string;
+      garmentDesc: string;
+      uploadGarment: string;
+      modelTitle: string;
+      uploadModel: string;
+      types: { top: string; bottom: string; full: string };
+    };
+    creative: {
+      productTitle: string;
+      promptTitle: string;
+      addRef: string;
+      tryExample: string;
+      aiPolish: string;
+      promptPlaceholder: string;
+      uploadProduct: string;
+      support: string;
+    };
+    common: {
+      generate: string;
+      resultTitle: string;
+      resultPlaceholder: string;
+    };
+  };
+}
+
+interface UploadedImage {
+  fileId?: string;
+  fileName: string;
+  fileUrl: string;
+  file?: File;
+}
+
+interface GeneratedImage {
+  key: number | string;
+  url: string;
+  revised_prompt?: string;
+  b64_json?: string;
+  previewVisible?: boolean;
+}
 
 const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const navigate = useNavigate();
   const { setData } = useVideoGenerationStore();
   const { isAuthenticated } = useAuthStore();
-  const [selectedMode, setSelectedMode] = useState<ModeType>('standard');
+  const [selectedMode, setSelectedMode] = useState<'standard' | 'creative' | 'clothing'>('standard');
+  const [clothingType, setClothingType] = useState<'top' | 'bottom' | 'full'>('top');
+  const [prompt, setPrompt] = useState('');
+  const [generatingCount, setGeneratingCount] = useState(1);
+  const [location, setLocation] = useState<number[][]>([]);
+  
+  // 图片上传状态
+  const [productImage, setProductImage] = useState<UploadedImage | null>(null);
+  const [templateImage, setTemplateImage] = useState<UploadedImage | null>(null);
+  const [garmentImages, setGarmentImages] = useState<UploadedImage[]>([]); // 改为数组，支持多张图片
+  const [modelImage, setModelImage] = useState<UploadedImage | null>(null);
+  const [referenceImage, setReferenceImage] = useState<UploadedImage | null>(null);
+  const [showReferenceImage, setShowReferenceImage] = useState(false);
   
   // 生成状态
   const [isGenerating, setIsGenerating] = useState(false);
   const [progress, setProgress] = useState(0);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
   
-  // Refs for mode components
-  const standardModeRef = useRef<StandardModeRef>(null);
-  const creativeModeRef = useRef<CreativeModeRef>(null);
-  const clothingModeRef = useRef<ClothingModeRef>(null);
+  // 模板相关
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
+  
+  // Masking (Standard Mode)
+  const [brushTool, setBrushTool] = useState<'pencil' | 'eraser'>('pencil');
+  const [brushSize, setBrushSize] = useState(20);
+  const productMaskCanvasRef = useRef<MaskCanvasRef>(null);
+  
+  // Template Masking
+  const [templateBrushTool, setTemplateBrushTool] = useState<'pencil' | 'eraser'>('pencil');
+  const [templateBrushSize, setTemplateBrushSize] = useState(20);
+  const templateMaskCanvasRef = useRef<MaskCanvasRef>(null);
+
+  // Creative Mode Drawing
+  const [creativeBrushTool, setCreativeBrushTool] = useState<ToolType>('pencil');
+  const [creativeBrushSize, setCreativeBrushSize] = useState(20);
+  const [creativeBrushColor, setCreativeBrushColor] = useState('#ffff00');
+  const creativeMaskCanvasRef = useRef<MaskCanvasRef>(null);
+  const [creativeColors] = useState(['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#000000', '#ffffff']);
+  
+  // Text Options for Creative Mode
+  const [textOptions, setTextOptions] = useState<TextOptions>({
+    fontFamily: 'Arial',
+    fontSize: 24,
+    fontWeight: 'normal',
+    fontStyle: 'normal'
+  });
+
+  // Refs
+  const productInputRef = useRef<HTMLInputElement>(null);
+  const templateInputRef = useRef<HTMLInputElement>(null);
+  const garmentInputRef = useRef<HTMLInputElement>(null);
+  const modelInputRef = useRef<HTMLInputElement>(null);
+  const referenceInputRef = useRef<HTMLInputElement>(null);
   const pollerRef = useRef<PollingController | null>(null);
 
   // AddMaterialModal State
@@ -44,7 +146,272 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
 
-  const modes = getModes(t);
+  // Updated Text Constants matching Vue version
+  const TEXTS = {
+    standard: {
+      desc: '精确控制产品位置和形状',
+      productDesc: '高清图片效果最佳\n格式:jpg/jpeg/png/webp; 文件大小<10MB',
+      areaDesc: '使用笔刷画出遮罩标记产品替换后需要发生变化的区域',
+      templateUpload: '上传模板图片\n(png, jpg, jpeg, webp)',
+      areaTitle: '画出您想要替换的区域'
+    },
+    creative: {
+      desc: '选中区域物品变化转换',
+      productDesc: '高清图片效果最佳\n格式:jpg/jpeg/png; 文件大小<10MB'
+    },
+    clothing: {
+      desc: '服装快速替换'
+    }
+  };
+
+  const modes = [
+    { id: 'standard', icon: Target, title: t.modes.standard.title, desc: TEXTS.standard.desc },
+    { id: 'creative', icon: Sparkles, title: t.modes.creative.title, desc: TEXTS.creative.desc },
+    { id: 'clothing', icon: Shirt, title: t.modes.clothing.title, desc: TEXTS.clothing.desc },
+  ];
+
+  // 文件类型验证
+  const validateFileType = (file: File, type: 'product' | 'template' | 'garment' | 'model' | 'reference'): boolean => {
+    const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
+    
+    // 创意模式的产品图和参考图只支持 png, jpg, jpeg
+    if (selectedMode === 'creative' && (type === 'product' || type === 'reference')) {
+      if (!['png', 'jpg', 'jpeg'].includes(fileExtension)) {
+        toast.error(`不支持的文件格式：${file.name}，请上传 PNG, JPG, JPEG 格式的图片`);
+        return false;
+      }
+    } else {
+      // 其他情况支持 png, jpg, jpeg, webp
+      if (!['png', 'jpg', 'jpeg', 'webp'].includes(fileExtension)) {
+        toast.error(`不支持的文件格式：${file.name}，请上传 PNG, JPG, JPEG, WEBP 格式的图片`);
+        return false;
+      }
+    }
+    
+    // 文件大小验证 (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error(`文件大小超过限制：${file.name}，文件大小不能超过 10MB`);
+      return false;
+    }
+    
+    return true;
+  };
+
+  // 处理图片上传（延迟上传，先本地预览）
+  const handleImageUpload = (file: File, type: 'product' | 'template' | 'garment' | 'model' | 'reference') => {
+    // 验证文件类型
+    if (!validateFileType(file, type)) {
+      return;
+    }
+    
+    const blobUrl = URL.createObjectURL(file);
+    const imgData: UploadedImage = {
+      fileName: file.name,
+      fileUrl: blobUrl,
+      file: file
+    };
+
+    switch (type) {
+      case 'product':
+        setProductImage(imgData);
+        break;
+      case 'template':
+        setTemplateImage(imgData);
+        break;
+      case 'garment':
+        // 服装模式：full 模式支持最多2张，其他模式只支持1张
+        if (clothingType === 'full') {
+          // 全身模式：追加图片，最多2张
+          setGarmentImages(prev => {
+            const newImages = [...prev, imgData];
+            // 保持最多2张，移除最早的
+            return newImages.slice(-2);
+          });
+        } else {
+          // 上衣/下衣模式：只保留一张
+          setGarmentImages([imgData]);
+        }
+        break;
+      case 'model':
+        setModelImage(imgData);
+        break;
+      case 'reference':
+        setReferenceImage(imgData);
+        break;
+    }
+  };
+
+  // 上传图片到OSS (服装模式专用)
+  const uploadImageToOss = async (image: UploadedImage): Promise<UploadedImage> => {
+    if (image.fileId) return image;
+    if (!image.file) throw new Error('No file object found');
+
+    console.log('准备上传文件到OSS:', { fileName: image.file.name, fileSize: image.file.size });
+    
+    try {
+      const uploadRes = await uploadService.uploadFile(image.file);
+      console.log('OSS上传响应:', uploadRes);
+      
+      // requestClient已去掉最外层，直接返回data部分
+      // 返回格式: { url, fileName, ossId }
+      if (!uploadRes || !uploadRes.url) {
+        throw new Error('OSS upload failed: No URL returned');
+      }
+
+      const { url, ossId, fileName } = uploadRes;
+      console.log('文件上传到OSS成功:', { url, ossId, fileName });
+
+      return {
+        ...image,
+        fileId: ossId,
+        fileUrl: url, // 使用OSS返回的URL
+        fileName: fileName || image.file.name
+      };
+    } catch (error) {
+      console.error('OSS上传失败:', error);
+      throw error;
+    }
+  };
+
+
+  // 上传图片到TopView (标准模式和创意模式使用)
+  const uploadImageToTopView = async (image: UploadedImage): Promise<UploadedImage> => {
+    if (image.fileId) return image;
+    if (!image.file) throw new Error('No file object found');
+
+    // Use TopView Upload API (via avatarService.getUploadCredential)
+    let fileType = image.file.type.split('/')[1] || 'jpg';
+    if (fileType === 'mpeg') fileType = 'mp3';
+    if (fileType === 'quicktime') fileType = 'mp4';
+
+    console.log('准备获取TopView上传凭证, fileType:', fileType);
+    const credRes = await avatarService.getUploadCredential(fileType);
+    console.log('上传凭证响应:', credRes);
+    
+    // TopView API 返回的 code 是字符串类型,成功时为 "200"
+    if (!credRes || !credRes.result || credRes.code !== '200') {
+      console.error('获取上传凭证失败:', credRes);
+      throw new Error(credRes?.message || 'Failed to get upload credentials');
+    }
+
+    const { uploadUrl, fileName, fileId, format } = credRes.result;
+    console.log('准备上传文件到TopView:', { fileName, fileId, format, fileSize: image.file.size });
+
+    // PUT file to uploadUrl
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: image.file,
+      headers: {
+        'Content-Type': image.file.type
+      }
+    });
+
+    console.log('上传响应状态:', uploadRes.status, uploadRes.statusText);
+    if (!uploadRes.ok) {
+      const errorText = await uploadRes.text();
+      console.error('上传失败详情:', errorText);
+      throw new Error(`Upload failed: ${uploadRes.status} ${uploadRes.statusText}. Details: ${errorText}`);
+    }
+
+    console.log('文件上传到TopView成功:', { fileId, fileName });
+
+    return {
+      ...image,
+      fileId: fileId,
+      fileName: fileName,
+      // Use original blob URL for preview, actual URL from CDN may differ
+      fileUrl: image.fileUrl
+    };
+  };
+
+  // 将图片URL转换为Base64 (返回包含前缀的完整Data URL)
+  const urlToBase64 = async (url: string): Promise<string> => {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64 = reader.result as string;
+        // 不移除前缀，保留完整的 Data URL
+        resolve(base64);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  };
+
+  // 文本润色
+  const handlePolishText = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
+    if (!prompt.trim()) return;
+    try {
+      // requestClient已经解包了最外层，直接返回data部分（字符串）
+      const polishedText = await textToImageService.polishText({
+        text: prompt,
+        type: 'object_replacement'
+      });
+      
+      if (polishedText && typeof polishedText === 'string') {
+        setPrompt(polishedText);
+        toast.success('文本润色成功！');
+      } else {
+        toast.error('文本润色完成，但未返回润色结果');
+      }
+    } catch (error: any) {
+      console.error('Text polishing failed:', error);
+      toast.error(error.message || '文本润色失败');
+    }
+  };
+
+  // 试用示例
+  const handleTryExample = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!isAuthenticated) {
+      showAuthModal();
+      return;
+    }
+    
+    try {
+      if (selectedMode === 'standard') {
+        // 标准模式：使用 product.webp 和 template.png
+        const productRes = await fetch('/demo/product.webp');
+        const productBlob = await productRes.blob();
+        const productFile = new File([productBlob], 'demo-product.webp', { type: 'image/webp' });
+        handleImageUpload(productFile, 'product');
+
+        // Load template image for standard mode
+        const templateRes = await fetch('/demo/template.png');
+        const templateBlob = await templateRes.blob();
+        const templateFile = new File([templateBlob], 'demo-template.png', { type: 'image/png' });
+        handleImageUpload(templateFile, 'template');
+      } else if (selectedMode === 'creative') {
+        // 创意模式：使用 creative-product.png
+        const productRes = await fetch('/demo/creative-product.png');
+        const productBlob = await productRes.blob();
+        const productFile = new File([productBlob], 'demo-product.png', { type: 'image/png' });
+        handleImageUpload(productFile, 'product');
+        
+        // 设置提示词
+        setPrompt('把框选的东西变成黄色');
+      }
+    } catch (error) {
+      console.error('Failed to load demo assets:', error);
+      toast.error('加载示例图片失败，请确保assets目录正确');
+    }
+  };
 
   const stopTaskPolling = useCallback(() => {
     if (pollerRef.current) {
@@ -54,7 +421,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   }, []);
 
   // 轮询任务状态
-  const startPolling = useCallback((taskId: string, mode: ModeType) => {
+  const startPolling = useCallback((taskId: string, mode: 'standard' | 'creative' | 'clothing') => {
     if (!taskId) return;
     stopTaskPolling();
     
@@ -183,36 +550,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     poller.start();
   }, [stopTaskPolling]);
 
-  // 处理模式组件的生成请求
-  const handleModeGenerate = useCallback((taskIdOrImages: string | GeneratedImage[], mode: ModeType) => {
-    if (typeof taskIdOrImages === 'string') {
-      // 需要轮询的任务ID
-      stopTaskPolling();
-      setIsGenerating(true);
-      setProgress(0);
-      setGeneratedImages([]);
-      startPolling(taskIdOrImages, mode);
-    } else {
-      // 直接返回的图片数组（创意模式可能直接返回）
-      stopTaskPolling();
-      setGeneratedImages(taskIdOrImages);
-      setProgress(100);
-      setIsGenerating(true);
-      setTimeout(() => {
-        setIsGenerating(false);
-      }, 1000);
-    }
-  }, [startPolling, stopTaskPolling]);
-
-  // 处理模式组件的错误
-  const handleModeError = useCallback((error: Error) => {
-    console.error('Generation error:', error);
-    toast.error(error.message || 'Generation failed');
-            setIsGenerating(false);
-            stopTaskPolling();
-  }, [stopTaskPolling]);
-
-  // 提交生成任务（由生成按钮触发）
+  // 提交生成任务
   const handleGenerate = async (e?: React.MouseEvent) => {
     if (e) {
       e.preventDefault();
@@ -226,39 +564,216 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     
     if (isGenerating) return;
 
-    // 根据模式调用对应的组件方法
+    // 1. Pre-validation
+    if (selectedMode === 'creative') {
+        if (!productImage) return toast.error('请上传产品图片');
+        if (!prompt.trim()) return toast.error('请输入提示词');
+    } else if (selectedMode === 'standard') {
+        if (!productImage) return toast.error('请上传产品图片');
+        if (!templateImage && !selectedTemplate) return toast.error('请上传模板图片或选择模板');
+    } else if (selectedMode === 'clothing') {
+        if (garmentImages.length === 0) return toast.error('请上传服装图片');
+        if (!modelImage) return toast.error('请上传模特图片');
+        if (clothingType === 'full' && garmentImages.length < 2) return toast.error('全身模式需要上传两张图片（上衣和下衣）');
+        if (clothingType !== 'full' && garmentImages.length !== 1) return toast.error(`${clothingType === 'top' ? '上衣' : '下衣'}模式只能上传一张图片`);
+    }
+    
+    stopTaskPolling();
+    setIsGenerating(true);
+    setProgress(0);
+    setGeneratedImages([]);
+
     try {
-      if (selectedMode === 'standard') {
-        if (!standardModeRef.current?.canGenerate()) {
-          return;
+      if (selectedMode === 'creative') {
+        // 构建parts数组
+        const parts: Array<{ text?: string; image?: string }> = [];
+        parts.push({ text: prompt });
+
+        // 添加产品图片（Base64）
+        let productBase64;
+        if (creativeMaskCanvasRef.current) {
+            const editedImage = await creativeMaskCanvasRef.current.getEditedImageBase64();
+            productBase64 = editedImage || await urlToBase64(productImage!.fileUrl);
+        } else {
+            productBase64 = await urlToBase64(productImage!.fileUrl);
         }
-        await standardModeRef.current.handleGenerate();
-      } else if (selectedMode === 'creative') {
-        if (!creativeModeRef.current?.canGenerate()) {
-          return;
+        parts.push({ image: productBase64 });
+
+        if (referenceImage) {
+          const refBase64 = await urlToBase64(referenceImage.fileUrl);
+          parts.push({ image: refBase64 });
         }
-        await creativeModeRef.current.handleGenerate();
+
+        const res = await styleTransferService.submitCreative({
+          size: '2K',
+          contents: [{ parts }]
+        });
+
+        console.log('Creative submit response:', res);
+
+        let images: GeneratedImage[] = [];
+        let taskId: string | undefined;
+
+        if (Array.isArray(res)) {
+             images = res.map((item: any, index: number) => ({
+               key: `${Date.now()}_${index}`,
+               url: item.url || item.image_url || '',
+               revised_prompt: item.revised_prompt,
+               b64_json: item.b64_json
+             }));
+        } else if (res && res.data && Array.isArray(res.data)) {
+             images = res.data.map((item: any, index: number) => ({
+               key: `${Date.now()}_${index}`,
+               url: item.url || item.image_url || '',
+               revised_prompt: item.revised_prompt,
+               b64_json: item.b64_json
+             }));
+        } else if (res && (res.id || res.taskId)) {
+             taskId = res.id || res.taskId;
+        }
+
+        if (images.length > 0) {
+            setGeneratedImages(images);
+            setProgress(100);
+            setIsGenerating(false);
+            stopTaskPolling();
+        } else if (taskId) {
+            startPolling(taskId, 'creative');
+        } else {
+            throw new Error('Unexpected response format or empty result');
+        }
+
+      } else if (selectedMode === 'standard') {
+        // Parallel Uploads
+        const uploadPromises = [];
+
+        // 1. Product Image
+        uploadPromises.push(uploadImageToTopView(productImage!).then(res => {
+          setProductImage(res);
+          return res.fileId;
+        }));
+
+        // 2. Template Image
+        if (templateImage && !templateImage.fileId) {
+          uploadPromises.push(uploadImageToTopView(templateImage).then(res => {
+            setTemplateImage(res);
+            return res.fileId;
+          }));
+        } else {
+          uploadPromises.push(Promise.resolve(templateImage?.fileId));
+        }
+
+        // Helper for Mask Upload
+        const uploadMask = async (ref: React.RefObject<MaskCanvasRef>, name: string) => {
+            if (ref.current) {
+                const maskBlob = await ref.current.getMask();
+                if (maskBlob) {
+                    const maskFile = new File([maskBlob], name, { type: 'image/png' });
+                    const credRes = await avatarService.getUploadCredential('png');
+                    if (credRes.code === '200' && credRes.result) {
+                        const { uploadUrl, fileId } = credRes.result;
+                        const uploadRes = await fetch(uploadUrl, {
+                            method: 'PUT',
+                            body: maskFile,
+                            headers: { 'Content-Type': 'image/png' }
+                        });
+                        if (uploadRes.ok) return fileId;
+                    }
+                }
+            }
+            return undefined;
+        };
+
+        uploadPromises.push(uploadMask(productMaskCanvasRef, 'product_mask.png'));
+        uploadPromises.push(uploadMask(templateMaskCanvasRef, 'template_mask.png'));
+
+        const [pId, tId, pmId, tmId] = await Promise.all(uploadPromises);
+
+        if (!pId) throw new Error('Failed to upload product image');
+
+        const submitParams = {
+          productImageFileId: pId!,
+          productMaskFileId: pmId,
+          templateImageFileId: tId,
+          templateMaskFileId: tmId,
+          templateId: selectedTemplate?.templateId,
+          generatingCount,
+          score: String(generatingCount),
+          location: location.length > 0 ? location : undefined
+        };
+
+        const res = await styleTransferService.submitStandard(submitParams);
+        
+        let taskId;
+        if (res.result && res.result.taskId) {
+          taskId = res.result.taskId;
+        } else if (res.taskId) {
+          taskId = res.taskId;
+        } else if (res.id) {
+          taskId = res.id;
+        }
+
+        if (!taskId) throw new Error('Task ID not found in response');
+        startPolling(taskId, 'standard');
+
       } else if (selectedMode === 'clothing') {
-        if (!clothingModeRef.current?.canGenerate()) {
-          return;
-        }
-        await clothingModeRef.current.handleGenerate();
+        // Uploads
+        const uploadedGarments = await Promise.all(garmentImages.map(img => uploadImageToOss(img)));
+        const uploadedModel = await uploadImageToOss(modelImage!);
+        
+        setGarmentImages(uploadedGarments);
+        setModelImage(uploadedModel);
+
+        const garmentsForRequest = uploadedGarments.map((img, index) => {
+          if (clothingType === 'full') {
+            return { type: index === 0 ? 'upper' : 'bottom', url: img.fileUrl };
+          } else {
+            const apiClothingType = clothingType === 'top' ? 'upper' : clothingType;
+            return { type: apiClothingType, url: img.fileUrl };
+          }
+        });
+
+        const hasUpperType = garmentsForRequest.some(item => item.type === 'upper' || item.type === 'full');
+        const hasBottomType = garmentsForRequest.some(item => item.type === 'bottom' || item.type === 'full');
+
+        const submitData = {
+          score: '1', 
+          volcDressingV2Bo: {
+            garment: { data: garmentsForRequest },
+            model: { id: '1', url: uploadedModel.fileUrl },
+            req_key: 'dressing_diffusionV2',
+            inference_config: {
+              do_sr: false, seed: -1, keep_head: true, keep_hand: false, keep_foot: false, num_steps: 16,
+              keep_upper: !hasUpperType,
+              keep_lower: !hasBottomType,
+              tight_mask: 'loose', p_bbox_iou_ratio: 0.3, p_bbox_expand_ratio: 1.1, max_process_side_length: 1920,
+            }
+          }
+        };
+
+        const res = await styleTransferService.submitClothing(submitData);
+        let taskId;
+        if (res.data && res.data.task_id) taskId = res.data.task_id;
+        else if (res.data && res.data.taskId) taskId = res.data.taskId;
+        else if (res.data && res.data.id) taskId = res.data.id;
+
+        if (!taskId) throw new Error('Task ID not found in response');
+        startPolling(taskId, 'clothing');
       }
     } catch (error: any) {
-      handleModeError(error);
+      console.error('Generation error:', error);
+      toast.error(error.message || 'Generation failed');
+      setIsGenerating(false);
+      stopTaskPolling();
     }
   };
 
-  // 检查是否可以生成
-  const canGenerate = () => {
-    if (selectedMode === 'standard') {
-      return standardModeRef.current?.canGenerate() ?? false;
-    } else if (selectedMode === 'creative') {
-      return creativeModeRef.current?.canGenerate() ?? false;
-    } else if (selectedMode === 'clothing') {
-      return clothingModeRef.current?.canGenerate() ?? false;
-    }
-    return false;
+  const handleTemplateSelect = (template: Template) => {
+    setSelectedTemplate(template);
+    // If the template has an image URL, we can also set it as templateImage if needed,
+    // but usually selectedTemplate object is enough for the API.
+    // However, the UI might want to show the template image.
+    setShowTemplateModal(false);
   };
 
   useEffect(() => {
@@ -292,7 +807,6 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
   // 图生视频跳转
   const handleImageToVideo = (img: GeneratedImage) => {
-    const prompt = selectedMode === 'creative' ? creativeModeRef.current?.getPrompt() || '' : '';
     const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     setData(transferId, {
       images: [img.url],
@@ -338,115 +852,949 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
     },
   ];
 
-  return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-white dark:bg-gray-900">
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Leftmost Column - Vertical Mode Selector */}
-        <div className="w-20 md:w-24 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-visible flex-shrink-0">
-          <div className="p-2 flex flex-col gap-2">
-            {modes.map((mode) => (
-              <button
-                key={mode.id}
-                onClick={() => setSelectedMode(mode.id)}
-                className={`relative flex flex-col items-center justify-center gap-1.5 px-2 py-4 rounded-lg transition-all ${
-                  selectedMode === mode.id 
-                    ? 'bg-indigo-600 text-white shadow-sm' 
-                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                }`}
-                title={`${mode.title}: ${mode.desc}`}
-              >
-                {selectedMode === mode.id && (
-                  <div className="absolute -left-2 top-0 bottom-0 w-1 bg-indigo-300 dark:bg-indigo-400 rounded-r-full"></div>
-                )}
-                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
-                   selectedMode === mode.id ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-                }`}>
-                   <mode.icon size={20} className={selectedMode === mode.id && mode.id === 'creative' ? 'text-yellow-200' : ''} />
-                </div>
-                <div className={`text-[11px] font-medium text-center leading-tight ${selectedMode === mode.id ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}>
-                   {mode.title}
-                </div>
-              </button>
-            ))}
-          </div>
-        </div>
+  // 继续编辑 - 将生成结果设置为产品图继续编辑
+  const handleContinueEdit = async (img: GeneratedImage) => {
+    try {
+      // 下载图片并创建本地文件
+      const response = await fetch(img.url);
+      const blob = await response.blob();
+      const file = new File([blob], `edited-${Date.now()}.png`, { type: 'image/png' });
+      
+      // 创建本地预览URL
+      const blobUrl = URL.createObjectURL(blob);
+      const imgData: UploadedImage = {
+        fileName: file.name,
+        fileUrl: blobUrl,
+        file: file
+      };
+      
+      // 设置为产品图片，准备继续编辑
+      setProductImage(imgData);
+      
+      // 清空生成结果
+      setGeneratedImages([]);
+      
+      toast.success('已载入图片，可继续编辑');
+    } catch (error) {
+      console.error('Failed to load image for editing:', error);
+      toast.error('载入图片失败');
+    }
+  };
 
-        {/* Middle Panel - Mode Components */}
-        <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-            {selectedMode === 'standard' && (
-              <StandardMode
-                ref={standardModeRef}
-                t={t}
-                isGenerating={isGenerating}
-                onGenerate={(taskId) => handleModeGenerate(taskId, 'standard')}
-                onError={handleModeError}
-              />
-            )}
-            {selectedMode === 'creative' && (
-              <CreativeMode
-                ref={creativeModeRef}
-                t={t}
-                isGenerating={isGenerating}
-                onGenerate={(taskIdOrImages) => handleModeGenerate(taskIdOrImages, 'creative')}
-                onError={handleModeError}
-              />
-            )}
-              {selectedMode === 'clothing' && (
-              <ClothingMode
-                ref={clothingModeRef}
-                t={t}
-                isGenerating={isGenerating}
-                onGenerate={(taskId) => handleModeGenerate(taskId, 'clothing')}
-                onError={handleModeError}
-              />
+  const renderUploadBox = (
+    image: UploadedImage | null,
+    type: 'product' | 'template' | 'garment' | 'model' | 'reference',
+    label: string,
+    inputRef?: React.RefObject<HTMLInputElement>, // Optional now
+    customClass?: string,
+    disabled?: boolean // 新增：是否禁用上传
+  ) => {
+    // 创意模式的产品图和参考图只支持 PNG, JPG, JPEG
+    // 其他情况支持 PNG, JPG, JPEG, WEBP
+    const acceptTypes = (selectedMode === 'creative' && (type === 'product' || type === 'reference'))
+      ? ".png,.jpg,.jpeg"
+      : ".png,.jpg,.jpeg,.webp";
+    
+    // 获取文件格式提示文本
+    const getFormatText = () => {
+      if (selectedMode === 'creative' && (type === 'product' || type === 'reference')) {
+        return 'jpg/jpeg/png | 文件<10MB';
+      }
+      return t.standard.support;
+    };
+    
+    // 服装模式在 full 模式下支持多选
+    const isMultiple = type === 'garment' && clothingType === 'full';
+    
+    return (
+      <UploadComponent
+        onFileSelected={(file) => handleImageUpload(file, type)}
+        onUploadComplete={() => {}} // Not used directly as we handle upload in generate
+        onError={(error) => toast.error(error.message)}
+        uploadType="oss" // Or 'tv' if needed, but we manually upload in generate
+        immediate={false}
+        showConfirmButton={false} // Hide confirm button, upload on submit
+        accept={acceptTypes}
+        className={customClass || "h-full min-h-[200px] w-full"}
+        disabled={disabled} // 传递禁用状态
+      >
+          <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
+              <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
+                  <Upload size={24} />
+              </div>
+              <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
+              {type === 'garment' && clothingType === 'full' && (
+                <p className="text-[10px] text-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 px-2 py-1 rounded-full mt-1">
+                    全身模式：请上传两张图片（上衣和下衣）
+                </p>
+              )}
+              {type !== 'template' && !(type === 'garment' && clothingType === 'full') && (
+                <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
+                    {getFormatText()}
+                </p>
+              )}
+          </div>
+      </UploadComponent>
+    );
+  };
+
+  const renderRadio = (value: 'top' | 'bottom' | 'full', label: string) => (
+    <label className={`flex items-center gap-2 cursor-pointer px-4 py-2.5 rounded-lg border transition-all ${
+      clothingType === value 
+        ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20' 
+        : 'border-slate-200 dark:border-border bg-white dark:bg-surface hover:border-indigo-300 hover:bg-indigo-50/50 dark:hover:bg-indigo-900/10'
+    }`}>
+        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+          clothingType === value ? 'border-indigo-600' : 'border-slate-300'
+        }`}>
+            {clothingType === value && <div className="w-2.5 h-2.5 rounded-full bg-indigo-600"></div>}
+        </div>
+        <input 
+            type="radio" 
+            className="hidden" 
+            checked={clothingType === value} 
+            onChange={() => {
+              setClothingType(value);
+              // 切换类型时清空已上传的图片
+              setGarmentImages([]);
+            }} 
+        />
+        <span className={`text-sm font-medium ${
+          clothingType === value ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-600 dark:text-slate-300'
+        }`}>{label}</span>
+    </label>
+  );
+
+  return (
+    <div className="w-full h-full bg-gray-50 dark:bg-background p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
+      
+      {/* Header Removed as per request */}
+
+      {/* Mode Selector */}
+      <div className="flex flex-wrap justify-center gap-4">
+        {modes.map((mode) => (
+          <button
+            key={mode.id}
+            onClick={() => setSelectedMode(mode.id as any)}
+            className={`flex items-center gap-3 px-6 py-3 rounded-xl border transition-all duration-200 min-w-[240px] text-left ${
+              selectedMode === mode.id 
+                ? 'bg-indigo-600 border-indigo-600 shadow-lg scale-105' 
+                : 'bg-white dark:bg-surface border-slate-200 dark:border-border hover:border-indigo-300'
+            }`}
+          >
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
+               selectedMode === mode.id ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+            }`}>
+               <mode.icon size={20} className={selectedMode === mode.id && mode.id === 'creative' ? 'text-yellow-200' : ''} />
+            </div>
+            <div>
+              <div className={`font-bold text-sm ${selectedMode === mode.id ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
+                 {mode.title}
+              </div>
+              <div className={`text-xs ${selectedMode === mode.id ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                 {mode.desc}
+              </div>
+            </div>
+          </button>
+        ))}
+      </div>
+
+      {/* Main Content Grid */}
+      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden`}>
+        
+        {/* Creative Mode Layout: 2 Columns */}
+        {selectedMode === 'creative' ? (
+          <>
+            {/* Left Column: Combined Input */}
+            <div className="lg:col-span-2 bg-white dark:bg-surface rounded-2xl p-4 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
+                {/* 1. Product Image (Canvas) - Always Top */}
+                <div className="flex-shrink-0">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base flex items-center gap-2">
+                            {t.creative.productTitle}
+                            <span className="text-[10px] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</span>
+                        </h3>
+                    </div>
+                    
+                    {productImage ? (
+                        <div className="flex flex-col gap-2">
+                            <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[450px]">
+                                <MaskCanvas
+                                    ref={creativeMaskCanvasRef}
+                                    imageUrl={productImage.fileUrl}
+                                    tool={creativeBrushTool}
+                                    brushSize={creativeBrushSize}
+                                    brushColor={creativeBrushColor}
+                                    textOptions={textOptions}
+                                    mode="draw"
+                                    className="w-full h-full"
+                                />
+                                <button
+                                    onClick={() => setProductImage(null)}
+                                    className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                                >
+                                    <X size={14} />
+                                </button>
+                            </div>
+                            
+                            {/* Creative Tools Toolbar */}
+                            <div className="flex items-center gap-3 p-2 bg-slate-50 dark:bg-surface/50 rounded-lg border border-slate-100 dark:border-border overflow-x-auto">
+                                <div className="flex items-center gap-3 flex-shrink-0">
+                                    {/* Tools */}
+                                    <div className="flex gap-1.5">
+                                        <button
+                                            onClick={() => setCreativeBrushTool('pencil')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'pencil' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="画笔"
+                                        >
+                                            🖌️
+                                        </button>
+                                        <button
+                                            onClick={() => setCreativeBrushTool('eraser')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'eraser' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="橡皮擦"
+                                        >
+                                            🧽
+                                        </button>
+                                        <button
+                                            onClick={() => setCreativeBrushTool('arrow')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'arrow' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="箭头"
+                                        >
+                                            <ArrowRight size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCreativeBrushTool('rect')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'rect' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="矩形"
+                                        >
+                                            <Square size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCreativeBrushTool('ellipse')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'ellipse' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="椭圆"
+                                        >
+                                            <Circle size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => setCreativeBrushTool('text')}
+                                            className={`p-1.5 rounded-lg transition-colors ${creativeBrushTool === 'text' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                                            title="文本"
+                                        >
+                                            <Type size={16} />
+                                        </button>
+                                    </div>
+                                    
+                                    <div className="w-px h-6 bg-slate-200 dark:bg-border"></div>
+
+                                    {/* Colors */}
+                                    <div className="flex gap-2 items-center">
+                                        {creativeColors.map(color => (
+                                            <button
+                                                key={color}
+                                                onClick={() => setCreativeBrushColor(color)}
+                                                className={`w-5 h-5 rounded-full border-2 ${creativeBrushColor === color ? 'border-indigo-500 scale-110' : 'border-transparent hover:scale-110'}`}
+                                                style={{ backgroundColor: color }}
+                                                title={color}
+                                            />
+                                        ))}
+                                    </div>
+
+                                    <div className="w-px h-6 bg-slate-200 dark:bg-border"></div>
+
+                                    {/* Contextual Options: Text or Brush Size - Inline */}
+                                    {creativeBrushTool === 'text' ? (
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <select 
+                                                value={textOptions.fontFamily}
+                                                onChange={(e) => setTextOptions(prev => ({ ...prev, fontFamily: e.target.value }))}
+                                                className="px-2 py-1 text-xs rounded border border-slate-200 dark:border-border bg-white dark:bg-surface text-slate-700 dark:text-slate-300"
+                                            >
+                                                <option value="Arial">Arial</option>
+                                                <option value="Times New Roman">Times</option>
+                                                <option value="Courier New">Courier</option>
+                                                <option value="Verdana">Verdana</option>
+                                            </select>
+                                            
+                                            <input 
+                                                type="number" 
+                                                value={textOptions.fontSize} 
+                                                onChange={(e) => setTextOptions(prev => ({ ...prev, fontSize: Number(e.target.value) }))}
+                                                className="w-12 px-2 py-1 text-xs rounded border border-slate-200 dark:border-border bg-white dark:bg-surface text-slate-700 dark:text-slate-300"
+                                                min="10" max="200"
+                                            />
+
+                                            <div className="flex gap-0.5 bg-slate-100 dark:bg-surface p-0.5 rounded">
+                                                <button
+                                                    onClick={() => setTextOptions(prev => ({ ...prev, fontWeight: prev.fontWeight === 'bold' ? 'normal' : 'bold' }))}
+                                                    className={`p-1 rounded ${textOptions.fontWeight === 'bold' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50'}`}
+                                                    title="加粗"
+                                                >
+                                                    <Bold size={14} />
+                                                </button>
+                                                <button
+                                                    onClick={() => setTextOptions(prev => ({ ...prev, fontStyle: prev.fontStyle === 'italic' ? 'normal' : 'italic' }))}
+                                                    className={`p-1 rounded ${textOptions.fontStyle === 'italic' ? 'bg-white shadow text-indigo-600' : 'text-slate-500 hover:bg-white/50'}`}
+                                                    title="斜体"
+                                                >
+                                                    <Italic size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-[240px]">
+                                            <span className="text-xs text-slate-400 whitespace-nowrap">大小</span>
+                                            <input
+                                                type="range"
+                                                min="1"
+                                                max="100"
+                                                value={creativeBrushSize}
+                                                onChange={(e) => setCreativeBrushSize(Number(e.target.value))}
+                                                className="flex-1 h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                            />
+                                            <span className="text-xs text-slate-400 w-6">{creativeBrushSize}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="w-px h-6 bg-slate-200 dark:bg-border"></div>
+
+                                    {/* Actions */}
+                                    <div className="flex gap-1.5">
+                                        <button
+                                            onClick={() => creativeMaskCanvasRef.current?.undoLastAction()}
+                                            className="px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded hover:bg-slate-50 transition-colors"
+                                        >
+                                            撤销
+                                        </button>
+                                        <button
+                                            onClick={() => creativeMaskCanvasRef.current?.clearCanvas()}
+                                            className="px-2 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded hover:bg-slate-50 transition-colors"
+                                        >
+                                            清除
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : (
+                        renderUploadBox(productImage, 'product', t.creative.uploadProduct, productInputRef, "w-full min-h-[380px]")
+                    )}
+                </div>
+
+                {/* 2. Bottom Section: Prompt + Reference Image */}
+                <div className="flex flex-col md:flex-row gap-4 flex-1">
+                     {/* Prompt Section (Grow) */}
+                     <div className="flex-1 flex flex-col">
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">{t.creative.promptTitle}</h3>
+                            <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => handleTryExample(e)}
+                                  className="px-3 py-1.5 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors"
+                                >
+                                  试用示例
+                                </button>
+                                <button 
+                                   onClick={(e) => handlePolishText(e)}
+                                   disabled={!prompt.trim()}
+                                   className="flex items-center gap-1.5 text-xs font-semibold bg-gradient-to-r from-[#667eea] to-[#764ba2] text-white px-3 py-1.5 rounded-lg shadow hover:shadow-md transition-all transform hover:-translate-y-0.5 disabled:opacity-50 disabled:transform-none disabled:cursor-not-allowed"
+                                 >
+                                    <Wand2 size={12} />
+                                    {t.creative.aiPolish}
+                                 </button>
+                            </div>
+                        </div>
+                        <div className="relative flex-1">
+                            <textarea 
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder={t.creative.promptPlaceholder}
+                                className="w-full h-full min-h-[150px] p-4 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                maxLength={1500}
+                            />
+                            <div className="absolute bottom-3 right-3 text-xs text-slate-400">
+                                {prompt.length} / 1500
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Reference Image Section (Fixed Width) */}
+                    <div className="w-full md:w-64 flex flex-col">
+                        <div className="flex justify-between items-center mb-2">
+                            <div className="flex items-center gap-1.5">
+                                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">参考图片</h3>
+                                <span className="text-xs text-slate-400">(可选)</span>
+                            </div>
+                            {referenceImage && (
+                                <button
+                                    onClick={() => {
+                                      setShowReferenceImage(false);
+                                      setReferenceImage(null);
+                                    }}
+                                    className="text-xs text-red-500 hover:text-red-600"
+                                >
+                                    移除
+                                </button>
+                            )}
+                        </div>
+                        
+                        <div className="flex-1 min-h-[150px] border-2 border-dashed border-slate-200 dark:border-border rounded-xl overflow-hidden relative bg-slate-50 dark:bg-surface/50 hover:bg-slate-100 dark:hover:bg-surface transition-colors">
+                           {referenceImage ? (
+                             <div className="w-full h-full relative group">
+                               <img 
+                                 src={referenceImage.fileUrl} 
+                                 alt="Reference" 
+                                 className="w-full h-full object-cover" 
+                                 crossOrigin="anonymous"
+                                 referrerPolicy="no-referrer"
+                                 onError={(e) => {
+                                   const img = e.currentTarget;
+                                   if (img.crossOrigin !== null) {
+                                     img.crossOrigin = null;
+                                     img.referrerPolicy = 'no-referrer';
+                                   }
+                                 }}
+                               />
+                               {/* Overlay for re-upload or clear */}
+                               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <button 
+                                    onClick={() => setReferenceImage(null)}
+                                    className="p-2 bg-white/20 rounded-full text-white hover:bg-white/40 backdrop-blur-sm"
+                                  >
+                                    <X size={16} />
+                                  </button>
+                               </div>
+                             </div>
+                           ) : (
+                             <div 
+                               className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-4"
+                               onClick={() => referenceInputRef.current?.click()}
+                             >
+                                <UploadComponent
+                                  onFileSelected={(file) => handleImageUpload(file, 'reference')}
+                                  onUploadComplete={() => {}}
+                                  onError={(error) => toast.error(error.message)}
+                                  uploadType="oss"
+                                  immediate={false}
+                                  accept=".png,.jpg,.jpeg,.webp"
+                                  className="absolute inset-0 border-none bg-transparent"
+                                  showPreview={false} 
+                                >
+                                    <div className="text-center">
+                                        <Upload size={20} className="mx-auto text-slate-400 mb-2" />
+                                        <span className="text-xs text-slate-500">点击上传</span>
+                                    </div>
+                                </UploadComponent>
+                             </div>
+                           )}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Generate Button */}
+                <button 
+                  onClick={(e) => handleGenerate(e)}
+                  disabled={isGenerating || !productImage || !prompt.trim()}
+                  className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      Generating... {progress}%
+                    </>
+                  ) : (
+                    <>
+                      <Gem size={18} />
+                      <div className="flex items-center gap-1">
+                        <span>{t.common.generate}</span>
+                        <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                      </div>
+                    </>
+                  )}
+                </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Standard/Clothing Mode Layout: 3 Columns */}
+            
+            {/* Column 1: Left Input */}
+            <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
+               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">
+                   {selectedMode === 'clothing' ? t.clothing.garmentTitle : t.standard.productTitle}
+               </h3>
+               
+               <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-line">
+                   {selectedMode === 'clothing' ? t.clothing.garmentDesc : TEXTS.standard.productDesc}
+               </p>
+
+               {selectedMode === 'clothing' && (
+                   <div className="bg-slate-50 dark:bg-surface/50 rounded-lg p-3 border border-slate-200 dark:border-border">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">选择服装类型</label>
+                      <div className="flex gap-3">
+                          {renderRadio('top', t.clothing.types.top)}
+                          {renderRadio('bottom', t.clothing.types.bottom)}
+                          {renderRadio('full', t.clothing.types.full)}
+                      </div>
+                      {clothingType === 'full' && (
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
+                          全身模式需要上传两张图片：第一张为上衣，第二张为下衣
+                        </p>
+                      )}
+                   </div>
+               )}
+
+               {selectedMode === 'standard' && productImage ? (
+                 <div className="flex flex-col gap-3 flex-1">
+                   <div className="flex-1 relative border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+                     <MaskCanvas
+                        ref={productMaskCanvasRef}
+                        imageUrl={productImage.fileUrl}
+                        tool={brushTool}
+                        brushSize={brushSize}
+                        className="w-full h-full"
+                     />
+                     <button
+                        onClick={() => setProductImage(null)}
+                        className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                      >
+                        <X size={14} />
+                      </button>
+                   </div>
+                   
+                   {/* Brush Controls */}
+                   <div className="flex items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-surface/50 rounded-lg border border-slate-100 dark:border-border">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setBrushTool('pencil')}
+                          className={`p-2 rounded-lg transition-colors ${brushTool === 'pencil' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                          title="画笔"
+                        >
+                          🖌️
+                        </button>
+                        <button
+                          onClick={() => setBrushTool('eraser')}
+                          className={`p-2 rounded-lg transition-colors ${brushTool === 'eraser' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                          title="橡皮擦"
+                        >
+                          🧽
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                        <span className="text-xs text-slate-400 min-w-[24px]">画笔粗细</span>
+                        <input
+                          type="range"
+                          min="5"
+                          max="100"
+                          value={brushSize}
+                          onChange={(e) => setBrushSize(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs text-slate-400 min-w-[24px]">{brushSize}px</span>
+                      </div>
+                   </div>
+                 </div>
+               ) : (
+                 <div className="flex-1 min-h-[300px]">
+                    {selectedMode === 'clothing' ? (
+                      clothingType === 'full' ? (
+                        // 全身模式：始终显示两个上传框
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* 上衣上传框 */}
+                          <div className="relative w-full aspect-square">
+                            {garmentImages[0] ? (
+                              <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
+                                <img 
+                                  src={garmentImages[0].fileUrl} 
+                                  alt="上衣" 
+                                  className="w-full h-full object-contain" 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    const img = e.currentTarget;
+                                    if (img.crossOrigin !== null) {
+                                      img.crossOrigin = null;
+                                      img.referrerPolicy = 'no-referrer';
+                                    }
+                                  }}
+                                />
+                                <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
+                                  上衣
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setGarmentImages(prev => prev.filter((_, i) => i !== 0));
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <UploadComponent
+                                onFileSelected={(file) => handleImageUpload(file, 'garment')}
+                                onUploadComplete={() => {}}
+                                onError={(error) => toast.error(error.message)}
+                                accept=".png,.jpg,.jpeg,.webp"
+                                maxSize={10}
+                                immediate={false}
+                                showPreview={false}
+                                showConfirmButton={false}
+                                uploadType="oss"
+                                className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
+                              >
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                                    <Upload size={24} className="text-indigo-500" />
+                                  </div>
+                                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传上衣</p>
+                                  <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                                    {t.standard.support}
+                                  </p>
+                                </div>
+                              </UploadComponent>
+                            )}
+                          </div>
+                          
+                          {/* 下衣上传框 */}
+                          <div className="relative w-full aspect-square">
+                            {garmentImages[1] ? (
+                              <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
+                                <img 
+                                  src={garmentImages[1].fileUrl} 
+                                  alt="下衣" 
+                                  className="w-full h-full object-contain" 
+                                  crossOrigin="anonymous"
+                                  referrerPolicy="no-referrer"
+                                  onError={(e) => {
+                                    const img = e.currentTarget;
+                                    if (img.crossOrigin !== null) {
+                                      img.crossOrigin = null;
+                                      img.referrerPolicy = 'no-referrer';
+                                    }
+                                  }}
+                                />
+                                <div className="absolute top-1 left-1 bg-indigo-500 text-white text-xs px-2 py-0.5 rounded">
+                                  下衣
+                                </div>
+                                <button
+                                  onClick={() => {
+                                    setGarmentImages(prev => prev.filter((_, i) => i !== 1));
+                                  }}
+                                  className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                                >
+                                  <X size={14} />
+                                </button>
+                              </div>
+                            ) : (
+                              <UploadComponent
+                                onFileSelected={(file) => handleImageUpload(file, 'garment')}
+                                onUploadComplete={() => {}}
+                                onError={(error) => toast.error(error.message)}
+                                accept=".png,.jpg,.jpeg,.webp"
+                                maxSize={10}
+                                immediate={false}
+                                showPreview={false}
+                                showConfirmButton={false}
+                                uploadType="oss"
+                                className="relative w-full h-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors bg-white dark:bg-surface"
+                              >
+                                <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                  <div className="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 flex items-center justify-center">
+                                    <Upload size={24} className="text-indigo-500" />
+                                  </div>
+                                  <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传下衣</p>
+                                  <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                                    {t.standard.support}
+                                  </p>
+                                </div>
+                              </UploadComponent>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        // 上衣/下衣模式：显示单张图片或上传框
+                        garmentImages.length > 0 ? (
+                          <div className="flex flex-col gap-3">
+                            <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+                              <img 
+                                src={garmentImages[0].fileUrl} 
+                                alt="Garment" 
+                                className="w-full h-full object-contain" 
+                                crossOrigin="anonymous"
+                                referrerPolicy="no-referrer"
+                                onError={(e) => {
+                                  const img = e.currentTarget;
+                                  if (img.crossOrigin !== null) {
+                                    img.crossOrigin = null;
+                                    img.referrerPolicy = 'no-referrer';
+                                  }
+                                }}
+                              />
+                              <button
+                                onClick={() => setGarmentImages([])}
+                                className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                            <div 
+                              className="relative w-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors min-h-[100px]"
+                              onClick={() => garmentInputRef.current?.click()}
+                            >
+                              <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
+                                <Upload size={20} className="text-indigo-400" />
+                                <p className="text-xs text-indigo-500 font-medium">重新上传</p>
+                              </div>
+                              <input
+                                ref={garmentInputRef}
+                                type="file"
+                                accept="image/png,image/jpeg,image/jpg,image/webp"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageUpload(file, 'garment');
+                                  }
+                                  if (e.target) e.target.value = '';
+                                }}
+                                className="hidden"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          renderUploadBox(
+                            null,
+                            'garment',
+                            t.clothing.uploadGarment,
+                            garmentInputRef
+                          )
+                        )
+                      )
+                    ) : (
+                      renderUploadBox(
+                        productImage,
+                        'product',
+                        t.standard.uploadProduct,
+                        productInputRef,
+                        undefined,
+                        isGenerating && selectedMode === 'standard' // 标准模式生成时禁用
+                      )
+                    )}
+                 </div>
+               )}
+
+               {/* Try Example Button - 仅标准模式显示 */}
+               {selectedMode === 'standard' && !productImage && (
+                 <div className="mt-auto pt-4 flex justify-center">
+                    <button
+                      onClick={(e) => handleTryExample(e)}
+                      className="px-6 py-2 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors w-full"
+                    >
+                      试用示例
+                    </button>
+                 </div>
+               )}
+            </div>
+
+            {/* Column 2: Middle Input / Config */}
+            <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
+                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">
+                   {selectedMode === 'clothing' ? t.clothing.modelTitle : TEXTS.standard.areaTitle}
+                </h3>
+                
+                {selectedMode === 'standard' && (
+                   <p className="text-xs text-slate-400 leading-relaxed">{TEXTS.standard.areaDesc}</p>
+                )}
+
+                {selectedMode === 'clothing' && (
+                   <p className="text-xs text-slate-400 leading-relaxed">
+                     上传模特图片，AI将自动替换模特身上的服装<br/>
+                     支持格式: jpg/jpeg/png/webp<br/>
+                     图片大小: 小于10MB
+                   </p>
+                )}
+
+                {selectedMode === 'standard' && (templateImage || selectedTemplate) ? (
+                  <div className="flex flex-col gap-3 flex-1">
+                    <div className="flex-1 relative border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+                      <MaskCanvas
+                        ref={templateMaskCanvasRef}
+                        imageUrl={templateImage?.fileUrl || selectedTemplate?.templateImageUrl || ''}
+                        tool={templateBrushTool}
+                        brushSize={templateBrushSize}
+                        className="w-full h-full"
+                      />
+                      {!isGenerating && (
+                        <button
+                          onClick={() => {
+                            setTemplateImage(null);
+                            setSelectedTemplate(null);
+                          }}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-20"
+                        >
+                          <X size={14} />
+                        </button>
                       )}
                     </div>
 
-          {/* Fixed Bottom Actions - Generate Button */}
-          <div className="flex-shrink-0 p-6 pt-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-            <button 
-              onClick={(e) => handleGenerate(e)}
-              disabled={isGenerating || !canGenerate()}
-              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  生成中... {progress}%
-                </>
-              ) : (
-                <>
-                  <Gem size={18} />
-                  <div className="flex items-center gap-1">
-                    <span>{t.common.generate}</span>
-                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                    {/* Template Brush Controls */}
+                    <div className="flex items-center justify-between gap-2 p-2 bg-slate-50 dark:bg-surface/50 rounded-lg border border-slate-100 dark:border-border">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTemplateBrushTool('pencil')}
+                          className={`p-2 rounded-lg transition-colors ${templateBrushTool === 'pencil' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                          title="画笔"
+                        >
+                          🖌️
+                        </button>
+                        <button
+                          onClick={() => setTemplateBrushTool('eraser')}
+                          className={`p-2 rounded-lg transition-colors ${templateBrushTool === 'eraser' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' : 'text-slate-500 hover:bg-slate-200 dark:hover:bg-surface'}`}
+                          title="橡皮擦"
+                        >
+                          🧽
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-2 flex-1 max-w-[120px]">
+                        <span className="text-xs text-slate-400 min-w-[24px]">画笔粗细</span>
+                        <input
+                          type="range"
+                          min="5"
+                          max="100"
+                          value={templateBrushSize}
+                          onChange={(e) => setTemplateBrushSize(Number(e.target.value))}
+                          className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                        />
+                        <span className="text-xs text-slate-400 min-w-[24px]">{templateBrushSize}px</span>
+                      </div>
+                    </div>
                   </div>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
+                ) : (
+                  <div className="flex-1 min-h-[300px]">
+                    {selectedMode === 'clothing' && modelImage ? (
+                      <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden">
+                        <img 
+                          src={modelImage.fileUrl} 
+                          alt="Model" 
+                          className="w-full h-full object-contain" 
+                          crossOrigin="anonymous"
+                          referrerPolicy="no-referrer"
+                          onError={(e) => {
+                            const img = e.currentTarget;
+                            if (img.crossOrigin !== null) {
+                              img.crossOrigin = null;
+                              img.referrerPolicy = 'no-referrer';
+                            }
+                          }}
+                        />
+                        <button
+                          onClick={() => setModelImage(null)}
+                          className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-full opacity-70 hover:opacity-100 transition-opacity z-10"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      renderUploadBox(
+                        selectedMode === 'clothing' ? modelImage : templateImage,
+                        selectedMode === 'clothing' ? 'model' : 'template',
+                        selectedMode === 'clothing' ? t.clothing.uploadModel : TEXTS.standard.templateUpload,
+                        selectedMode === 'clothing' ? modelInputRef : templateInputRef,
+                        undefined,
+                        isGenerating && selectedMode === 'standard' // 标准模式生成时禁用
+                      )
+                    )}
+                  </div>
+                )}
 
-        {/* Right Panel - Preview */}
-        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-hidden">
-          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-            <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
-              <Palette className="w-5 h-5" /> {t.common.resultTitle}
-            </h2>
-          </div>
-          
-          {/* Result Display Area */}
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+                {selectedMode === 'standard' && (
+                  <div className="mt-auto pt-4 space-y-2">
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isAuthenticated) {
+                          showAuthModal();
+                          return;
+                        }
+                        setShowTemplateModal(true);
+                      }}
+                      disabled={isGenerating}
+                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {t.standard.selectTemplate}
+                    </button>
+                    
+                    {selectedTemplate && (
+                      <div className="p-2 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                          已选择: {selectedTemplate.templateCategoryList[0]?.categoryName || selectedTemplate.templateId}
+                        </p>
+                      </div>
+                    )}
+
+                    <button 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (!isAuthenticated) {
+                          showAuthModal();
+                          return;
+                        }
+                        setTemplateImage(null);
+                        setSelectedTemplate(null);
+                        if (templateInputRef.current) templateInputRef.current.value = '';
+                      }}
+                      disabled={isGenerating}
+                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      重新上传
+                    </button>
+                  </div>
+                )}
+
+                <button 
+                  onClick={(e) => handleGenerate(e)}
+                  disabled={isGenerating || 
+                    (selectedMode === 'clothing' ? (garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)) : (!productImage || (!templateImage && !selectedTemplate)))}
+                  className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      生成中... {progress}%
+                    </>
+                  ) : (
+                    <>
+                      <Gem size={18} />
+                      <div className="flex items-center gap-1">
+                        <span>{t.common.generate}</span>
+                        <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                      </div>
+                    </>
+                  )}
+                </button>
+            </div>
+          </>
+        )}
+
+        {/* Column 3: Output (Common for all modes) */}
+        <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col shadow-sm border border-slate-200 dark:border-border overflow-hidden">
+           <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-6">{t.common.resultTitle}</h3>
+           
            {isGenerating ? (
-             <div className="flex-1 flex flex-col items-center justify-center">
+             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-surface/30 rounded-xl border-2 border-dashed border-slate-100 dark:border-border relative overflow-hidden min-h-[300px]">
                <div className="flex flex-col items-center gap-4">
-                 <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
-                 <p className="text-indigo-600 dark:text-indigo-400 font-medium">AI正在生成中... {progress}%</p>
+                 <Loader2 size={48} className="animate-spin text-indigo-600" />
+                 <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
+                   AI正在生成中... {progress}%
+                 </p>
                </div>
              </div>
            ) : generatedImages.length > 0 ? (
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+             <div className="flex-1 overflow-y-auto custom-scrollbar">
+               <div className="grid grid-cols-1 gap-4">
                  {generatedImages.map((img) => (
                    <div key={img.key} className="relative group border-2 border-slate-200 dark:border-border rounded-xl overflow-hidden">
                      <img 
@@ -488,6 +1836,14 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                        >
                          <Video size={20} />
                        </button>
+                       {/* <button
+                         onClick={() => handleContinueEdit(img)}
+                         className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
+                         title="继续编辑"
+                       >
+                         <Pencil size={20} />
+                       </button> */}
+                       {/* 点击预览 */}
                        <button
                          onClick={() => handlePreview(img)}
                          className="p-2 bg-white/20 hover:bg-white/40 text-white rounded-full backdrop-blur-sm transition-colors"
@@ -498,20 +1854,35 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                      </div>
                    </div>
                  ))}
-             </div>
-           ) : (
-             <div className="flex-1 flex flex-col items-center justify-center">
-               <div className="flex flex-col items-center text-slate-400">
-                 <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-                   <Palette size={40} className="opacity-50 text-slate-400 dark:text-slate-500" />
-                 </div>
-                 <p className="text-sm max-w-xs text-center text-slate-500 dark:text-slate-400">{t.common.resultPlaceholder}</p>
                </div>
              </div>
+           ) : (
+             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-surface/30 rounded-xl border-2 border-dashed border-slate-100 dark:border-border relative overflow-hidden min-h-[300px]">
+               <div className="relative z-10 flex flex-col items-center gap-4 text-center max-w-xs">
+                 <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center shadow-inner">
+                   <Palette size={40} className="text-amber-500" />
+                 </div>
+                 <p className="text-sm text-slate-400 leading-relaxed font-medium">
+                   {t.common.resultPlaceholder}
+                 </p>
+               </div>
+               
+               {/* Decorative circles */}
+               <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-50 dark:bg-indigo-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70"></div>
+               <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-50 dark:bg-purple-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70"></div>
+             </div>
            )}
-          </div>
         </div>
+
       </div>
+      
+      {/* Template Selection Modal */}
+      <TemplateSelectModal
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
+        onSelect={handleTemplateSelect}
+        selectedTemplateId={selectedTemplate?.templateId}
+      />
 
       {/* Add Material Modal */}
       <AddMaterialModal
