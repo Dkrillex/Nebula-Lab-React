@@ -121,6 +121,10 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
     if (!taskId) return;
     stopTaskPolling();
     
+    // 确保在开始轮询时显示进度条
+    setIsGenerating(true);
+    setProgress(10);
+    
     const extractTaskResult = (res: any) => {
       if (res.result) return res.result;
       if (res.data) return res.data;
@@ -230,7 +234,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
     
     stopTaskPolling();
     setIsGenerating(true);
-    setProgress(0);
+    setProgress(10); // 设置初始进度，让 ResultDisplay 显示进度条
     setGeneratedImages([]);
 
     try {
