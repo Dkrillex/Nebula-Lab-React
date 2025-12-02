@@ -2,16 +2,16 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useActivate, useUnactivate } from 'react-activation';
 import { Loader, X, Play, Download, RotateCcw, Image as ImageIcon, Video, Upload, Check } from 'lucide-react';
-import { avatarService, Voice, Caption } from '../../../services/avatarService';
-import { useProductAvatarStore } from '../../../stores/productAvatarStore';
-import { useAuthStore } from '../../../stores/authStore';
-import VoiceModal from './VoiceModal';
-import CaptionModal from './CaptionModal';
-import ImagePreviewModal from './ImagePreviewModal';
-import AddMaterialModal from '../../../components/AddMaterialModal';
+import { avatarService, Voice, Caption } from '@/services/avatarService';
+import { useProductAvatarStore } from '@/stores/productAvatarStore';
+import { useAuthStore } from '@/stores/authStore';
+import VoiceModal from '../components/VoiceModal';
+import CaptionModal from '../components/CaptionModal';
+import ImagePreviewModal from '../components/ImagePreviewModal';
+import AddMaterialModal from '@/components/AddMaterialModal';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 interface ProductReplaceResult {
   key: string;

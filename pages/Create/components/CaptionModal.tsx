@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import BaseModal from '../../../components/BaseModal';
-import { avatarService, Caption } from '../../../services/avatarService';
+import BaseModal from '@/components/BaseModal';
+import { avatarService, Caption } from '@/services/avatarService';
 
 interface CaptionModalProps {
   isOpen: boolean;

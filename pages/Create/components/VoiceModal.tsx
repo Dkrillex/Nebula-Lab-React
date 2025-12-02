@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Play, Pause, User } from 'lucide-react';
-import BaseModal from '../../../components/BaseModal';
-import { avatarService, Voice } from '../../../services/avatarService';
+import BaseModal from '@/components/BaseModal';
+import { avatarService, Voice } from '@/services/avatarService';
 
 interface VoiceModalProps {
   isOpen: boolean;

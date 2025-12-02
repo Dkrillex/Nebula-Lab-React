@@ -1,28 +1,21 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Download, Maximize2, FolderPlus, Check, ChevronsLeftRight } from 'lucide-react';
-import AddMaterialModal from '../../../components/AddMaterialModal';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import { uploadService } from '@/services/uploadService';
 
-interface FaceSwapResultDisplayProps {
+interface UseToolResultDisplayProps {
   imageUrl: string;
   originalImageUrl?: string | null;
-  onUseAsInput?: (imageUrl: string) => void;
   onImageClick?: (imageUrl: string) => void;
-  t?: any;
 }
 
 type ViewMode = 'result' | 'side-by-side' | 'slider';
 
-const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
+const UseToolResultDisplay: React.FC<UseToolResultDisplayProps> = ({
   imageUrl,
   originalImageUrl,
-  onUseAsInput,
   onImageClick,
-  t: propT,
 }) => {
-  const { t: rootT } = useAppOutletContext();
-  const t = propT || (rootT?.createPage as any)?.imageTranslation || (translations['zh'].createPage as any).imageTranslation;
   const [viewMode, setViewMode] = useState<ViewMode>('result');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [importedStatus, setImportedStatus] = useState(false);
@@ -63,25 +56,68 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
   const handleDownload = () => {
     const link = document.createElement('a');
     link.href = imageUrl;
-    link.download = `face-swap-${Date.now()}.png`;
+    link.download = `generated-${Date.now()}.png`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // 将 Blob 转换为 Base64 data URL
+  const blobToBase64 = (blob: Blob): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.addEventListener('load', () => resolve(reader.result as string));
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   };
 
   const handleDownloadComparison = async () => {
     if (!originalImageUrl || !imageUrl) return;
 
     try {
-      // 加载两张图片
-      const loadImage = (url: string): Promise<HTMLImageElement> => {
-        return new Promise((resolve, reject) => {
-          const img = new Image();
-          img.crossOrigin = 'anonymous';
-          img.onload = () => resolve(img);
-          img.onerror = reject;
-          img.src = url;
-        });
+      // 加载图片的辅助函数，借鉴 Nebula1 的方式
+      // 通过 uploadByImageUrl 上传到 OSS，然后获取 blob，转换为 base64，避免跨域问题
+      const loadImage = async (url: string): Promise<HTMLImageElement> => {
+        // 如果是 data URL，直接使用
+        if (url.startsWith('data:')) {
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
+
+        try {
+          // 借鉴 Nebula1：通过 uploadByImageUrl 上传到 OSS，获取新的 OSS URL
+          const { url: ossUrl } = await uploadService.uploadByImageUrl(url, 'png');
+          
+          // 通过 fetch 获取 OSS URL 的 blob
+          const res = await fetch(ossUrl);
+          const blob = await res.blob();
+          
+          // 将 Blob 转换为 Base64 data URL
+          const dataUrl = await blobToBase64(blob);
+          
+          // 使用 data URL 加载图片，不会有跨域问题
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = dataUrl;
+          });
+        } catch (error) {
+          console.warn('通过 OSS 加载失败，尝试直接加载:', error);
+          // 如果上传到 OSS 失败，尝试直接加载（可能会失败）
+          return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.crossOrigin = 'anonymous';
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = url;
+          });
+        }
       };
 
       const [originalImg, resultImg] = await Promise.all([
@@ -92,10 +128,15 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
       // 创建画布
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {
+        throw new Error('无法创建画布上下文');
+      }
 
-      const totalWidth = originalImg.width + resultImg.width;
+      // 计算画布尺寸：每张图片各占一半宽度
+      const maxWidth = Math.max(originalImg.width, resultImg.width);
       const maxHeight = Math.max(originalImg.height, resultImg.height);
+      const halfWidth = maxWidth; // 每张图片占据的宽度（使用最大宽度）
+      const totalWidth = halfWidth * 2; // 总宽度为两倍
 
       canvas.width = totalWidth;
       canvas.height = maxHeight;
@@ -104,25 +145,54 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // 绘制原图
-      ctx.drawImage(originalImg, 0, (maxHeight - originalImg.height) / 2);
-      // 绘制结果图
-      ctx.drawImage(resultImg, originalImg.width, (maxHeight - resultImg.height) / 2);
+      // 计算缩放比例，使图片适应各自的一半空间
+      const originalScale = Math.min(
+        halfWidth / originalImg.width,
+        maxHeight / originalImg.height
+      );
+      const resultScale = Math.min(
+        halfWidth / resultImg.width,
+        maxHeight / resultImg.height
+      );
 
-      // 下载
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `face-swap-comparison-${Date.now()}.png`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      });
+      const originalScaledWidth = originalImg.width * originalScale;
+      const originalScaledHeight = originalImg.height * originalScale;
+      const resultScaledWidth = resultImg.width * resultScale;
+      const resultScaledHeight = resultImg.height * resultScale;
+
+      // 绘制原图（在左半部分居中）
+      const originalX = (halfWidth - originalScaledWidth) / 2;
+      const originalY = (maxHeight - originalScaledHeight) / 2;
+      ctx.drawImage(
+        originalImg,
+        originalX,
+        originalY,
+        originalScaledWidth,
+        originalScaledHeight
+      );
+
+      // 绘制结果图（在右半部分居中）
+      const resultX = halfWidth + (halfWidth - resultScaledWidth) / 2;
+      const resultY = (maxHeight - resultScaledHeight) / 2;
+      ctx.drawImage(
+        resultImg,
+        resultX,
+        resultY,
+        resultScaledWidth,
+        resultScaledHeight
+      );
+
+      // 转换为 data URL 并下载（借鉴 Nebula1 使用 toDataURL）
+      const dataUrl = canvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.href = dataUrl;
+      link.download = `comparison-${Date.now()}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     } catch (error) {
       console.error('下载对比图失败:', error);
+      // 移除 alert 弹窗，只在控制台输出错误
     }
   };
 
@@ -148,44 +218,46 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
 
   const getModeLabel = (mode: ViewMode): string => {
     const labels: Record<ViewMode, string> = {
-      result: t.tabs?.result || '结果',
-      'side-by-side': t.tabs?.sideBySide || '并排',
-      slider: t.tabs?.slider || '滑块',
+      result: '结果',
+      'side-by-side': '并排',
+      slider: '滑块',
     };
     return labels[mode];
   };
 
   return (
     <>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 w-full">
         {/* 模式切换按钮 */}
         {originalImageUrl && availableModes.length > 1 && (
-          <div className="flex justify-center gap-2">
-            {availableModes.map((mode) => (
-              <button
-                key={mode}
-                onClick={() => setViewMode(mode)}
-                className={`px-4 py-2 text-sm font-semibold rounded-[10px] transition-all duration-200 shadow-lg ${
-                  viewMode === mode
-                    ? 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white hover:shadow-xl'
-                    : 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white opacity-60 hover:opacity-80'
-                }`}
-              >
-                {getModeLabel(mode)}
-              </button>
-            ))}
+          <div className="flex justify-center">
+            <div className="flex items-center gap-1 rounded-lg bg-[#f3f4f6] p-1">
+              {availableModes.map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors duration-200 ${
+                    viewMode === mode
+                      ? 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white'
+                      : 'text-[#6b7280] hover:bg-[rgba(107,114,128,0.1)]'
+                  }`}
+                >
+                  {getModeLabel(mode)}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
         {/* 结果展示区域 */}
-        <div className="relative">
+        <div className="relative w-full">
           {/* 结果模式 */}
           {viewMode === 'result' && (
             <div className="relative group">
               <img
                 src={imageUrl}
-                alt="Face swap result"
-                className="w-full rounded-lg object-contain max-h-[700px]"
+                alt="Generated result"
+                className="w-full rounded-lg object-contain max-h-[700px] mx-auto"
                 onClick={handlePreview}
                 style={{ cursor: 'pointer' }}
                 crossOrigin="anonymous"
@@ -203,14 +275,14 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                 <button
                   onClick={handlePreview}
                   className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
-                  title={t.labels?.preview || '预览'}
+                  title="预览"
                 >
                   <Maximize2 className="h-5 w-5 text-gray-700" />
                 </button>
                 <button
                   onClick={handleDownload}
                   className="rounded-full bg-white/90 p-2 hover:bg-white transition-colors"
-                  title={t.labels?.download || '下载'}
+                  title="下载"
                 >
                   <Download className="h-5 w-5 text-gray-700" />
                 </button>
@@ -221,7 +293,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                       ? 'bg-green-500 text-white'
                       : 'bg-white/90 hover:bg-white'
                   }`}
-                  title={t.labels?.addToMaterials || '添加到素材库'}
+                  title="添加到素材库"
                 >
                   {importedStatus ? (
                     <Check className="h-5 w-5" />
@@ -252,7 +324,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
-                  {t.labels?.original || '原图'}
+                  原图
                 </div>
               </div>
               <div className="relative flex items-center justify-center overflow-hidden rounded-lg border border-[rgba(0,0,0,0.1)] bg-white">
@@ -271,7 +343,7 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
                   }}
                 />
                 <div className="absolute bottom-1 right-1 rounded bg-black/50 px-2 py-1 text-xs text-white">
-                  {t.labels?.result || '结果'}
+                  结果
                 </div>
               </div>
             </div>
@@ -307,19 +379,15 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
               </div>
               {/* 滑块控制条 */}
               <div
-                className="absolute bottom-0 top-0 w-1 cursor-ew-resize"
+                className="absolute bottom-0 top-0 w-0.5 cursor-ew-resize bg-gray-400"
                 style={{ 
-                  left: `calc(${sliderPosition}% - 2px)`,
-                  background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, #15b7fa 100%)'
+                  left: `calc(${sliderPosition}% - 1px)`,
                 }}
               >
                 <div 
-                  className="absolute -left-3.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border-2 border-white text-white"
-                  style={{
-                    background: 'linear-gradient(135deg, hsl(var(--primary)) 0%, #15b7fa 100%)'
-                  }}
+                  className="absolute -left-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border-2 border-gray-400 bg-white shadow-sm"
                 >
-                  <ChevronsLeftRight className="h-4 w-4" />
+                  <ChevronsLeftRight className="h-3 w-3 text-gray-600" />
                 </div>
               </div>
             </div>
@@ -327,8 +395,8 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
         </div>
 
         {/* 操作按钮 */}
-        {/* <div className="flex flex-col gap-3 md:flex-row"> */}
-          {/* <button
+        <div className="flex flex-col gap-3 md:flex-row">
+          <button
             onClick={
               viewMode === 'side-by-side' ? handleDownloadComparison : handleDownload
             }
@@ -338,29 +406,29 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
             <span>
               {viewMode === 'side-by-side' ? '下载对比图' : '下载'}
             </span>
-          </button> */}
-          {/* {onUseAsInput && (
-            <button
-              onClick={() => onUseAsInput(imageUrl)}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-4 font-semibold rounded-[10px] bg-gradient-to-r from-[hsl(var(--primary))] to-[#15b7fa] text-white shadow-lg shadow-[rgba(255,150,172,0.25)] transition-all duration-200 hover:shadow-lg hover:shadow-[#7d6fdd]/30"
-            >
-              <span>用作输入</span>
-            </button>
-          )} */}
-        {/* </div> */}
+          </button>
+          <button
+            onClick={handleAddToMaterials}
+            className={`flex-1 flex items-center justify-center gap-2 py-2 px-4 font-semibold rounded-[10px] transition-all duration-200 ${
+              importedStatus
+                ? 'bg-green-500 text-white'
+                : 'bg-gradient-to-r from-[#7d6fdd] to-[#15b7fa] text-white shadow-lg shadow-[rgba(255,150,172,0.25)] hover:shadow-lg hover:shadow-[#7d6fdd]/30'
+            }`}
+          >
+            <FolderPlus className="h-5 w-5" />
+            <span>{importedStatus ? '已添加到素材库' : '添加到素材库'}</span>
+          </button>
+        </div>
       </div>
 
       <AddMaterialModal
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
-        onSuccess={() => {
-          if (handleMaterialSuccess) handleMaterialSuccess();
-          setIsAddModalOpen(false);
-        }}
+        onSuccess={handleMaterialSuccess}
         initialData={{
-          assetName: t.labels?.result || '换脸结果',
-          assetTag: t.labels?.result || '换脸结果',
-          assetDesc: t.labels?.result || '换脸结果',
+          assetName: '生成结果',
+          assetTag: '生成结果',
+          assetDesc: '生成结果',
           assetUrl: imageUrl,
           assetType: 6, // 图片类型
         }}
@@ -371,4 +439,5 @@ const FaceSwapResultDisplay: React.FC<FaceSwapResultDisplayProps> = ({
   );
 };
 
-export default FaceSwapResultDisplay;
+export default UseToolResultDisplay;
+

@@ -6,14 +6,14 @@ import {
   LayoutTemplate, Volume2, Copy, Download, MoreHorizontal, 
   Loader, X, CheckCircle2
 } from 'lucide-react';
-import { uploadService } from '../../../services/uploadService';
-import { assetsService, AdsAssetsVO } from '../../../services/assetsService';
-import { viralVideoService, ProductAnalysis } from '../../../services/viralVideoService';
-import { videoGenerateService } from '../../../services/videoGenerateService';
+import { uploadService } from '@/services/uploadService';
+import { assetsService, AdsAssetsVO } from '@/services/assetsService';
+import { viralVideoService, ProductAnalysis } from '@/services/viralVideoService';
+import { videoGenerateService } from '@/services/videoGenerateService';
 import toast from 'react-hot-toast';
-import BaseModal from '../../../components/BaseModal';
-import ImageEditModal from './ImageEditModal';
-import { mergeVideos, downloadVideo, formatDuration } from '../../../utils/videoUtils';
+import BaseModal from '@/components/BaseModal';
+import ImageEditModal from '../components/ImageEditModal';
+import { mergeVideos, downloadVideo, formatDuration } from '@/utils/videoUtils';
 
 interface ViralVideoPageProps {
   t: {

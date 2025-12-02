@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Send, Shield, Trash2, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { videoMaskDrawingService, imageMaskDrawingService } from '../../../services/faceSwapService';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import { videoMaskDrawingService, imageMaskDrawingService } from '@/services/faceSwapService';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 // 视频标记点类型定义
 export interface VideoMarker {

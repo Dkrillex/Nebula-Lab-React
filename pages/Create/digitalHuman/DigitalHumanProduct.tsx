@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus, Trash2, Download, Check, RotateCcw } from 'lucide-react';
 import { useActivate, useUnactivate } from 'react-activation';
-import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
-import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
-import ProductCanvas, { ProductCanvasRef } from './ProductCanvas';
-import { useProductAvatarStore } from '../../../stores/productAvatarStore';
+import { avatarService, ProductAvatar, ProductAvatarCategory } from '@/services/avatarService';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import ProductCanvas, { ProductCanvasRef } from '../components/ProductCanvas';
+import { useProductAvatarStore } from '@/stores/productAvatarStore';
 import { useNavigate } from 'react-router-dom';
 import demoProductPng from '@/assets/demo/productImage.png';
 import demoUserFacePng from '@/assets/demo/userFaceImage.png';

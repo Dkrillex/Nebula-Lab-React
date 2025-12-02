@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Wand2, Image as ImageIcon, Download, Maximize2, Loader2, Upload, X, FolderPlus, Video, Check } from 'lucide-react';
-import { textToImageService, TextToImageItem } from '../../../services/textToImageService';
-import AddMaterialModal from '../../../components/AddMaterialModal';
-import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
-import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
+import { textToImageService, TextToImageItem } from '@/services/textToImageService';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import { useVideoGenerationStore } from '@/stores/videoGenerationStore';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg

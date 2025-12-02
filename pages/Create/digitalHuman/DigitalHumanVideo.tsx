@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
-import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
-import VoiceModal from './VoiceModal';
-import CaptionModal from './CaptionModal';
-import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
-import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
+import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '@/services/avatarService';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
+import VoiceModal from '../components/VoiceModal';
+import CaptionModal from '../components/CaptionModal';
+import demoVideo from '@/assets/demo/ec6-4dbbffde26e2.mp4';
+import demoAudio from '@/assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 import AddMaterialModal from '@/components/AddMaterialModal';
 import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
 interface DigitalHumanVideoProps {

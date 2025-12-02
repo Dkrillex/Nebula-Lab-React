@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Upload, Loader2, CheckCircle, AlertCircle, Info, Copy, Video, FileVideo } from 'lucide-react';
-import { avatarService, UploadedFile, CustomAvatarTaskResult } from '../../../services/avatarService';
-import { uploadService } from '../../../services/uploadService';
-import { useAuthStore } from '../../../stores/authStore';
-import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
-import AddMaterialModal from '../../../components/AddMaterialModal';
+import { avatarService, UploadedFile, CustomAvatarTaskResult } from '@/services/avatarService';
+import { uploadService } from '@/services/uploadService';
+import { useAuthStore } from '@/stores/authStore';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import AddMaterialModal from '@/components/AddMaterialModal';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 interface UploadCustomAvatarPageProps {
   t?: any;

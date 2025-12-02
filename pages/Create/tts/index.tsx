@@ -8,14 +8,14 @@ import {
   Check,
   Sparkles
 } from 'lucide-react';
-import { ttsService, TtsGenerateParams } from '../../../services/ttsService';
-import { uploadService } from '../../../services/uploadService';
-import { assetsService, AdsAssetsForm } from '../../../services/assetsService';
-import { useAuthStore } from '../../../stores/authStore';
-import AddMaterialModal from '../../../components/AddMaterialModal';
+import { ttsService, TtsGenerateParams } from '@/services/ttsService';
+import { uploadService } from '@/services/uploadService';
+import { assetsService, AdsAssetsForm } from '@/services/assetsService';
+import { useAuthStore } from '@/stores/authStore';
+import AddMaterialModal from '@/components/AddMaterialModal';
 import toast from 'react-hot-toast';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 // 音色选项 - 将在组件内根据翻译动态生成
 const getVoiceOptions = (t: any) => [

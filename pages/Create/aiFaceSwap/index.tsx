@@ -9,15 +9,15 @@
 import React, { useState } from 'react';
 import { Wand2, Sparkles, Edit3 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import UploadComponent from '../../../components/UploadComponent';
-import { faceSwapService, videoProcessService } from '../../../services/faceSwapService';
-import { UploadedFile } from '../../../services/avatarService';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
-import VideoEditingModal, { VideoMarker } from './VideoEditingModal';
-import AddMaterialModal from '../../../components/AddMaterialModal';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import UploadComponent from '@/components/UploadComponent';
+import { faceSwapService, videoProcessService } from '@/services/faceSwapService';
+import { UploadedFile } from '@/services/avatarService';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+import VideoEditingModal, { VideoMarker } from '../components/VideoEditingModal';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 // 积分图标组件 - 借鉴 Nebula1
 const SvgPointsIcon = ({ className }: { className?: string }) => (

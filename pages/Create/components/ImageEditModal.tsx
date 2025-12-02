@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
-import BaseModal from '../../../components/BaseModal';
+import BaseModal from '@/components/BaseModal';
 import { Upload, X } from 'lucide-react';
-import { uploadService } from '../../../services/uploadService';
+import { uploadService } from '@/services/uploadService';
 import toast from 'react-hot-toast';
 
 interface ImageEditModalProps {

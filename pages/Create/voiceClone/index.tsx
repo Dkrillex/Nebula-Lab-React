@@ -19,14 +19,14 @@ import {
   Filter,
   Save
 } from 'lucide-react';
-import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../services/avatarService';
-import { assetsService } from '../../../services/assetsService';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
-import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
-import AddMaterialModal from '../../../components/AddMaterialModal';
+import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '@/services/avatarService';
+import { assetsService } from '@/services/assetsService';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import AddMaterialModal from '@/components/AddMaterialModal';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 

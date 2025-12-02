@@ -7,12 +7,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { templateService, LabTemplate, LabTemplateQuery } from '../../services/templateService';
-import { useVideoGenerationStore } from '../../stores/videoGenerationStore';
-import { useAuthStore } from '../../stores/authStore';
-import { useAppOutletContext } from '../../router/context';
-import { translations } from '../../translations';
-import { showAuthModal } from '../../lib/authModalManager';
+import { templateService, LabTemplate, LabTemplateQuery } from '@/services/templateService';
+import { useVideoGenerationStore } from '@/stores/videoGenerationStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
+import { showAuthModal } from '@/lib/authModalManager';
 
 const CREATE_IMAGE_PAYLOAD_KEY = 'createImagePayload';
 const MAX_CREATE_UPLOAD_IMAGES = 4;

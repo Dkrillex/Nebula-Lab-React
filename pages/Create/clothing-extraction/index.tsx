@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Upload, X, Download, Image as ImageIcon, Loader2, Check, Trash2, Sparkles, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
-import { clothingExtractionService, ClothingExtractionTaskResult } from '../../../services/clothingExtractionService';
-import { uploadService } from '../../../services/uploadService';
-import { assetsService, AdsAssetsVO } from '../../../services/assetsService';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
-import AddMaterialModal from '../../../components/AddMaterialModal';
-import BaseModal from '../../../components/BaseModal';
+import { clothingExtractionService, ClothingExtractionTaskResult } from '@/services/clothingExtractionService';
+import { uploadService } from '@/services/uploadService';
+import { assetsService, AdsAssetsVO } from '@/services/assetsService';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import BaseModal from '@/components/BaseModal';
 import toast from 'react-hot-toast';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 type TemplateType = 'full_outfit' | 'top_front' | 'bottom_front' | 'custom';
 

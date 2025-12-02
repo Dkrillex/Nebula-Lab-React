@@ -2,9 +2,9 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Image, Video, Music, Box } from 'lucide-react';
 import { getToolsData, Tool } from '../data';
-import { translations } from '../../../translations';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
+import { translations } from '@/translations';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
 
 interface WorkshopPageProps {
   t: any;

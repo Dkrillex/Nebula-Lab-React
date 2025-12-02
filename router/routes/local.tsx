@@ -21,23 +21,23 @@ const ProfilePage = React.lazy(() => import('../../pages/Profile'));
 const RankPage = React.lazy(() => import('../../pages/Rank'));
 
 // Create Page Sub-components
-const TextToImagePage = React.lazy(() => import('../../pages/Create/components/TextToImagePage'));
-const ViralVideoPage = React.lazy(() => import('../../pages/Create/components/ViralVideoPage'));
-const ImageToVideoPage = React.lazy(() => import('../../pages/Create/components/ImageToVideoPage'));
-const DigitalHumanPage = React.lazy(() => import('../../pages/Create/components/DigitalHumanPage'));
-const StyleTransferPage = React.lazy(() => import('../../pages/Create/components/StyleTransferPage'));
-const VoiceClone = React.lazy(() => import('../../pages/Create/components/VoiceClone'));
-const ThreeDModelPage = React.lazy(() => import('../../pages/Create/components/ThreeDModelPage'));
-const GlbViewerPage = React.lazy(() => import('../../pages/Create/components/GlbViewerPage'));
-const AiFaceSwapPage = React.lazy(() => import('../../pages/Create/components/AiFaceSwapPage'));
-const TtsPage = React.lazy(() => import('../../pages/Create/components/TtsPage'));
-const UseToolPage = React.lazy(() => import('../../pages/Create/components/UseToolPage'));
-const AIFaceSwappingPage = React.lazy(() => import('../../pages/Create/components/AIFaceSwappingPage'));
-const TemplateUiPage = React.lazy(() => import('../../pages/Create/components/TemplateUiPage'));
-const WorkshopPage = React.lazy(() => import('../../pages/Create/components/WorkshopPage'));
-const ProductReplacePage = React.lazy(() => import('../../pages/Create/components/ProductReplacePage'));
-const UploadCustomAvatarPage = React.lazy(() => import('../../pages/Create/components/UploadCustomAvatarPage'));
-const ClothingExtractionPage = React.lazy(() => import('../../pages/Create/components/ClothingExtractionPage'));
+const TextToImagePage = React.lazy(() => import('../../pages/Create/textToImage'));
+const ViralVideoPage = React.lazy(() => import('../../pages/Create/viralVideo'));
+const ImageToVideoPage = React.lazy(() => import('../../pages/Create/imgToVideo'));
+const DigitalHumanPage = React.lazy(() => import('../../pages/Create/digitalHuman'));
+const StyleTransferPage = React.lazy(() => import('../../pages/Create/styleTransfer'));
+const VoiceClone = React.lazy(() => import('../../pages/Create/voiceClone'));
+const ThreeDModelPage = React.lazy(() => import('../../pages/Create/3dModel'));
+const GlbViewerPage = React.lazy(() => import('../../pages/Create/glbViewer'));
+const AiFaceSwapPage = React.lazy(() => import('../../pages/Create/aiFaceSwap'));
+const TtsPage = React.lazy(() => import('../../pages/Create/tts'));
+const UseToolPage = React.lazy(() => import('../../pages/Create/useTool'));
+const AIFaceSwappingPage = React.lazy(() => import('../../pages/Create/imageTranslation'));
+const TemplateUiPage = React.lazy(() => import('../../pages/Create/templateUi'));
+const WorkshopPage = React.lazy(() => import('../../pages/Create/workshop'));
+const ProductReplacePage = React.lazy(() => import('../../pages/Create/product-replace'));
+const UploadCustomAvatarPage = React.lazy(() => import('../../pages/Create/uploadCustomAvatar'));
+const ClothingExtractionPage = React.lazy(() => import('../../pages/Create/clothing-extraction'));
 // Wrapper components defined inline or imported if complex logic needed
 // For now, we assume components can handle their own data fetching or use hooks
 

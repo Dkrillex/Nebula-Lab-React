@@ -1,19 +1,19 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
-import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
-import { textToImageService } from '../../../services/textToImageService';
-import { useVideoGenerationStore } from '../../../stores/videoGenerationStore';
-import { useAuthStore } from '../../../stores/authStore';
-import { showAuthModal } from '../../../lib/authModalManager';
+import { imageToVideoService, I2VTaskResult } from '@/services/imageToVideoService';
+import { textToImageService } from '@/services/textToImageService';
+import { useVideoGenerationStore } from '@/stores/videoGenerationStore';
+import { useAuthStore } from '@/stores/authStore';
+import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
-import AddMaterialModal from '../../../components/AddMaterialModal';
-import { AdsAssetsVO } from '../../../services/assetsService';
-import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
-import { UploadedFile } from '../../../services/avatarService';
-import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
+import AddMaterialModal from '@/components/AddMaterialModal';
+import { AdsAssetsVO } from '@/services/assetsService';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import { UploadedFile } from '@/services/avatarService';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
-import demoProduct from '../../../assets/demo/1111.png';
+import demoProduct from '@/assets/demo/1111.png';
 
 // Model Interfaces (commented out - Advanced Mode not open to public yet)
 // interface ModelItem {

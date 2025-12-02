@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Outlet, useSearchParams, useNavigate } from 'react-router-dom';
-import { useAppOutletContext } from '../../router/context';
+import { useAppOutletContext } from '@/router/context';
 
 const CreateLayout: React.FC = () => {
   const [searchParams] = useSearchParams();

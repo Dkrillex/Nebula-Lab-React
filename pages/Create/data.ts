@@ -1,4 +1,4 @@
-import { translations } from '../../translations';
+import { translations } from '@/translations';
 
 export interface Tool {
   key: string;
@@ -526,7 +526,7 @@ const TOOLS_CONFIG: Omit<Tool, 'title' | 'description' | 'emoji' | 'primaryUploa
 // 根据语言生成工具数据
 export function getToolsData(lang: 'zh' | 'en' | 'id' = 'zh'): Tool[] {
   const t = translations[lang]?.createPage?.workshop?.tools || translations['zh'].createPage.workshop.tools;
-  
+
   return TOOLS_CONFIG.map(config => {
     const toolTranslation = t[config.key as keyof typeof t];
     if (!toolTranslation) {
@@ -538,15 +538,15 @@ export function getToolsData(lang: 'zh' | 'en' | 'id' = 'zh'): Tool[] {
         title: fallbackTranslation?.title || config.key,
         description: fallbackTranslation?.description || '',
         emoji: fallbackTranslation?.emoji || '🎨',
-      ...(config.key === 'customPrompt' || config.key === 'pose' || config.key === 'colorPalette' ? {
-        primaryUploaderTitle: (toolTranslation as any)?.primaryUploaderTitle || (fallbackTranslation as any)?.primaryUploaderTitle,
-        primaryUploaderDescription: (toolTranslation as any)?.primaryUploaderDescription || (fallbackTranslation as any)?.primaryUploaderDescription,
-        secondaryUploaderTitle: (toolTranslation as any)?.secondaryUploaderTitle || (fallbackTranslation as any)?.secondaryUploaderTitle,
-        secondaryUploaderDescription: (toolTranslation as any)?.secondaryUploaderDescription || (fallbackTranslation as any)?.secondaryUploaderDescription,
-      } : {}),
+        ...(config.key === 'customPrompt' || config.key === 'pose' || config.key === 'colorPalette' ? {
+          primaryUploaderTitle: (toolTranslation as any)?.primaryUploaderTitle || (fallbackTranslation as any)?.primaryUploaderTitle,
+          primaryUploaderDescription: (toolTranslation as any)?.primaryUploaderDescription || (fallbackTranslation as any)?.primaryUploaderDescription,
+          secondaryUploaderTitle: (toolTranslation as any)?.secondaryUploaderTitle || (fallbackTranslation as any)?.secondaryUploaderTitle,
+          secondaryUploaderDescription: (toolTranslation as any)?.secondaryUploaderDescription || (fallbackTranslation as any)?.secondaryUploaderDescription,
+        } : {}),
       };
     }
-    
+
     return {
       ...config,
       title: toolTranslation.title,

@@ -2,14 +2,14 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Download, Edit3, X } from 'lucide-react';
 import { getToolsData, Tool } from '../data';
-import UploadComponent from '../../../components/UploadComponent';
-import { aiToolService } from '../../../services/aiToolService';
-import { UploadedFile } from '../../../services/avatarService';
+import UploadComponent from '@/components/UploadComponent';
+import { aiToolService } from '@/services/aiToolService';
+import { UploadedFile } from '@/services/avatarService';
 import MaskCanvas, { MaskCanvasRef } from './MaskCanvas';
 import UseToolResultDisplay from './UseToolResultDisplay';
 import ImagePreviewModal from './ImagePreviewModal';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 interface UseToolPageProps {
   // t?: any; 

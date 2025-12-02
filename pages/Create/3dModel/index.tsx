@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Wand2, Loader2, Image as ImageIcon, Gem, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent from '@/components/UploadComponent';
 import ThreeDModelViewer from './ThreeDModelViewer';
-import { threeDModelService } from '../../../services/threeDModelService';
-import { uploadService } from '../../../services/uploadService';
-import { assetsService } from '../../../services/assetsService';
+import { threeDModelService } from '@/services/threeDModelService';
+import { uploadService } from '@/services/uploadService';
+import { assetsService } from '@/services/assetsService';
 import JSZip from 'jszip';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 const ThreeDModelPage: React.FC = () => {
   const navigate = useNavigate();

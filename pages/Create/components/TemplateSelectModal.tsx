@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Search, Filter, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
-import { styleTransferService, Template, TemplateCategory } from '../../../services/styleTransferService';
+import { styleTransferService, Template, TemplateCategory } from '@/services/styleTransferService';
 
 interface TemplateSelectModalProps {
   isOpen: boolean;

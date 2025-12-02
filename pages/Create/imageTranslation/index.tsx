@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Wand2, Sparkles, Gem, Check } from 'lucide-react';
-import { faceSwapService, FaceSwapParams } from '../../../services/faceSwapService';
-import MultiImageUploader from './MultiImageUploader';
+import { faceSwapService, FaceSwapParams } from '@/services/faceSwapService';
+import MultiImageUploader from '../components/MultiImageUploader';
 import FaceSwapResultDisplay from './FaceSwapResultDisplay';
-import LoadingSpinner from './LoadingSpinner';
-import ErrorMessage from './ErrorMessage';
-import ImagePreviewModal from './ImagePreviewModal';
-import { useAppOutletContext } from '../../../router/context';
-import { translations } from '../../../translations';
+import LoadingSpinner from '../components/LoadingSpinner';
+import ErrorMessage from '../components/ErrorMessage';
+import ImagePreviewModal from '../components/ImagePreviewModal';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 interface AIFaceSwappingPageProps {
   t?: any;
