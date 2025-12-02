@@ -5,9 +5,9 @@ import { getToolsData, Tool } from '../data';
 import UploadComponent from '@/components/UploadComponent';
 import { aiToolService } from '@/services/aiToolService';
 import { UploadedFile } from '@/services/avatarService';
-import MaskCanvas, { MaskCanvasRef } from './MaskCanvas';
+import MaskCanvas, { MaskCanvasRef } from '../components/MaskCanvas';
 import UseToolResultDisplay from './UseToolResultDisplay';
-import ImagePreviewModal from './ImagePreviewModal';
+import ImagePreviewModal from '../components/ImagePreviewModal';
 import { useAppOutletContext } from '@/router/context';
 import { translations } from '@/translations';
 
