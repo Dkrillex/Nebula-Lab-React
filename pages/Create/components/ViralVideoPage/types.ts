@@ -76,3 +76,19 @@ export interface ViralVideoPageProps {
 // 导出ProductAnalysis类型
 export type { ProductAnalysis };
 
+// 项目数据序列化接口
+export interface ViralVideoProjectData {
+  step: number; // 当前步骤 (0-4)
+  uploadedImages: Array<{ url: string; id?: string }>; // 只保存OSS URL，不保存File对象
+  productName: string;
+  sellingPoints: string;
+  analysisResult: ProductAnalysis | null;
+  availableScripts: ScriptOption[];
+  selectedScript: string;
+  storyboard: Storyboard | null;
+  editedStoryboard: Storyboard | null;
+  storyboardVideos: Record<number, StoryboardVideo>;
+  finalVideoUrl: string;
+  videoId: string;
+}
+

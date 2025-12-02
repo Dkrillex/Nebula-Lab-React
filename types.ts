@@ -270,6 +270,135 @@ export interface LabChannelQuery {
   params?: any;
 }
 
+// ==================== Lab项目管理相关 Types ====================
+
+export interface LabProjectVO {
+  /**
+   * 项目Id
+   */
+  id: number | string;
+
+  /**
+   * 项目ID（如：nebula_121389）
+   */
+  projectId?: string;
+
+  /**
+   * 项目名
+   */
+  projectName: string;
+
+  /**
+   * 项目描述
+   */
+  projectDesc?: string;
+
+  /**
+   * 项目数据（JSON字符串）
+   */
+  projectJson?: string;
+
+  /**
+   * 项目类型
+   */
+  projectType?: string;
+
+  /**
+   * 租户编号
+   */
+  tenantId?: string;
+
+  /**
+   * 创建部门
+   */
+  createDept?: number;
+
+  /**
+   * 创建者
+   */
+  createBy?: number;
+
+  /**
+   * 创建时间
+   */
+  createTime?: string;
+
+  /**
+   * 更新者
+   */
+  updateBy?: number;
+
+  /**
+   * 更新时间
+   */
+  updateTime?: string;
+}
+
+export interface LabProjectForm {
+  /**
+   * 项目Id（编辑时必填）
+   */
+  id?: number | string;
+
+  /**
+   * 项目ID（如：nebula_121389）
+   */
+  projectId?: string;
+
+  /**
+   * 项目名（必填）
+   */
+  projectName: string;
+
+  /**
+   * 项目描述
+   */
+  projectDesc?: string;
+
+  /**
+   * 项目数据（JSON字符串）
+   */
+  projectJson?: string;
+
+  /**
+   * 项目类型
+   */
+  projectType?: string;
+}
+
+export interface LabProjectQuery {
+  pageNum?: number;
+  pageSize?: number;
+  /**
+   * 项目ID（如：nebula_121389）
+   */
+  projectId?: string;
+  /**
+   * 项目名（模糊查询）
+   */
+  projectName?: string;
+
+  /**
+   * 项目描述
+   */
+  projectDesc?: string;
+
+  /**
+   * 项目类型
+   */
+  projectType?: string;
+
+  /**
+   * 创建者
+   */
+  createBy?: number;
+
+  /**
+   * 日期范围参数
+   */
+  params?: any;
+}
+
 // ==================== 团队管理相关 Types ====================
 
 export interface LabTeamVO {

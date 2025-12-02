@@ -9,6 +9,8 @@ interface EditStoryboardProps {
   t: ViralVideoPageProps['t'];
   step: number;
   videoId?: string;
+  projectId?: string | number | null;
+  projectIdStr?: string;
   storyboard: Storyboard | null;
   editedStoryboard: Storyboard | null;
   storyboardVideos: Record<number, StoryboardVideo>;
@@ -17,12 +19,16 @@ interface EditStoryboardProps {
   onUpdateSceneLines: (sceneId: number, lines: string) => void;
   onGenerateSceneVideo: (sceneId: number) => void;
   onGenerateAllSceneVideos: () => void;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
 }
 
 export const EditStoryboard: React.FC<EditStoryboardProps> = ({
   t,
   step,
   videoId,
+  projectId,
+  projectIdStr,
   storyboard,
   editedStoryboard,
   storyboardVideos,
@@ -31,11 +37,21 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
   onUpdateSceneLines,
   onGenerateSceneVideo,
   onGenerateAllSceneVideos,
+  onSave,
+  isSaving = false,
 }) => {
   return (
     <div className="bg-background min-h-full flex flex-col h-[calc(100vh-64px)]">
       {/* 工作流进度条 */}
-      <WorkflowProgress step={step} videoId={videoId} />
+      <WorkflowProgress 
+        step={step} 
+        videoId={videoId}
+        projectId={projectId}
+        projectIdStr={projectIdStr}
+        onSave={onSave}
+        isSaving={isSaving}
+        onStepChange={onStepChange}
+      />
       
       {/* Top Navigation Bar */}
       <div className="border-b border-border bg-background p-4 flex items-center justify-between shrink-0">

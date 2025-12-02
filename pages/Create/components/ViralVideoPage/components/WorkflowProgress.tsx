@@ -1,14 +1,28 @@
 import React from 'react';
-import { ChevronRight, CheckCircle2, Copy, ArrowLeft } from 'lucide-react';
+import { ChevronRight, CheckCircle2, Copy, ArrowLeft, Save, Loader } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface WorkflowProgressProps {
   step: number;
   videoId?: string;
+  projectId?: string | number | null;
+  projectIdStr?: string; // 前端生成的项目ID字符串（如 nebula_20251202235959）
   onBack?: () => void;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
+  onStepChange?: (step: number) => void; // 支持点击步骤跳转
 }
 
-export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoId, onBack }) => {
+export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ 
+  step, 
+  videoId, 
+  projectId,
+  projectIdStr,
+  onBack,
+  onSave,
+  isSaving = false,
+  onStepChange,
+}) => {
   const steps = [
     { id: 1, name: '素材与卖点', active: step === 1, completed: step > 1 },
     { id: 2, name: '选择脚本', active: step === 2, completed: step > 2 },
@@ -33,7 +47,16 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoI
             )}
             {steps.map((s, idx) => (
               <React.Fragment key={s.id}>
-                <div className="flex items-center gap-2">
+                <div 
+                  className={`flex items-center gap-2 ${
+                    onStepChange && (s.completed || s.active) ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                  }`}
+                  onClick={() => {
+                    if (onStepChange && (s.completed || s.active)) {
+                      onStepChange(s.id);
+                    }
+                  }}
+                >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors ${
                       s.active
@@ -62,20 +85,38 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ step, videoI
               </React.Fragment>
             ))}
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted">
-            <span>项目ID: {videoId || '未创建'}</span>
-            {videoId && (
-              <button
-                onClick={() => {
-                  navigator.clipboard.writeText(videoId);
-                  toast.success('已复制项目ID');
-                }}
-                className="p-1 hover:bg-surface rounded"
-              >
-                <Copy size={14} />
-              </button>
-            )}
-          </div>
+          {(projectIdStr || projectId) && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-muted">
+                <span>项目ID: {projectIdStr || projectId || '未创建'}</span>
+                {(projectIdStr || projectId) && (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(projectIdStr || String(projectId));
+                      toast.success('已复制项目ID');
+                    }}
+                    className="p-1 hover:bg-surface rounded transition-colors"
+                  >
+                    <Copy size={14} />
+                  </button>
+                )}
+              </div>
+              {onSave && (
+                <button
+                  onClick={onSave}
+                  disabled={isSaving}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <Loader className="animate-spin" size={14} />
+                  ) : (
+                    <Save size={14} />
+                  )}
+                  保存
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </div>

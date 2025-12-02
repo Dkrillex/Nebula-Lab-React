@@ -252,7 +252,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           <div className="flex items-center gap-2 mb-2">
             <h1 className="text-2xl font-bold text-foreground">请选择一个脚本</h1>
           </div>
-          <p className="text-xs text-muted">以下内容由AI生成，产品处于持续学习调优阶段，其中可能有不准确或不恰当的信息，不代表绘蛙观点，请您谨慎甄别。</p>
+          <p className="text-xs text-muted">以下内容由AI生成，产品处于持续学习调优阶段，其中可能有不准确或不恰当的信息，不代表平台观点，请您谨慎甄别。</p>
         </div>
 
         {/* Content */}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FolderOpen, Image as ImageIcon, X, Loader, ChevronRight, PenTool } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Upload, FolderOpen, Image as ImageIcon, X, Loader, ChevronRight, ChevronLeft, PenTool, Save } from 'lucide-react';
 import { UploadedImage, ProductAnalysis, ViralVideoPageProps } from './types';
 import { WorkflowProgress } from './components/WorkflowProgress';
 
@@ -30,6 +30,9 @@ interface MaterialsAndSellingPointsProps {
   onSellingPointsChange?: (points: string) => void;
   onGenerateScript?: () => void;
   onBack?: () => void;
+  onHelpWrite?: () => Promise<void>;
+  onSave?: () => Promise<void>;
+  projectId?: string | number | null;
 }
 
 export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps> = ({
@@ -59,11 +62,18 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
   onSellingPointsChange,
   onGenerateScript,
   onBack,
+  onHelpWrite,
+  onSave,
+  projectId,
 }) => {
   const [productName, setProductName] = useState(analysisResult?.productName || '');
   const [sellingPoints, setSellingPoints] = useState(
     analysisResult?.sellingPoints?.join(';') || ''
   );
+  const [isHelpWriting, setIsHelpWriting] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
 
   // 当分析结果更新时，同步更新商品名称和卖点
   useEffect(() => {
@@ -91,18 +101,89 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
     }
   };
 
-  const handleHelpWrite = () => {
-    // 使用AI分析结果自动填充卖点
-    if (analysisResult && analysisResult.sellingPoints.length > 0) {
-      const points = analysisResult.sellingPoints.join(';');
-      handleSellingPointsChange(points);
+  // 检查是否可以滚动
+  useEffect(() => {
+    const checkScroll = () => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        const canScrollR = scrollLeft + clientWidth < scrollWidth - 5;
+        const canScrollL = scrollLeft > 5;
+        setCanScrollRight(canScrollR);
+        setCanScrollLeft(canScrollL);
+      }
+    };
+    
+    // 延迟检查，确保DOM已渲染
+    const timer = setTimeout(checkScroll, 100);
+    
+    const carousel = carouselRef.current;
+    if (carousel) {
+      carousel.addEventListener('scroll', checkScroll);
+      // 监听窗口大小变化
+      window.addEventListener('resize', checkScroll);
+      return () => {
+        carousel.removeEventListener('scroll', checkScroll);
+        window.removeEventListener('resize', checkScroll);
+        clearTimeout(timer);
+      };
+    }
+    
+    return () => clearTimeout(timer);
+  }, [uploadedImages]);
+
+  // 滚动到下一组图片
+  const handleScrollRight = () => {
+    if (carouselRef.current) {
+      const scrollAmount = carouselRef.current.clientWidth * 0.8;
+      carouselRef.current.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  // 滚动到上一组图片
+  const handleScrollLeft = () => {
+    if (carouselRef.current) {
+      const scrollAmount = carouselRef.current.clientWidth * 0.8;
+      carouselRef.current.scrollBy({
+        left: -scrollAmount,
+        behavior: 'smooth',
+      });
+    }
+  };
+
+  const handleHelpWrite = async () => {
+    if (isHelpWriting) return;
+    
+    setIsHelpWriting(true);
+    try {
+      if (onHelpWrite) {
+        await onHelpWrite();
+      } else if (analysisResult && analysisResult.sellingPoints.length > 0) {
+        // 如果没有提供 onHelpWrite，使用已有的分析结果
+        const points = analysisResult.sellingPoints.join(';');
+        handleSellingPointsChange(points);
+      }
+    } catch (error) {
+      console.error('帮我写失败:', error);
+    } finally {
+      setIsHelpWriting(false);
     }
   };
 
   return (
     <div className="bg-background min-h-full flex flex-col">
       {/* 工作流进度条 */}
-      <WorkflowProgress step={step} videoId={videoId} onBack={step === 1 ? onBack : undefined} />
+      <WorkflowProgress 
+        step={step} 
+        videoId={videoId} 
+        projectId={projectId}
+        projectIdStr={undefined}
+        onBack={step === 1 ? onBack : undefined}
+        onSave={undefined}
+        isSaving={false}
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto">
@@ -126,7 +207,7 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
 
             <div className="flex flex-col lg:flex-row gap-6">
               {/* Left: Upload Area */}
-              <div className="lg:w-1/3">
+              <div className="lg:w-1/3 flex-shrink-0">
                 {uploadedImages.length === 0 ? (
                   <div className="border-2 border-dashed border-border rounded-xl p-8 text-center bg-background">
                     <div className="mb-4">
@@ -199,32 +280,72 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
               </div>
 
               {/* Right: Image Carousel */}
-              <div className="lg:flex-1">
+              <div className="lg:flex-1 min-w-0">
                 {uploadedImages.length > 0 ? (
-                  <div className="relative">
-                    <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
+                  <div className="relative overflow-hidden">
+                    {/* 渐变遮罩 - 左侧 */}
+                    {canScrollLeft && (
+                      <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-surface via-surface/80 to-transparent pointer-events-none z-10" />
+                    )}
+                    
+                    {/* 渐变遮罩 - 右侧 */}
+                    {canScrollRight && (
+                      <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-surface via-surface/80 to-transparent pointer-events-none z-10" />
+                    )}
+                    
+                    <div 
+                      ref={carouselRef}
+                      className="flex gap-4 overflow-x-auto pb-4 scroll-smooth"
+                      style={{ 
+                        scrollbarWidth: 'none', 
+                        msOverflowStyle: 'none',
+                        WebkitOverflowScrolling: 'touch'
+                      }}
+                    >
+                      <style>{`
+                        [data-carousel]::-webkit-scrollbar {
+                          display: none;
+                        }
+                      `}</style>
                       {uploadedImages.map((img, idx) => (
                         <div key={idx} className="flex-shrink-0 relative group">
                           <div className="w-32 h-48 md:w-40 md:h-56 rounded-lg overflow-hidden border border-border bg-gray-100">
                             <img 
                               src={img.url} 
                               alt={`Product ${idx + 1}`} 
-                              className="w-full h-full object-cover"
+                              className="w-full h-full object-contain"
                             />
                           </div>
                           <button
                             onClick={() => onRemoveImage(idx)}
-                            className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute top-2 right-2 p-1 bg-black/50 hover:bg-black/70 rounded-full opacity-0 group-hover:opacity-100 transition-opacity z-10"
                           >
                             <X size={14} className="text-white" />
                           </button>
                         </div>
                       ))}
                     </div>
-                    {uploadedImages.length > 4 && (
-                      <div className="absolute right-0 top-1/2 -translate-y-1/2 bg-white/80 backdrop-blur-sm p-2 rounded-full shadow-lg">
-                        <ChevronRight size={20} className="text-muted" />
-                      </div>
+                    
+                    {/* 左侧滚动按钮 */}
+                    {canScrollLeft && (
+                      <button
+                        onClick={handleScrollLeft}
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white dark:hover:bg-zinc-800 transition-all z-20 border border-border/50 hover:scale-110"
+                        aria-label="向左滚动"
+                      >
+                        <ChevronLeft size={20} className="text-foreground" />
+                      </button>
+                    )}
+                    
+                    {/* 右侧滚动按钮 */}
+                    {canScrollRight && (
+                      <button
+                        onClick={handleScrollRight}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/95 dark:bg-zinc-800/95 backdrop-blur-sm p-2.5 rounded-full shadow-lg hover:bg-white dark:hover:bg-zinc-800 transition-all z-20 border border-border/50 hover:scale-110"
+                        aria-label="向右滚动"
+                      >
+                        <ChevronRight size={20} className="text-foreground" />
+                      </button>
                     )}
                   </div>
                 ) : (
@@ -285,15 +406,20 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
               <div className="mt-2">
                 <button
                   onClick={handleHelpWrite}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm"
+                  disabled={isHelpWriting || uploadedImages.length < MIN_IMAGES}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-border bg-white dark:bg-zinc-800 text-foreground hover:bg-gray-50 dark:hover:bg-zinc-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <PenTool size={14} />
+                  {isHelpWriting ? (
+                    <Loader className="animate-spin" size={14} />
+                  ) : (
+                    <PenTool size={14} />
+                  )}
                   帮我写
                 </button>
               </div>
             </div>
 
-            {/* Generate Script Button */}
+              {/* Generate Script Button */}
             <div className="flex justify-end">
               <button
                 onClick={onGenerateScript || onGoToStep2}

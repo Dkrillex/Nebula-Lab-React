@@ -1,8 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, FolderOpen, Loader, X, CheckCircle2 } from 'lucide-react';
 import { uploadService } from '../../../../services/uploadService';
 import { assetsService, AdsAssetsVO } from '../../../../services/assetsService';
 import { viralVideoService } from '../../../../services/viralVideoService';
+import { labProjectService } from '../../../../services/labProjectService';
 import toast from 'react-hot-toast';
 import BaseModal from '../../../../components/BaseModal';
 import ImageEditModal from '../ImageEditModal';
@@ -12,15 +13,19 @@ import { MaterialsAndSellingPoints } from './MaterialsAndSellingPoints';
 import { SelectScript } from './SelectScript';
 import { EditStoryboard } from './EditStoryboard';
 import { GenerateVideo } from './GenerateVideo';
+import { TaskListModal } from './components/TaskListModal';
 import { useImageAnalysis } from './hooks/useImageAnalysis';
 import { useVideoGeneration } from './hooks/useVideoGeneration';
 import { useVideoMerge } from './hooks/useVideoMerge';
+import { useProjectSave } from './hooks/useProjectSave';
+import { useBeforeUnload } from './hooks/useBeforeUnload';
 import { 
   ViralVideoPageProps, 
   UploadedImage, 
   ProductAnalysis, 
   ScriptOption, 
-  Storyboard 
+  Storyboard,
+  ViralVideoProjectData
 } from './types';
 
 // 示例图片数据
@@ -63,9 +68,14 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const MIN_IMAGES = 4;
   const MAX_IMAGES = 10;
   const [showEditModal, setShowEditModal] = useState(false);
+  const [editModalImageStartIndex, setEditModalImageStartIndex] = useState(0); // 记录要编辑的图片起始索引
   const [videoId, setVideoId] = useState<string>('');
   const [productName, setProductName] = useState<string>('');
   const [sellingPoints, setSellingPoints] = useState<string>('');
+  const [projectId, setProjectId] = useState<string | number | null>(null);
+  const [projectIdStr, setProjectIdStr] = useState<string>(''); // 前端生成的项目ID字符串（如 nebula_20251202235959）
+  const [showTaskListModal, setShowTaskListModal] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // 使用hooks管理业务逻辑
   const { 
@@ -102,7 +112,76 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     },
   });
 
+  // 获取项目数据用于序列化
+  const getProjectData = useCallback((): ViralVideoProjectData => {
+    return {
+      step,
+      uploadedImages: uploadedImages.map(img => ({ url: img.url, id: img.id })), // 只保存URL，不保存File对象
+      productName,
+      sellingPoints,
+      analysisResult,
+      availableScripts,
+      selectedScript,
+      storyboard,
+      editedStoryboard,
+      storyboardVideos,
+      finalVideoUrl,
+      videoId: videoId || mergedVideoId || '',
+    };
+  }, [
+    step,
+    uploadedImages,
+    productName,
+    sellingPoints,
+    analysisResult,
+    availableScripts,
+    selectedScript,
+    storyboard,
+    editedStoryboard,
+    storyboardVideos,
+    finalVideoUrl,
+    videoId,
+    mergedVideoId,
+  ]);
+
+  // 项目保存Hook
+  const { createProject, updateProject, saveProject } = useProjectSave({
+    projectId,
+    setProjectId,
+    getProjectData,
+    projectIdStr,
+  });
+
+  // 保存项目
+  const handleSaveProject = useCallback(async () => {
+    setIsSaving(true);
+    try {
+      await saveProject(productName);
+    } finally {
+      setIsSaving(false);
+    }
+  }, [saveProject, productName]);
+
+  // 关闭确认提示（如果未保存项目且有数据）
+  const hasUnsavedData = !projectId && (uploadedImages.length > 0 || productName || sellingPoints);
+  useBeforeUnload({
+    enabled: hasUnsavedData,
+    message: '退出后，商品素材和卖点将被清空',
+  });
+
   // ==================== Step 2 处理函数 ====================
+
+  // 生成项目ID（格式：nebula_YYYYMMDDHHmmss）
+  const generateProjectIdStr = useCallback(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    return `nebula_${year}${month}${day}${hours}${minutes}${seconds}`;
+  }, []);
 
   // 生成脚本选项
   const generateScripts = async () => {
@@ -113,6 +192,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
     setIsGeneratingScripts(true);
     try {
+      // 如果还没有项目ID，先生成前端项目ID
+      if (!projectIdStr) {
+        const newProjectIdStr = generateProjectIdStr();
+        setProjectIdStr(newProjectIdStr);
+      }
+
       const scripts = await viralVideoService.generateScripts(analysisResult, defaultModel);
       setAvailableScripts(scripts);
       
@@ -120,6 +205,17 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         setSelectedScript(scripts[0].id);
         // 自动生成第一个脚本的分镜
         await generateStoryboard(scripts[0]);
+      }
+      
+      // 生成脚本后创建项目
+      if (!projectId) {
+        const newProjectId = await createProject(productName);
+        if (newProjectId) {
+          // 创建成功后，保存项目ID字符串到后端（通过更新项目）
+          await updateProject();
+        }
+      } else {
+        await updateProject();
       }
       
       toast.success(`成功生成 ${scripts.length} 个脚本选项`);
@@ -169,6 +265,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     
     // 生成新脚本的分镜
     await generateStoryboard(script);
+    
+    // 选择脚本后更新项目
+    if (projectId) {
+      await updateProject();
+    }
   };
 
   // 进入Step 2时自动生成脚本
@@ -196,33 +297,39 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       if (Array.from(files as FileList).length > remaining) {
         toast.error(`最多只能上传 ${MAX_IMAGES} 张图片，已自动截取前 ${remaining} 张`);
       }
-      const uploadPromises = selectedFiles.map(async (file: File) => {
-        // 验证文件类型
+      const createdBlobUrls: string[] = [];
+      const results = selectedFiles.map((file: File) => {
         if (!file.type.startsWith('image/')) {
           throw new Error(`${file.name} 不是有效的图片文件`);
         }
 
-        // 验证文件大小（50MB）
         if (file.size > 50 * 1024 * 1024) {
           throw new Error(`${file.name} 文件大小超过50MB`);
         }
 
-        // 上传到OSS
-        const result = await uploadService.uploadFile(file);
+        const previewUrl = URL.createObjectURL(file);
+        createdBlobUrls.push(previewUrl);
+
         return {
-          url: result.url,
+          url: previewUrl,
           file,
-          id: result.ossId,
+          id: undefined,
         };
       });
 
-      const results = await Promise.all(uploadPromises);
-      const newList = [...uploadedImages, ...results];
-      setUploadedImages(newList);
-      toast.success(`成功上传 ${results.length} 张图片`);
-      
-      if (results.length > 0) {
-        setShowEditModal(true);
+      try {
+        const newList = [...uploadedImages, ...results];
+        setUploadedImages(newList);
+        toast.success(`成功导入 ${results.length} 张图片，裁剪完成后统一上传`);
+
+        if (results.length > 0) {
+          // 记录新上传图片的起始索引
+          setEditModalImageStartIndex(uploadedImages.length);
+          setShowEditModal(true);
+        }
+      } catch (error: any) {
+        createdBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+        throw error;
       }
     } catch (error: any) {
       console.error('上传失败:', error);
@@ -281,7 +388,89 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setShowPortfolioModal(false);
     toast.success('已选择素材');
 
+    // 记录新上传图片的起始索引
+    setEditModalImageStartIndex(uploadedImages.length);
     setShowEditModal(true);
+  };
+
+  // 处理"帮我写"功能
+  const handleHelpWrite = async () => {
+    if (uploadedImages.length < MIN_IMAGES) {
+      toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
+      return;
+    }
+
+    try {
+      // 第一步：检查并上传所有有 file 对象但还未上传到OSS的图片
+      const imagesToUpload = uploadedImages.filter(img => img.file && !img.id);
+      
+      let finalImages = uploadedImages;
+      
+      if (imagesToUpload.length > 0) {
+        toast.loading(`正在上传 ${imagesToUpload.length} 张图片到OSS...`, { id: 'uploading-for-help-write' });
+        
+        const uploadPromises = imagesToUpload.map(async (img) => {
+          if (!img.file) return img;
+          
+          try {
+            const result = await uploadService.uploadFile(img.file);
+            if (img.url.startsWith('blob:')) {
+              URL.revokeObjectURL(img.url);
+            }
+            return {
+              url: result.url,
+              id: result.ossId,
+            };
+          } catch (error: any) {
+            console.error('图片上传失败:', error);
+            throw new Error(`图片上传失败: ${error.message}`);
+          }
+        });
+
+        const uploadedResults = await Promise.all(uploadPromises);
+        
+        finalImages = uploadedImages.map(img => {
+          const uploaded = uploadedResults.find((u, index) => {
+            const originalImg = imagesToUpload[index];
+            return originalImg && originalImg.file === img.file;
+          });
+          if (uploaded) {
+            return uploaded;
+          }
+          return img;
+        });
+        
+        setUploadedImages(finalImages);
+        toast.dismiss('uploading-for-help-write');
+        toast.success(`成功上传 ${uploadedResults.length} 张图片到OSS`);
+      }
+
+      // 第二步：调用AI分析
+      const imageUrls = finalImages.map(img => img.url).filter(Boolean);
+      
+      if (imageUrls.length < MIN_IMAGES) {
+        throw new Error(`至少需要 ${MIN_IMAGES} 张有效图片`);
+      }
+      
+      toast.loading('正在调用AI分析图片...', { id: 'analyzing-for-help-write' });
+      const result = await viralVideoService.analyzeProductImages(imageUrls, defaultModel);
+      
+      toast.dismiss('analyzing-for-help-write');
+      setAnalysisResult(result);
+      toast.success(`成功分析 ${imageUrls.length} 张图片`);
+      
+      // 第三步：自动填充卖点
+      if (result && result.sellingPoints && result.sellingPoints.length > 0) {
+        const points = result.sellingPoints.join(';');
+        setSellingPoints(points);
+        if (result.productName) {
+          setProductName(result.productName);
+        }
+      }
+    } catch (error: any) {
+      console.error('帮我写失败:', error);
+      toast.error(error.message || '帮我写失败，请重试');
+    }
   };
 
   // 处理链接导入
@@ -314,6 +503,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       setLinkInput('');
       toast.success('图片导入成功');
 
+      // 记录新上传图片的起始索引
+      setEditModalImageStartIndex(uploadedImages.length);
       setShowEditModal(true);
     } catch (error: any) {
       console.error('导入失败:', error);
@@ -350,7 +541,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // ==================== Step 3 处理函数 ====================
 
   // 更新分镜台词
-  const updateSceneLines = (sceneId: number, lines: string) => {
+  const updateSceneLines = async (sceneId: number, lines: string) => {
     if (!editedStoryboard) {
       setEditedStoryboard({ ...storyboard } as Storyboard);
     }
@@ -365,6 +556,14 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       
       return newStoryboard;
     });
+    
+    // 编辑分镜后更新项目
+    if (projectId) {
+      // 延迟更新，避免频繁保存
+      setTimeout(() => {
+        updateProject();
+      }, 1000);
+    }
   };
 
   // 生成单个分镜视频（使用hook）
@@ -382,6 +581,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 合并所有分镜视频（使用hook）
   const handleMergeAllVideos = async () => {
     await mergeAllVideos(storyboard, editedStoryboard, storyboardVideos);
+    
+    // 合并视频后更新项目
+    if (projectId) {
+      await updateProject();
+    }
   };
 
   // 进入Step 4时自动合并视频
@@ -429,8 +633,66 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   // 返回首页
   const handleBackToHome = () => {
+    // 如果未保存且有数据，提示用户
+    if (hasUnsavedData) {
+      const confirmed = window.confirm('退出后，商品素材和卖点将被清空，确定要退出吗？');
+      if (!confirmed) {
+        return;
+      }
+    }
     setStep(0);
   };
+
+  // 加载项目
+  const loadProject = useCallback(async (projectIdToLoad: string | number) => {
+    try {
+      const response = await labProjectService.getProjectInfo(projectIdToLoad);
+      if (response.code === 200 && response.data && response.data.projectJson) {
+        const projectData: ViralVideoProjectData = JSON.parse(response.data.projectJson);
+        
+        // 恢复所有状态
+        setStep(projectData.step);
+        setUploadedImages(projectData.uploadedImages.map(img => ({ url: img.url, id: img.id })));
+        setProductName(projectData.productName);
+        setSellingPoints(projectData.sellingPoints);
+        setAnalysisResult(projectData.analysisResult);
+        setAvailableScripts(projectData.availableScripts);
+        setSelectedScript(projectData.selectedScript);
+        setStoryboard(projectData.storyboard);
+        setEditedStoryboard(projectData.editedStoryboard);
+        // storyboardVideos 需要从 hook 中恢复，这里先跳过
+        setVideoId(projectData.videoId);
+        setProjectId(projectIdToLoad);
+        
+        // 恢复项目ID字符串（如果有）
+        if (response.data.projectId) {
+          setProjectIdStr(response.data.projectId);
+        }
+        
+        toast.success('项目加载成功');
+      } else {
+        throw new Error('项目数据格式错误');
+      }
+    } catch (error: any) {
+      console.error('加载项目失败:', error);
+      toast.error(error.message || '加载项目失败，请重试');
+    }
+  }, []);
+
+  // 从URL参数加载项目
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const projectIdParam = urlParams.get('projectId');
+    if (projectIdParam && !projectId) {
+      loadProject(projectIdParam);
+    }
+  }, []);
+
+  // 处理任务点击
+  const handleTaskClick = useCallback(async (taskProjectId: string | number) => {
+    await loadProject(taskProjectId);
+    setShowTaskListModal(false);
+  }, [loadProject]);
 
   // 一键做同款（从首页示例图片）
   const handleStartTemplate = () => {
@@ -488,7 +750,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onSelectFromPortfolio={handleSelectFromPortfolio}
           onLinkImport={handleLinkImport}
           onRemoveImage={handleRemoveImage}
-          onEditModalOpen={() => setShowEditModal(true)}
+          onEditModalOpen={() => {
+            // 手动点击时，显示所有图片
+            setEditModalImageStartIndex(0);
+            setShowEditModal(true);
+          }}
           onAnalyzeAllImages={analyzeAllImages}
           fileInputRef={fileInputRef}
           onFileChange={handleFileChange}
@@ -516,7 +782,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onSelectFromPortfolio={handleSelectFromPortfolio}
           onLinkImport={handleLinkImport}
           onRemoveImage={handleRemoveImage}
-          onEditModalOpen={() => setShowEditModal(true)}
+          onEditModalOpen={() => {
+            // 手动点击时，显示所有图片
+            setEditModalImageStartIndex(0);
+            setShowEditModal(true);
+          }}
           onAnalyzeAllImages={analyzeAllImages}
           onGoToStep2={handleGoToStep2}
           fileInputRef={fileInputRef}
@@ -525,6 +795,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onSellingPointsChange={setSellingPoints}
           onGenerateScript={handleGenerateScript}
           onBack={handleBackToHome}
+          onHelpWrite={handleHelpWrite}
+          projectId={projectId}
         />
       )}
 
@@ -533,6 +805,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           t={t}
           step={step}
           videoId={videoId}
+          projectId={projectId}
+          projectIdStr={projectIdStr}
           availableScripts={availableScripts}
           selectedScript={selectedScript}
           storyboard={storyboard}
@@ -541,6 +815,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onStepChange={setStep}
           onScriptSelect={handleScriptSelect}
           onConfirmScript={handleConfirmScript}
+          onSave={handleSaveProject}
+          isSaving={isSaving}
         />
       )}
 
@@ -549,6 +825,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           t={t}
           step={step}
           videoId={videoId}
+          projectId={projectId}
+          projectIdStr={projectIdStr}
           storyboard={storyboard}
           editedStoryboard={editedStoryboard}
           storyboardVideos={storyboardVideos}
@@ -557,6 +835,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onUpdateSceneLines={updateSceneLines}
           onGenerateSceneVideo={handleGenerateSceneVideo}
           onGenerateAllSceneVideos={handleGenerateAllSceneVideos}
+          onSave={handleSaveProject}
+          isSaving={isSaving}
         />
       )}
 
@@ -565,6 +845,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           t={t}
           step={step}
           videoId={videoId || mergedVideoId}
+          projectId={projectId}
+          projectIdStr={projectIdStr}
           finalVideoUrl={finalVideoUrl}
           isMerging={isMerging}
           analysisResult={analysisResult}
@@ -573,6 +855,48 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           editedStoryboard={editedStoryboard}
           onStepChange={setStep}
           onMergeAllVideos={handleMergeAllVideos}
+          onSave={handleSaveProject}
+          isSaving={isSaving}
+        />
+      )}
+
+      {step === 3 && (
+        <EditStoryboard
+          t={t}
+          step={step}
+          videoId={videoId}
+          projectId={projectId}
+          projectIdStr={projectIdStr}
+          storyboard={storyboard}
+          editedStoryboard={editedStoryboard}
+          storyboardVideos={storyboardVideos}
+          generatingScenes={generatingScenes}
+          onStepChange={setStep}
+          onUpdateSceneLines={updateSceneLines}
+          onGenerateSceneVideo={handleGenerateSceneVideo}
+          onGenerateAllSceneVideos={handleGenerateAllSceneVideos}
+          onSave={handleSaveProject}
+          isSaving={isSaving}
+        />
+      )}
+
+      {step === 4 && (
+        <GenerateVideo
+          t={t}
+          step={step}
+          videoId={videoId || mergedVideoId}
+          projectId={projectId}
+          projectIdStr={projectIdStr}
+          finalVideoUrl={finalVideoUrl}
+          isMerging={isMerging}
+          analysisResult={analysisResult}
+          uploadedImages={uploadedImages}
+          storyboard={storyboard}
+          editedStoryboard={editedStoryboard}
+          onStepChange={setStep}
+          onMergeAllVideos={handleMergeAllVideos}
+          onSave={handleSaveProject}
+          isSaving={isSaving}
         />
       )}
       
@@ -626,11 +950,25 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       
       <ImageEditModal
         isOpen={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        images={uploadedImages}
-        onSubmit={(edited) => {
-          setUploadedImages(edited);
+        onClose={() => {
+          setShowEditModal(false);
+          setEditModalImageStartIndex(0);
         }}
+        images={uploadedImages.slice(editModalImageStartIndex)}
+        onSubmit={(edited) => {
+          // 将编辑后的新图片合并回完整列表
+          const beforeImages = uploadedImages.slice(0, editModalImageStartIndex);
+          const updatedList = [...beforeImages, ...edited];
+          setUploadedImages(updatedList);
+          setEditModalImageStartIndex(0);
+        }}
+      />
+
+      {/* 任务列表弹窗 */}
+      <TaskListModal
+        isOpen={showTaskListModal}
+        onClose={() => setShowTaskListModal(false)}
+        onTaskClick={handleTaskClick}
       />
     </>
   );

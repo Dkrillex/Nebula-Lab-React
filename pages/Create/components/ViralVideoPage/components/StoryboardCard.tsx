@@ -57,14 +57,14 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
             <video 
               src={videoUrl} 
               controls
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
               preload="metadata"
             />
           </div>
         ) : (
           images.map((img, idx) => (
             <div key={idx} className="flex-1 h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50">
-              <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-500" />
+              <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-contain hover:scale-105 transition-transform duration-500" />
             </div>
           ))
         )}

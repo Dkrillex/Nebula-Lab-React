@@ -7,6 +7,8 @@ interface SelectScriptProps {
   t: ViralVideoPageProps['t'];
   step: number;
   videoId?: string;
+  projectId?: string | number | null;
+  projectIdStr?: string;
   availableScripts: ScriptOption[];
   selectedScript: string;
   storyboard: Storyboard | null;
@@ -15,12 +17,16 @@ interface SelectScriptProps {
   onStepChange: (step: number) => void;
   onScriptSelect: (scriptId: string) => void;
   onConfirmScript: () => void;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
 }
 
 export const SelectScript: React.FC<SelectScriptProps> = ({
   t,
   step,
   videoId,
+  projectId,
+  projectIdStr,
   availableScripts,
   selectedScript,
   storyboard,
@@ -29,45 +35,28 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
   onStepChange,
   onScriptSelect,
   onConfirmScript,
+  onSave,
+  isSaving = false,
 }) => {
   return (
     <div className="bg-background min-h-full flex flex-col pb-12">
       {/* 工作流进度条 */}
-      <WorkflowProgress step={step} videoId={videoId} />
-      
-      {/* Step Progress Bar */}
-      <div className="w-full bg-surface border-b border-border py-4 sticky top-0 z-20">
-        <div className="container mx-auto max-w-5xl px-4 flex justify-center">
-          <div className="flex items-center text-sm text-muted">
-            <div className="flex items-center gap-2 cursor-pointer hover:text-foreground transition-colors" onClick={() => onStepChange(1)}>
-              <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-xs">1</span>
-              <span>素材与卖点</span>
-            </div>
-            <ChevronRight size={16} className="mx-4 opacity-50" />
-            <div className="flex items-center gap-2 text-indigo-600 font-bold">
-              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center text-xs">2</span>
-              <span>选择脚本</span>
-            </div>
-            <ChevronRight size={16} className="mx-4 opacity-50" />
-            <div className="flex items-center gap-2 opacity-50">
-              <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-xs">3</span>
-              <span>编辑分镜</span>
-            </div>
-            <ChevronRight size={16} className="mx-4 opacity-50" />
-            <div className="flex items-center gap-2 opacity-50">
-              <span className="w-5 h-5 rounded-full bg-slate-200 dark:bg-zinc-700 flex items-center justify-center text-xs">4</span>
-              <span>生成视频</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <WorkflowProgress 
+        step={step} 
+        videoId={videoId}
+        projectId={projectId}
+        projectIdStr={projectIdStr}
+        onSave={onSave}
+        isSaving={isSaving}
+        onStepChange={onStepChange}
+      />
 
       {/* Header */}
       <div className="py-8 container mx-auto px-4 max-w-6xl">
         <div className="flex items-center gap-2 mb-2">
           <h1 className="text-2xl font-bold text-foreground">请选择一个脚本</h1>
         </div>
-        <p className="text-xs text-muted">以下内容由AI生成，产品处于持续学习调优阶段，其中可能有不准确或不恰当的信息，不代表绘蛙观点，请您谨慎甄别。</p>
+        <p className="text-xs text-muted">以下内容由AI生成，产品处于持续学习调优阶段，其中可能有不准确或不恰当的信息，不代表平台观点，请您谨慎甄别。</p>
       </div>
 
       {/* Content */}
@@ -134,7 +123,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
                         </div>
                         <div className="col-span-2">
                           <div className="aspect-video rounded-lg bg-slate-200 overflow-hidden border border-border">
-                            <img src={item.shots[0]?.img || ''} alt="Shot 1" className="w-full h-full object-cover" />
+                            <img src={item.shots[0]?.img || ''} alt="Shot 1" className="w-full h-full object-contain" />
                           </div>
                         </div>
                         <div className="col-span-4 text-sm text-foreground pt-1">
@@ -152,7 +141,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
                           <div className="col-span-1"></div>
                           <div className="col-span-2">
                             <div className="aspect-video rounded-lg bg-slate-200 overflow-hidden border border-border">
-                              <img src={item.shots[1].img} alt="Shot 2" className="w-full h-full object-cover" />
+                              <img src={item.shots[1].img} alt="Shot 2" className="w-full h-full object-contain" />
                             </div>
                           </div>
                           <div className="col-span-4 text-sm text-foreground pt-1">
@@ -174,13 +163,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
         )}
         
         {/* Bottom Actions */}
-        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 flex justify-between items-center mt-auto">
-          <button className="flex items-center gap-2 text-sm font-medium text-muted hover:text-foreground transition-colors">
-            <LayoutTemplate size={16} />
-            全部任务
-            <ChevronRight size={14} />
-          </button>
-
+        <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t border-border p-4 flex justify-end items-center mt-auto">
           <button 
             onClick={onConfirmScript}
             disabled={!storyboard}

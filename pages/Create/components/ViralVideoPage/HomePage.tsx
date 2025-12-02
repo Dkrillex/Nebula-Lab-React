@@ -2,6 +2,7 @@ import React from 'react';
 import { Upload, FolderOpen, Image as ImageIcon, X, Loader, Play, ArrowRight } from 'lucide-react';
 import { UploadedImage } from './types';
 import { ExampleCard } from './components/ExampleCard';
+import { RecentTasks } from './components/RecentTasks';
 import { ViralVideoPageProps } from './types';
 
 interface HomePageProps {
@@ -26,6 +27,8 @@ interface HomePageProps {
   onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onStartMaking: () => void;
   onStartTemplate: () => void;
+  onTaskClick: (projectId: string | number) => void;
+  onShowAllTasks: () => void;
 }
 
 // 示例图片数据
@@ -58,6 +61,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   onFileChange,
   onStartMaking,
   onStartTemplate,
+  onTaskClick,
+  onShowAllTasks,
 }) => {
   return (
     <div className="bg-background min-h-full flex flex-col pb-12">
@@ -69,6 +74,16 @@ export const HomePage: React.FC<HomePageProps> = ({
       {/* Main Content - Split Layout */}
       <div className="px-4 md:px-8 max-w-7xl mx-auto w-full mb-12">
         <div className="flex flex-col lg:flex-row gap-6">
+          
+          {/* Left Sidebar: 最近任务 */}
+          <div className="w-40 flex-shrink-0">
+            <div className="bg-surface border border-border rounded-lg p-2 shadow-sm">
+              <RecentTasks onTaskClick={onTaskClick} onShowAllTasks={onShowAllTasks} />
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 flex flex-col lg:flex-row gap-6">
           
           {/* Left Panel: 一键做同款 */}
           <div className="flex-1 bg-surface border border-border rounded-xl p-6 md:p-8 flex flex-col shadow-sm">
@@ -126,35 +141,19 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           {/* Right Panel: Upload Interface */}
           <div className="flex-1 bg-surface border border-border rounded-xl overflow-hidden shadow-sm flex flex-col">
-            {/* Tabs */}
-            <div className="flex border-b border-border">
-              <button 
-                onClick={() => onTabChange('upload')}
-                className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'upload' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
-              >
-                {t.tabs.upload}
-              </button>
-              <button 
-                onClick={() => onTabChange('link')}
-                className={`flex-1 py-4 text-sm font-medium transition-colors ${activeTab === 'link' ? 'bg-white dark:bg-zinc-800 text-foreground border-t-2 border-t-primary' : 'bg-gray-50 dark:bg-zinc-900/50 text-muted hover:text-foreground'}`}
-              >
-                {t.tabs.link}
-              </button>
-            </div>
-
             {/* Content */}
             <div className="p-6 md:p-10 flex-1 flex flex-col">
-              {activeTab === 'upload' ? (
-                <div className="flex-1 border-2 border-dashed border-border rounded-xl bg-background flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+              <div className="flex-1 border-2 border-dashed border-border rounded-xl bg-background flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
                   {uploadedImages.length > 0 ? (
                     <div className="w-full space-y-4">
                       <div className="grid grid-cols-2 gap-4">
                         {uploadedImages.map((img, idx) => (
-                          <div key={idx} className="relative group">
+                          <div key={`${idx}-${img.url}`} className="relative group aspect-square overflow-hidden rounded-lg border border-border bg-gray-100 dark:bg-zinc-800">
                             <img 
+                              key={`img-${idx}-${img.url}`}
                               src={img.url} 
                               alt={`Upload ${idx + 1}`} 
-                              className="w-full h-32 object-cover rounded-lg border border-border"
+                              className="w-full h-full object-contain"
                             />
                             <button
                               onClick={() => onRemoveImage(idx)}
@@ -244,27 +243,8 @@ export const HomePage: React.FC<HomePageProps> = ({
                     className="hidden"
                   />
                 </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                  <div className="w-full max-w-md">
-                    <input
-                      type="text"
-                      placeholder="https://..."
-                      value={linkInput}
-                      onChange={(e) => onLinkInputChange(e.target.value)}
-                      className="w-full p-3 rounded-lg border border-border bg-background focus:ring-2 focus:ring-primary focus:border-transparent outline-none mb-4"
-                    />
-                    <button 
-                      onClick={onLinkImport}
-                      disabled={!linkInput || isUploading}
-                      className="w-full py-2.5 rounded-lg bg-primary text-white hover:bg-primary/90 transition-colors font-medium text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      Import
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
+          </div>
           </div>
         </div>
       </div>

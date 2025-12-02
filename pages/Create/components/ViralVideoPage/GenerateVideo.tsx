@@ -9,6 +9,8 @@ interface GenerateVideoProps {
   t: ViralVideoPageProps['t'];
   step: number;
   videoId?: string;
+  projectId?: string | number | null;
+  projectIdStr?: string;
   finalVideoUrl: string;
   isMerging: boolean;
   analysisResult: ProductAnalysis | null;
@@ -17,12 +19,16 @@ interface GenerateVideoProps {
   editedStoryboard: Storyboard | null;
   onStepChange: (step: number) => void;
   onMergeAllVideos: () => void;
+  onSave?: () => Promise<void>;
+  isSaving?: boolean;
 }
 
 export const GenerateVideo: React.FC<GenerateVideoProps> = ({
   t,
   step,
   videoId,
+  projectId,
+  projectIdStr,
   finalVideoUrl,
   isMerging,
   analysisResult,
@@ -31,6 +37,8 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
   editedStoryboard,
   onStepChange,
   onMergeAllVideos,
+  onSave,
+  isSaving = false,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -54,7 +62,15 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
   return (
     <div className="bg-background min-h-full flex flex-col h-[calc(100vh-64px)]">
       {/* 工作流进度条 */}
-      <WorkflowProgress step={step} videoId={videoId} />
+      <WorkflowProgress 
+        step={step} 
+        videoId={videoId}
+        projectId={projectId}
+        projectIdStr={projectIdStr}
+        onSave={onSave}
+        isSaving={isSaving}
+        onStepChange={onStepChange}
+      />
       
       {/* Top Navigation - Reuse from Step 3 but update active state */}
       <div className="border-b border-border bg-background p-4 flex items-center justify-between shrink-0">
@@ -215,7 +231,7 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
                 <h3 className="font-bold text-sm text-foreground mb-3">商品</h3>
                 <div className="flex items-center gap-3 p-3 bg-background rounded-lg border border-border">
                   <div className="w-12 h-12 rounded bg-slate-200 overflow-hidden">
-                    <img src={uploadedImages[0].url} className="w-full h-full object-cover" alt="Product" />
+                    <img src={uploadedImages[0].url} className="w-full h-full object-contain" alt="Product" />
                   </div>
                   <div>
                     <div className="font-bold text-sm text-foreground">{analysisResult?.productName || '商品'}</div>
