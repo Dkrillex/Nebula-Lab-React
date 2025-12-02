@@ -2736,6 +2736,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     targetHeight: targetDim.height,
                     aspectRatio: targetDim.width / targetDim.height,
                     title: t.imageValidation.sora2CropTitle,
+                    aspectRatioOptions: [
+                      { label: '16:9', value: 16 / 9 },
+                      { label: '9:16', value: 9 / 16 },
+                    ],
                     texts: {
                       title: componentsT.imageCrop.title,
                       ratio: componentsT.imageCrop.ratio,
