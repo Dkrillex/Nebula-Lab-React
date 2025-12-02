@@ -3421,15 +3421,62 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
       // Qwen-image-edit specific
       if (selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') {
-        // qwen-image-edit 使用不同的格式
+        // 检查是否有图片输入
+        if (!images || images.length === 0) {
+          toast.error('图像编辑模型需要至少上传 1 张图片');
+          clearInterval(progressInterval);
+          setProgress(0);
+          return;
+        }
+        
+        // 检查图片数量限制（1-3张）
+        if (images.length > 3) {
+          toast.error('最多支持 3 张图片');
+          clearInterval(progressInterval);
+          setProgress(0);
+          return;
+        }
+        
+        // 构造 content 数组：先放图片，最后放文本
+        const content: Array<{ image?: string; text?: string }> = [];
+        
+        // 添加图片（支持1-3张）
+        images.forEach(image => {
+          content.push({ image });
+        });
+        
+        // 添加文本（编辑指令）
+        content.push({ text: prompt || '请进行图像编辑' });
+        
+        // 设置 contents 格式（包含图片和文本）
+        requestData.contents = [
+          {
+            role: 'user',
+            parts: content,
+          },
+        ];
+        
+        // 设置 parameters
         (requestData as any).parameters = {
           n: qwenImageEditN,
           negative_prompt: qwenImageEditNegativePrompt || '',
           watermark: qwenImageEditWatermark,
         };
+        
+        // 如果设置了随机种子，添加到参数中
         if (qwenImageEditSeed !== undefined) {
           (requestData as any).parameters.seed = qwenImageEditSeed;
         }
+        
+        // 清除冗余参数，避免重复
+        delete requestData.size;
+        delete requestData.n;
+        delete requestData.quality;
+        delete requestData.style;
+        delete requestData.temperature;
+        delete requestData.image; // 不使用 image 字段
+        
+        console.log(`🎨 qwen-image-edit: 使用${images.length}张图片进行编辑，生成${qwenImageEditN}张图片`);
       }
       
       // GPT-image specific
@@ -3448,9 +3495,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         }
       }
 
-      // 如果有上传的图片，添加图生图参数
+      // 如果有上传的图片，添加图生图参数（排除 qwen-image-edit，因为它已经处理过了）
       if (images && images.length > 0) {
-        requestData.image = images[0]; // 使用第一张图片作为参考
+        if (selectedModel !== 'qwen-image-edit-plus' && selectedModel !== 'qwen-image-edit-plus-2025-10-30') {
+          requestData.image = images[0]; // 使用第一张图片作为参考
+        }
       }
 
       const result = await imageGenerateService.generateImage(requestData);
