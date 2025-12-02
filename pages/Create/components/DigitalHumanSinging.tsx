@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Music, Image as ImageIcon, Loader, Play, CheckCircle, Trash2, Plus, Download, Check } from 'lucide-react';
 import { avatarService, UploadedFile } from '@/services/avatarService';
 import { uploadService } from '@/services/uploadService';
@@ -7,6 +7,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
 import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -59,15 +60,22 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
   const imageUploadRef = useRef<UploadComponentRef>(null);
   const audioUploadRef = useRef<UploadComponentRef>(null);
-  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollerRef = useRef<PollingController | null>(null);
   const { isAuthenticated } = useAuthStore();
 
-  // Cleanup timer on unmount
+  const stopTaskPolling = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+  }, []);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      stopTaskPolling();
     };
-  }, []);
+  }, [stopTaskPolling]);
 
 
   const clearAll = () => {
@@ -76,13 +84,9 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
     setImageFile(null);
     setAudioFile(null);
     setResultVideoUrl(null);
-    setGenerating(false);
     setProgress(0);
     setTaskId(null);
-    if (pollTimerRef.current) {
-      clearInterval(pollTimerRef.current);
-      pollTimerRef.current = null;
-    }
+    stopTaskPolling();
   };
 
   const handleGenerate = async (e?: React.MouseEvent) => {
@@ -96,102 +100,162 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
       return;
     }
     
-    if (!imageFile || !audioFile) return;
+    // Check if files are selected (either uploaded or pending)
+    const hasImage = imageFile || (imageUploadRef.current && imageUploadRef.current.file);
+    const hasAudio = audioFile || (audioUploadRef.current && audioUploadRef.current.file);
+
+    if (!hasImage || !hasAudio) {
+        toast.error('请上传图片和音频');
+        return;
+    }
 
     try {
       setGenerating(true);
-      setProgress(0);
+      
+      // Handle Manual Upload
+      let currentImageFile = imageFile;
+      let currentAudioFile = audioFile;
+
+      // 1. Upload Image
+      if (imageUploadRef.current && imageUploadRef.current.file && (!currentImageFile || !currentImageFile.fileId)) {
+          try {
+              const uploaded = await imageUploadRef.current.triggerUpload();
+              if (uploaded) {
+                  currentImageFile = { fileId: uploaded.fileId, url: uploaded.fileUrl };
+                  setImageFile(currentImageFile);
+              } else {
+                  throw new Error('Image upload failed');
+              }
+          } catch (e) {
+              console.error('Image upload error:', e);
+              toast.error('图片上传失败');
+              setGenerating(false);
+              return;
+          }
+      }
+
+      // 2. Upload Audio
+      if (audioUploadRef.current && audioUploadRef.current.file && (!currentAudioFile || !currentAudioFile.fileId)) {
+          try {
+              const uploaded = await audioUploadRef.current.triggerUpload();
+              if (uploaded) {
+                  currentAudioFile = { fileId: uploaded.fileId, url: uploaded.fileUrl };
+                  setAudioFile(currentAudioFile);
+              } else {
+                  throw new Error('Audio upload failed');
+              }
+          } catch (e) {
+              console.error('Audio upload error:', e);
+              toast.error('音频上传失败');
+              setGenerating(false);
+              return;
+          }
+      }
+
+      if (!currentImageFile?.fileId || !currentAudioFile?.fileId) {
+          toast.error('请确保文件已成功上传');
+          setGenerating(false);
+          return;
+      }
+
       setResultVideoUrl(null);
+      stopTaskPolling();
 
       const res = await avatarService.submitSingingAvatarTask({
-        image_url: imageFile.url,
-        audio_url: audioFile.url,
+        image_url: currentImageFile.url,
+        audio_url: currentAudioFile.url,
         score: 7
       });
 
-      if ((res as any).task_id || (res.data as any)?.task_id) {
-          const newTaskId = (res as any).task_id || (res.data as any)?.task_id;
+      const newTaskId = (res as any).task_id || (res.data as any)?.task_id;
+      if (newTaskId) {
           setTaskId(newTaskId);
-          pollTask(newTaskId);
+          startTaskPolling(newTaskId);
       } else {
           throw new Error('任务提交失败');
       }
 
     } catch (error: any) {
+      console.error('Generate error:', error);
       toast.error(error.message || '生成失败');
       setGenerating(false);
+      stopTaskPolling();
     }
   };
 
-  const pollTask = async (currentTaskId: string) => {
-      const interval = 5000;
-      const maxAttempts = 60; // 5 minutes
-      let attempts = 0;
+  const startTaskPolling = useCallback((currentTaskId: string) => {
+    if (!currentTaskId) return;
+    stopTaskPolling();
+    setGenerating(true);
+    setProgress(0);
 
-      const check = async () => {
-          try {
-              const res = await avatarService.querySingingAvatarTask(currentTaskId);
-              const data = (res as any).data || res; // Handle response structure
-              const status = data.status;
+    const poller = createTaskPoller<any>({
+      request: async () => {
+        const res = await avatarService.querySingingAvatarTask(currentTaskId);
+        return (res as any).data || res;
+      },
+      parseStatus: data => data?.status,
+      isSuccess: status => status === 'done',
+      isFailure: status => status === 'failed',
+      onProgress: value => setProgress(value),
+      onSuccess: async data => {
+        if (!data.video_url) {
+          toast.error('生成成功但未获取到视频URL');
+          setGenerating(false);
+          stopTaskPolling();
+          return;
+        }
 
-              if (status === 'done' && data.video_url) {
-                  let finalUrl = data.video_url;
-                  try {
-                    // 生成成功后，将视频转存到 OSS
-                    const ossInfo = await uploadService.uploadByVideoUrl(data.video_url, 'mp4');
-                    // 使用转存后的 OSS URL
-                    finalUrl = ossInfo.url;
-                  } catch (uploadError) {
-                    console.error('OSS upload failed:', uploadError);
-                  }
-                  
-                  setResultVideoUrl(finalUrl);
-                  setProgress(100);
-                  setGenerating(false);
-                  
-                  // Add to history
-                  setGeneratedVideos(prev => {
-                      if (prev.some(v => v.id === currentTaskId)) return prev;
-                      return [{
-                          id: currentTaskId,
-                          url: finalUrl,
-                          timestamp: Date.now()
-                      }, ...prev];
-                  });
+        let finalUrl = data.video_url;
+        try {
+          // 生成成功后，将视频转存到 OSS
+          const ossInfo = await uploadService.uploadByVideoUrl(data.video_url, 'mp4');
+          finalUrl = ossInfo.url;
+        } catch (uploadError) {
+          console.error('OSS upload failed:', uploadError);
+        }
 
-                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-                  toast.success('生成成功！');
-              } else if (status === 'failed') {
-                  toast.error(data.error_msg || '生成失败');
-                  setGenerating(false);
-                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-              } else {
-                  // Mock progress
-                  setProgress(prev => Math.min(prev + Math.floor(Math.random() * 5), 95));
-                  attempts++;
-                  if (attempts >= maxAttempts) {
-                      toast.error('任务超时');
-                      setGenerating(false);
-                      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-                  }
-              }
-          } catch (e) {
-              console.error('Poll error', e);
-              attempts++;
-              if (attempts >= maxAttempts) {
-                  setGenerating(false);
-                  toast.error('查询失败');
-                  if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-              }
-          }
-      };
-      
-      // Clear existing timer
-      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
-      // Start new timer
-      pollTimerRef.current = setInterval(check, interval);
-      check(); // Initial check
-  };
+        setResultVideoUrl(finalUrl);
+        setProgress(100);
+        setGenerating(false);
+
+        // Add to history
+        setGeneratedVideos(prev => {
+          if (prev.some(v => v.id === currentTaskId)) return prev;
+          return [{
+            id: currentTaskId,
+            url: finalUrl,
+            timestamp: Date.now()
+          }, ...prev];
+        });
+
+        toast.success('生成成功！');
+        stopTaskPolling();
+      },
+      onFailure: data => {
+        toast.error(data?.error_msg || '生成失败');
+        setGenerating(false);
+        stopTaskPolling();
+      },
+      onTimeout: () => {
+        toast.error('任务超时');
+        setGenerating(false);
+        stopTaskPolling();
+      },
+      onError: error => {
+        console.error('Poll error', error);
+        toast.error('查询失败');
+        setGenerating(false);
+        stopTaskPolling();
+      },
+      intervalMs: 10_000,
+      progressMode: 'medium',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
+  }, [stopTaskPolling]);
 
   const handleAddToMaterials = () => {
     if (!resultVideoUrl) return;
@@ -232,23 +296,30 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
   return (
     <div className="flex flex-col lg:flex-row gap-6 h-full">
        {/* Left: Uploads */}
-       <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-6">
+       <div className="w-full lg:w-1/3 bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg flex flex-col gap-6 overflow-y-auto custom-scrollbar">
            {/* Image Upload */}
            <div className="space-y-3">
                <h3 className="font-bold text-gray-800 dark:text-gray-200 border-l-4 border-indigo-500 pl-3">上传图片</h3>
                <UploadComponent
                    ref={imageUploadRef}
                    accept=".png,.jpg,.jpeg,.webp"
+                   onFileSelected={(file) => {
+                       setImageFile({
+                           fileId: '',
+                           url: URL.createObjectURL(file)
+                       });
+                   }}
                    onUploadComplete={(uploadedFile: UploadedFile) => {
                        setImageFile({
                            fileId: uploadedFile.fileId,
                            url: uploadedFile.fileUrl
                        });
                    }}
-                   immediate={true}
+                   immediate={false}
+                   showConfirmButton={false}
                    initialUrl={imageFile?.url || ''}
                    uploadType="oss"
-                   className="max-h-[500px] w-[100%] aspect-[9/16]"
+                   className="max-h-[300px] w-[100%] aspect-[9/16]"
                    showPreview={true}
                    onClear={() => setImageFile(null)}
                >
@@ -268,13 +339,20 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                <UploadComponent
                    ref={audioUploadRef}
                    accept=".mp3,.wav,.m4a"
+                   onFileSelected={(file) => {
+                       setAudioFile({
+                           fileId: '',
+                           url: URL.createObjectURL(file)
+                       });
+                   }}
                    onUploadComplete={(uploadedFile: UploadedFile) => {
                        setAudioFile({
                            fileId: uploadedFile.fileId,
                            url: uploadedFile.fileUrl
                        });
                    }}
-                   immediate={true}
+                   immediate={false}
+                   showConfirmButton={false}
                    initialUrl={audioFile?.url || ''}
                    uploadType="oss"
                    className="h-32"
@@ -287,6 +365,15 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
                        <p className="text-xs mt-1 text-gray-400">支持 MP3, WAV, M4A</p>
                    </div>
                </UploadComponent>
+           </div>
+
+           {/* Price Info */}
+           <div className="p-3 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-xl">
+               <div className="text-sm text-gray-500 dark:text-gray-400 mb-1 text-center">消耗积分</div>
+               <div className="flex items-center justify-center gap-2">
+                   <SvgPointsIcon className="w-4 h-4 text-indigo-600" />
+                   <span className="text-base font-bold text-indigo-600">7 积分</span>
+               </div>
            </div>
 
            {/* Actions */}
@@ -327,7 +414,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
        {/* Right: Result */}
        <div className="flex-1 bg-white dark:bg-gray-800 rounded-2xl shadow-lg relative overflow-hidden flex flex-col h-[calc(100vh-240px)] lg:h-[calc(100vh-240px)]">
-           <div className="flex-1 overflow-y-auto custom-scrollbar p-8 mb-[80px] flex items-center justify-center">
+           <div className="flex-1 overflow-y-auto custom-scrollbar p-8 pb-24 flex items-center justify-center">
                {/* Background Pattern */}
                <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.05] pointer-events-none">
                    <div className="absolute inset-0 bg-[radial-gradient(#6366f1_1px,transparent_1px)] [background-size:16px_16px]"></div>
@@ -412,7 +499,7 @@ const DigitalHumanSinging: React.FC<DigitalHumanSingingProps> = ({
 
            {/* Results Area (New) */}
            {(generatedVideos.length > 0 || resultVideoUrl) && (
-             <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+             <div className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 p-4 border-t border-gray-100 dark:border-gray-700 z-10 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] max-h-[200px] overflow-y-auto custom-scrollbar">
                 <div className="flex items-center justify-between mb-3">
                     <h3 className="font-bold text-sm text-gray-800 dark:text-gray-200">生成记录</h3>
                     <div className="flex gap-2">

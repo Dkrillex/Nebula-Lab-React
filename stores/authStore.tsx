@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import { authService } from '../services/authService';
 import { UserInfo, LoginResponse, UserInfoResp } from '../types';
 import toast from 'react-hot-toast';
+import { getStorageKey } from '../utils/storageNamespace';
 
 interface FirstLoginInfo {
   isFirstLogin: boolean;
@@ -25,8 +26,8 @@ interface AuthState {
 
 // localStorage keys
 const STORAGE_KEYS = {
-  TOKEN: 'token',
-  USER_INFO: 'userInfo',
+  TOKEN: getStorageKey('token'),
+  USER_INFO: getStorageKey('userInfo'),
 };
 
 // Initialize user info from localStorage if available
@@ -402,7 +403,7 @@ export const useAuthStore = create<AuthState>()(
   },
     }),
     {
-      name: 'auth-storage', // unique name for localStorage key
+      name: getStorageKey('auth-storage'), // unique name for localStorage key
       partialize: (state) => ({
         user: state.user,
         token: state.token,

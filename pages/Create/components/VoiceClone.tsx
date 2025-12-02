@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Mic, 
   Upload, 
@@ -23,9 +23,10 @@ import { avatarService, Voice, VoiceCloneResult, UploadedFile } from '../../../s
 import { assetsService } from '../../../services/assetsService';
 import { useAuthStore } from '../../../stores/authStore';
 import { showAuthModal } from '../../../lib/authModalManager';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 const SvgPointsIcon = ({ className }: { className?: string }) => (
   <svg 
@@ -234,6 +235,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   // Audio Player
   const [currentPlayingDemo, setCurrentPlayingDemo] = useState<string>('');
   const demoAudioRef = useRef<HTMLAudioElement | null>(null);
+  const uploadRef = useRef<UploadComponentRef>(null);
 
   // Task State
   const [submitLoading, setSubmitLoading] = useState(false);
@@ -247,8 +249,16 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   const [isAddedToLib, setIsAddedToLib] = useState(false);
   
   const [isPolling, setIsPolling] = useState(false);
-  const loopTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const pollerRef = useRef<PollingController | null>(null);
   const mimeTypeRef = useRef<string>('');
+
+  const stopActivePoller = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+    setIsPolling(false);
+  }, []);
 
   // AddMaterialModal State
   const [showAddMaterialModal, setShowAddMaterialModal] = useState(false);
@@ -258,17 +268,21 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   // Handle upload complete
   const handleUploadComplete = (uploaded: UploadedFile) => {
-    setAudioFile({
-      ...uploaded,
-      file: tempFile || undefined,
-      size: tempFile?.size
-    });
-    setAudioData(prev => ({ 
-      ...prev, 
-      originVoiceFileId: uploaded.fileId,
-      name: prev.name || uploaded.fileName.replace(/\.[^/.]+$/, '')
-    }));
-    toast.success(t.uploadSuccess);
+    // 只有当 fileId 变化或之前没有 fileId 时才更新，避免不必要的重渲染或逻辑循环
+    if (uploaded.fileId && uploaded.fileId !== audioData.originVoiceFileId) {
+        setAudioFile(prev => ({
+        ...uploaded,
+        file: tempFile || prev?.file || undefined,
+        size: tempFile?.size || prev?.size
+        }));
+        setAudioData(prev => ({ 
+        ...prev, 
+        originVoiceFileId: uploaded.fileId,
+        name: prev.name || uploaded.fileName.replace(/\.[^/.]+$/, '')
+        }));
+        // 仅在非提交触发的上传（例如如果以后有自动上传）显示提示，或者统一不显示也可以
+        // toast.success(t.uploadSuccess); 
+    }
   };
 
   // Convert AudioBuffer to WAV
@@ -373,14 +387,14 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     }
     return () => {
       stopAllAudio();
-      if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+      stopActivePoller();
       if (recordTimerRef.current) clearInterval(recordTimerRef.current);
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
       if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
     };
-  }, [pageMode]);
+  }, [pageMode, stopActivePoller]);
 
   // Helper to trigger list refresh when filters change
   useEffect(() => {
@@ -438,7 +452,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
     // setGenderFilter('');
     // setStyleFilter('');
     stopAllAudio();
-    if (loopTimerRef.current) clearTimeout(loopTimerRef.current);
+    stopActivePoller();
   };
 
   const switchMode = (mode: 'clone' | 'synthesis') => {
@@ -639,7 +653,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         format: format || prev.format
       }) : prev);
 
-      toast.success(t.recordUploadSuccess);
+      // 成功提示已由接口返回的动态消息处理，避免重复提示
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(t.recordUploadFail);
@@ -748,6 +762,11 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
   const canSubmit = () => {
     if (pageMode === 'clone') {
+      if (uploadMethod === 'file') {
+         // 文件模式下，只要有选中的文件即可（可能是已上传的，也可能是待上传的）
+         return audioData.name.trim() && !!audioFile;
+      }
+      // 录音模式下，必须先上传生成 ID
       return audioData.name.trim() && audioData.originVoiceFileId;
     } else {
       return audioData.name.trim() && audioData.text.trim() && selectedVoice;
@@ -770,16 +789,37 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
       return;
     }
 
+    stopActivePoller();
     setSubmitLoading(true);
     setTaskStatus('');
     // Don't clear currentResult here so user can still see previous while generating new
     
     try {
+      let currentFileId = audioData.originVoiceFileId;
+
+      // 处理延迟上传
+      if (pageMode === 'clone' && uploadMethod === 'file') {
+          if (uploadRef.current && uploadRef.current.file) {
+              const uploaded = await uploadRef.current.triggerUpload();
+              if (uploaded && uploaded.fileId) {
+                  currentFileId = uploaded.fileId;
+                  handleUploadComplete(uploaded);
+              } else {
+                  // 如果没有返回结果，且之前也没有 ID，则认为失败
+                  if (!currentFileId) {
+                      throw new Error(t.uploadFail || 'File upload failed');
+                  }
+              }
+          } else if (!currentFileId) {
+              throw new Error(t.msgConfirm);
+          }
+      }
+
       let res: any;
       if (pageMode === 'clone') {
         res = await avatarService.submitVoiceCloneTask({
           name: audioData.name,
-          originVoiceFileId: audioData.originVoiceFileId,
+          originVoiceFileId: currentFileId, // 使用最新的 ID
           voiceSpeed: audioData.voiceSpeed,
           voiceText: t.desc1,
           score: 2
@@ -816,49 +856,56 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
   // --- Polling ---
 
   const startPolling = (tid: string) => {
+    if (!tid) return;
+
+    stopActivePoller();
     setIsPolling(true);
     setTaskProgress(0);
-    
-    const poll = async () => {
-      try {
-        let res: any;
-        if (pageMode === 'clone') {
-          res = await avatarService.queryVoiceCloneTask(tid);
-        } else {
-          res = await avatarService.queryText2VoiceTask(tid);
-        }
-        
-        const result = (res as any).result || (res.data as any)?.result || res.data;
-        
-        if (result) {
-            setTaskStatus(result.status);
-            if (result.status === 'success') {
-                setTaskProgress(100);
-                
-                // Add to history and set as current
-                setGeneratedHistory(prev => [result, ...prev]);
-                setCurrentResult(result);
-                
-                setIsPolling(false);
-            } else if (result.status === 'fail' || result.status === 'error') {
-                toast.error(result.errorMsg || t.messionPushFail);
-                setTaskStatus('fail');
-                setIsPolling(false);
-            } else {
-                // Running
-                setTaskProgress(prev => prev < 90 ? prev + Math.floor(Math.random() * 10) : 95);
-                loopTimerRef.current = setTimeout(poll, 3000);
-            }
-        }
-      } catch (error) {
+
+    const poller = createTaskPoller<VoiceCloneResult>({
+      request: async () => {
+        const res =
+          pageMode === 'clone'
+            ? await avatarService.queryVoiceCloneTask(tid)
+            : await avatarService.queryText2VoiceTask(tid);
+        return (
+          (res as any)?.result ||
+          (res as any)?.data?.result ||
+          (res as any)?.data ||
+          res
+        );
+      },
+      onProgress: progress => setTaskProgress(progress),
+      onStatusChange: status => setTaskStatus(status || ''),
+      onSuccess: result => {
+        setTaskProgress(100);
+        setGeneratedHistory(prev => [result, ...prev]);
+        setCurrentResult(result);
+        setTaskStatus('success');
+        stopActivePoller();
+      },
+      onFailure: result => {
+        toast.error(result?.errorMsg || t.messionPushFail);
+        setTaskStatus(result?.status || 'fail');
+        stopActivePoller();
+      },
+      onTimeout: () => {
+        toast.error(t.queryFail || '任务超时');
+        setTaskStatus('timeout');
+        stopActivePoller();
+      },
+      onError: error => {
         console.error('Poll error', error);
-        setIsPolling(false);
         toast.error(t.queryFail);
         setTaskStatus('fail');
-      }
-    };
-    
-    poll();
+        stopActivePoller();
+      },
+      progressMode: 'fast',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
   };
 
   const handleSaveToAssets = (result: VoiceCloneResult) => {
@@ -980,11 +1027,24 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
 
                 {uploadMethod === 'file' ? (
                    <UploadComponent
+                      ref={uploadRef}
                       uploadType="tv"
                       accept=".mp3,.wav,.m4a"
                       initialUrl={audioFile?.fileUrl}
-                      immediate={true}
-                      onFileSelected={(file) => setTempFile(file)}
+                      immediate={false}
+                      showConfirmButton={false}
+                      onFileSelected={(file) => {
+                          setTempFile(file);
+                          // 设置临时文件状态以便通过 canSubmit 检查
+                          setAudioFile({
+                              fileId: '',
+                              fileName: file.name,
+                              fileUrl: URL.createObjectURL(file),
+                              format: file.name.split('.').pop() || '',
+                              file: file,
+                              size: file.size
+                          });
+                      }}
                       onUploadComplete={handleUploadComplete}
                       onClear={() => {
                           setAudioFile(null);
@@ -1324,7 +1384,7 @@ const VoiceClone: React.FC<VoiceCloneProps> = ({ t = defaultT }) => {
         onSuccess={() => {
           setShowAddMaterialModal(false);
           setIsAddedToLib(true);
-          toast.success(t.addedToLibrary || '已添加到素材库');
+          // 成功提示已由接口返回的动态消息处理，避免重复提示
         }}
         initialData={addMaterialData}
         disableAssetTypeSelection={true}

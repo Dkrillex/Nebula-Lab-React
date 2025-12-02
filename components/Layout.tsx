@@ -11,16 +11,18 @@ import { translations } from '../translations';
 import { useAuthStore } from '../stores/authStore';
 import { TOOLS_DATA } from '../pages/Create/data';
 import { showAuthModal } from '../lib/authModalManager';
+import { getStorageKey } from '../utils/storageNamespace';
+import { useVersionWatcher } from '../hooks/useVersionWatcher';
 
 import MobileSidebar from './MobileSidebar';
 
 import { AliveScope, useAliveController } from './KeepAlive';
 
-const Layout: React.FC = () => {
+const LayoutContent: React.FC = () => {
   const [isDark, setIsDark] = useState(false);
   // 初始化时从 localStorage 读取语言，如果没有则默认为 'zh'
   const [lang, setLang] = useState<Language>(() => {
-    const savedLang = localStorage.getItem('language') as Language;
+    const savedLang = localStorage.getItem(getStorageKey('language')) as Language;
     return (savedLang === 'en' || savedLang === 'id' || savedLang === 'zh') ? savedLang : 'zh';
   });
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
@@ -29,10 +31,12 @@ const Layout: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { fetchUserInfo, isAuthenticated, firstLoginInfo, clearFirstLoginInfo, user, loading } = useAuthStore();
+  const { hasUpdate, reload } = useVersionWatcher();
+  const [isVersionIgnored, setIsVersionIgnored] = useState(false);
 
   // 同步语言到 localStorage，确保 request.tsx 中的 getLanguage() 能读取到最新值
   useEffect(() => {
-    localStorage.setItem('language', lang);
+    localStorage.setItem(getStorageKey('language'), lang);
   }, [lang]);
 
   // Theme handling
@@ -48,13 +52,22 @@ const Layout: React.FC = () => {
   // Auth handling
   // 注意：登录成功后，login/phoneLogin 方法中已经调用了 fetchUserInfo()
   // 这里只在用户已经登录但还没有用户信息时调用（比如页面刷新后）
+  // 合并了常规用户信息获取和邀请参数处理逻辑
   useEffect(() => {
-    if (isAuthenticated && !user && !loading) {
-      // 只在用户已登录但没有用户信息且不在加载中时调用
-      // 避免在登录过程中重复调用 fetchUserInfo
+    if (!isAuthenticated || loading) return;
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const channelId = urlParams.get('channelId');
+    const teamId = urlParams.get('teamId');
+    const inviteCode = urlParams.get('inviteCode');
+    const hasInviteParams = !!(channelId || teamId || inviteCode);
+
+    // 1. 如果没有用户信息，需要获取
+    // 2. 如果有邀请参数，需要获取（fetchUserInfo 内部会处理邀请逻辑）
+    if (!user || hasInviteParams) {
       fetchUserInfo();
     }
-  }, [isAuthenticated, user, loading, fetchUserInfo]);
+  }, [isAuthenticated, user, loading, location.search, fetchUserInfo]);
 
   const t = translations[lang];
 
@@ -93,6 +106,7 @@ const Layout: React.FC = () => {
     else if (path === 'keys') view = 'keys';
     else if (path === 'chat') view = 'chat';
     else if (path === 'models') view = 'models';
+    else if (path === 'models-intro') view = 'models-intro';
     else if (path === 'expenses') view = 'expenses';
     else if (path === 'pricing') view = 'pricing';
     else if (path === 'assets') view = 'assets';
@@ -137,12 +151,21 @@ const Layout: React.FC = () => {
   // Update Tabs History and Cache
   useEffect(() => {
     setVisitedViews(prev => {
+      // 模型中心简介页面和创作中心首页不需要显示 Tab，共享首页 Tab
+      if (currentView === 'models-intro' || (currentView === 'create' && !activeTool)) {
+        return prev;
+      }
+      
       const exists = prev.some(t => {
         if (t.view !== currentView) return false;
         if (t.view === 'create') {
           // For create view, check both activeTool and searchParams
           if (t.activeTool !== activeTool) return false;
           // Compare all search params dynamically
+          return compareSearchParams(t.searchParams, currentSearchParams);
+        }
+        // For chat view, check searchParams
+        if (t.view === 'chat') {
           return compareSearchParams(t.searchParams, currentSearchParams);
         }
         return true;
@@ -153,7 +176,7 @@ const Layout: React.FC = () => {
       return [...prev, { 
         view: currentView, 
         activeTool: currentView === 'create' ? activeTool : undefined,
-        searchParams: currentView === 'create' ? currentSearchParams : undefined
+        searchParams: (currentView === 'create' || currentView === 'chat') ? currentSearchParams : undefined
       }];
     });
   }, [currentView, activeTool, currentSearchParams]);
@@ -224,6 +247,16 @@ const Layout: React.FC = () => {
     if (tab.activeTool) {
       path += `?tool=${tab.activeTool}`;
     }
+    
+    // Support query params for chat view
+    if (tab.view === 'chat' && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
+      const searchParams = new URLSearchParams();
+      Object.entries(tab.searchParams).forEach(([key, value]) => {
+        searchParams.set(key, value);
+      });
+      path += `?${searchParams.toString()}`;
+    }
+
     navigate(path, { replace: false });
   };
 
@@ -253,6 +286,14 @@ const Layout: React.FC = () => {
       }
     } else {
       cacheKey = targetTab.view === 'home' ? '/' : `/${targetTab.view}`;
+      // Support query params for chat view cache key
+      if (targetTab.view === 'chat' && targetTab.searchParams && Object.keys(targetTab.searchParams).length > 0) {
+        const searchParams = new URLSearchParams();
+        Object.entries(targetTab.searchParams).forEach(([key, value]) => {
+          searchParams.set(key, String(value));
+        });
+        cacheKey = `${cacheKey}?${searchParams.toString()}`;
+      }
     }
     
     // 确保没有双斜杠 (除根路径外)
@@ -265,10 +306,11 @@ const Layout: React.FC = () => {
 
     // If closing active tab, navigate to last available
     const isActive = targetTab.view === currentView && (
-      targetTab.view !== 'create'
-        ? true
-        : (targetTab.activeTool === activeTool &&
-           compareSearchParams(targetTab.searchParams, currentSearchParams))
+      targetTab.view === 'create'
+        ? (targetTab.activeTool === activeTool && compareSearchParams(targetTab.searchParams, currentSearchParams))
+        : targetTab.view === 'chat'
+          ? compareSearchParams(targetTab.searchParams, currentSearchParams)
+          : true
     );
 
     if (isActive) {
@@ -287,14 +329,13 @@ const Layout: React.FC = () => {
   const safeT = t || translations['zh'];
   
   return (
-    <AliveScope>
       <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
         <Header 
           isDark={isDark} 
           toggleTheme={() => setIsDark(!isDark)} 
           lang={lang} 
           setLang={setLang} 
-          onSignIn={() => showAuthModal(() => fetchUserInfo())}
+          onSignIn={() => showAuthModal()}
           onOpenNotification={() => setIsNotificationOpen(true)}
           onNavClick={handleNavClick}
           currentView={currentView}
@@ -309,7 +350,7 @@ const Layout: React.FC = () => {
         />
         
         <main className="flex-1">
-          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal(() => fetchUserInfo()) }} />
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal() }} />
         </main>
         
         <MobileSidebar 
@@ -321,7 +362,7 @@ const Layout: React.FC = () => {
           user={useAuthStore.getState().user}
           onSignIn={() => {
             setIsMobileMenuOpen(false);
-            showAuthModal(() => fetchUserInfo());
+            showAuthModal();
           }}
           logout={() => {
              useAuthStore.getState().logout();
@@ -346,6 +387,18 @@ const Layout: React.FC = () => {
         type="info"
       />
 
+      {/* 版本更新提示 */}
+      <ConfirmDialog
+        isOpen={hasUpdate && !isVersionIgnored}
+        title="版本更新提示"
+        message="检测到系统有新版本发布，为保证功能正常使用，请刷新页面。"
+        confirmText="立即刷新"
+        cancelText="稍后"
+        onConfirm={reload}
+        onCancel={() => setIsVersionIgnored(true)}
+        type="info"
+      />
+
       <NotificationModal 
         isOpen={isNotificationOpen} 
         onClose={() => setIsNotificationOpen(false)} 
@@ -354,9 +407,15 @@ const Layout: React.FC = () => {
       {/* 全局登录弹窗 - 用于 request.tsx 和其他地方通过全局方法调用 */}
       <GlobalAuthModal />
       </div>
+  );
+};
+
+const Layout: React.FC = () => {
+  return (
+    <AliveScope>
+      <LayoutContent />
     </AliveScope>
   );
 };
 
 export default Layout;
-    

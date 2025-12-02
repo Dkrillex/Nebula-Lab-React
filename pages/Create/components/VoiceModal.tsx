@@ -19,17 +19,31 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
   t,
 }) => {
   const [activeTab, setActiveTab] = useState<'public' | 'custom'>('public');
-  const [loading, setLoading] = useState(false);
-  const [voiceList, setVoiceList] = useState<Voice[]>([]);
-  const [pagination, setPagination] = useState({ pageNo: 1, pageSize: 20, total: 0 });
   
-  // Filters
+  // 分别维护两个独立的加载状态
+  const [publicLoading, setPublicLoading] = useState(false);
+  const [customLoading, setCustomLoading] = useState(false);
+  
+  // 分别维护两个独立的数组
+  const [publicVoiceList, setPublicVoiceList] = useState<Voice[]>([]);
+  const [customVoiceList, setCustomVoiceList] = useState<Voice[]>([]);
+  
+  // 分别维护两个独立的分页状态
+  const [publicPagination, setPublicPagination] = useState({ pageNo: 1, pageSize: 20, total: 0 });
+  const [customPagination, setCustomPagination] = useState({ pageNo: 1, pageSize: 20, total: 0 });
+  
+  // Filters (仅用于公共音色)
   const [filters, setFilters] = useState({
     language: '',
     gender: '',
     age: '',
     style: '',
   });
+  
+  // 根据当前标签页获取对应的列表、分页和加载状态
+  const currentVoiceList = activeTab === 'public' ? publicVoiceList : customVoiceList;
+  const currentPagination = activeTab === 'public' ? publicPagination : customPagination;
+  const currentLoading = activeTab === 'public' ? publicLoading : customLoading;
 
   // Audio Player
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -68,69 +82,118 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchVoices();
+      // 打开模态框时，同时加载两个列表
+      fetchPublicVoices();
+      fetchCustomVoices();
     } else {
       stopAudio();
     }
-  }, [isOpen, activeTab, pagination.pageNo, filters]);
+  }, [isOpen]);
 
-  const fetchVoices = async () => {
+  // 当切换标签页、分页或筛选条件变化时，重新加载对应列表
+  useEffect(() => {
+    if (isOpen && activeTab === 'public') {
+      fetchPublicVoices();
+    }
+  }, [isOpen, activeTab, publicPagination.pageNo, filters]);
+
+  useEffect(() => {
+    if (isOpen && activeTab === 'custom') {
+      fetchCustomVoices();
+    }
+  }, [isOpen, activeTab, customPagination.pageNo]);
+
+  // 获取公共音色列表
+  const fetchPublicVoices = async () => {
     // 先检查缓存
-    const cacheKey = getCacheKey(activeTab, pagination.pageNo, activeTab === 'public' ? filters : undefined);
+    const cacheKey = getCacheKey('public', publicPagination.pageNo, filters);
     const cached = getCachedData(cacheKey);
     
     if (cached) {
       // 使用缓存数据
-      setVoiceList(cached.list);
-      setPagination(prev => ({ ...prev, total: cached.total }));
+      setPublicVoiceList(cached.list);
+      setPublicPagination(prev => ({ ...prev, total: cached.total }));
       return;
     }
 
     // 缓存未命中，调用接口
-    setLoading(true);
+    setPublicLoading(true);
     try {
+      const params: any = {
+        pageNo: publicPagination.pageNo,
+        pageSize: publicPagination.pageSize,
+      };
+      if (filters.language) params.language = filters.language;
+      if (filters.gender) params.gender = filters.gender;
+      if (filters.style) params.style = filters.style;
+      if (filters.age) params.age = filters.age;
+      
+      const { result, code } = await avatarService.getVoiceList(params);
+      
       let list: Voice[] = [];
       let total = 0;
       
-      if (activeTab === 'public') {
-        const { result, code } = await avatarService.getVoiceList({
-          pageNo: pagination.pageNo,
-          pageSize: pagination.pageSize,
-          language: filters.language || undefined,
-          gender: filters.gender || undefined,
-          style: filters.style || undefined,
-          age: filters.age || undefined,
-        });
-        if (code === '200' && result.data) {
-          list = (result as any).data;
-          total = (result as any).total;
-        }
-      } else {
-        const res = await avatarService.adsAssetsList({
-          pageNo: pagination.pageNo,
-          pageSize: pagination.pageSize,
-          assetType: 8,
-          isPrivateModel: '1',
-        });
-        if (res.rows) {
-            list = res.rows.map((item: any) => ({
-                voiceId: item.assetId,
-                voiceName: item.assetName,
-                demoAudioUrl: item.assetUrl,
-            }));
-            total = res.total || 0;
-        }
+      if (code === '200' && result.data) {
+        list = (result as any).data;
+        total = (result as any).total;
       }
       
       // 保存到缓存
       setCache(cacheKey, list, total);
       
-      setVoiceList(list || []);
-      setPagination(prev => ({ ...prev, total }));
+      setPublicVoiceList(list || []);
+      setPublicPagination(prev => ({ ...prev, total }));
     } catch (error) {
-      console.error('Failed to fetch voices:', error);
+      console.error('Failed to fetch public voices:', error);
     } finally {
-      setLoading(false);
+      setPublicLoading(false);
+    }
+  };
+
+  // 获取我的音色列表
+  const fetchCustomVoices = async () => {
+    // 先检查缓存
+    const cacheKey = getCacheKey('custom', customPagination.pageNo);
+    const cached = getCachedData(cacheKey);
+    
+    if (cached) {
+      // 使用缓存数据
+      setCustomVoiceList(cached.list);
+      setCustomPagination(prev => ({ ...prev, total: cached.total }));
+      return;
+    }
+
+    // 缓存未命中，调用接口
+    setCustomLoading(true);
+    try {
+      const res = await avatarService.adsAssetsList({
+        pageNo: customPagination.pageNo,
+        pageSize: customPagination.pageSize,
+        assetType: 8,
+        isPrivateModel: '1',
+      });
+      
+      let list: Voice[] = [];
+      let total = 0;
+      
+      if (res.rows) {
+        list = res.rows.map((item: any) => ({
+          voiceId: item.assetId,
+          voiceName: item.assetName,
+          demoAudioUrl: item.assetUrl,
+        }));
+        total = res.total || 0;
+      }
+      
+      // 保存到缓存
+      setCache(cacheKey, list, total);
+      
+      setCustomVoiceList(list || []);
+      setCustomPagination(prev => ({ ...prev, total }));
+    } catch (error) {
+      console.error('Failed to fetch custom voices:', error);
+    } finally {
+      setCustomLoading(false);
     }
   };
 
@@ -222,7 +285,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
         <div className="flex gap-4 mb-6 border-b border-gray-200 dark:border-gray-700">
             <button
                 onClick={() => setActiveTab('public')}
-                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'public'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
@@ -232,7 +295,7 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
             </button>
             <button
                 onClick={() => setActiveTab('custom')}
-                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors ${
+                className={`pb-3 px-1 text-sm font-medium border-b-2 transition-colors cursor-pointer ${
                     activeTab === 'custom'
                     ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400'
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400'
@@ -290,13 +353,14 @@ const VoiceModal: React.FC<VoiceModalProps> = ({
 
         {/* Voice Grid */}
         <div className="flex-1 overflow-y-auto custom-scrollbar">
-            {loading ? (
-                <div className="flex justify-center items-center h-full">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+            {currentLoading ? (
+                <div className="flex flex-col justify-center items-center h-full">
+                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-indigo-200 border-t-indigo-600 mb-4"></div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {voiceList.map((voice) => (
+                    {currentVoiceList.map((voice) => (
                         <div
                             key={voice.voiceId}
                             onClick={() => handleSelect(voice)}

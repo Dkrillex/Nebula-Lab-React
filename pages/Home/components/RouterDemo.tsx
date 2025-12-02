@@ -4,7 +4,7 @@ import ModelCard from './ModelCard';
 import { ModelCardData } from '../../../types';
 import { generateGeminiResponse } from '../service/geminiService';
 import { useNavigate } from 'react-router-dom';
-import BaseModal from '../../../components/BaseModal';
+import EnterpriseContactModal from '../../../components/EnterpriseContactModal';
 
 const MODELS: ModelCardData[] = [
   {
@@ -237,72 +237,10 @@ const RouterDemo: React.FC<RouterDemoProps> = ({ heroContent }) => {
       </div>
 
       {/* 企业定制服务 Modal */}
-      <BaseModal
+      <EnterpriseContactModal
         isOpen={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
-        title="企业定制服务"
-        width="max-w-2xl"
-      >
-         <div className="py-2">
-            {/* 副标题 */}
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                为您提供专业的AI解决方案
-              </p>
-            </div>
-
-            {/* 联系内容 */}
-            <div className="flex flex-col md:flex-row gap-8 mb-8">
-              {/* 联系信息 */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="text-2xl flex-shrink-0">📱</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">联系电话</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">19210015325</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="text-2xl flex-shrink-0">⏰</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">服务时间</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">工作日 9:00-18:00</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 微信联系 */}
-              <div className="flex-shrink-0 text-center">
-                <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-                  微信联系
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
-                  <img 
-                    src="/lab/zhenshangWxCode.png" 
-                    alt="微信联系方式" 
-                    className="w-[200px] h-[200px] object-contain mx-auto"
-                  />
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  扫码添加企业微信
-                </div>
-              </div>
-            </div>
-
-            {/* 功能标签 */}
-            <div className="flex justify-center gap-3 flex-wrap">
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                🎯 定制化方案
-              </div>
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                🔧 技术支持
-              </div>
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                📊 数据分析
-              </div>
-            </div>
-         </div>
-      </BaseModal>
+      />
     </div>
   );
 };

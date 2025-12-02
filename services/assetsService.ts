@@ -86,7 +86,10 @@ export const assetsService = {
    * Endpoint: POST /ads/adsAssets
    */
   addAssets: (data: AdsAssetsForm) => {
-    return request.post<ApiResponse<void>>('/ads/adsAssets', data);
+    return request.post<ApiResponse<void>>('/ads/adsAssets', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+      errorMessageMode: 'message'
+    });
   },
 
   /**
@@ -94,7 +97,9 @@ export const assetsService = {
    * Endpoint: PUT /ads/adsAssets
    */
   updateAssets: (data: AdsAssetsForm) => {
-    return request.put<ApiResponse<void>>('/ads/adsAssets', data);
+    return request.put<ApiResponse<void>>('/ads/adsAssets', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   },
 
   /**

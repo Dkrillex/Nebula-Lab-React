@@ -27,6 +27,7 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import AuthModal from '../../components/AuthModal';
+import BaseModal from '../../components/BaseModal';
 import {
   getImageSizes,
   getVideoRatios,
@@ -36,6 +37,7 @@ import {
   VIDEO_RATIOS,
   getImageUploadRestrictions
 } from './modelConstants';
+import { showImageCrop } from '../../components/use-image-crop';
 
 // 扩展消息类型，支持图片和视频
 interface ExtendedChatMessage extends ChatMessage {
@@ -51,6 +53,7 @@ interface ExtendedChatMessage extends ChatMessage {
     id: string;
     url: string;
     taskId?: string;
+    genId?: string;
     prompt?: string;
     timestamp: number;
     status?: string; // 'processing' | 'succeeded' | 'failed'
@@ -70,6 +73,7 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
   const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
+  const componentsT = rawT?.components || translations['zh'].components;
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -81,6 +85,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [currentMode, setCurrentMode] = useState<Mode>('chat');
   // 用于标记从图生视频跳转过来的图片，避免被自动清除
   const imageToVideoImageRef = useRef<string | null>(null);
+  // 用于记录已处理的URL model_name 参数，避免重复处理
+  const processedModelNameRef = useRef<string | null>(null);
   
   const [messages, setMessages] = useState<ExtendedChatMessage[]>([
     {
@@ -92,10 +98,16 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   ]);
   const [inputValue, setInputValue] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]); // base64图片数组
+  const [isDragOverInput, setIsDragOverInput] = useState(false);
   const [models, setModels] = useState<ModelsVO[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>('');
   const [temperature, setTemperature] = useState(1.0);
   const [presencePenalty, setPresencePenalty] = useState(0.4);
+  
+  // AI角色定义相关状态
+  const [showAIRoleModal, setShowAIRoleModal] = useState(false);
+  const [aiRoleContent, setAiRoleContent] = useState('');
+  const [aiRoleMessageId, setAiRoleMessageId] = useState('');
   
   // 图片生成参数
   const [imageSize, setImageSize] = useState('1024x1024');
@@ -216,7 +228,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   });
   
   // 跟踪上一个模式，用于在切换时保存消息
-  const previousModeRef = useRef<Mode>('chat');
+  const previousModeRef = useRef<Mode>(
+    (new URLSearchParams(window.location.search).get('mode') as Mode) || 'chat'
+  );
 
   // 初始化时同时获取所有模式的模型
   useEffect(() => {
@@ -335,31 +349,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       setModels(currentModels);
       
-      // 检查URL中是否有model_name参数
-      if (urlModelName && currentModels.length > 0) {
-        // 在模型列表中查找匹配的模型
-        const matchedModel = currentModels.find(
-          (m) =>
-            m.modelName === urlModelName ||
-            m.modelName?.includes(urlModelName) ||
-            urlModelName.includes(m.modelName || '')
-        );
-        
-        if (matchedModel && matchedModel.modelName) {
-          console.log('✅ 从URL参数自动选择模型:', matchedModel.modelName);
-          setSelectedModel(matchedModel.modelName);
-        } else {
-          console.warn('⚠️ 未找到匹配的模型:', urlModelName, '，使用第一个可用模型');
-          // 如果找不到匹配的模型，使用第一个可用模型
-          setSelectedModel(currentModels[0].modelName || '');
-        }
-      } else {
-        // 没有URL参数时，检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
-        const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
-        if (currentModels.length > 0 && !isSelectedValid) {
-          setSelectedModel(currentModels[0].modelName || '');
-        }
-      }
+      // 注意：不再此处自动选择第一个模型，因为 fetchAllModels 闭包可能持有旧的 selectedModel
+      // 导致即使外部已经设置了正确的模型（如从URL），这里也会认为无效而覆盖
+      // 自动选择逻辑统一由 useEffect(auto-select) 处理，该 useEffect 依赖了 selectedModel，能感知最新值
       
       console.log('✅ 已同时加载所有模式的模型:', {
         chat: chatModelList.length,
@@ -391,31 +383,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     
     setModels(currentModels);
     
-    // 检查URL中是否有model_name参数
-    const urlModelName = new URLSearchParams(window.location.search).get('model_name');
-    
-    if (urlModelName && currentModels.length > 0) {
-      // 在模型列表中查找匹配的模型
-      const matchedModel = currentModels.find(
-        (m) =>
-          m.modelName === urlModelName ||
-          m.modelName?.includes(urlModelName) ||
-          urlModelName.includes(m.modelName || '')
-      );
-      
-      if (matchedModel && matchedModel.modelName) {
-        console.log('✅ updateModelsForCurrentMode: 从URL参数自动选择模型:', matchedModel.modelName);
-        setSelectedModel(matchedModel.modelName);
-        return; // 如果找到了匹配的模型，就不需要后续逻辑了
-      }
-    }
-    
-    // 检查当前选中的模型是否在列表里，如果不在或者未选中，则选择第一个
-    const isSelectedValid = selectedModel && currentModels.some(m => m.modelName === selectedModel);
-    
-    if (currentModels.length > 0 && !isSelectedValid) {
-      setSelectedModel(currentModels[0].modelName || '');
-    }
+    // 注意：不再此处自动选择第一个模型，理由同 fetchAllModels
+    // 自动选择逻辑统一由 useEffect(auto-select) 处理
   };
 
   // 当模型列表更新后，自动更新当前模式的模型列表
@@ -440,6 +409,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     const urlModelName = searchParams.get('model_name');
     if (!urlModelName) return;
 
+    // 如果该 model_name 已经被处理过，不再重复处理
+    if (processedModelNameRef.current === urlModelName) {
+      return;
+    }
+
     // 根据当前模式选择对应的模型列表
     let currentModels: ModelsVO[] = [];
     if (currentMode === 'chat') {
@@ -456,12 +430,6 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       return;
     }
 
-    // 检查当前选中的模型是否已经是目标模型
-    if (selectedModel === urlModelName) {
-      console.log('✅ 模型已经正确选择:', selectedModel);
-      return;
-    }
-
     // 尝试精确匹配
     let matchedModel = currentModels.find(m => m.modelName === urlModelName);
     
@@ -471,7 +439,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         (m) =>
           m.modelName?.toLowerCase() === urlModelName.toLowerCase() ||
           m.modelName?.toLowerCase().includes(urlModelName.toLowerCase()) ||
-          urlModelName.toLowerCase().includes(m.modelName?.toLowerCase() || '')
+          urlModelName.toLowerCase().includes(m.modelName || '')
       );
     }
 
@@ -483,47 +451,47 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         availableModels: currentModels.map(m => m.modelName)
       });
       setSelectedModel(matchedModel.modelName);
+      // 标记该 model_name 已处理
+      processedModelNameRef.current = urlModelName;
     } else {
       console.warn('⚠️ useEffect: 未找到匹配的模型:', {
         urlModelName,
         currentMode,
         availableModels: currentModels.map(m => m.modelName),
-        currentSelected: selectedModel
       });
     }
-  }, [searchParams, currentMode, chatModels, imageModels, videoModels, selectedModel]);
+  }, [searchParams, currentMode, chatModels, imageModels, videoModels]);
 
   // 监听模式切换，更新模型列表和历史记录，并切换消息缓存
   useEffect(() => {
-    // 如果模式真的改变了，保存上一个模式的消息到缓存
+    // 如果模式真的改变了，才进行切换逻辑
     if (previousModeRef.current !== currentMode) {
       // 保存上一个模式的消息（这里需要从messages状态获取，但messages可能还没更新）
       // 所以我们会在messages变化时自动保存，这里主要是切换逻辑
       previousModeRef.current = currentMode;
-    }
-    
-    setSelectedModel(''); // 切换模式时清空选中的模型
-    setChatRecords([]); // 切换模式时清空历史记录
-    setSelectedRecordId(null); // 清空选中的记录ID
-    // updateModelsForCurrentMode 已由上面的 useEffect 监听 currentMode 变化自动调用
-    
-    // 从缓存中恢复新模式的消息
-    const cachedMessages = messagesCacheRef.current[currentMode];
-    if (cachedMessages && cachedMessages.length > 0) {
-      setMessages(cachedMessages);
-      console.log(`📦 从缓存恢复${currentMode}模式的消息，共${cachedMessages.length}条`);
-    } else {
-      // 如果没有缓存，只在对话模式显示欢迎消息
-      if (currentMode === 'chat') {
-      setMessages([{
-        id: 'welcome',
-        role: 'assistant',
-        content: t.welcomeMessage,
-        timestamp: Date.now()
-      }]);
+      
+      // 切换模式时清空选中的模型
+      setSelectedModel(''); 
+      
+      setChatRecords([]); // 切换模式时清空历史记录
+      setSelectedRecordId(null); // 清空选中的记录ID
+      
+      // 从缓存中恢复新模式的消息
+      const cachedMessages = messagesCacheRef.current[currentMode];
+      if (cachedMessages && cachedMessages.length > 0) {
+        setMessages(cachedMessages);
       } else {
-        // 图片和视频模式不显示欢迎消息
-        setMessages([]);
+        if (currentMode === 'chat') {
+          setMessages([{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }]);
+        } else {
+          // 图片和视频模式不显示欢迎消息
+          setMessages([]);
+        }
       }
     }
     
@@ -552,14 +520,44 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 监听模型列表变化，自动选择第一个模型
   useEffect(() => {
+    // 检查是否有URL参数
+    const urlModelName = searchParams.get('model_name');
+    
+    // 1. 如果 URL 包含 model_name，且尚未处理，跳过（等待 model_name effect）
+    if (urlModelName && processedModelNameRef.current !== urlModelName) {
+      return;
+    }
+
+    // 2. 如果 URL 包含 model_name，且已处理（Ref匹配），但 selectedModel 仍为空
+    // 这可能是 State 更新延迟，也可能是该 model_name 无效。
+    // 我们尝试在模型列表中查找该模型（支持模糊匹配逻辑）
+    if (urlModelName && processedModelNameRef.current === urlModelName && !selectedModel) {
+      // 复用模糊匹配逻辑
+      let matched = models.find(m => m.modelName === urlModelName);
+      if (!matched) {
+        matched = models.find(
+          (m) =>
+            m.modelName?.toLowerCase() === urlModelName.toLowerCase() ||
+            m.modelName?.toLowerCase().includes(urlModelName.toLowerCase()) ||
+            urlModelName.toLowerCase().includes(m.modelName || '')
+        );
+      }
+      
+      // 如果 URL 指定的模型在当前列表中是有效的，说明现在 selectedModel 为空只是 State 更新延迟
+      // 我们应该跳过自动选择，等待 State 更新完成
+      if (matched) {
+        return; 
+      }
+      // 如果无效，则继续执行下方的自动选择逻辑
+    }
+
     if (models.length > 0 && !selectedModel) {
       const firstModel = models[0].modelName;
       if (firstModel) {
         setSelectedModel(firstModel);
-        console.log('✅ 自动选择第一个模型:', firstModel);
       }
     }
-  }, [models, selectedModel]);
+  }, [models, selectedModel, searchParams]);
 
   // 调试：监听chatRecords变化
   useEffect(() => {
@@ -1332,7 +1330,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
         // 恢复设置（如果有的话）
         if (settings) {
-          if (settings.model) setSelectedModel(settings.model);
+          if (settings.model) {
+            console.log('🔍 fetchChatRecords: 恢复历史设置模型:', settings.model);
+            setSelectedModel(settings.model);
+          }
           if (settings.temperature !== undefined) setTemperature(settings.temperature);
           if (settings.presence_penalty !== undefined) setPresencePenalty(settings.presence_penalty);
           console.log('⚙️ 已恢复对话设置');
@@ -1405,7 +1406,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
       // 恢复设置（如果有的话）
       if (settings) {
-        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.selectedModel) {
+          setSelectedModel(settings.selectedModel);
+        }
         if (settings.selectedSize) setImageSize(settings.selectedSize);
         if (settings.selectedStyle) setImageStyle(settings.selectedStyle);
         if (settings.temperature !== undefined) setTemperature(settings.temperature);
@@ -1498,7 +1501,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
       // 恢复设置（如果有的话）
       if (settings) {
-        if (settings.selectedModel) setSelectedModel(settings.selectedModel);
+        if (settings.selectedModel) {
+          setSelectedModel(settings.selectedModel);
+        }
         if (settings.videoDuration !== undefined) setVideoDuration(settings.videoDuration);
         if (settings.videoAspectRatio) setVideoAspectRatio(settings.videoAspectRatio);
         if (settings.videoResolution) setVideoResolution(settings.videoResolution);
@@ -1773,6 +1778,70 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 可以添加提示消息
   };
 
+  // 复制图片到剪贴板并添加到输入框
+  const handleCopyImage = async (imageUrl: string, textContent?: string) => {
+    try {
+      // 将图片URL转换为blob
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      
+      // 复制图片到剪贴板
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          [blob.type]: blob
+        })
+      ]);
+
+      // 将图片转换为base64并添加到输入框
+      const reader = new FileReader();
+      reader.onload = (event: ProgressEvent<FileReader>) => {
+        const base64 = event.target?.result as string;
+        if (base64) {
+          // 图片模式下，最多只显示一张图片，替换已有图片
+          setUploadedImages([base64]);
+          // 如果有文字内容，同时设置到输入框
+          if (textContent && textContent.trim()) {
+            setInputValue(textContent.trim());
+            // 如果同时有文字和图片，显示引用消息的提示
+            toast.success('已引用消息内容到输入框');
+          } else {
+            // 只有图片时，显示图片复制的提示
+            toast.success('图片已复制并添加到输入框');
+          }
+        }
+      };
+      reader.readAsDataURL(blob);
+    } catch (error) {
+      console.error('复制图片失败:', error);
+      // 如果复制失败，至少尝试添加到输入框
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = (event: ProgressEvent<FileReader>) => {
+          const base64 = event.target?.result as string;
+          if (base64) {
+            // 图片模式下，最多只显示一张图片，替换已有图片
+            setUploadedImages([base64]);
+            // 如果有文字内容，同时设置到输入框
+            if (textContent && textContent.trim()) {
+              setInputValue(textContent.trim());
+              // 如果同时有文字和图片，显示引用消息的提示
+              toast.success('已引用消息内容到输入框');
+            } else {
+              // 只有图片时，显示图片添加的提示
+              toast.success('图片已添加到输入框');
+            }
+          }
+        };
+        reader.readAsDataURL(blob);
+      } catch (fallbackError) {
+        console.error('添加图片到输入框失败:', fallbackError);
+        toast.error('复制图片失败');
+      }
+    }
+  };
+
   // 处理代码引用
   const handleQuoteCode = (code: string) => {
     setInputValue(code);
@@ -1832,23 +1901,136 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     await handleSend();
   };
 
+  // 删除消息
+  const handleDeleteMessage = (messageId: string) => {
+    // 不允许删除欢迎消息和system消息
+    if (messageId === 'welcome') {
+      return;
+    }
+
+    setMessages(prev => {
+      const messageToDelete = prev.find(msg => msg.id === messageId);
+      // 不允许删除system消息
+      if (messageToDelete?.role === 'system') {
+        return prev;
+      }
+
+      const filtered = prev.filter(msg => msg.id !== messageId);
+      // 如果删除后没有消息了，且不是system消息，显示欢迎消息
+      if (filtered.length === 0 || (filtered.length === 1 && filtered[0].role === 'system')) {
+        if (currentMode === 'chat') {
+          const hasSystemMessage = filtered.some(msg => msg.role === 'system');
+          if (hasSystemMessage) {
+            return filtered;
+          }
+          return [{
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }];
+        } else {
+          return [];
+        }
+      }
+      return filtered;
+    });
+  };
+
   // 清空消息
   const handleClear = () => {
-    // 只在对话模式显示欢迎消息
+    // 检查是否存在system消息（AI角色定义）
+    const hasSystemMessage = messages.some(msg => msg.role === 'system');
+    
     if (currentMode === 'chat') {
-    setMessages([
-      {
-        id: 'welcome',
-        role: 'assistant',
-        content: t.welcomeMessage,
-      timestamp: Date.now()
+      if (hasSystemMessage) {
+        // 如果定义了AI角色，只保留system消息，不显示欢迎消息
+        const systemMessage = messages.find(msg => msg.role === 'system');
+        if (systemMessage) {
+          setMessages([systemMessage]);
+        } else {
+          setMessages([]);
+        }
+      } else {
+        // 如果没有定义AI角色，显示欢迎消息
+        setMessages([
+          {
+            id: 'welcome',
+            role: 'assistant',
+            content: t.welcomeMessage,
+            timestamp: Date.now()
+          }
+        ]);
       }
-    ]);
     } else {
       // 图片和视频模式不显示欢迎消息
       setMessages([]);
     }
     setSelectedRecordId(null);
+  };
+
+  // 处理定义AI角色
+  const handleDefineAIRole = (messageId: string) => {
+    setAiRoleMessageId(messageId);
+    // 如果消息已存在，使用现有内容；否则使用默认内容
+    const message = messages.find(msg => msg.id === messageId);
+    const defaultContent = t?.aiRoleDefinition?.defaultContent || '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。';
+    if (message && message.role === 'system') {
+      setAiRoleContent(message.content || defaultContent);
+    } else {
+      setAiRoleContent(defaultContent);
+    }
+    setShowAIRoleModal(true);
+  };
+
+  // 确认AI角色定义
+  const confirmAIRole = () => {
+    if (!aiRoleContent.trim()) {
+      toast.error(t?.aiRoleDefinition?.inputRequired || '请输入AI角色定义');
+      return;
+    }
+
+    // 检查是否已存在system消息
+    const existingSystemIndex = messages.findIndex(msg => msg.role === 'system');
+    
+    if (existingSystemIndex !== -1) {
+      // 如果已存在system消息，更新它
+      const updatedMessages = [...messages];
+      updatedMessages[existingSystemIndex] = {
+        ...updatedMessages[existingSystemIndex],
+        role: 'system' as const,
+        content: aiRoleContent.trim(), // 保存用户在弹窗中输入的角色定义内容
+      };
+      // 移除欢迎消息（如果存在）
+      const filteredMessages = updatedMessages.filter(msg => msg.id !== 'welcome');
+      setMessages(filteredMessages);
+      console.log('✅ 更新已存在的system消息:', updatedMessages[existingSystemIndex]);
+    } else {
+      // 如果不存在system消息，创建新的 system 消息
+      // role固定传system，content是用户在弹窗中输入的角色定义内容
+      const newMessage: ExtendedChatMessage = {
+        id: generateId(),
+        role: 'system',
+        content: aiRoleContent.trim(), // 保存用户在弹窗中输入的角色定义内容
+        timestamp: Date.now(),
+      };
+      // 移除欢迎消息，只保留system消息和其他消息
+      const filteredMessages = messages.filter(msg => msg.id !== 'welcome');
+      setMessages([newMessage, ...filteredMessages]);
+      console.log('✅ 创建新的system消息，已移除欢迎消息:', newMessage);
+    }
+
+    setShowAIRoleModal(false);
+    setAiRoleContent('');
+    setAiRoleMessageId('');
+    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI角色定义已更新');
+  };
+
+  // 取消AI角色定义
+  const cancelAIRole = () => {
+    setShowAIRoleModal(false);
+    setAiRoleContent('');
+    setAiRoleMessageId('');
   };
 
   // 下载图片
@@ -2460,7 +2642,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const validateImageFile = async (
     file: File,
     restrictions: ReturnType<typeof getImageUploadRestrictions>
-  ): Promise<{ valid: boolean; error?: string }> => {
+  ): Promise<{ valid: boolean; error?: string; base64?: string }> => {
     // 验证文件格式
     const fileType = file.type.toLowerCase();
     const normalizedType = fileType.replace(/^image\//, '');
@@ -2472,7 +2654,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         .join('、');
       return {
         valid: false,
-        error: `图片格式不支持。仅支持：${formatList}`,
+        error: `${t.imageValidation.formatNotSupported}${formatList}`,
       };
     }
 
@@ -2481,14 +2663,28 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     if (file.size > maxSizeBytes) {
       return {
         valid: false,
-        error: `文件大小超过限制。最大允许：${restrictions.maxFileSize}MB`,
+        error: `${t.imageValidation.sizeExceeded}${restrictions.maxFileSize}MB`,
       };
     }
 
     // 验证图片尺寸
-    return new Promise((resolve) => {
+    return validateImageDimensions(await fileToBase64(file), restrictions);
+  };
+
+  const fileToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (event: ProgressEvent<FileReader>) => {
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const validateImageDimensions = (
+    base64: string,
+    restrictions: ReturnType<typeof getImageUploadRestrictions>
+  ): Promise<{ valid: boolean; error?: string; base64?: string }> => {
+    return new Promise((resolve) => {
         const img = new Image();
         img.onload = () => {
           const width = img.width;
@@ -2498,7 +2694,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (restrictions.minImageSize && (width < restrictions.minImageSize || height < restrictions.minImageSize)) {
             resolve({
               valid: false,
-              error: `图片分辨率不符合要求：宽高需至少 ${restrictions.minImageSize} 像素`,
+              error: t.imageValidation.minResolution.replace('{0}', restrictions.minImageSize.toString()),
             });
             return;
           }
@@ -2506,7 +2702,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (restrictions.maxImageSize && (width > restrictions.maxImageSize || height > restrictions.maxImageSize)) {
             resolve({
               valid: false,
-              error: `图片分辨率不符合要求：宽高需不超过 ${restrictions.maxImageSize} 像素`,
+              error: t.imageValidation.maxResolution.replace('{0}', restrictions.maxImageSize.toString()),
             });
             return;
           }
@@ -2517,15 +2713,77 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               dim => dim.width === width && dim.height === height
             );
             if (!matches) {
+              // sora-2 模型：弹出裁剪弹窗
+              if (selectedModel === 'sora-2') {
+                let targetDim = restrictions.requiredDimensions[0];
+                // 如果有多个目标尺寸，尝试智能匹配
+                if (restrictions.requiredDimensions.length > 1) {
+                   const imgRatio = width / height;
+                   // 图片横屏优先匹配横屏目标
+                   if (imgRatio > 1) {
+                       const landscape = restrictions.requiredDimensions.find(d => d.width > d.height);
+                       if (landscape) targetDim = landscape;
+                   } else {
+                       // 图片竖屏优先匹配竖屏目标
+                       const portrait = restrictions.requiredDimensions.find(d => d.width < d.height);
+                       if (portrait) targetDim = portrait;
+                   }
+                }
+
+                showImageCrop({
+                    src: base64,
+                    targetWidth: targetDim.width,
+                    targetHeight: targetDim.height,
+                    aspectRatio: targetDim.width / targetDim.height,
+                    title: t.imageValidation.sora2CropTitle,
+                    aspectRatioOptions: [
+                      { label: '16:9', value: 16 / 9 },
+                      { label: '9:16', value: 9 / 16 },
+                    ],
+                    texts: {
+                      title: componentsT.imageCrop.title,
+                      ratio: componentsT.imageCrop.ratio,
+                      reset: componentsT.imageCrop.reset,
+                      cancel: componentsT.imageCrop.cancel,
+                      confirm: componentsT.imageCrop.confirm,
+                    }
+                }).then(result => {
+                    resolve({ valid: true, base64: result.base64 });
+                }).catch(() => {
+                    const dimsList = restrictions.requiredDimensions!
+                        .map(d => `${d.width}×${d.height}`)
+                        .join(' 或 ');
+                    resolve({
+                        valid: false,
+                        error: `${t.imageValidation.sora2Requirements}: ${dimsList} (${t.imageValidation.sora2CropCancel})`,
+                    });
+                });
+                return;
+              }
+
               const dimsList = restrictions.requiredDimensions
                 .map(d => `${d.width}×${d.height}`)
                 .join(' 或 ');
               resolve({
                 valid: false,
-                error: `图片尺寸必须完全匹配输出尺寸：${dimsList}`,
+                error: `${t.imageValidation.sora2Requirements}: ${dimsList}`,
               });
               return;
             }
+          }
+
+          // doubao- 模型检查宽高比
+          if (selectedModel.startsWith('doubao-')) {
+             const aspectRatio = width / height;
+             const minAspectRatio = 1 / 3;
+             const maxAspectRatio = 3;
+             if (aspectRatio < minAspectRatio || aspectRatio > maxAspectRatio) {
+                 resolve({
+                     valid: false,
+                     error: `${t.imageValidation.doubaoRequirements}。${t.imageValidation.doubaoRatioHint}，当前宽高比：${aspectRatio.toFixed(2)}`
+                 });
+                 return;
+             }
           }
 
           resolve({ valid: true });
@@ -2533,24 +2791,64 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         img.onerror = () => {
           resolve({
             valid: false,
-            error: '图片加载失败，请检查文件是否损坏',
+            error: t.imageValidation.loadFailed,
           });
         };
-        img.src = event.target?.result as string;
-      };
-      reader.onerror = () => {
-        resolve({
-          valid: false,
-          error: '文件读取失败',
-        });
-      };
-      reader.readAsDataURL(file);
+        img.src = base64;
     });
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
+  // 监听 selectedModel 变化，重新检查已上传的图片
+  useEffect(() => {
+    if (uploadedImages.length === 0) return;
+    
+    const checkImages = async () => {
+        const newImages = [...uploadedImages];
+        let hasChanges = false;
+        
+        const restrictions = getImageUploadRestrictions(
+          selectedModel,
+          currentMode as 'image' | 'video',
+          videoAspectRatio,
+          videoResolution
+        );
+
+        if (selectedModel === 'sora-2' || selectedModel.startsWith('doubao-') || selectedModel === 'wan2.5-i2v-preview') {
+             // 倒序遍历，方便删除
+             for (let i = newImages.length - 1; i >= 0; i--) {
+                 const result = await validateImageDimensions(newImages[i], restrictions);
+                 if (!result.valid) {
+                     if (result.base64) {
+                         // 裁剪成功，替换
+                         newImages[i] = result.base64;
+                         hasChanges = true;
+                     } else {
+                         // 验证失败（且无裁剪结果），删除
+                         toast.error(result.error || '图片不符合当前模型要求，已移除');
+                         newImages.splice(i, 1);
+                         hasChanges = true;
+                     }
+                 }
+             }
+             
+             if (hasChanges) {
+                 setUploadedImages(newImages);
+             }
+        }
+    };
+    
+    checkImages();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedModel, videoAspectRatio, videoResolution]);
+
+  const processImageFiles = async (filesInput: FileList | File[] | null) => {
+    if (!filesInput || !selectedModel) return;
+    if (currentMode !== 'image' && currentMode !== 'video') return;
+
+    const filesArray = Array.isArray(filesInput)
+      ? filesInput
+      : Array.from(filesInput as ArrayLike<File>);
+    if (filesArray.length === 0) return;
 
     // 获取当前模式的限制规则
     const restrictions = getImageUploadRestrictions(
@@ -2567,15 +2865,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       if (currentCount >= maxImages) {
         toast.error(`当前模式最多支持上传 ${maxImages} 张图片`);
-        e.target.value = '';
         return;
       }
 
       // 计算还能上传多少张
       const remainingSlots = maxImages - currentCount;
-      const filesToProcess = Array.from(files).slice(0, remainingSlots);
+      const filesToProcess = filesArray.slice(0, remainingSlots);
       
-      if (files.length > remainingSlots) {
+      if (filesArray.length > remainingSlots) {
         toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
       }
 
@@ -2589,6 +2886,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
           toast.error(validation.error || '图片验证失败');
+          continue;
+        }
+
+        // 如果有裁剪后的 base64，直接使用
+        if (validation.base64) {
+          setUploadedImages(prev => {
+            const newImages = [...prev, validation.base64!];
+            if (newImages.length > maxImages) {
+              return prev;
+            }
+            return newImages;
+          });
           continue;
         }
 
@@ -2614,15 +2923,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       
       if (currentCount >= maxImages) {
         toast.error(`当前模型最多支持上传 ${maxImages} 张图片`);
-        e.target.value = '';
         return;
       }
 
       // 计算还能上传多少张
       const remainingSlots = maxImages - currentCount;
-      const filesToProcess = Array.from(files).slice(0, remainingSlots) as File[];
+      const filesToProcess = filesArray.slice(0, remainingSlots) as File[];
       
-      if (files.length > remainingSlots) {
+      if (filesArray.length > remainingSlots) {
         toast(`最多只能上传 ${maxImages} 张图片，已自动选择前 ${remainingSlots} 张`, { icon: '⚠️' });
       }
 
@@ -2636,6 +2944,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
           toast.error(validation.error || '图片验证失败');
+          continue;
+        }
+
+        // 如果有裁剪后的 base64，直接使用
+        if (validation.base64) {
+          setUploadedImages(prev => {
+            const newImages = [...prev, validation.base64!];
+            if (newImages.length > maxImages) {
+              return prev;
+            }
+            return newImages;
+          });
           continue;
         }
 
@@ -2655,9 +2975,45 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         reader.readAsDataURL(file);
       }
     }
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    await processImageFiles(e.target.files);
     
     // 清空文件选择，以便可以再次选择相同文件
     e.target.value = '';
+  };
+
+  const isImageDropEnabled = () =>
+    currentMode === 'image' &&
+    !!selectedModel &&
+    ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isImageDropEnabled()) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOverInput(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await processImageFiles(files);
+    }
   };
 
   // 移除上传的图片
@@ -2863,26 +3219,52 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 处理对话生成
   const handleChatGeneration = async (aiMessageId: string, currentInput: string) => {
-    // 构建消息历史
+    // 构建消息历史（参考 Nebula1 的实现方式）
     const buildMessages = (): ChatRequest['messages'] => {
       const history: ChatRequest['messages'] = [];
+      let systemMessage: { role: 'system'; content: string } | null = null;
+      const conversationMessages: ChatRequest['messages'] = [];
       
-      // 添加历史消息（排除欢迎消息和当前正在流式的AI消息）
+      // 遍历所有消息，构建完整的对话上下文（排除欢迎消息和当前正在流式的AI消息）
       messages.forEach(msg => {
-        if (msg.id !== 'welcome' && msg.id !== aiMessageId && msg.content.trim()) {
-          history.push({
+        // 跳过欢迎消息和当前正在流式的AI消息
+        if (msg.id === 'welcome' || msg.id === aiMessageId) {
+          return;
+        }
+        
+        // 处理 system 消息：只保留最新的一个（AI角色定义的内容）
+        // role固定传system，content是用户在弹窗中输入的角色定义内容
+        if (msg.role === 'system' && msg.content && msg.content.trim()) {
+          systemMessage = {
+            role: 'system',
+            content: msg.content.trim(), // 这里就是用户在弹窗中输入的角色定义内容
+          };
+          return;
+        }
+        
+        // 处理其他消息（user、assistant）
+        if ((msg.role === 'user' || msg.role === 'assistant') && msg.content && msg.content.trim()) {
+          conversationMessages.push({
             role: msg.role,
-            content: msg.content,
+            content: msg.content.trim(),
           });
         }
       });
 
+      // 按照 Nebula1 的格式：先添加 system 消息（如果有），然后是对话历史，最后是当前用户消息
+      // system消息格式：{ role: "system", content: "AI角色定义的输入内容" }
+      if (systemMessage) {
+        history.push(systemMessage);
+      }
+      history.push(...conversationMessages);
+      
       // 添加当前用户消息
       history.push({
         role: 'user',
         content: currentInput,
       });
 
+      console.log('📤 构建的消息列表:', JSON.stringify(history, null, 2));
       return history;
     };
 
@@ -3049,15 +3431,16 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           (requestData as any).parameters.seed = qwenImageEditSeed;
         }
       }
-
+      
       // GPT-image specific
       if (selectedModel.startsWith('gpt-image')) {
         // GPT模型使用quality字段，但需要映射
         const qualityMap: Record<string, string> = {
-          'low': 'standard',
-          'medium': 'hd',
-          'high': 'hd', // 或者根据实际API调整
+          'low': 'low',
+          'medium': 'medium',
+          'high': 'high', // 或者根据实际API调整
         };
+
         requestData.quality = qualityMap[gptImageQuality] || 'hd';
         requestData.n = gptImageN;
         if (images && images.length > 0) {
@@ -3470,23 +3853,160 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
             case 'succeeded': {
               console.log('✅ 视频生成成功:', result);
-            setProgress(100);
+              
+              let finalVideoUrl = '';
+
+              // 检查是否是 sora-2 模型（需要下载 base64）
+              if (selectedModel === 'sora-2') {
+                // sora-2 模型：轮询完成后进入下载阶段
+                setProgress(100);
+                
+                console.log('🎬 检测到 sora-2 模型，开始下载视频...');
+                console.log('📦 任务结果:', result);
+
+                try {
+                  // Sora 2: 从返回的 task_id 或 metadata.id 获取 video_id
+                  const videoId = result.task_id || result.metadata?.id || taskId;
+                  console.log('🎥 使用 video_id 下载:', videoId);
+                  
+                  // 使用 video_id 作为 genId 下载
+                  const genId = videoId;
+                  
+                  console.log('📥 下载参数:', { taskId, genId });
+                  
+                  // 调用下载接口获取 base64 视频
+                  let downloadResult: any;
+                  try {
+                    downloadResult = await videoGenerateService.downloadSoraVideo(taskId, genId, abortControllerRef.current?.signal);
+                  } catch (err: any) {
+                    if (err?.name === 'AbortError') {
+                      isPolling = false;
+                      return;
+                    }
+                    throw err;
+                  }
+                  
+                  if (downloadResult && downloadResult.data_url) {
+                    finalVideoUrl = downloadResult.data_url;
+                    console.log('✅ Sora 视频下载成功，使用 data_url');
+                  } else {
+                    throw new Error('下载的视频数据格式不正确');
+                  }
+
+                  // Sora-2 视频信息更新到消息中
+                  setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages[newMessages.length - 1];
+                    if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
+                      const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                      if (video) {
+                        video.url = finalVideoUrl;
+                        video.status = 'succeeded';
+                        video.genId = videoId; // Sora 2: 使用 video_id
+                      }
+                      lastMsg.content = '视频生成完成！';
+                    }
+                    return newMessages;
+                  });
+
+                } catch (downloadError: any) {
+                   console.error('❌ Sora 视频下载失败:', downloadError);
+                   
+                   // 友好的错误提示
+                   const errorMsg = String(downloadError?.message || downloadError || '');
+                   
+                   // 构造错误信息
+                   const errorInfo = handleVideoError({ 
+                     message: errorMsg.includes('下载服务异常') ? '视频已生成成功，但下载服务暂时异常，请稍后刷新页面重试或联系管理员' :
+                              (errorMsg.includes('timeout') || errorMsg.includes('超时') || errorMsg.includes('Network')) ? '视频已生成成功，但下载时网络连接失败，请检查网络后重试' :
+                              '视频下载遇到问题，请稍后重试'
+                   });
+                   
+                   setMessages(prev => {
+                    const newMessages = [...prev];
+                    const lastMsg = newMessages[newMessages.length - 1];
+                    if (lastMsg && lastMsg.id === aiMessageId) {
+                        lastMsg.content = errorInfo.message;
+                        lastMsg.isHtml = errorInfo.isHtml; // Ensure HTML flag is set if needed
+                        if (lastMsg.generatedVideos) {
+                            const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                            if (video) video.status = 'failed';
+                        }
+                    }
+                    return newMessages;
+                   });
+                   
+                   isPolling = false;
+                   setProgress(0);
+                   return;
+                }
+              } else {
+                 // Veo 和其他模型（非 sora-2）直接使用返回的 URL（data URI 或 HTTP URL）
+                 const { video_url, url } = result;
+                 finalVideoUrl = video_url || url || '';
+
+                 if (finalVideoUrl) {
+                   setProgress(100);
+                   
+                   setMessages(prev => {
+                      const newMessages = [...prev];
+                      const lastMsg = newMessages[newMessages.length - 1];
+                      if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
+                        const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
+                        if (video) {
+                          video.url = finalVideoUrl;
+                          video.status = 'succeeded';
+                        }
+                        lastMsg.content = '视频生成完成';
+                      }
+                      return newMessages;
+                   });
+                 } else {
+                   throw new Error('任务成功但未返回视频URL');
+                 }
+              }
+
               isPolling = false;
 
-              // 更新消息
-            setMessages(prev => {
-              const newMessages = [...prev];
-              const lastMsg = newMessages[newMessages.length - 1];
-              if (lastMsg && lastMsg.id === aiMessageId && lastMsg.generatedVideos) {
-                const video = lastMsg.generatedVideos.find(v => v.taskId === taskId);
-                if (video) {
-                    video.url = finalVideoUrl || '';
-                  video.status = 'succeeded';
+              // 显示任务元数据 (Console log)
+              if (result.metadata) {
+                const videoId = result.task_id || result.metadata?.id || taskId;
+                const genId = result.metadata.generations?.[0]?.id || videoId;
+                
+                const actualSeconds = result.metadata.seconds
+                  ? typeof result.metadata.seconds === 'string'
+                    ? parseInt(result.metadata.seconds)
+                    : result.metadata.seconds
+                  : result.metadata.n_seconds;
+                  
+                console.log('📊 生成统计:', {
+                  task_id: taskId,
+                  video_id: videoId,
+                  gen_id: genId,
+                  model: result.metadata.model,
+                  status: result.metadata.status,
+                  seconds: actualSeconds,
+                  size: result.metadata.size,
+                  n_seconds: result.metadata.n_seconds,
+                  width: result.metadata.width,
+                  height: result.metadata.height,
+                  prompt: result.metadata.prompt,
+                  resolution: result.metadata.resolution,
+                  duration: result.metadata.duration,
+                  ratio: result.metadata.ratio,
+                  framespersecond: result.metadata.framespersecond,
+                });
+                
+                 // 警告：如果请求时长与实际时长不符
+                const expectedSeconds = actualSeconds || result.metadata.n_seconds;
+                if (expectedSeconds && videoDuration && expectedSeconds !== videoDuration) {
+                   console.warn('⚠️ 时长不匹配:', {
+                    请求时长: `${videoDuration}秒`,
+                    实际时长: `${expectedSeconds}秒`,
+                    可能原因: 'API限制、remix特殊处理或后端调整',
+                  });
                 }
-                lastMsg.content = '视频生成完成';
               }
-              return newMessages;
-            });
 
               // 视频生成成功后自动保存历史记录
               // 使用 setTimeout 确保消息状态已更新后再保存
@@ -3496,9 +4016,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   console.error('❌ 视频生成后自动保存失败:', error);
                   // 静默失败，不影响用户体验
                 });
+                scrollToBottom();
               }, 500);
             
-            return;
+              return;
             }
 
             case 'failed': {
@@ -3652,7 +4173,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             <label className="text-sm font-medium text-muted">{t.selectModel}</label>
             <ModelSelect
               value={selectedModel}
-              onChange={setSelectedModel}
+              onChange={(val) => {
+                setSelectedModel(val);
+              }}
               models={models}
               loading={modelsLoading}
               placeholder="暂无可用模型"
@@ -4562,6 +5085,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               key={msg.id} 
               message={msg}
               onCopy={handleCopy}
+              onCopyImage={handleCopyImage}
               onQuoteCode={handleQuoteCode}
               onPreview={(type, url) => setPreviewModal({ isOpen: true, type, url })}
               onDownloadImage={handleDownloadImage}
@@ -4572,6 +5096,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
               progress={progress}
               onQuote={handleQuoteMessage}
               onResend={handleResendMessage}
+              onDelete={handleDeleteMessage}
+              onDefineAIRole={handleDefineAIRole}
               currentMode={currentMode}
               isLoading={isLoading}
               isLastMessage={index === messages.length - 1}
@@ -4584,7 +5110,16 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         {/* Input Area */}
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
-            <div className="border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)]">
+            <div
+              className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
+                isImageDropEnabled() && isDragOverInput
+                  ? 'border-indigo-400 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/30'
+                  : ''
+              }`}
+              onDragOver={isImageDropEnabled() ? handleDragOver : undefined}
+              onDragLeave={isImageDropEnabled() ? handleDragLeave : undefined}
+              onDrop={isImageDropEnabled() ? handleDrop : undefined}
+            >
               
               {/* 上传的图片预览 */}
               {uploadedImages.length > 0 && (
@@ -4827,6 +5362,66 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           terms: '服务条款',
         }}
       />
+
+      {/* AI角色定义弹窗 */}
+      <BaseModal
+        isOpen={showAIRoleModal}
+        onClose={cancelAIRole}
+        title={t?.aiRoleDefinition?.title || '定义AI助手角色'}
+        width="max-w-2xl"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t?.aiRoleDefinition?.description || '请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。'}
+          </p>
+          
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t?.aiRoleDefinition?.label || 'AI角色定义：'}
+            </label>
+            <textarea
+              value={aiRoleContent}
+              onChange={(e) => setAiRoleContent(e.target.value)}
+              placeholder={t?.aiRoleDefinition?.placeholder || '例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题...'}
+              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 dark:bg-gray-700 dark:text-gray-100 resize-y min-h-[120px]"
+            />
+          </div>
+
+          <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border-l-4 border-indigo-500">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
+              <span>💡</span>
+              <span>{t?.aiRoleDefinition?.hint || '提示：'}</span>
+            </p>
+            <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1 list-disc list-inside">
+              {t?.aiRoleDefinition?.tips?.map((tip: string, index: number) => (
+                <li key={index}>{tip}</li>
+              )) || [
+                '可以定义AI的专业领域（如编程、设计、写作等）',
+                '可以设置AI的性格特点（如友好、专业、幽默等）',
+                '可以指定AI的回复风格（如简洁、详细、创意等）'
+              ].map((tip, index) => (
+                <li key={index}>{tip}</li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={cancelAIRole}
+              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+            >
+              {t?.aiRoleDefinition?.cancel || '取消'}
+            </button>
+            <button
+              onClick={confirmAIRole}
+              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            >
+              {t?.aiRoleDefinition?.confirm || '确定'}
+            </button>
+          </div>
+        </div>
+      </BaseModal>
     </div>
   );
 };
@@ -4834,6 +5429,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 interface MessageBubbleProps {
   message: ExtendedChatMessage;
   onCopy: (content: string) => void;
+  onCopyImage?: (imageUrl: string, textContent?: string) => Promise<void>; // 复制图片到剪贴板并添加到输入框
   onQuoteCode?: (code: string) => void;
   onPreview?: (type: 'image' | 'video', url: string) => void;
   onDownloadImage?: (url: string) => void;
@@ -4844,6 +5440,8 @@ interface MessageBubbleProps {
   progress?: number; // 视频/图片生成进度
   onQuote?: (message: ExtendedChatMessage) => void; // 引用消息
   onResend?: (message: ExtendedChatMessage) => void; // 重新发送
+  onDelete?: (messageId: string) => void; // 删除消息
+  onDefineAIRole?: (messageId: string) => void; // 定义AI助手角色
   currentMode?: 'chat' | 'image' | 'video'; // 当前模式
   isLoading?: boolean; // 是否正在加载（用于判断生成中状态）
   isLastMessage?: boolean; // 是否是最后一条消息（用于判断是否显示生成中提示）
@@ -4898,6 +5496,7 @@ const VideoPlayer: React.FC<{ url: string }> = ({ url }) => {
 const MessageBubble: React.FC<MessageBubbleProps> = ({ 
   message, 
   onCopy, 
+  onCopyImage,
   onQuoteCode, 
   onPreview,
   onDownloadImage,
@@ -4909,6 +5508,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   progress = 0,
   onQuote,
   onResend,
+  onDelete,
+  onDefineAIRole,
   currentMode = 'chat',
   isLoading = false,
   isLastMessage = false
@@ -4916,6 +5517,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   const navigate = useNavigate();
   const isUser = message.role === 'user';
   const isAssistant = message.role === 'assistant';
+  const isSystem = message.role === 'system';
+  const isWelcomeMessage = message.id === 'welcome';
   const [showReasoning, setShowReasoning] = useState(false);
 
   const formatTime = (timestamp: number) => {
@@ -4935,9 +5538,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
         flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center border
         ${isUser 
           ? 'bg-indigo-600 border-indigo-600 text-white' 
+          : isSystem
+          ? 'bg-gray-500 border-gray-500 text-white'
           : 'bg-background border-border'}
       `}>
-        {isAssistant ? (
+        {isSystem ? (
+          <Settings size={16} className="text-white" />
+        ) : isAssistant ? (
           <Bot size={16} className="text-indigo-600" />
         ) : (
           <User size={16} />
@@ -4949,9 +5556,21 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           px-4 py-3 rounded-2xl text-sm leading-relaxed shadow-sm
           ${isUser 
             ? 'bg-indigo-600 text-white rounded-tr-sm' 
+            : isSystem
+            ? 'bg-gray-100 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-tl-sm text-foreground'
             : 'bg-background border border-border rounded-tl-sm text-foreground'}
         `}>
-          {isAssistant ? (
+          {isSystem ? (
+            <div className="text-foreground">
+              <div className="flex items-center gap-2 mb-2">
+                <Settings size={14} className="text-gray-500 dark:text-gray-400" />
+                <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {t?.aiRoleDefinition?.roleLabel || 'AI角色定义'}
+                </span>
+              </div>
+              <div className="whitespace-pre-wrap">{message.content}</div>
+            </div>
+          ) : isAssistant ? (
             <div className="markdown-content">
               {/* 如果有正在生成的视频，不显示content文本，只显示视频进度条 */}
               {message.content && message.content.trim() !== '' && !(message.generatedVideos && message.generatedVideos.some(v => v.status === 'processing')) ? (
@@ -5139,20 +5758,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
         {/* AI生成的图片 */}
         {isAssistant && message.generatedImages && message.generatedImages.length > 0 && 
-         message.generatedImages.some(img => img.url && img.url.trim() !== '') && (
-          <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {message.generatedImages
-              .filter(img => img.url && img.url.trim() !== '')
-              .map((img) => (
-              <div key={img.id} className="relative group">
-                <img 
-                  src={img.url} 
-                  alt={img.prompt || '生成的图片'}
-                  className="w-full rounded-lg border border-border cursor-pointer"
-                  onClick={() => onPreview?.('image', img.url)}
-                />
-                {/* 操作按钮 - 右上角 */}
-                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
+         message.generatedImages.some(img => img.url && img.url.trim() !== '') && (() => {
+           const validImages = message.generatedImages.filter(img => img.url && img.url.trim() !== '');
+           const imageCount = validImages.length;
+           const useGrid = imageCount >= 2;
+           
+           return (
+             <div className={`mt-2 grid grid-cols-1 ${useGrid ? 'sm:grid-cols-2' : ''} gap-3`}>
+               {validImages.map((img) => (
+                 <div key={img.id} className={`relative group flex flex-col ${!useGrid ? 'items-center' : ''}`}>
+                   <div className={`relative ${!useGrid ? 'flex justify-center' : ''}`}>
+                     <img 
+                       src={img.url} 
+                       alt={img.prompt || '生成的图片'}
+                       className={`${!useGrid ? 'w-auto h-auto max-w-full max-h-[75vh] object-contain' : 'w-full'} rounded-lg border border-border cursor-pointer`}
+                       onClick={() => onPreview?.('image', img.url)}
+                     />
+                    {/* 操作按钮 - 右上角 */}
+                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -5208,14 +5831,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       <Video size={16} className="text-gray-700 dark:text-gray-300" />
                     </button>
                   )}
-                </div>
-                {img.prompt && (
-                  <div className="mt-1 text-xs text-muted truncate">{img.prompt}</div>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
+                    </div>
+                   </div>
+                   {img.prompt && (
+                     <div className={`mt-1 text-xs text-muted ${!useGrid ? 'text-center' : 'truncate'}`}>{img.prompt}</div>
+                   )}
+                 </div>
+               ))}
+             </div>
+           );
+         })()}
 
         {/* 没有图片URL但有revised_prompt时显示文本卡片 */}
         {isAssistant && currentMode === 'image' && message.generatedImages && message.generatedImages.length > 0 && 
@@ -5367,9 +5992,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
           <span>{formatTime(message.timestamp)}</span>
           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
             {/* 复制按钮 */}
-            {(message.content || message.generatedImages?.length || message.generatedVideos?.length) && (
+            {(message.content || message.generatedImages?.length || message.generatedVideos?.length || (isUser && message.images?.length)) && (
             <button
-                onClick={() => {
+                onClick={async () => {
+                  // 图片模式下，优先复制图片（无论是用户上传的图片还是AI生成的图片）
+                  if (currentMode === 'image' && onCopyImage) {
+                    // 优先检查AI生成的图片
+                    if (message.generatedImages?.length && message.generatedImages[0]?.url) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.generatedImages[0].url, message.content);
+                      return;
+                    }
+                    // 其次检查用户上传的图片
+                    if (isUser && message.images?.length && message.images[0]) {
+                      // 如果有文字内容，一起传递
+                      await onCopyImage(message.images[0], message.content);
+                      return;
+                    }
+                  }
+                  
+                  // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
                     toast.success('已复制到剪贴板');
@@ -5388,6 +6030,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <Copy size={12} />
             </button>
           )}
+            {/* 定义AI助手角色按钮 - 欢迎消息或system消息 */}
+            {onDefineAIRole && currentMode === 'chat' && (isWelcomeMessage || isSystem) && (
+              <button
+                onClick={() => onDefineAIRole(message.id)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title={isSystem ? (t?.aiRoleDefinition?.editRole || '编辑AI角色') : (t?.aiRoleDefinition?.title || '定义AI助手角色')}
+              >
+                <Settings size={12} />
+              </button>
+            )}
             {/* 引用按钮 - 只对用户消息和部分AI消息显示，图片模式下如果没有图片则不显示 */}
             {onQuote && (isUser || (isAssistant && message.action !== 'goFixPrice' && message.id !== 'welcome')) && 
               !(currentMode === 'image' && isAssistant && (!message.generatedImages || message.generatedImages.length === 0)) && (
@@ -5407,6 +6059,16 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                 title="重新发送"
               >
                 <RefreshCw size={12} />
+              </button>
+            )}
+            {/* 删除按钮 - 只在对话模式下显示，用户消息和AI消息都显示，但不显示在欢迎消息和system消息上 */}
+            {onDelete && currentMode === 'chat' && !isWelcomeMessage && !isSystem && (
+              <button
+                onClick={() => onDelete(message.id)}
+                className="p-1 hover:bg-border rounded transition-colors"
+                title={t?.deleteMessage || '删除消息'}
+              >
+                <Trash2 size={12} />
               </button>
             )}
           </div>

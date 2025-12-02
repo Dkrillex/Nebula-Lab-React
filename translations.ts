@@ -45,6 +45,7 @@ interface Translation {
       all: string;
       reset: string;
       hideFilters: string;
+      showFilters: string;
     };
     display: {
       currency: string;
@@ -59,7 +60,77 @@ interface Translation {
         calculate: string;
         chat: string;
       };
-    }
+    };
+    compare: {
+      button: string;
+      buttonShort: string;
+      title: string;
+      subtitle: string;
+      modelLabel: string;
+      searchPlaceholder: string;
+      noResults: string;
+      selectAtLeastOne: string;
+      compareFields: {
+        provider: string;
+        inputPrice: string;
+        outputPrice: string;
+        contextLength: string;
+        billingType: string;
+        tags: string;
+        description: string;
+      };
+      tableHeader: string;
+      selectedCount: string;
+      clearSelection: string;
+      finishCompare: string;
+      loading: string;
+      noModels: string;
+      noMatchModels: string;
+      billingTypes: {
+        payPerUse: string;
+        payPerCall: string;
+        payPerResource: string;
+        payPerSecond: string;
+        payPerMultimodal: string;
+        payPerImage: string;
+        unknown: string;
+      };
+    };
+    detail: {
+      title: string;
+      type: string;
+      pricing: string;
+      priceDetails: string;
+      priceTable: string;
+      audioOptions: string;
+      noAudio: string;
+      withAudio: string;
+      resolutionTable: string;
+      singleSecondPrice: string;
+      singleCallPrice: string;
+      singleImagePrice: string;
+      input: string;
+      output: string;
+      cachePrice: string;
+      cacheWrite: string;
+      cacheRead: string;
+      modelDescription: string;
+      capabilityTags: string;
+      useForChat: string;
+      useForImage: string;
+      useForVideo: string;
+      noDescription: string;
+      exampleCost: string;
+      imageEditCost: string;
+      tokenTable: string;
+      quality: string;
+      tokenConsumption: string;
+    };
+    pagination: {
+      total: string;
+      page: string;
+      perPage: string;
+    };
   };
   createPage: {
     greeting: string;
@@ -80,6 +151,7 @@ interface Translation {
       apiKeys: string;
       apiDocs: string;
       rank: string;
+      modelsIntro: string;
       // Creation Center items
       viralVideo: string;
       digitalHuman: string;
@@ -749,6 +821,18 @@ interface Translation {
         unknownError: string;
       };
     };
+    addMaterialModal: {
+      messages: {
+        selectTeamFirst: string;
+        sharedFolderRequired: string;
+        enterName: string;
+        uploadFileOrLink: string;
+        selectTeam: string;
+        selectSharedFolder: string;
+        uploadingFile: string;
+        uploadingMaterial: string;
+      };
+    };
   };
   rankPage: {
     title: string;
@@ -764,6 +848,18 @@ interface Translation {
       price: string;
     };
     fetchError: string;
+    metrics: {
+      intelligence: string;
+      coding: string;
+      math: string;
+      speed: string;
+    };
+    best: string;
+    allModels: string;
+    bestIndicator: string;
+    showMore: string;
+    collapse: string;
+    top10: string;
   };
   chatPage: {
     settingsTitle: string;
@@ -830,6 +926,34 @@ interface Translation {
       linkCopied: string;
       materialImported: string;
     };
+    aiRoleDefinition: {
+      title: string;
+      description: string;
+      label: string;
+      placeholder: string;
+      hint: string;
+      tips: string[];
+      cancel: string;
+      confirm: string;
+      roleLabel: string;
+      editRole: string;
+      defaultContent: string;
+      inputRequired: string;
+      updateSuccess: string;
+    };
+    imageValidation: {
+      sora2Requirements: string;
+      sora2CropTitle: string;
+      sora2CropCancel: string;
+      doubaoRequirements: string;
+      doubaoRatioHint: string;
+      minResolution: string;
+      maxResolution: string;
+      loadFailed: string;
+      formatNotSupported: string;
+      sizeExceeded: string;
+      readFailed: string;
+    };
   };
   keysPage: {
     title: string;
@@ -894,9 +1018,28 @@ interface Translation {
     consumption: string;
     recharge: string;
     netAmount: string;
-    total: string;
-    consumedPoints: string;
-    record: {
+      total: string;
+      consumedPoints: string;
+      points: string;
+      pointsBill: string;
+      exportHeaders: {
+        time: string;
+        serviceType: string;
+        points: string;
+        status: string;
+        taskId: string;
+      };
+      balanceExportHeaders: {
+        time: string;
+        serviceModel: string;
+        type: string;
+        cost: string;
+        duration: string;
+        inputToken: string;
+        outputToken: string;
+      };
+      balanceBill: string;
+      record: {
       type: string;
       duration: string;
       input: string;
@@ -933,12 +1076,16 @@ interface Translation {
       nextPage: string;
       lastPage: string;
       recordsPerPage: string;
+      logsBill: string;
     };
-    exportError: string;
-    exportSuccess: string;
-    selectTeamFirst: string;
-    unknownService: string;
-  };
+      exportError: string;
+      exportSuccess: string;
+      selectTeamFirst: string;
+      unknownService: string;
+      serviceTypes: {
+        [key: number]: string;
+      };
+    };
   pricingPage: {
     title: string;
     subtitle: string;
@@ -984,6 +1131,7 @@ interface Translation {
       paySuccess: string;
       thankYou: string;
       payAmount: string;
+      invoiceInfo: string;
       generatingQR: string;
       pleaseWait: string;
       step1: string;
@@ -1009,6 +1157,46 @@ interface Translation {
       customSolution: string;
       techSupport: string;
       dataAnalysis: string;
+      form?: {
+        title: string;
+        description: string;
+        name: string;
+        namePlaceholder: string;
+        email: string;
+        emailPlaceholder: string;
+        phone: string;
+        phonePlaceholder: string;
+        company: string;
+        companyPlaceholder: string;
+        channel: string;
+        channelPlaceholder: string;
+        channels?: {
+          wechat: string;
+          xiaohongshu: string;
+          gongzhonghao: string;
+          douyin: string;
+          weibo: string;
+          search: string;
+          friend: string;
+          other: string;
+        };
+        message: string;
+        messagePlaceholder: string;
+        submit: string;
+        submitting: string;
+        submitSuccess: string;
+        submitError: string;
+        successTitle: string;
+        successMessage: string;
+        submitAnother: string;
+        errors?: {
+          nameRequired: string;
+          phoneRequired: string;
+          phoneInvalid: string;
+          emailInvalid: string;
+          channelRequired: string;
+        };
+      };
     };
     errors?: {
       loginRequired: string;
@@ -1064,6 +1252,7 @@ interface Translation {
         taxNumberRequired: string;
         emailRequired: string;
         emailInvalid: string;
+        emailMissingAt: string;
       };
       cancel: string;
       confirm: string;
@@ -1098,6 +1287,46 @@ interface Translation {
     totalFolders: string;
     totalFiles: string;
     searchInResult: string;
+    personalFiles: string;
+    sharedFiles: string;
+    confirmDelete: string;
+    confirmDeleteItem: string;
+    confirmDeleteSelected: string;
+    confirm: string;
+    cancel: string;
+    folder: string;
+    material: string;
+    moveModal: {
+      title: string;
+      personalFolder: string;
+      sharedFolder: string;
+      allFiles: string;
+      loading: string;
+      newFolder: string;
+      newFolderPlaceholder: string;
+      unnamedFolder: string;
+      noFolders: string;
+      enterTeamFolderFirst: string;
+      enterTeamFolderBeforeSave: string;
+      fileAlreadyInCurrentFolder: string;
+      moveToHere: string;
+      cancel: string;
+      fetchFoldersFailed: string;
+      enterFolderName: string;
+      folderCreatedSuccess: string;
+      folderCreateFailed: string;
+    };
+    messages: {
+      deleteSuccess: string;
+      deleteFailed: string;
+      shareSuccess: string;
+      shareFailedNoTeam: string;
+      moveSuccess: string;
+      moveFailed: string;
+      operationFailed: string;
+      sharedFilesCannotDragToRoot: string;
+      assetUrlOrNameMissing: string;
+    };
   };
   profilePage: {
     title: string;
@@ -1327,6 +1556,150 @@ interface Translation {
       videoLoadFailed: string;
     };
   };
+  enterprisePage: {
+    title: string;
+    subtitle: string;
+    notSupported: string;
+    notSupportedDesc: string;
+    buttons: {
+      addTeam: string;
+      refresh: string;
+      viewMembers: string;
+      edit: string;
+      inviteMember: string;
+      addMember: string;
+      delete: string;
+      cancel: string;
+      confirm: string;
+      close: string;
+      newUser: string;
+      oldUser: string;
+      editRole: string;
+      editAuth: string;
+      allocate: string;
+      remove: string;
+    };
+    table: {
+      teamName: string;
+      searchPlaceholder: string;
+      createTime: string;
+      status: string;
+      actions: string;
+      normal: string;
+      disabled: string;
+      noData: string;
+      userInfo: string;
+      nickName: string;
+      phoneNumber: string;
+      userAuth: string;
+      userRole: string;
+      remainingQuota: string;
+      usedQuota: string;
+      joinTime: string;
+      userName: string;
+      account: string;
+      registerTime: string;
+    };
+    modals: {
+      addTeam: string;
+      editTeam: string;
+      teamName: string;
+      teamNamePlaceholder: string;
+      teamRoles: string;
+      teamRolesPlaceholder: string;
+      teamRolesHint: string;
+      remark: string;
+      remarkPlaceholder: string;
+      membersList: string;
+      noRole: string;
+      selectInviteType: string;
+      inviteTypeDesc: string;
+      addMembers: string;
+      searchUserPlaceholder: string;
+      selectedCount: string;
+      editMemberRole: string;
+      memberInfo: string;
+      currentRole: string;
+      selectNewRole: string;
+      editMemberAuth: string;
+      currentAuth: string;
+      selectNewAuth: string;
+      allocateQuota: string;
+      memberInfoTitle: string;
+      currentBalance: string;
+      score: string;
+      memberLevel: string;
+      myBalance: string;
+      quotaAmount: string;
+      quotaAmountPlaceholder: string;
+      quotaAmountHint: string;
+    };
+    messages: {
+      fetchTeamListFailed: string;
+      enterTeamName: string;
+      setTeamRoles: string;
+      maxRolesLimit: string;
+      updateTeamSuccess: string;
+      createTeamSuccess: string;
+      deleteTeamConfirm: string;
+      deleteTeamMessage: string;
+      deleteTeamSuccess: string;
+      deleteTeamFailed: string;
+      inviteLinkCopied: string;
+      inviteLinkTip: string;
+      inviteLinkTipText: string;
+      selectMembers: string;
+      addMembersSuccess: string;
+      addMembersFailed: string;
+      updateRoleSuccess: string;
+      updateRoleFailed: string;
+      adminAuthDisabled: string;
+      updateAuthSuccess: string;
+      updateAuthFailed: string;
+      enterValidQuota: string;
+      quotaExceeded: string;
+      getUserIdFailed: string;
+      allocateQuotaSuccess: string;
+      allocateQuotaFailed: string;
+      removeMemberConfirm: string;
+      removeMemberMessage: string;
+      removeMemberSuccess: string;
+      removeMemberFailed: string;
+      getChannelIdFailed: string;
+      fetchInviteUserListFailed: string;
+      noMemberData: string;
+      noUserData: string;
+      isMember: string;
+    };
+    authTypes: {
+      member: string;
+      leader: string;
+      admin: string;
+      unknown: string;
+    };
+    pagination: {
+      totalRecords: string;
+      previous: string;
+      next: string;
+    };
+    quota: {
+      balance: string;
+      score: string;
+      level: string;
+      normalMember: string;
+    };
+  };
+  components: {
+    imageCrop: {
+      title: string;
+      ratio: string;
+      reset: string;
+      cancel: string;
+      confirm: string;
+      cropFailed: string;
+      loadFailed: string;
+    };
+  };
   error: {
     sessionExpired: string;
     unknownError: string;
@@ -1390,6 +1763,7 @@ export const translations: Record<string, Translation> = {
         all: 'All',
         reset: 'Reset',
         hideFilters: 'Hide Filters',
+        showFilters: 'Show Filters',
       },
       display: {
         currency: 'Currency',
@@ -1404,7 +1778,77 @@ export const translations: Record<string, Translation> = {
           calculate: 'Calculate',
           chat: 'Chat',
         }
-      }
+      },
+      compare: {
+        button: 'Model Compare',
+        buttonShort: 'Compare',
+        title: 'Model Comparison',
+        subtitle: 'Select up to 3 models for comparison analysis',
+        modelLabel: 'Model',
+        searchPlaceholder: 'Search and select model...',
+        noResults: 'No matching models found',
+        selectAtLeastOne: 'Please select at least one model to compare',
+        compareFields: {
+          provider: 'Provider',
+          inputPrice: 'Input Price',
+          outputPrice: 'Output Price',
+          contextLength: 'Context Length',
+          billingType: 'Billing Type',
+          tags: 'Tags',
+          description: 'Description',
+        },
+        tableHeader: 'Comparison Item',
+        selectedCount: 'Selected',
+        clearSelection: 'Clear Selection',
+        finishCompare: 'Finish Comparison',
+        loading: 'Loading model plaza...',
+        noModels: 'No model data available',
+        noMatchModels: 'No matching models found',
+        billingTypes: {
+          payPerUse: 'Pay per Use',
+          payPerCall: 'Pay per Call',
+          payPerResource: 'Pay per Resource',
+          payPerSecond: 'Pay per Second',
+          payPerMultimodal: 'Pay per Multimodal',
+          payPerImage: 'Pay per Image',
+          unknown: 'Unknown',
+        },
+      },
+      detail: {
+        title: 'Model Details',
+        type: 'Type',
+        pricing: 'Pricing',
+        priceDetails: 'Price Details',
+        priceTable: 'Price Table',
+        audioOptions: 'Audio Options Price',
+        noAudio: 'No Audio:',
+        withAudio: 'With Audio:',
+        resolutionTable: 'Resolution Price Table',
+        singleSecondPrice: 'Single Second Price:',
+        singleCallPrice: 'Single Call Price:',
+        singleImagePrice: 'Single Image Price:',
+        input: 'Input:',
+        output: 'Output:',
+        cachePrice: 'Cache Price',
+        cacheWrite: 'Cache Write:',
+        cacheRead: 'Cache Read:',
+        modelDescription: 'Model Description',
+        capabilityTags: 'Capability Tags',
+        useForChat: 'Use this model for chat',
+        useForImage: 'Use this model for image generation',
+        useForVideo: 'Use this model for video generation',
+        noDescription: 'No description available',
+        exampleCost: 'Single Image Cost Example (Text to Image)',
+        imageEditCost: 'Single Image Cost Example (Image to Image)',
+        tokenTable: 'Token Consumption Table',
+        quality: 'Quality',
+        tokenConsumption: 'Token Consumption Table',
+      },
+      pagination: {
+        total: 'Total',
+        page: 'Page',
+        perPage: '/ page',
+      },
     },
     createPage: {
       greeting: 'Hi! What do you want to',
@@ -1424,6 +1868,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'API Keys',
         apiDocs: 'API Docs',
         rank: 'Leaderboard',
+        modelsIntro: 'Introduction',
         viralVideo: 'Viral Video',
         digitalHuman: 'Digital Human',
         imgToVideo: 'Image to Video',
@@ -1632,7 +2077,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Generating your masterpiece...',
-        progressStatusShort: 'Generating'
+        progressStatusShort: 'Generating',
+        messages: {
+          requestFailed: 'Request failed, please try again later'
+        }
       },
       digitalHuman: {
         title: 'Digital Human Video Creation',
@@ -2128,6 +2576,62 @@ export const translations: Record<string, Translation> = {
           generateFailed: 'Generation failed: No valid image URL returned',
           unknownError: 'Unknown error occurred'
         }
+      },
+      addMaterialModal: {
+        editFolder: 'Edit Folder',
+        editMaterial: 'Edit Material',
+        newFolder: 'New Folder',
+        addMaterial: 'Add Material',
+        assetType: 'Material Type',
+        loading: 'Loading...',
+        noAssetType: 'No material type selected',
+        noAssetTypes: 'No material types available',
+        uploadFile: 'Upload File',
+        clickOrDragToUpload: 'Click or drag files here to upload',
+        releaseToUpload: 'Release to upload file',
+        supportedFormats: 'Supports',
+        uploading: 'Uploading...',
+        confirmUpload: 'Confirm Upload',
+        audioFile: 'Audio File',
+        folderName: 'Folder Name',
+        materialName: 'Material Name',
+        enterFolderName: 'Enter folder name',
+        enterMaterialName: 'Enter material name',
+        folderTag: 'Folder Tag',
+        materialTag: 'Material Tag',
+        materialTagPlaceholder: 'Material tags, separate multiple tags with commas',
+        materialTagFormat: 'Material tags format: tag1,tag2, separated by English commas!',
+        folderDescription: 'Folder Description',
+        materialDescription: 'Material Description',
+        enterFolderDescription: 'Enter folder description',
+        enterMaterialDescription: 'Enter material description',
+        privateModel: 'Private Model (Visible only to me)',
+        storageLocation: 'Storage Location',
+        personalFiles: 'Personal Files',
+        sharedFiles: 'Shared Files',
+        both: 'Both',
+        personalFolder: 'Personal Folder',
+        storageFolder: 'Storage Folder',
+        selectFolder: 'Select Folder',
+        rootDirectory: 'Root Directory',
+        selectTeam: 'Select Team',
+        sharedFolder: 'Shared Folder',
+        sharedFolderCannotBeRoot: 'Shared files must be in a folder, cannot be saved to root directory',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        selectSharedFolder: 'Select Shared Folder',
+        selectPersonalFolder: 'Select Personal Folder',
+        selectedFolder: 'Selected Folder',
+        messages: {
+          selectTeamFirst: 'Please select a team first',
+          sharedFolderRequired: 'Shared files must be in a folder, cannot be saved to root directory',
+          enterName: 'Please enter a name',
+          uploadFileOrLink: 'Please upload material file or ensure material link exists',
+          selectTeam: 'Please select a team',
+          selectSharedFolder: 'Please select shared folder (cannot save to root directory)',
+          uploadingFile: 'Uploading file...',
+          uploadingMaterial: 'Uploading material...',
+        },
       },
       workshop: {
         title: 'Creation Workshop',
@@ -2635,7 +3139,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Speed',
         price: 'Price (1M)'
       },
-      fetchError: 'Failed to load ranking data'
+      fetchError: 'Failed to load ranking data',
+      metrics: {
+        intelligence: 'Intelligence',
+        coding: 'Coding',
+        math: 'Math',
+        speed: 'Speed'
+      },
+      best: 'Best',
+      allModels: 'All Models',
+      bestIndicator: '(Crown indicates best in this metric)',
+      showMore: 'Show More',
+      collapse: 'Collapse',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Dialogue Settings',
@@ -2701,6 +3217,38 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: 'Failed to delete chat record',
         linkCopied: 'Link copied',
         materialImported: 'Material imported successfully'
+      },
+      aiRoleDefinition: {
+        title: 'Define AI Assistant Role',
+        description: 'Please define the AI assistant\'s role and characteristics, which will affect its reply style and behavior.',
+        label: 'AI Role Definition:',
+        placeholder: 'For example: You are an excellent programming expert, proficient in Python, JavaScript and other programming languages, capable of helping users solve various programming problems...',
+        hint: 'Hint:',
+        tips: [
+          'You can define AI\'s professional field (e.g., programming, design, writing, etc.)',
+          'You can set AI\'s personality traits (e.g., friendly, professional, humorous, etc.)',
+          'You can specify AI\'s reply style (e.g., concise, detailed, creative, etc.)'
+        ],
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        roleLabel: 'AI Role Definition',
+        editRole: 'Edit AI Role',
+        defaultContent: 'You are an excellent AI assistant expert, with rich knowledge and experience, capable of helping users solve various problems.',
+        inputRequired: 'Please enter AI role definition',
+        updateSuccess: 'AI role definition updated'
+      },
+      imageValidation: {
+        sora2Requirements: 'Image dimensions must exactly match output dimensions',
+        sora2CropTitle: 'Crop image to match sora-2 requirements',
+        sora2CropCancel: 'You cancelled cropping',
+        doubaoRequirements: 'Image aspect ratio requirement not met',
+        doubaoRatioHint: 'Please use an image with aspect ratio between 1/3 and 3',
+        minResolution: 'Image resolution too low: width and height must be at least {0} pixels',
+        maxResolution: 'Image resolution too high: width and height must not exceed {0} pixels',
+        loadFailed: 'Failed to load image, please check if file is corrupted',
+        formatNotSupported: 'Image format not supported. Supported formats: ',
+        sizeExceeded: 'File size exceeded limit. Max allowed: ',
+        readFailed: 'Failed to read file',
       }
     },
     keysPage: {
@@ -2830,6 +3378,25 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Net Amount',
       total: 'Total',
       consumedPoints: 'Consumed Points',
+      points: 'Points',
+      pointsBill: 'Points Bill',
+      exportHeaders: {
+        time: 'Time',
+        serviceType: 'Service Type',
+        points: 'Points',
+        status: 'Status',
+        taskId: 'Task ID',
+      },
+      balanceExportHeaders: {
+        time: 'Time',
+        serviceModel: 'Service/Model',
+        type: 'Type',
+        cost: 'Cost(¥)',
+        duration: 'Duration',
+        inputToken: 'Input Token',
+        outputToken: 'Output Token',
+      },
+      balanceBill: 'Balance Bill',
       record: {
         type: 'Type',
         duration: 'Duration',
@@ -2867,11 +3434,26 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Next Page',
         lastPage: 'Last Page',
         recordsPerPage: 'records/page',
+        logsBill: 'Logs Bill',
       },
       exportError: 'Export failed, please try again later',
       exportSuccess: 'Export successful',
       selectTeamFirst: 'Please select a team first',
       unknownService: 'Unknown Service',
+      serviceTypes: {
+        1: 'AI Video Mixing',
+        2: 'Product Digital Human',
+        3: 'Digital Human Video',
+        4: 'Image to Video',
+        5: 'Original Video',
+        6: 'Style Transfer',
+        7: 'AI Image Generation',
+        8: 'Voice Clone',
+        9: 'Custom Digital Human',
+        10: 'Singing Digital Human',
+        11: 'AI Video Face Swap',
+        15: 'Creation Workshop',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -3005,7 +3587,8 @@ export const translations: Record<string, Translation> = {
         quantity: 'Purchase Quantity',
         custom: 'Custom',
         buy: 'Buy Now',
-        contact: 'Contact Us'
+        contact: 'Contact Us',
+        times: 'x'
       },
       serviceAdvantages: {
         title: 'Service Advantages',
@@ -3023,6 +3606,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: 'Payment Successful!',
         thankYou: 'Thank you for your purchase',
         payAmount: 'Payment Amount',
+        invoiceInfo: 'Invoice Information',
         generatingQR: 'Generating QR Code',
         pleaseWait: 'Please wait...',
         step1: 'Open WeChat Scan',
@@ -3047,7 +3631,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: 'Scan to add WeChat',
         customSolution: '🎯 Custom Solutions',
         techSupport: '🔧 Technical Support',
-        dataAnalysis: '📊 Data Analysis'
+        dataAnalysis: '📊 Data Analysis',
+        form: {
+          title: 'Leave Your Information',
+          description: 'Our consultant will contact you soon',
+          name: 'Name',
+          namePlaceholder: 'Please enter your name',
+          email: 'Email',
+          emailPlaceholder: 'Please enter your email (optional)',
+          phone: 'Phone',
+          phonePlaceholder: 'Please enter your phone number',
+          company: 'Company',
+          companyPlaceholder: 'Please enter your company name (optional)',
+          channel: 'How did you find us',
+          channelPlaceholder: 'Please select how you found us',
+          channels: {
+            wechat: 'WeChat',
+            xiaohongshu: 'Xiaohongshu',
+            gongzhonghao: 'WeChat Official Account',
+            douyin: 'Douyin/TikTok',
+            weibo: 'Weibo',
+            search: 'Search Engine',
+            friend: 'Friend Referral',
+            other: 'Other'
+          },
+          message: 'Message',
+          messagePlaceholder: 'Please describe your needs (optional)',
+          submit: 'Submit Now',
+          submitting: 'Submitting...',
+          submitSuccess: 'Submitted successfully, we will contact you soon!',
+          submitError: 'Submission failed, please try again later',
+          successTitle: 'Submitted Successfully!',
+          successMessage: 'Thank you for your inquiry, our professional consultant will contact you within 1-2 business days.',
+          submitAnother: 'Submit Another',
+          errors: {
+            nameRequired: 'Please enter your name',
+            phoneRequired: 'Please enter your phone number',
+            phoneInvalid: 'Please enter a valid phone number',
+            emailInvalid: 'Please enter a valid email address',
+            channelRequired: 'Please select how you found us'
+          }
+        }
       },
       errors: {
         loginRequired: 'Please login first',
@@ -3102,7 +3726,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: 'Please enter invoice header name',
           taxNumberRequired: 'Please enter taxpayer identification number',
           emailRequired: 'Please enter email',
-          emailInvalid: 'Please enter a valid email address'
+          emailInvalid: 'Please enter a valid email address',
+          emailMissingAt: "Please include '@' in the email address. '@' is missing in '{email}'"
         },
         cancel: 'Cancel',
         confirm: 'Confirm'
@@ -3137,6 +3762,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folders',
       totalFiles: 'Files',
       searchInResult: 'Search in result',
+      personalFiles: 'Personal Files',
+      sharedFiles: 'Shared Files',
+      confirmDelete: 'Confirm Deletion',
+      confirmDeleteItem: 'Are you sure you want to delete this {type}?',
+      confirmDeleteSelected: 'Are you sure you want to delete {count} selected {item}?',
+      confirm: 'Confirm',
+      cancel: 'Cancel',
+      folder: 'folder',
+      material: 'material',
+      moveModal: {
+        title: 'Move to',
+        personalFolder: 'Personal Folder',
+        sharedFolder: 'Shared Folder',
+        allFiles: 'All Files',
+        loading: 'Loading...',
+        newFolder: 'New Folder',
+        newFolderPlaceholder: 'New Folder',
+        unnamedFolder: 'Unnamed Folder',
+        noFolders: 'No folders in this directory',
+        enterTeamFolderFirst: 'Please enter team folder before operation',
+        enterTeamFolderBeforeSave: 'Please enter team folder before saving',
+        fileAlreadyInCurrentFolder: 'File is already in current folder, please select another folder',
+        moveToHere: 'Move to here',
+        cancel: 'Cancel',
+        fetchFoldersFailed: 'Failed to get folder list',
+        enterFolderName: 'Please enter folder name',
+        folderCreatedSuccess: 'Folder created successfully',
+        folderCreateFailed: 'Failed to create folder',
+      },
+      messages: {
+        deleteSuccess: 'Deleted successfully',
+        deleteFailed: 'Delete failed',
+        shareSuccess: 'Shared successfully',
+        shareFailedNoTeam: 'Unable to get team information, share failed',
+        moveSuccess: 'Moved successfully',
+        moveFailed: 'Move failed',
+        operationFailed: 'Operation failed',
+        sharedFilesCannotDragToRoot: 'Shared files cannot be dragged to root directory',
+        assetUrlOrNameMissing: 'Asset URL or name does not exist',
+      },
     },
     profilePage: {
       title: 'Personal Center',
@@ -3264,6 +3929,150 @@ export const translations: Record<string, Translation> = {
         fetchFailed: 'Failed to get invitation records'
       }
     },
+    enterprisePage: {
+      title: 'Team Management',
+      subtitle: 'Manage team information, member invitations and role assignments',
+      notSupported: 'Feature Not Supported',
+      notSupportedDesc: 'You have not joined any team yet, please join an enterprise first',
+      buttons: {
+        addTeam: 'Add Team',
+        refresh: 'Refresh',
+        viewMembers: 'View Members',
+        edit: 'Edit',
+        inviteMember: 'Invite Member',
+        addMember: 'Add Member',
+        delete: 'Delete',
+        cancel: 'Cancel',
+        confirm: 'Confirm',
+        close: 'Close',
+        newUser: 'New User (Register)',
+        oldUser: 'Existing User (Login)',
+        editRole: 'Edit Role',
+        editAuth: 'Edit Permission',
+        allocate: 'Allocate',
+        remove: 'Remove'
+      },
+      table: {
+        teamName: 'Team Name',
+        searchPlaceholder: 'Search team name',
+        createTime: 'Created Time',
+        status: 'Status',
+        actions: 'Actions',
+        normal: 'Normal',
+        disabled: 'Disabled',
+        noData: 'No team data',
+        userInfo: 'User Info',
+        nickName: 'Nickname',
+        phoneNumber: 'Phone Number',
+        userAuth: 'User Permission',
+        userRole: 'User Role',
+        remainingQuota: 'Remaining Quota',
+        usedQuota: 'Used Quota',
+        joinTime: 'Join Time',
+        userName: 'User Name',
+        account: 'Account',
+        registerTime: 'Register Time'
+      },
+      modals: {
+        addTeam: 'Add Team',
+        editTeam: 'Edit Team',
+        teamName: 'Team Name',
+        teamNamePlaceholder: 'Please enter team name',
+        teamRoles: 'Team Roles',
+        teamRolesPlaceholder: 'Please enter team roles, e.g.: Developer, Tester, Observer',
+        teamRolesHint: '(Please enter team roles, press Enter or comma to add, a team supports up to 10 roles)',
+        remark: 'Remark',
+        remarkPlaceholder: 'Please enter team remark',
+        membersList: 'Team Members List',
+        noRole: 'No Role',
+        selectInviteType: 'Select Invite Type',
+        inviteTypeDesc: 'Please select whether to invite a new user or an existing user to join the team',
+        addMembers: 'Add Team Members',
+        searchUserPlaceholder: 'Search username or email',
+        selectedCount: 'Selected {count} members',
+        editMemberRole: 'Edit Member Role',
+        memberInfo: 'Member Information',
+        currentRole: 'Current Role:',
+        selectNewRole: 'Select New Role',
+        editMemberAuth: 'Edit Member Permission',
+        currentAuth: 'Current Permission:',
+        selectNewAuth: 'Select New Permission',
+        allocateQuota: 'Allocate Quota to Team Member',
+        memberInfoTitle: 'Member Information',
+        currentBalance: 'Current Balance:',
+        score: 'Score:',
+        memberLevel: 'Member Level:',
+        myBalance: 'My Balance',
+        quotaAmount: 'Quota Amount (RMB)',
+        quotaAmountPlaceholder: 'Please enter quota amount',
+        quotaAmountHint: 'Quota amount cannot exceed your remaining balance ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: 'Failed to fetch team list',
+        enterTeamName: 'Please enter team name',
+        setTeamRoles: 'Please set team roles',
+        maxRolesLimit: 'Team roles support up to 10',
+        updateTeamSuccess: 'Team updated successfully',
+        createTeamSuccess: 'Team created successfully',
+        deleteTeamConfirm: 'Confirm Delete',
+        deleteTeamMessage: 'Are you sure you want to delete team "{teamName}"?\nThis will also delete all related data including team roles, team members, team folders, etc. This operation cannot be undone!',
+        deleteTeamSuccess: 'Team deleted successfully',
+        deleteTeamFailed: 'Failed to delete team',
+        inviteLinkCopied: 'Invite link copied to clipboard',
+        inviteLinkTip: 'Invite Link: {url}\n\nTip: If the invited account is currently logged in, please log out first before using the invite link to join the team.',
+        inviteLinkTipText: 'If the invited account is currently logged in, please log out first before using the invite link to join the team.',
+        selectMembers: 'Please select members to add',
+        addMembersSuccess: 'Successfully added {count} members',
+        addMembersFailed: 'Failed to add members',
+        updateRoleSuccess: 'Role updated successfully',
+        updateRoleFailed: 'Failed to update role',
+        adminAuthDisabled: 'Admin permission has been disabled. Channel owners are administrators by default',
+        updateAuthSuccess: 'Permission updated successfully',
+        updateAuthFailed: 'Failed to update permission',
+        enterValidQuota: 'Please enter a valid quota amount',
+        quotaExceeded: 'Quota amount cannot exceed ¥{amount} (0.01 RMB precision margin reserved)',
+        getUserIdFailed: 'Unable to get user ID',
+        allocateQuotaSuccess: 'Quota allocated successfully',
+        allocateQuotaFailed: 'Failed to allocate quota',
+        removeMemberConfirm: 'Confirm Remove',
+        removeMemberMessage: 'Are you sure you want to remove member "{userName}"?',
+        removeMemberSuccess: 'Member removed successfully',
+        removeMemberFailed: 'Failed to remove member',
+        getChannelIdFailed: 'Failed to get channel ID, please confirm the team has been associated with a channel',
+        fetchInviteUserListFailed: 'Failed to fetch invite user list',
+        noMemberData: 'No member data',
+        noUserData: 'No user data',
+        isMember: 'Already a member'
+      },
+      authTypes: {
+        member: 'Member',
+        leader: 'Leader',
+        admin: 'Admin',
+        unknown: 'Unknown'
+      },
+      pagination: {
+        totalRecords: 'Total {total} records',
+        previous: 'Previous',
+        next: 'Next'
+      },
+      quota: {
+        balance: 'Balance:',
+        score: 'Score:',
+        level: 'Level:',
+        normalMember: 'Normal Member'
+      }
+    },
+    components: {
+      imageCrop: {
+        title: 'Crop Image',
+        ratio: 'Aspect Ratio',
+        reset: 'Reset',
+        cancel: 'Cancel',
+        confirm: 'Confirm Crop',
+        cropFailed: 'Crop failed',
+        loadFailed: 'Failed to load image',
+      },
+    },
     footer: {
       privacy: 'Privacy',
       terms: 'Terms',
@@ -3353,6 +4162,7 @@ export const translations: Record<string, Translation> = {
         all: '全部',
         reset: '重置',
         hideFilters: '隐藏筛选',
+        showFilters: '显示筛选',
       },
       display: {
         currency: '货币:',
@@ -3367,7 +4177,77 @@ export const translations: Record<string, Translation> = {
           calculate: '按量计费',
           chat: '对话',
         }
-      }
+      },
+      compare: {
+        button: '模型对比',
+        buttonShort: '对比',
+        title: '模型对比',
+        subtitle: '选择最多3个模型进行对比分析',
+        modelLabel: '模型',
+        searchPlaceholder: '搜索并选择模型...',
+        noResults: '没有找到匹配的模型',
+        selectAtLeastOne: '请选择至少一个模型进行对比',
+        compareFields: {
+          provider: '供应商',
+          inputPrice: '输入价格',
+          outputPrice: '输出价格',
+          contextLength: '上下文长度',
+          billingType: '计费类型',
+          tags: '标签',
+          description: '描述',
+        },
+        tableHeader: '对比项',
+        selectedCount: '已选择',
+        clearSelection: '清空选择',
+        finishCompare: '完成对比',
+        loading: '正在加载模型广场...',
+        noModels: '暂无模型数据',
+        noMatchModels: '没有找到匹配的模型',
+        billingTypes: {
+          payPerUse: '按量计费',
+          payPerCall: '按次计费',
+          payPerResource: '按资源类型计费',
+          payPerSecond: '按秒计费',
+          payPerMultimodal: '按全模态计费',
+          payPerImage: '按张计费',
+          unknown: '未知',
+        },
+      },
+      detail: {
+        title: '模型详情',
+        type: '类型',
+        pricing: '定价',
+        priceDetails: '价格详情',
+        priceTable: '价格表',
+        audioOptions: '音频选项价格',
+        noAudio: '不含音频:',
+        withAudio: '含音频:',
+        resolutionTable: '分辨率价格表',
+        singleSecondPrice: '单秒价格:',
+        singleCallPrice: '单次调用:',
+        singleImagePrice: '单张生成:',
+        input: '输入:',
+        output: '输出:',
+        cachePrice: '缓存价格',
+        cacheWrite: '缓存写入:',
+        cacheRead: '缓存读取:',
+        modelDescription: '模型描述',
+        capabilityTags: '能力标签',
+        useForChat: '使用该模型对话',
+        useForImage: '使用该模型生成图片',
+        useForVideo: '使用该模型生成视频',
+        noDescription: '暂无描述',
+        exampleCost: '单张成本示例 (文生图)',
+        imageEditCost: '单张成本示例 (图生图)',
+        tokenTable: 'Token 消耗表',
+        quality: '质量',
+        tokenConsumption: 'Token 消耗表',
+      },
+      pagination: {
+        total: '共',
+        page: '第',
+        perPage: '/ 页',
+      },
     },
     createPage: {
       greeting: 'Hi! 今天想',
@@ -3387,6 +4267,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'API密钥',
         apiDocs: 'API操作文档',
         rank: '排行榜',
+        modelsIntro: '简介',
         viralVideo: 'AI混剪视频',
         digitalHuman: '数字人视频',
         imgToVideo: '图生视频',
@@ -3402,7 +4283,7 @@ export const translations: Record<string, Translation> = {
         videoTranslation: '视频翻译',
         productReplace: '产品数字人',
         assets: '素材管理',
-        pricing: '定价列表',
+        pricing: '费用充值',
         expenses: '我的费用',
         profile: '个人中心',
         footer: {
@@ -3596,7 +4477,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: '正在生成您的杰作...',
-        progressStatusShort: '生成中'
+        progressStatusShort: '生成中',
+        messages: {
+          requestFailed: '请求失败, 请稍后重试'
+        }
       },
       digitalHuman: {
         title: '数字人视频创作',
@@ -4092,6 +4976,62 @@ export const translations: Record<string, Translation> = {
           generateFailed: '生成失败：未返回有效的图片URL',
           unknownError: '发生未知错误'
         }
+      },
+      addMaterialModal: {
+        editFolder: '编辑文件夹',
+        editMaterial: '编辑素材',
+        newFolder: '新建文件夹',
+        addMaterial: '添加素材',
+        assetType: '素材类型',
+        loading: '加载中...',
+        noAssetType: '未选择素材类型',
+        noAssetTypes: '暂无素材类型',
+        uploadFile: '上传文件',
+        clickOrDragToUpload: '点击或拖拽文件到此处上传',
+        releaseToUpload: '松开以上传文件',
+        supportedFormats: '支持',
+        uploading: '上传中...',
+        confirmUpload: '确认上传',
+        audioFile: '音频文件',
+        folderName: '文件夹名称',
+        materialName: '素材名称',
+        enterFolderName: '请输入文件夹名称',
+        enterMaterialName: '请输入素材名称',
+        folderTag: '文件夹标签',
+        materialTag: '素材标签',
+        materialTagPlaceholder: '素材标签，多个标签用逗号分隔',
+        materialTagFormat: '素材标签格式：标签1,标签2，标签之间用英文逗号隔开！',
+        folderDescription: '文件夹描述',
+        materialDescription: '素材描述',
+        enterFolderDescription: '请输入文件夹描述',
+        enterMaterialDescription: '请输入素材描述',
+        privateModel: '私有模型 (仅自己可见)',
+        storageLocation: '存储位置',
+        personalFiles: '个人文件',
+        sharedFiles: '共享文件',
+        both: '两者都放',
+        personalFolder: '个人文件夹',
+        storageFolder: '存储文件夹',
+        selectFolder: '选择文件夹',
+        rootDirectory: '根目录',
+        selectTeam: '选择团队',
+        sharedFolder: '共享文件夹',
+        sharedFolderCannotBeRoot: '共享文件必须选择文件夹，不允许保存到根目录',
+        cancel: '取消',
+        confirm: '确定',
+        selectSharedFolder: '选择共享文件夹',
+        selectPersonalFolder: '选择个人文件夹',
+        selectedFolder: '已选文件夹',
+        messages: {
+          selectTeamFirst: '请先选择团队',
+          sharedFolderRequired: '共享文件必须选择文件夹，不能保存到根目录',
+          enterName: '请输入名称',
+          uploadFileOrLink: '请上传素材文件或确保素材链接存在',
+          selectTeam: '请选择团队',
+          selectSharedFolder: '请选择共享文件夹（不能保存到根目录）',
+          uploadingFile: '正在上传文件...',
+          uploadingMaterial: '正在上传素材...',
+        },
       },
       workshop: {
         title: '创作工坊',
@@ -4599,7 +5539,19 @@ export const translations: Record<string, Translation> = {
         speed: '速度',
         price: '价格（1M）'
       },
-      fetchError: '排行榜数据加载失败'
+      fetchError: '排行榜数据加载失败',
+      metrics: {
+        intelligence: '智能指数',
+        coding: '编码能力',
+        math: '数学能力',
+        speed: '推理速度'
+      },
+      best: '最佳',
+      allModels: '全部模型',
+      bestIndicator: '（表示该指标最佳）',
+      showMore: '展示更多',
+      collapse: '收起',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: '对话设置',
@@ -4665,6 +5617,38 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: '删除对话记录失败',
         linkCopied: '链接已复制',
         materialImported: '素材导入成功'
+      },
+      aiRoleDefinition: {
+        title: '定义AI助手角色',
+        description: '请定义AI助手的角色和特点，这将影响AI的回复风格和行为方式。',
+        label: 'AI角色定义：',
+        placeholder: '例如：你是一位优秀的编程专家，擅长Python、JavaScript等编程语言，能够帮助用户解决各种编程问题...',
+        hint: '提示：',
+        tips: [
+          '可以定义AI的专业领域（如编程、设计、写作等）',
+          '可以设置AI的性格特点（如友好、专业、幽默等）',
+          '可以指定AI的回复风格（如简洁、详细、创意等）'
+        ],
+        cancel: '取消',
+        confirm: '确定',
+        roleLabel: 'AI角色定义',
+        editRole: '编辑AI角色',
+        defaultContent: '你是一位优秀的AI助手专家，具有丰富的知识和经验，能够帮助用户解决各种问题。',
+        inputRequired: '请输入AI角色定义',
+        updateSuccess: 'AI角色定义已更新'
+      },
+      imageValidation: {
+        sora2Requirements: '图片尺寸必须完全匹配输出尺寸',
+        sora2CropTitle: '裁剪图片以符合 sora-2 要求',
+        sora2CropCancel: '您已取消裁剪',
+        doubaoRequirements: '图片宽高比不符合要求',
+        doubaoRatioHint: '请使用宽高比在 1/3 到 3 之间的图片',
+        minResolution: '图片分辨率不符合要求：宽高需至少 {0} 像素',
+        maxResolution: '图片分辨率不符合要求：宽高需不超过 {0} 像素',
+        loadFailed: '图片加载失败，请检查文件是否损坏',
+        readFailed: '文件读取失败',
+        formatNotSupported: '图片格式不支持。仅支持：',
+        sizeExceeded: '文件大小超过限制。最大允许：',
       }
     },
     keysPage: {
@@ -4886,7 +5870,8 @@ export const translations: Record<string, Translation> = {
         quantity: '购买数量',
         custom: '自定义',
         buy: '立即购买',
-        contact: '联系我们'
+        contact: '联系我们',
+        times: '倍'
       },
       serviceAdvantages: {
         title: '服务优势',
@@ -4904,6 +5889,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: '支付成功！',
         thankYou: '感谢您的购买',
         payAmount: '支付金额',
+        invoiceInfo: '发票信息',
         generatingQR: '正在生成支付二维码',
         pleaseWait: '请稍候...',
         step1: '打开微信扫一扫',
@@ -4928,7 +5914,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: '扫码添加企业微信',
         customSolution: '🎯 定制化方案',
         techSupport: '🔧 技术支持',
-        dataAnalysis: '📊 数据分析'
+        dataAnalysis: '📊 数据分析',
+        form: {
+          title: '留下您的信息',
+          description: '专业顾问将尽快与您联系',
+          name: '姓名',
+          namePlaceholder: '请输入您的姓名',
+          email: '邮箱',
+          emailPlaceholder: '请输入您的邮箱（选填）',
+          phone: '电话',
+          phonePlaceholder: '请输入您的手机号码',
+          company: '公司名称',
+          companyPlaceholder: '请输入您的公司名称（选填）',
+          channel: '了解渠道',
+          channelPlaceholder: '请选择您是如何了解我们的',
+          channels: {
+            wechat: '微信',
+            xiaohongshu: '小红书',
+            gongzhonghao: '公众号',
+            douyin: '抖音',
+            weibo: '微博',
+            search: '搜索引擎',
+            friend: '朋友推荐',
+            other: '其他'
+          },
+          message: '留言',
+          messagePlaceholder: '请描述您的需求（选填）',
+          submit: '立即提交',
+          submitting: '提交中...',
+          submitSuccess: '提交成功，我们会尽快与您联系！',
+          submitError: '提交失败，请稍后重试',
+          successTitle: '提交成功！',
+          successMessage: '感谢您的咨询，我们的专业顾问会在1-2个工作日内与您联系。',
+          submitAnother: '继续提交',
+          errors: {
+            nameRequired: '请输入姓名',
+            phoneRequired: '请输入电话',
+            phoneInvalid: '请输入有效的手机号码',
+            emailInvalid: '请输入有效的邮箱地址',
+            channelRequired: '请选择了解渠道'
+          }
+        }
       },
       errors: {
         loginRequired: '请先登录',
@@ -4983,7 +6009,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: '请输入发票抬头名称',
           taxNumberRequired: '请输入纳税人识别号',
           emailRequired: '请输入邮箱',
-          emailInvalid: '请输入有效的邮箱地址'
+          emailInvalid: '请输入有效的邮箱地址',
+          emailMissingAt: "邮箱地址中必须包含 '@' 符号，'{email}' 中缺少 '@'"
         },
         cancel: '取消',
         confirm: '确定'
@@ -5018,6 +6045,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: '个文件夹',
       totalFiles: '个文件',
       searchInResult: '筛选搜索',
+      personalFiles: '个人文件',
+      sharedFiles: '共享文件',
+      confirmDelete: '确认删除',
+      confirmDeleteItem: '确认删除该{type}吗？',
+      confirmDeleteSelected: '确认删除选中的 {count} 个素材吗？',
+      confirm: '确定',
+      cancel: '取消',
+      folder: '文件夹',
+      material: '素材',
+      moveModal: {
+        title: '移动到',
+        personalFolder: '个人文件夹',
+        sharedFolder: '共享文件夹',
+        allFiles: '全部文件',
+        loading: '加载中...',
+        newFolder: '新建文件夹',
+        newFolderPlaceholder: '新建文件夹',
+        unnamedFolder: '未命名文件夹',
+        noFolders: '该目录下没有文件夹',
+        enterTeamFolderFirst: '请进入团队文件夹后再进行操作',
+        enterTeamFolderBeforeSave: '请进入团队文件夹后再保存',
+        fileAlreadyInCurrentFolder: '文件已在当前文件夹中，请选择其他文件夹',
+        moveToHere: '移动到此处',
+        cancel: '取消',
+        fetchFoldersFailed: '获取文件夹列表失败',
+        enterFolderName: '请输入文件夹名称',
+        folderCreatedSuccess: '文件夹创建成功',
+        folderCreateFailed: '创建文件夹失败',
+      },
+      messages: {
+        deleteSuccess: '删除成功',
+        deleteFailed: '删除失败',
+        shareSuccess: '分享成功',
+        shareFailedNoTeam: '无法获取团队信息，分享失败',
+        moveSuccess: '移动成功',
+        moveFailed: '移动失败',
+        operationFailed: '操作失败',
+        sharedFilesCannotDragToRoot: '共享文件不支持拖拽到根目录',
+        assetUrlOrNameMissing: '素材URL或名称不存在',
+      },
     },
     expensesPage: {
       title: '费用中心',
@@ -5059,6 +6126,25 @@ export const translations: Record<string, Translation> = {
       netAmount: '净额',
       total: '合计',
       consumedPoints: '消耗积分',
+      points: '积分',
+      pointsBill: '积分账单',
+      exportHeaders: {
+        time: '时间',
+        serviceType: '服务类型',
+        points: '积分',
+        status: '状态',
+        taskId: '任务ID',
+      },
+      balanceExportHeaders: {
+        time: '时间',
+        serviceModel: '服务/模型',
+        type: '类型',
+        cost: '费用(¥)',
+        duration: '用时',
+        inputToken: '输入Token',
+        outputToken: '输出Token',
+      },
+      balanceBill: '余额账单',
       record: {
         type: '类型',
         duration: '用时',
@@ -5096,11 +6182,26 @@ export const translations: Record<string, Translation> = {
         nextPage: '下一页',
         lastPage: '最后一页',
         recordsPerPage: '条/页',
+        logsBill: '日志账单',
       },
       exportError: '导出失败，请稍后重试',
       exportSuccess: '导出成功',
       selectTeamFirst: '请先选择团队',
       unknownService: '未知服务',
+      serviceTypes: {
+        1: 'AI混剪视频',
+        2: '产品数字人',
+        3: '数字人视频',
+        4: '图生视频',
+        5: '原创视频',
+        6: '万物迁移',
+        7: 'AI生图',
+        8: '声音克隆',
+        9: '自定义数字人',
+        10: '唱歌数字人',
+        11: 'AI视频换脸',
+        15: '创作工坊',
+      },
     },
     profilePage: {
       title: '个人中心',
@@ -5289,6 +6390,150 @@ export const translations: Record<string, Translation> = {
         indonesia: '印度尼西亚'
       }
     },
+    enterprisePage: {
+      title: '团队管理',
+      subtitle: '管理团队信息、成员邀请和角色分配',
+      notSupported: '暂不支持该功能',
+      notSupportedDesc: '您还未加入任何团队，请先加入企业',
+      buttons: {
+        addTeam: '新增团队',
+        refresh: '刷新',
+        viewMembers: '查看成员',
+        edit: '编辑',
+        inviteMember: '邀请成员',
+        addMember: '添加成员',
+        delete: '删除',
+        cancel: '取消',
+        confirm: '确定',
+        close: '关闭',
+        newUser: '新用户（注册）',
+        oldUser: '老用户（登录）',
+        editRole: '编辑角色',
+        editAuth: '修改权限',
+        allocate: '配额',
+        remove: '移除'
+      },
+      table: {
+        teamName: '团队名称',
+        searchPlaceholder: '搜索团队名称',
+        createTime: '创建时间',
+        status: '状态',
+        actions: '操作',
+        normal: '正常',
+        disabled: '禁用',
+        noData: '暂无团队数据',
+        userInfo: '用户信息',
+        nickName: '昵称',
+        phoneNumber: '手机号码',
+        userAuth: '用户权限',
+        userRole: '用户角色',
+        remainingQuota: '剩余额度',
+        usedQuota: '已用额度',
+        joinTime: '加入时间',
+        userName: '用户名',
+        account: '用户账号',
+        registerTime: '注册时间'
+      },
+      modals: {
+        addTeam: '新增团队',
+        editTeam: '编辑团队',
+        teamName: '团队名称',
+        teamNamePlaceholder: '请输入团队名称',
+        teamRoles: '团队角色',
+        teamRolesPlaceholder: '请输入团队角色，如:开发者、测试员、观察者',
+        teamRolesHint: '（请输入团队角色，按回车或逗号添加，一个团队最多支持10个角色）',
+        remark: '备注',
+        remarkPlaceholder: '请输入团队备注',
+        membersList: '团队成员列表',
+        noRole: '暂无角色',
+        selectInviteType: '选择邀请对象',
+        inviteTypeDesc: '请选择要邀请新用户还是老用户加入团队',
+        addMembers: '添加团队成员',
+        searchUserPlaceholder: '搜索用户名或邮箱',
+        selectedCount: '已选择 {count} 个成员',
+        editMemberRole: '编辑成员角色',
+        memberInfo: '成员信息',
+        currentRole: '当前角色：',
+        selectNewRole: '选择新角色',
+        editMemberAuth: '修改成员权限',
+        currentAuth: '当前权限：',
+        selectNewAuth: '选择新权限',
+        allocateQuota: '配额给团队成员',
+        memberInfoTitle: '成员信息',
+        currentBalance: '当前余额：',
+        score: '积分：',
+        memberLevel: '会员等级：',
+        myBalance: '我的余额',
+        quotaAmount: '配额金额（人民币）',
+        quotaAmountPlaceholder: '请输入配额金额',
+        quotaAmountHint: '配额金额不能超过您的剩余余额 ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: '获取团队列表失败',
+        enterTeamName: '请输入团队名称',
+        setTeamRoles: '请设置团队角色',
+        maxRolesLimit: '团队角色最多支持10个',
+        updateTeamSuccess: '编辑团队成功',
+        createTeamSuccess: '新增团队成功',
+        deleteTeamConfirm: '确认删除',
+        deleteTeamMessage: '确定要删除团队"{teamName}"吗？\n删除后将同时删除团队角色、团队成员、团队文件夹等所有相关数据，此操作不可恢复！',
+        deleteTeamSuccess: '删除团队成功',
+        deleteTeamFailed: '删除团队失败',
+        inviteLinkCopied: '邀请链接已复制到剪贴板',
+        inviteLinkTip: '邀请链接：{url}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。',
+        inviteLinkTipText: '提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。',
+        selectMembers: '请选择要添加的成员',
+        addMembersSuccess: '成功添加 {count} 个成员',
+        addMembersFailed: '添加成员失败',
+        updateRoleSuccess: '角色更新成功',
+        updateRoleFailed: '角色更新失败',
+        adminAuthDisabled: '管理员权限已下架，渠道拥有者默认为管理员',
+        updateAuthSuccess: '权限更新成功',
+        updateAuthFailed: '权限更新失败',
+        enterValidQuota: '请输入有效的配额金额',
+        quotaExceeded: '配额金额不能超过 ¥{amount}（已预留0.01元精度余量）',
+        getUserIdFailed: '无法获取用户ID',
+        allocateQuotaSuccess: '配额成功',
+        allocateQuotaFailed: '配额失败',
+        removeMemberConfirm: '确认移除',
+        removeMemberMessage: '确认要移除成员"{userName}"吗？',
+        removeMemberSuccess: '移除成员成功',
+        removeMemberFailed: '移除成员失败',
+        getChannelIdFailed: '获取渠道ID失败，请确认团队已关联渠道',
+        fetchInviteUserListFailed: '获取邀请用户列表失败',
+        noMemberData: '暂无成员数据',
+        noUserData: '暂无用户数据',
+        isMember: '已是成员'
+      },
+      authTypes: {
+        member: '成员',
+        leader: 'leader',
+        admin: '管理员',
+        unknown: '未知'
+      },
+      pagination: {
+        totalRecords: '共 {total} 条记录',
+        previous: '上一页',
+        next: '下一页'
+      },
+      quota: {
+        balance: '余额：',
+        score: '积分：',
+        level: '等级：',
+        normalMember: '普通会员'
+      }
+    },
+    components: {
+      imageCrop: {
+        title: '裁剪图片',
+        ratio: '裁剪比例',
+        reset: '重置',
+        cancel: '取消',
+        confirm: '确认裁剪',
+        cropFailed: '裁剪失败',
+        loadFailed: '图片加载失败',
+      },
+    },
     error: {
       sessionExpired: '无效的会话，或者会话已过期，请重新登录。',
       unknownError: '未知错误',
@@ -5350,6 +6595,7 @@ export const translations: Record<string, Translation> = {
         all: 'Semua',
         reset: 'Reset',
         hideFilters: 'Sembunyikan Filter',
+        showFilters: 'Tampilkan Filter',
       },
       display: {
         currency: 'Mata Uang',
@@ -5364,7 +6610,77 @@ export const translations: Record<string, Translation> = {
           calculate: 'Hitung',
           chat: 'Chat',
         }
-      }
+      },
+      compare: {
+        button: 'Bandingkan Model',
+        buttonShort: 'Bandingkan',
+        title: 'Perbandingan Model',
+        subtitle: 'Pilih hingga 3 model untuk analisis perbandingan',
+        modelLabel: 'Model',
+        searchPlaceholder: 'Cari dan pilih model...',
+        noResults: 'Tidak ada model yang cocok ditemukan',
+        selectAtLeastOne: 'Silakan pilih setidaknya satu model untuk dibandingkan',
+        compareFields: {
+          provider: 'Penyedia',
+          inputPrice: 'Harga Input',
+          outputPrice: 'Harga Output',
+          contextLength: 'Panjang Konteks',
+          billingType: 'Jenis Penagihan',
+          tags: 'Tag',
+          description: 'Deskripsi',
+        },
+        tableHeader: 'Item Perbandingan',
+        selectedCount: 'Dipilih',
+        clearSelection: 'Hapus Pilihan',
+        finishCompare: 'Selesai Membandingkan',
+        loading: 'Memuat plaza model...',
+        noModels: 'Tidak ada data model tersedia',
+        noMatchModels: 'Tidak ada model yang cocok ditemukan',
+        billingTypes: {
+          payPerUse: 'Bayar per Penggunaan',
+          payPerCall: 'Bayar per Panggilan',
+          payPerResource: 'Bayar per Sumber Daya',
+          payPerSecond: 'Bayar per Detik',
+          payPerMultimodal: 'Bayar per Multimodal',
+          payPerImage: 'Bayar per Gambar',
+          unknown: 'Tidak Diketahui',
+        },
+      },
+      detail: {
+        title: 'Detail Model',
+        type: 'Jenis',
+        pricing: 'Harga',
+        priceDetails: 'Detail Harga',
+        priceTable: 'Tabel Harga',
+        audioOptions: 'Harga Opsi Audio',
+        noAudio: 'Tanpa Audio:',
+        withAudio: 'Dengan Audio:',
+        resolutionTable: 'Tabel Harga Resolusi',
+        singleSecondPrice: 'Harga Per Detik:',
+        singleCallPrice: 'Harga Per Panggilan:',
+        singleImagePrice: 'Harga Per Gambar:',
+        input: 'Input:',
+        output: 'Output:',
+        cachePrice: 'Harga Cache',
+        cacheWrite: 'Tulis Cache:',
+        cacheRead: 'Baca Cache:',
+        modelDescription: 'Deskripsi Model',
+        capabilityTags: 'Tag Kemampuan',
+        useForChat: 'Gunakan model ini untuk chat',
+        useForImage: 'Gunakan model ini untuk pembuatan gambar',
+        useForVideo: 'Gunakan model ini untuk pembuatan video',
+        noDescription: 'Tidak ada deskripsi tersedia',
+        exampleCost: 'Contoh Biaya Gambar Tunggal (Teks ke Gambar)',
+        imageEditCost: 'Contoh Biaya Gambar Tunggal (Gambar ke Gambar)',
+        tokenTable: 'Tabel Konsumsi Token',
+        quality: 'Kualitas',
+        tokenConsumption: 'Tabel Konsumsi Token',
+      },
+      pagination: {
+        total: 'Total',
+        page: 'Halaman',
+        perPage: '/ halaman',
+      },
     },
     createPage: {
       greeting: 'Hai! Apa yang ingin Anda',
@@ -5384,6 +6700,7 @@ export const translations: Record<string, Translation> = {
         apiKeys: 'Kunci API',
         apiDocs: 'Dokumen API',
         rank: 'Papan Peringkat',
+        modelsIntro: 'Pengantar',
         viralVideo: 'Video Viral',
         digitalHuman: 'Manusia Digital',
         imgToVideo: 'Gambar ke Video',
@@ -5592,7 +6909,10 @@ export const translations: Record<string, Translation> = {
           }
         },
         generating: 'Membuat karya agung Anda...',
-        progressStatusShort: 'Membuat'
+        progressStatusShort: 'Membuat',
+        messages: {
+          requestFailed: 'Permintaan gagal, silakan coba lagi nanti'
+        }
       },
       digitalHuman: {
         title: 'Pembuatan Video Manusia Digital',
@@ -6025,6 +7345,62 @@ export const translations: Record<string, Translation> = {
           useImageFailed: 'Gagal menggunakan gambar sebagai input'
         }
       },
+      addMaterialModal: {
+        editFolder: 'Edit Folder',
+        editMaterial: 'Edit Materi',
+        newFolder: 'Folder Baru',
+        addMaterial: 'Tambah Materi',
+        assetType: 'Jenis Materi',
+        loading: 'Memuat...',
+        noAssetType: 'Tidak ada jenis materi yang dipilih',
+        noAssetTypes: 'Tidak ada jenis materi tersedia',
+        uploadFile: 'Unggah File',
+        clickOrDragToUpload: 'Klik atau seret file ke sini untuk mengunggah',
+        releaseToUpload: 'Lepaskan untuk mengunggah file',
+        supportedFormats: 'Mendukung',
+        uploading: 'Mengunggah...',
+        confirmUpload: 'Konfirmasi Unggah',
+        audioFile: 'File Audio',
+        folderName: 'Nama Folder',
+        materialName: 'Nama Materi',
+        enterFolderName: 'Masukkan nama folder',
+        enterMaterialName: 'Masukkan nama materi',
+        folderTag: 'Tag Folder',
+        materialTag: 'Tag Materi',
+        materialTagPlaceholder: 'Tag materi, pisahkan beberapa tag dengan koma',
+        materialTagFormat: 'Format tag materi: tag1,tag2, dipisahkan dengan koma bahasa Inggris!',
+        folderDescription: 'Deskripsi Folder',
+        materialDescription: 'Deskripsi Materi',
+        enterFolderDescription: 'Masukkan deskripsi folder',
+        enterMaterialDescription: 'Masukkan deskripsi materi',
+        privateModel: 'Model Pribadi (Hanya terlihat oleh saya)',
+        storageLocation: 'Lokasi Penyimpanan',
+        personalFiles: 'File Pribadi',
+        sharedFiles: 'File Bersama',
+        both: 'Keduanya',
+        personalFolder: 'Folder Pribadi',
+        storageFolder: 'Folder Penyimpanan',
+        selectFolder: 'Pilih Folder',
+        rootDirectory: 'Direktori Root',
+        selectTeam: 'Pilih Tim',
+        sharedFolder: 'Folder Bersama',
+        sharedFolderCannotBeRoot: 'File bersama harus berada di folder, tidak dapat disimpan ke direktori root',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        selectSharedFolder: 'Pilih Folder Bersama',
+        selectPersonalFolder: 'Pilih Folder Pribadi',
+        selectedFolder: 'Folder Terpilih',
+        messages: {
+          selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
+          sharedFolderRequired: 'File bersama harus berada di folder, tidak dapat disimpan ke direktori root',
+          enterName: 'Silakan masukkan nama',
+          uploadFileOrLink: 'Silakan unggah file materi atau pastikan tautan materi ada',
+          selectTeam: 'Silakan pilih tim',
+          selectSharedFolder: 'Silakan pilih folder bersama (tidak dapat menyimpan ke direktori root)',
+          uploadingFile: 'Mengunggah file...',
+          uploadingMaterial: 'Mengunggah materi...',
+        },
+      },
       workshop: {
         title: 'Workshop Kreatif',
         description: 'Jelajahi alat AI kreatif',
@@ -6134,7 +7510,19 @@ export const translations: Record<string, Translation> = {
         speed: 'Kecepatan',
         price: 'Harga (1M)'
       },
-      fetchError: 'Gagal memuat data peringkat'
+      fetchError: 'Gagal memuat data peringkat',
+      metrics: {
+        intelligence: 'Kecerdasan',
+        coding: 'Pemrograman',
+        math: 'Matematika',
+        speed: 'Kecepatan'
+      },
+      best: 'Terbaik',
+      allModels: 'Semua Model',
+      bestIndicator: '(Mahkota menunjukkan yang terbaik dalam metrik ini)',
+      showMore: 'Tampilkan Lebih Banyak',
+      collapse: 'Tutup',
+      top10: 'TOP 10'
     },
     chatPage: {
       settingsTitle: 'Pengaturan Dialog',
@@ -6200,6 +7588,38 @@ export const translations: Record<string, Translation> = {
         deleteRecordFailed: 'Gagal menghapus catatan obrolan',
         linkCopied: 'Tautan disalin',
         materialImported: 'Materi berhasil diimpor'
+      },
+      aiRoleDefinition: {
+        title: 'Definisikan Peran Asisten AI',
+        description: 'Silakan definisikan peran dan karakteristik asisten AI, ini akan mempengaruhi gaya balasan dan perilaku AI.',
+        label: 'Definisi Peran AI:',
+        placeholder: 'Misalnya: Anda adalah ahli pemrograman yang sangat baik, mahir dalam Python, JavaScript dan bahasa pemrograman lainnya, mampu membantu pengguna menyelesaikan berbagai masalah pemrograman...',
+        hint: 'Petunjuk:',
+        tips: [
+          'Anda dapat mendefinisikan bidang profesional AI (misalnya, pemrograman, desain, penulisan, dll.)',
+          'Anda dapat mengatur karakteristik kepribadian AI (misalnya, ramah, profesional, humoris, dll.)',
+          'Anda dapat menentukan gaya balasan AI (misalnya, ringkas, detail, kreatif, dll.)'
+        ],
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        roleLabel: 'Definisi Peran AI',
+        editRole: 'Edit Peran AI',
+        defaultContent: 'Anda adalah ahli asisten AI yang sangat baik, dengan pengetahuan dan pengalaman yang kaya, mampu membantu pengguna menyelesaikan berbagai masalah.',
+        inputRequired: 'Silakan masukkan definisi peran AI',
+        updateSuccess: 'Definisi peran AI diperbarui'
+      },
+      imageValidation: {
+        sora2Requirements: 'Dimensi gambar harus persis sesuai dengan dimensi keluaran',
+        sora2CropTitle: 'Pangkas gambar agar sesuai dengan persyaratan sora-2',
+        sora2CropCancel: 'Anda membatalkan pemangkasan',
+        doubaoRequirements: 'Persyaratan rasio aspek gambar tidak terpenuhi',
+        doubaoRatioHint: 'Harap gunakan gambar dengan rasio aspek antara 1/3 dan 3',
+        minResolution: 'Resolusi gambar terlalu rendah: lebar dan tinggi minimal harus {0} piksel',
+        maxResolution: 'Resolusi gambar terlalu tinggi: lebar dan tinggi tidak boleh melebihi {0} piksel',
+        loadFailed: 'Gagal memuat gambar, periksa apakah file rusak',
+        formatNotSupported: 'Format gambar tidak didukung. Format yang didukung: ',
+        sizeExceeded: 'Ukuran file melebihi batas. Maksimal diizinkan: ',
+        readFailed: 'Gagal membaca file',
       }
     },
     keysPage: {
@@ -6329,6 +7749,25 @@ export const translations: Record<string, Translation> = {
       netAmount: 'Jumlah Bersih',
       total: 'Total',
       consumedPoints: 'Poin yang Dikonsumsi',
+      points: 'Poin',
+      pointsBill: 'Tagihan Poin',
+      exportHeaders: {
+        time: 'Waktu',
+        serviceType: 'Jenis Layanan',
+        points: 'Poin',
+        status: 'Status',
+        taskId: 'ID Tugas',
+      },
+      balanceExportHeaders: {
+        time: 'Waktu',
+        serviceModel: 'Layanan/Model',
+        type: 'Jenis',
+        cost: 'Biaya(¥)',
+        duration: 'Durasi',
+        inputToken: 'Token Input',
+        outputToken: 'Token Output',
+      },
+      balanceBill: 'Tagihan Saldo',
       record: {
         type: 'Jenis',
         duration: 'Durasi',
@@ -6366,11 +7805,26 @@ export const translations: Record<string, Translation> = {
         nextPage: 'Halaman Berikutnya',
         lastPage: 'Halaman Terakhir',
         recordsPerPage: 'catatan/halaman',
+        logsBill: 'Tagihan Log',
       },
       exportError: 'Ekspor gagal, silakan coba lagi nanti',
       exportSuccess: 'Ekspor berhasil',
       selectTeamFirst: 'Silakan pilih tim terlebih dahulu',
       unknownService: 'Layanan Tidak Diketahui',
+      serviceTypes: {
+        1: 'Pencampuran Video AI',
+        2: 'Manusia Digital Produk',
+        3: 'Video Manusia Digital',
+        4: 'Gambar ke Video',
+        5: 'Video Orisinil',
+        6: 'Transfer Gaya',
+        7: 'Pembuatan Gambar AI',
+        8: 'Kloning Suara',
+        9: 'Manusia Digital Kustom',
+        10: 'Manusia Digital Bernyanyi',
+        11: 'Tukar Wajah Video AI',
+        15: 'Workshop Kreatif',
+      },
     },
     aiVideoFaceSwapPage: {
       title: 'AI Video Face Swap',
@@ -6504,7 +7958,8 @@ export const translations: Record<string, Translation> = {
         quantity: 'Jumlah Pembelian',
         custom: 'Kustom',
         buy: 'Beli Sekarang',
-        contact: 'Hubungi Kami'
+        contact: 'Hubungi Kami',
+        times: 'x'
       },
       serviceAdvantages: {
         title: 'Keunggulan Layanan',
@@ -6522,6 +7977,7 @@ export const translations: Record<string, Translation> = {
         paySuccess: 'Pembayaran Berhasil!',
         thankYou: 'Terima kasih atas pembelian Anda',
         payAmount: 'Jumlah Pembayaran',
+        invoiceInfo: 'Informasi Faktur',
         generatingQR: 'Membuat Kode QR',
         pleaseWait: 'Mohon tunggu...',
         step1: 'Buka WeChat Scan',
@@ -6546,7 +8002,47 @@ export const translations: Record<string, Translation> = {
         scanToAdd: 'Pindai untuk menambahkan WeChat',
         customSolution: '🎯 Solusi Kustom',
         techSupport: '🔧 Dukungan Teknis',
-        dataAnalysis: '📊 Analisis Data'
+        dataAnalysis: '📊 Analisis Data',
+        form: {
+          title: 'Tinggalkan Informasi Anda',
+          description: 'Konsultan kami akan segera menghubungi Anda',
+          name: 'Nama',
+          namePlaceholder: 'Masukkan nama Anda',
+          email: 'Email',
+          emailPlaceholder: 'Masukkan email Anda (opsional)',
+          phone: 'Telepon',
+          phonePlaceholder: 'Masukkan nomor telepon Anda',
+          company: 'Perusahaan',
+          companyPlaceholder: 'Masukkan nama perusahaan Anda (opsional)',
+          channel: 'Bagaimana Anda menemukan kami',
+          channelPlaceholder: 'Pilih bagaimana Anda menemukan kami',
+          channels: {
+            wechat: 'WeChat',
+            xiaohongshu: 'Xiaohongshu',
+            gongzhonghao: 'Akun Resmi WeChat',
+            douyin: 'Douyin/TikTok',
+            weibo: 'Weibo',
+            search: 'Mesin Pencari',
+            friend: 'Referensi Teman',
+            other: 'Lainnya'
+          },
+          message: 'Pesan',
+          messagePlaceholder: 'Jelaskan kebutuhan Anda (opsional)',
+          submit: 'Kirim Sekarang',
+          submitting: 'Mengirim...',
+          submitSuccess: 'Berhasil dikirim, kami akan segera menghubungi Anda!',
+          submitError: 'Pengiriman gagal, silakan coba lagi nanti',
+          successTitle: 'Berhasil Dikirim!',
+          successMessage: 'Terima kasih atas pertanyaan Anda, konsultan profesional kami akan menghubungi Anda dalam 1-2 hari kerja.',
+          submitAnother: 'Kirim Lagi',
+          errors: {
+            nameRequired: 'Masukkan nama Anda',
+            phoneRequired: 'Masukkan nomor telepon Anda',
+            phoneInvalid: 'Masukkan nomor telepon yang valid',
+            emailInvalid: 'Masukkan alamat email yang valid',
+            channelRequired: 'Pilih bagaimana Anda menemukan kami'
+          }
+        }
       },
       errors: {
         loginRequired: 'Silakan login terlebih dahulu',
@@ -6601,7 +8097,8 @@ export const translations: Record<string, Translation> = {
           invoiceNameRequired: 'Silakan masukkan nama header faktur',
           taxNumberRequired: 'Silakan masukkan nomor identifikasi wajib pajak',
           emailRequired: 'Silakan masukkan email',
-          emailInvalid: 'Silakan masukkan alamat email yang valid'
+          emailInvalid: 'Silakan masukkan alamat email yang valid',
+          emailMissingAt: "Harap sertakan '@' dalam alamat email. '@' tidak ada di '{email}'"
         },
         cancel: 'Batal',
         confirm: 'Konfirmasi'
@@ -6636,6 +8133,46 @@ export const translations: Record<string, Translation> = {
       totalFolders: 'Folder',
       totalFiles: 'File',
       searchInResult: 'Cari dalam hasil',
+      personalFiles: 'File Pribadi',
+      sharedFiles: 'File Bersama',
+      confirmDelete: 'Konfirmasi Hapus',
+      confirmDeleteItem: 'Apakah Anda yakin ingin menghapus {type} ini?',
+      confirmDeleteSelected: 'Apakah Anda yakin ingin menghapus {count} {item} yang dipilih?',
+      confirm: 'Konfirmasi',
+      cancel: 'Batal',
+      folder: 'folder',
+      material: 'materi',
+      moveModal: {
+        title: 'Pindahkan ke',
+        personalFolder: 'Folder Pribadi',
+        sharedFolder: 'Folder Bersama',
+        allFiles: 'Semua File',
+        loading: 'Memuat...',
+        newFolder: 'Folder Baru',
+        newFolderPlaceholder: 'Folder Baru',
+        unnamedFolder: 'Folder Tanpa Nama',
+        noFolders: 'Tidak ada folder di direktori ini',
+        enterTeamFolderFirst: 'Silakan masuk ke folder tim terlebih dahulu sebelum melakukan operasi',
+        enterTeamFolderBeforeSave: 'Silakan masuk ke folder tim terlebih dahulu sebelum menyimpan',
+        fileAlreadyInCurrentFolder: 'File sudah ada di folder saat ini, silakan pilih folder lain',
+        moveToHere: 'Pindahkan ke sini',
+        cancel: 'Batal',
+        fetchFoldersFailed: 'Gagal mendapatkan daftar folder',
+        enterFolderName: 'Silakan masukkan nama folder',
+        folderCreatedSuccess: 'Folder berhasil dibuat',
+        folderCreateFailed: 'Gagal membuat folder',
+      },
+      messages: {
+        deleteSuccess: 'Berhasil dihapus',
+        deleteFailed: 'Gagal menghapus',
+        shareSuccess: 'Berhasil dibagikan',
+        shareFailedNoTeam: 'Tidak dapat mendapatkan informasi tim, berbagi gagal',
+        moveSuccess: 'Berhasil dipindahkan',
+        moveFailed: 'Gagal memindahkan',
+        operationFailed: 'Operasi gagal',
+        sharedFilesCannotDragToRoot: 'File bersama tidak dapat diseret ke direktori root',
+        assetUrlOrNameMissing: 'URL atau nama aset tidak ada',
+      },
     },
     profilePage: {
       title: 'Pusat Pribadi',
@@ -6762,6 +8299,150 @@ export const translations: Record<string, Translation> = {
         },
         fetchFailed: 'Gagal mendapatkan catatan undangan'
       }
+    },
+    enterprisePage: {
+      title: 'Manajemen Tim',
+      subtitle: 'Kelola informasi tim, undangan anggota dan penugasan peran',
+      notSupported: 'Fitur Tidak Didukung',
+      notSupportedDesc: 'Anda belum bergabung dengan tim mana pun, silakan bergabung dengan perusahaan terlebih dahulu',
+      buttons: {
+        addTeam: 'Tambahkan Tim',
+        refresh: 'Segarkan',
+        viewMembers: 'Lihat Anggota',
+        edit: 'Edit',
+        inviteMember: 'Undang Anggota',
+        addMember: 'Tambahkan Anggota',
+        delete: 'Hapus',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi',
+        close: 'Tutup',
+        newUser: 'Pengguna Baru (Daftar)',
+        oldUser: 'Pengguna Lama (Login)',
+        editRole: 'Edit Peran',
+        editAuth: 'Edit Izin',
+        allocate: 'Alokasi',
+        remove: 'Hapus'
+      },
+      table: {
+        teamName: 'Nama Tim',
+        searchPlaceholder: 'Cari nama tim',
+        createTime: 'Waktu Dibuat',
+        status: 'Status',
+        actions: 'Tindakan',
+        normal: 'Normal',
+        disabled: 'Dinonaktifkan',
+        noData: 'Tidak ada data tim',
+        userInfo: 'Info Pengguna',
+        nickName: 'Nama Panggilan',
+        phoneNumber: 'Nomor Telepon',
+        userAuth: 'Izin Pengguna',
+        userRole: 'Peran Pengguna',
+        remainingQuota: 'Kuota Tersisa',
+        usedQuota: 'Kuota yang Digunakan',
+        joinTime: 'Waktu Bergabung',
+        userName: 'Nama Pengguna',
+        account: 'Akun',
+        registerTime: 'Waktu Registrasi'
+      },
+      modals: {
+        addTeam: 'Tambahkan Tim',
+        editTeam: 'Edit Tim',
+        teamName: 'Nama Tim',
+        teamNamePlaceholder: 'Silakan masukkan nama tim',
+        teamRoles: 'Peran Tim',
+        teamRolesPlaceholder: 'Silakan masukkan peran tim, misalnya: Pengembang, Penguji, Pengamat',
+        teamRolesHint: '(Silakan masukkan peran tim, tekan Enter atau koma untuk menambahkan, satu tim mendukung hingga 10 peran)',
+        remark: 'Keterangan',
+        remarkPlaceholder: 'Silakan masukkan keterangan tim',
+        membersList: 'Daftar Anggota Tim',
+        noRole: 'Tidak Ada Peran',
+        selectInviteType: 'Pilih Jenis Undangan',
+        inviteTypeDesc: 'Silakan pilih apakah akan mengundang pengguna baru atau pengguna lama untuk bergabung dengan tim',
+        addMembers: 'Tambahkan Anggota Tim',
+        searchUserPlaceholder: 'Cari nama pengguna atau email',
+        selectedCount: 'Dipilih {count} anggota',
+        editMemberRole: 'Edit Peran Anggota',
+        memberInfo: 'Informasi Anggota',
+        currentRole: 'Peran Saat Ini:',
+        selectNewRole: 'Pilih Peran Baru',
+        editMemberAuth: 'Edit Izin Anggota',
+        currentAuth: 'Izin Saat Ini:',
+        selectNewAuth: 'Pilih Izin Baru',
+        allocateQuota: 'Alokasikan Kuota ke Anggota Tim',
+        memberInfoTitle: 'Informasi Anggota',
+        currentBalance: 'Saldo Saat Ini:',
+        score: 'Skor:',
+        memberLevel: 'Level Anggota:',
+        myBalance: 'Saldo Saya',
+        quotaAmount: 'Jumlah Kuota (RMB)',
+        quotaAmountPlaceholder: 'Silakan masukkan jumlah kuota',
+        quotaAmountHint: 'Jumlah kuota tidak boleh melebihi saldo tersisa Anda ¥{amount}'
+      },
+      messages: {
+        fetchTeamListFailed: 'Gagal mengambil daftar tim',
+        enterTeamName: 'Silakan masukkan nama tim',
+        setTeamRoles: 'Silakan atur peran tim',
+        maxRolesLimit: 'Peran tim mendukung hingga 10',
+        updateTeamSuccess: 'Tim berhasil diperbarui',
+        createTeamSuccess: 'Tim berhasil dibuat',
+        deleteTeamConfirm: 'Konfirmasi Hapus',
+        deleteTeamMessage: 'Apakah Anda yakin ingin menghapus tim "{teamName}"?\nIni juga akan menghapus semua data terkait termasuk peran tim, anggota tim, folder tim, dll. Operasi ini tidak dapat dibatalkan!',
+        deleteTeamSuccess: 'Tim berhasil dihapus',
+        deleteTeamFailed: 'Gagal menghapus tim',
+        inviteLinkCopied: 'Tautan undangan disalin ke clipboard',
+        inviteLinkTip: 'Tautan Undangan: {url}\n\nTip: Jika akun yang diundang saat ini masuk, silakan keluar terlebih dahulu sebelum menggunakan tautan undangan untuk bergabung dengan tim.',
+        inviteLinkTipText: 'Tip: Jika akun yang diundang saat ini masuk, silakan keluar terlebih dahulu sebelum menggunakan tautan undangan untuk bergabung dengan tim.',
+        selectMembers: 'Silakan pilih anggota untuk ditambahkan',
+        addMembersSuccess: 'Berhasil menambahkan {count} anggota',
+        addMembersFailed: 'Gagal menambahkan anggota',
+        updateRoleSuccess: 'Peran berhasil diperbarui',
+        updateRoleFailed: 'Gagal memperbarui peran',
+        adminAuthDisabled: 'Izin admin telah dinonaktifkan. Pemilik saluran adalah administrator secara default',
+        updateAuthSuccess: 'Izin berhasil diperbarui',
+        updateAuthFailed: 'Gagal memperbarui izin',
+        enterValidQuota: 'Silakan masukkan jumlah kuota yang valid',
+        quotaExceeded: 'Jumlah kuota tidak boleh melebihi ¥{amount} (margin presisi 0,01 RMB dicadangkan)',
+        getUserIdFailed: 'Tidak dapat mendapatkan ID pengguna',
+        allocateQuotaSuccess: 'Kuota berhasil dialokasikan',
+        allocateQuotaFailed: 'Gagal mengalokasikan kuota',
+        removeMemberConfirm: 'Konfirmasi Hapus',
+        removeMemberMessage: 'Apakah Anda yakin ingin menghapus anggota "{userName}"?',
+        removeMemberSuccess: 'Anggota berhasil dihapus',
+        removeMemberFailed: 'Gagal menghapus anggota',
+        getChannelIdFailed: 'Gagal mendapatkan ID saluran, harap konfirmasi tim telah dikaitkan dengan saluran',
+        fetchInviteUserListFailed: 'Gagal mengambil daftar pengguna undangan',
+        noMemberData: 'Tidak ada data anggota',
+        noUserData: 'Tidak ada data pengguna',
+        isMember: 'Sudah menjadi anggota'
+      },
+      authTypes: {
+        member: 'Anggota',
+        leader: 'Pemimpin',
+        admin: 'Admin',
+        unknown: 'Tidak Diketahui'
+      },
+      pagination: {
+        totalRecords: 'Total {total} catatan',
+        previous: 'Sebelumnya',
+        next: 'Selanjutnya'
+      },
+      quota: {
+        balance: 'Saldo:',
+        score: 'Skor:',
+        level: 'Level:',
+        normalMember: 'Anggota Normal'
+      }
+    },
+    components: {
+      imageCrop: {
+        title: 'Pangkas Gambar',
+        ratio: 'Rasio Aspek',
+        reset: 'Atur Ulang',
+        cancel: 'Batal',
+        confirm: 'Konfirmasi Pangkas',
+        cropFailed: 'Pemangkasan gagal',
+        loadFailed: 'Gagal memuat gambar',
+      },
     },
     footer: {
       privacy: 'Privasi',

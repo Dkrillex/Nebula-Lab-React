@@ -480,7 +480,9 @@ export const avatarService = {
   // --- Voice Clone ---
 
   submitVoiceCloneTask: (data: VoiceCloneSubmitParams) => {
-    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/submitTask', data);
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/VoiceClone/submitTask', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   },
 
   queryVoiceCloneTask: (taskId: string) => {
@@ -490,7 +492,9 @@ export const avatarService = {
   },
 
   submitText2VoiceTask: (data: Text2VoiceSubmitParams) => {
-    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/submitTask', data);
+    return request.post<ApiResponse<VoiceCloneResult>>('/tp/v1/Text2Voice/submitTask', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   },
 
   queryText2VoiceTask: (taskId: string) => {
@@ -514,7 +518,7 @@ export const avatarService = {
    * 获取语音列表（营销视频）
    * Endpoint: GET /tp/v1/VoiceQuery
    */
-  getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string }) => {
+  getVoiceList: (params?: { pageNo?: number; pageSize?: number; voiceName?: string; gender?: string; style?: string; language?: string; age?: string }) => {
     return request.get<{ result: { data: Voice[]; total: number } }>(
       '/tp/v1/VoiceQuery',
       { params }
@@ -605,7 +609,10 @@ export const avatarService = {
   submitVideoCreationTask: (data: SubmitVideoCreationTaskParams) => {
     return request.post<ApiResponse<{ taskId: string; status: string; errorMsg?: string }>>(
       '/tp/v1/VideoAvatar/submitTask',
-      data
+      data,
+      {
+        successMessageMode: 'message', // 使用动态接口返回的成功消息
+      }
     );
   },
 

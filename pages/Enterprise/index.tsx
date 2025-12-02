@@ -14,12 +14,12 @@ import { Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import ConfirmDialog from '../../components/ConfirmDialog';
+import { useAppOutletContext } from '../../router/context';
+import { translations } from '../../translations';
 
-interface EnterprisePageProps {
-  t: any;
-}
-
-const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
+const EnterprisePage: React.FC = () => {
+  const { t: rootT } = useAppOutletContext();
+  const t = rootT?.enterprisePage || translations['zh'].enterprisePage;
   const { user, isAuthenticated } = useAuthStore();
   
   // 团队列表状态
@@ -210,7 +210,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   // 获取会员等级文本显示
   const getMemberLevelText = (level: string | undefined) => {
     if (!level || level === '未知' || level === '') {
-      return '普通会员';
+      return t.quota.normalMember;
     }
     return level;
   };
@@ -285,11 +285,11 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const getAuthTypeText = (type: number) => {
     const typeMap: Record<number, string> = {
-      1: '成员',
-      2: 'leader',
-      3: '管理员',
+      1: t.authTypes.member,
+      2: t.authTypes.leader,
+      3: t.authTypes.admin,
     };
-    return typeMap[type] || '未知';
+    return typeMap[type] || t.authTypes.unknown;
   };
 
   const getAuthTypeColor = (type: number) => {
@@ -317,7 +317,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       setPagination(prev => ({ ...prev, total: response?.total || 0 }));
     } catch (error) {
       console.error('获取团队列表失败:', error);
-      toast.error('获取团队列表失败');
+      toast.error(t.messages.fetchTeamListFailed);
     } finally {
       setTeamLoading(false);
     }
@@ -355,7 +355,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       
       if (!channelId) {
         console.error('添加成员 - 无法获取channelId');
-        toast.error('获取渠道ID失败，请确认团队已关联渠道');
+        toast.error(t.messages.getChannelIdFailed);
         setMemberLoading(false);
         return;
       }
@@ -372,7 +372,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       setMemberPagination(prev => ({ ...prev, total: response.total || 0 }));
     } catch (error) {
       console.error('获取邀请用户列表失败:', error);
-      toast.error('获取邀请用户列表失败');
+      toast.error(t.messages.fetchInviteUserListFailed);
     } finally {
       setMemberLoading(false);
     }
@@ -443,12 +443,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleTeamSubmit = async () => {
     if (!teamFormData.teamName.trim()) {
-      toast.error('请输入团队名称');
+      toast.error(t.messages.enterTeamName);
       return;
     }
 
     if (!teamFormData.teamRoles || teamFormData.teamRoles.length === 0) {
-      toast.error('请设置团队角色');
+      toast.error(t.messages.setTeamRoles);
       return;
     }
 
@@ -469,7 +469,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         };
         await teamService.updateTeam(updateData);
         teamId = teamFormData.teamId;
-        toast.success('编辑团队成功');
+        toast.success(t.messages.updateTeamSuccess);
       } else {
         const response = await teamService.createTeam({
           ...teamFormData,
@@ -477,7 +477,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         });
         // 根据 request.ts 的处理，如果返回的是数字，直接使用；否则从响应中提取
         teamId = typeof response === 'number' ? response : (response as any)?.teamId || (response as any)?.data;
-        toast.success('新增团队成功');
+        toast.success(t.messages.createTeamSuccess);
       }
 
       // 更新团队角色
@@ -490,7 +490,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       fetchTeamList();
     } catch (error) {
       console.error('团队操作失败:', error);
-      toast.error('操作失败');
+      toast.error(t.messages.fetchTeamListFailed);
     } finally {
       setTeamSubmitting(false);
     }
@@ -499,17 +499,17 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   const handleDeleteTeam = (team: LabTeamVO) => {
     setConfirmDialog({
       isOpen: true,
-      title: '确认删除',
-      message: `确定要删除团队"${team.teamName}"吗？\n删除后将同时删除团队角色、团队成员、团队文件夹等所有相关数据，此操作不可恢复！`,
+      title: t.messages.deleteTeamConfirm,
+      message: t.messages.deleteTeamMessage.replace('{teamName}', team.teamName),
       type: 'danger',
       onConfirm: async () => {
         try {
           await teamService.deleteTeam(team.teamId);
-          toast.success('删除团队成功');
+          toast.success(t.messages.deleteTeamSuccess);
     fetchTeamList();
         } catch (error) {
           console.error('删除团队失败:', error);
-          toast.error('删除团队失败');
+          toast.error(t.messages.deleteTeamFailed);
         } finally {
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
@@ -542,10 +542,10 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
     try {
       await navigator.clipboard.writeText(inviteUrl);
-      toast.success('邀请链接已复制到剪贴板');
+      toast.success(t.messages.inviteLinkCopied);
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast(`邀请链接：${inviteUrl}`, { duration: 5000 });
+      toast(t.messages.inviteLinkTip.replace('{url}', inviteUrl), { duration: 5000 });
     }
   };
 
@@ -561,14 +561,14 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     }
 
     // 添加提示信息到链接后面（作为注释说明）
-    const inviteUrlWithTip = `${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`;
+    const inviteUrlWithTip = `${inviteUrl}\n\n${t.messages.inviteLinkTipText}`;
     
     try {
       await navigator.clipboard.writeText(inviteUrlWithTip);
-      toast.success('邀请链接已复制到剪贴板');
+      toast.success(t.messages.inviteLinkCopied);
       setInviteTypeModalVisible(false);
     } catch (error) {
-      toast(`邀请链接：${inviteUrl}\n\n提示：如果受邀账号当前已登录，请先退出登录后使用邀请链接加入团队。`, { duration: 8000 });
+      toast(t.messages.inviteLinkTip.replace('{url}', inviteUrl), { duration: 8000 });
     }
   };
 
@@ -584,7 +584,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
   const handleAddMemberSubmit = async () => {
     if (selectedMemberIds.length === 0) {
-      toast.error('请选择要添加的成员');
+      toast.error(t.messages.selectMembers);
       return;
     }
 
@@ -600,7 +600,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         });
       }
 
-      toast.success(`成功添加 ${selectedMemberIds.length} 个成员`);
+      toast.success(t.messages.addMembersSuccess.replace('{count}', String(selectedMemberIds.length)));
       setAddMemberModalVisible(false);
       setSelectedMemberIds([]);
       
@@ -609,7 +609,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       }
     } catch (error) {
       console.error('添加成员失败:', error);
-      toast.error('添加成员失败');
+      toast.error(t.messages.addMembersFailed);
     }
   };
 
@@ -635,12 +635,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         selectedRoleId
       );
 
-      toast.success('角色更新成功');
+      toast.success(t.messages.updateRoleSuccess);
       setEditRoleModalVisible(false);
       fetchTeamMemberList(currentTeam.teamId);
     } catch (error) {
       console.error('角色更新失败:', error);
-      toast.error('角色更新失败');
+      toast.error(t.messages.updateRoleFailed);
     }
   };
 
@@ -654,7 +654,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     if (!currentEditMember || !currentTeam) return;
 
     if (selectedAuthType === 3) {
-      toast.error('管理员权限已下架，渠道拥有者默认为管理员');
+      toast.error(t.messages.adminAuthDisabled);
       return;
     }
 
@@ -665,12 +665,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         selectedAuthType
       );
 
-      toast.success('权限更新成功');
+      toast.success(t.messages.updateAuthSuccess);
       setEditAuthModalVisible(false);
       fetchTeamMemberList(currentTeam.teamId);
     } catch (error) {
       console.error('权限更新失败:', error);
-      toast.error('权限更新失败');
+      toast.error(t.messages.updateAuthFailed);
     }
   };
 
@@ -685,13 +685,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     if (!currentAllocateMember) return;
 
     if (!allocateQuotaAmountRmb || allocateQuotaAmountRmb <= 0) {
-      toast.error('请输入有效的配额金额');
+      toast.error(t.messages.enterValidQuota);
       return;
     }
 
     const maxRmb = getMaxAllocateAmount();
     if (allocateQuotaAmountRmb > maxRmb) {
-      toast.error(`配额金额不能超过 ¥${maxRmb.toFixed(2)}（已预留0.01元精度余量）`);
+      toast.error(t.messages.quotaExceeded.replace('{amount}', maxRmb.toFixed(2)));
       return;
     }
 
@@ -701,7 +701,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       const toUserId = currentAllocateMember.nebulaApiId;
 
       if (!fromUserId || !toUserId) {
-        toast.error('无法获取用户ID');
+        toast.error(t.messages.getUserIdFailed);
         return;
       }
 
@@ -712,7 +712,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         memberLevel: currentUserQuotaInfo.memberLevel,
       });
 
-      toast.success('配额成功');
+      toast.success(t.messages.allocateQuotaSuccess);
       setAllocateQuotaModalVisible(false);
       
       await fetchCurrentUserQuotaInfo();
@@ -721,7 +721,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       }
     } catch (error) {
       console.error('配额失败:', error);
-      toast.error('配额失败');
+      toast.error(t.messages.allocateQuotaFailed);
     } finally {
       setQuotaLoading(false);
     }
@@ -730,8 +730,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
   const handleRemoveMember = (member: TeamUserDetailVO) => {
     setConfirmDialog({
       isOpen: true,
-      title: '确认移除',
-      message: `确认要移除成员"${member.userName}"吗？`,
+      title: t.messages.removeMemberConfirm,
+      message: t.messages.removeMemberMessage.replace('{userName}', member.userName),
       type: 'warning',
       onConfirm: async () => {
         try {
@@ -741,13 +741,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             member.userAuthType
           );
           
-          toast.success('移除成员成功');
+          toast.success(t.messages.removeMemberSuccess);
           if (currentTeam) {
             fetchTeamMemberList(currentTeam.teamId);
           }
         } catch (error) {
           console.error('移除成员失败:', error);
-          toast.error('移除成员失败');
+          toast.error(t.messages.removeMemberFailed);
         } finally {
           setConfirmDialog(prev => ({ ...prev, isOpen: false }));
         }
@@ -792,8 +792,8 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center">
         <AlertCircle className="text-yellow-500 mb-4" size={48} />
-        <h3 className="text-lg font-semibold text-foreground mb-2">暂不支持该功能</h3>
-        <p className="text-muted">您还未加入任何团队，请先加入企业</p>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{t.notSupported}</h3>
+        <p className="text-muted">{t.notSupportedDesc}</p>
       </div>
     );
   }
@@ -803,23 +803,23 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
       {/* 页头 */}
       <div className="flex justify-between items-end mb-6">
         <div>
-          <h2 className="text-xl font-bold text-foreground mb-2">团队管理</h2>
-          <p className="text-sm text-muted">管理团队信息、成员邀请和角色分配</p>
+          <h2 className="text-xl font-bold text-foreground mb-2">{t.title}</h2>
+          <p className="text-sm text-muted">{t.subtitle}</p>
         </div>
         
         {/* 用户余额信息 */}
         {showQuotaInfo && currentUserQuotaInfo && (
           <div className="flex items-center gap-4 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border border-border">
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">余额:</span>
+              <span className="text-sm text-muted">{t.quota.balance}</span>
               <span className="text-sm font-semibold text-foreground">¥{currentUserQuotaInfo.quotaRmb}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">积分:</span>
+              <span className="text-sm text-muted">{t.quota.score}</span>
               <span className="text-sm font-semibold text-foreground">{currentUserQuotaInfo.score}</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-muted">等级:</span>
+              <span className="text-sm text-muted">{t.quota.level}</span>
               <span className={`text-xs px-2 py-1 rounded ${getMemberLevelColor(currentUserQuotaInfo.memberLevel)}`}>
                 {currentUserQuotaInfo.memberLevel}
                       </span>
@@ -837,7 +837,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-2"
               >
                 <Plus size={16} />
-              新增团队
+              {t.buttons.addTeam}
               </button>
           )}
               <button
@@ -846,7 +846,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             className="px-4 py-2 bg-white dark:bg-gray-800 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center gap-2 disabled:opacity-50"
               >
                 <RefreshCw size={16} className={teamLoading ? 'animate-spin' : ''} />
-            刷新
+            {t.buttons.refresh}
               </button>
             </div>
         
@@ -856,7 +856,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             value={searchKeyword}
             onChange={(e) => setSearchKeyword(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && fetchTeamList()}
-            placeholder="搜索团队名称"
+            placeholder={t.table.searchPlaceholder || t.table.teamName}
             className="px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
           />
                 <button
@@ -874,10 +874,10 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 <table className="w-full">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">团队名称</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">创建时间</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">状态</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">操作</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">{t.table.teamName}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">{t.table.createTime}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">{t.table.status}</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">{t.table.actions}</th>
                     </tr>
                   </thead>
             <tbody className="divide-y divide-border">
@@ -890,7 +890,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
               ) : teamList.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-8 text-center text-muted">
-                    暂无团队数据
+                    {t.table.noData}
                   </td>
                 </tr>
               ) : (
@@ -902,7 +902,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     <td className="px-6 py-4 text-sm text-muted">{team.createTime}</td>
                     <td className="px-6 py-4">
                       <span className={`text-xs px-2 py-1 rounded ${team.status === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {team.status === 1 ? '正常' : '禁用'}
+                        {team.status === 1 ? t.table.normal : t.table.disabled}
                             </span>
                         </td>
                     <td className="px-6 py-4">
@@ -912,7 +912,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                           className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1"
                         >
                           <Eye size={14} />
-                          查看成员
+                          {t.buttons.viewMembers}
                         </button>
                         {canManageTeam(team) && (
                           <>
@@ -921,21 +921,21 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                               className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1"
                             >
                               <Edit2 size={14} />
-                              编辑
+                              {t.buttons.edit}
                             </button>
                             <button
                               onClick={() => handleInviteMember(team)}
                               className="text-green-600 hover:text-green-700 text-sm flex items-center gap-1"
                             >
                               <UserPlus size={14} />
-                              邀请成员
+                              {t.buttons.inviteMember}
                             </button>
                             <button
                               onClick={() => handleAddMember(team)}
                               className="text-indigo-600 hover:text-indigo-700 text-sm flex items-center gap-1"
                             >
                               <UserPlus2 size={14} />
-                              添加成员
+                              {t.buttons.addMember}
                             </button>
                           </>
                         )}
@@ -945,7 +945,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                             className="text-red-600 hover:text-red-700 text-sm flex items-center gap-1"
                             >
                             <Trash2 size={14} />
-                            删除
+                            {t.buttons.delete}
                             </button>
                         )}
                           </div>
@@ -961,7 +961,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         {pagination.total > 0 && (
           <div className="px-6 py-4 border-t border-border flex justify-between items-center">
               <div className="text-sm text-muted">
-              共 {pagination.total} 条记录
+              {t.pagination.totalRecords.replace('{total}', String(pagination.total))}
               </div>
             <div className="flex gap-2">
                 <button
@@ -969,7 +969,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 disabled={pagination.current === 1}
                 className="px-3 py-1 border border-border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  上一页
+                  {t.pagination.previous}
                 </button>
               <span className="px-3 py-1">
                 {pagination.current} / {Math.ceil(pagination.total / pagination.pageSize)}
@@ -979,7 +979,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 disabled={pagination.current >= Math.ceil(pagination.total / pagination.pageSize)}
                 className="px-3 py-1 border border-border rounded hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  下一页
+                  {t.pagination.next}
                 </button>
               </div>
             </div>
@@ -992,7 +992,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-border flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-foreground">
-                {isTeamEditMode ? '编辑团队' : '新增团队'}
+                {isTeamEditMode ? t.modals.editTeam : t.modals.addTeam}
                 </h3>
                 <button
                 onClick={() => {
@@ -1008,20 +1008,20 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
               <div className="p-6 space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                  团队名称 <span className="text-red-500">*</span>
+                  {t.modals.teamName} <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                   value={teamFormData.teamName}
                   onChange={(e) => setTeamFormData(prev => ({ ...prev, teamName: e.target.value }))}
-                  placeholder="请输入团队名称"
+                  placeholder={t.modals.teamNamePlaceholder}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-foreground mb-2">
-                  团队角色 <span className="text-red-500">*</span>
+                  {t.modals.teamRoles} <span className="text-red-500">*</span>
                   </label>
                   <div className="w-full min-h-[42px] px-3 py-2 border border-border rounded-lg focus-within:ring-2 focus-within:ring-indigo-500 focus-within:border-transparent bg-background">
                     <div className="flex flex-wrap gap-2 items-center">
@@ -1065,7 +1065,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                               }));
                               setRoleInputValue('');
                             } else {
-                              toast.error('团队角色最多支持10个');
+                              toast.error(t.messages.maxRolesLimit);
                               setRoleInputValue(newRoles.slice(0, 10 - currentRoles.length).join(','));
                             }
                           }
@@ -1077,7 +1077,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                             if (value) {
                               const currentRoles = teamFormData.teamRoles || [];
                               if (currentRoles.length >= 10) {
-                                toast.error('团队角色最多支持10个');
+                                toast.error(t.messages.maxRolesLimit);
                                 setRoleInputValue('');
                                 return;
                               }
@@ -1096,22 +1096,22 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                             }));
                           }
                         }}
-                        placeholder={teamFormData.teamRoles?.length === 0 ? "请输入团队角色，如:开发者、测试员、观察者" : ""}
+                        placeholder={teamFormData.teamRoles?.length === 0 ? t.modals.teamRolesPlaceholder : ""}
                         className="flex-1 min-w-[120px] outline-none bg-transparent text-sm"
                       />
                     </div>
                   </div>
                   <p className="text-xs text-muted mt-1">
-                    （请输入团队角色，按回车或逗号添加，一个团队最多支持10个角色）
+                    {t.modals.teamRolesHint}
                   </p>
                 </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">备注</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.modals.remark}</label>
                 <textarea
                   value={teamFormData.remark}
                   onChange={(e) => setTeamFormData(prev => ({ ...prev, remark: e.target.value }))}
-                  placeholder="请输入团队备注"
+                  placeholder={t.modals.remarkPlaceholder}
                   rows={3}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                 />
@@ -1126,7 +1126,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 }}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    取消
+                    {t.buttons.cancel}
                   </button>
                   <button
                 onClick={handleTeamSubmit}
@@ -1134,7 +1134,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                   >
                 {teamSubmitting && <Loader2 className="animate-spin" size={16} />}
-                确定
+                {t.buttons.confirm}
                   </button>
                 </div>
               </div>
@@ -1146,7 +1146,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-7xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">团队成员列表</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.membersList}</h3>
               <button
                 onClick={() => setViewMembersModalVisible(false)}
                 className="text-muted hover:text-foreground"
@@ -1160,15 +1160,15 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 <table className="w-full">
                   <thead className="bg-gray-50 dark:bg-gray-700">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">用户信息</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">昵称</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">手机号码</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">用户权限</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">用户角色</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">剩余额度</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">已用额度</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">加入时间</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">操作</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.userInfo}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.nickName}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.phoneNumber}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.userAuth}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.userRole}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.remainingQuota}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.usedQuota}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.joinTime}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.actions}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -1181,7 +1181,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     ) : teamMemberList.length === 0 ? (
                       <tr>
                         <td colSpan={9} className="px-4 py-8 text-center text-muted">
-                          暂无成员数据
+                          {t.messages.noMemberData}
                         </td>
                       </tr>
                     ) : (
@@ -1195,7 +1195,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                               {getAuthTypeText(member.userAuthType)}
                             </span>
                           </td>
-                          <td className="px-4 py-3 text-sm">{member.roleName || '暂无角色'}</td>
+                          <td className="px-4 py-3 text-sm">{member.roleName || t.modals.noRole}</td>
                           <td className="px-4 py-3 text-sm">¥{member.quotaRmb || '0.00'}</td>
                           <td className="px-4 py-3 text-sm">¥{member.usedQuotaRmb || '0.00'}</td>
                           <td className="px-4 py-3 text-sm">{member.createTime}</td>
@@ -1206,27 +1206,27 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                                   onClick={() => handleEditMemberRole(member)}
                                   className="text-indigo-600 hover:text-indigo-700 text-xs"
                                 >
-                                  编辑角色
+                                  {t.buttons.editRole}
                                 </button>
                                 <button
                                   onClick={() => handleEditMemberAuth(member)}
                                   className="text-green-600 hover:text-green-700 text-xs"
                                 >
-                                  修改权限
+                                  {t.buttons.editAuth}
                                 </button>
                                 {!isCurrentUser(member) && (
                                   <button
                                     onClick={() => handleAllocateQuota(member)}
                                     className="text-indigo-600 hover:text-indigo-700 text-xs"
                                   >
-                                    配额
+                                    {t.buttons.allocate}
                                   </button>
                                 )}
                                 <button
                                   onClick={() => handleRemoveMember(member)}
                                   className="text-red-600 hover:text-red-700 text-xs"
                                 >
-                                  移除
+                                  {t.buttons.remove}
                                 </button>
                               </div>
                             )}
@@ -1244,7 +1244,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 onClick={() => setViewMembersModalVisible(false)}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                关闭
+                {t.buttons.close}
               </button>
             </div>
           </div>
@@ -1256,7 +1256,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">选择邀请对象</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.selectInviteType}</h3>
               <button
                 onClick={() => setInviteTypeModalVisible(false)}
                   className="text-muted hover:text-foreground"
@@ -1267,26 +1267,26 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             
             <div className="p-6">
               <p className="text-sm text-muted mb-4 text-center">
-                请选择要邀请新用户还是老用户加入团队
+                {t.modals.inviteTypeDesc}
               </p>
               <div className="space-y-3">
                 <button
                   onClick={handleInviteNewUser}
                   className="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
-                  新用户（注册）
+                  {t.buttons.newUser}
                 </button>
                 <button
                   onClick={handleInviteOldUser}
                   className="w-full px-4 py-3 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  老用户（登录）
+                  {t.buttons.oldUser}
                 </button>
                 <button
                   onClick={() => setInviteTypeModalVisible(false)}
                   className="w-full px-4 py-3 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  取消
+                  {t.buttons.cancel}
                 </button>
               </div>
             </div>
@@ -1299,7 +1299,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">添加团队成员</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.addMembers}</h3>
               <button
                 onClick={() => setAddMemberModalVisible(false)}
                 className="text-muted hover:text-foreground"
@@ -1315,7 +1315,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   value={memberSearchKeyword}
                   onChange={(e) => setMemberSearchKeyword(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && fetchInviteUserList()}
-                  placeholder="搜索用户名或邮箱"
+                  placeholder={t.modals.searchUserPlaceholder}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                   />
                 </div>
@@ -1338,10 +1338,10 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                           className="rounded"
                         />
                       </th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">用户账号</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">用户昵称</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">手机号码</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">注册时间</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.account}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.nickName}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.phoneNumber}</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-muted uppercase">{t.table.registerTime}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -1354,7 +1354,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     ) : inviteUserList.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="px-4 py-8 text-center text-muted">
-                          暂无用户数据
+                          {t.messages.noUserData}
                         </td>
                       </tr>
                     ) : (
@@ -1381,7 +1381,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                               {user.userName}
                               {isExistingMember && (
                                 <span className="ml-2 text-xs px-2 py-1 rounded bg-orange-100 text-orange-700">
-                                  已是成员
+                                  {t.messages.isMember}
                                 </span>
                               )}
                             </td>
@@ -1399,20 +1399,20 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
             <div className="p-6 border-t border-border flex justify-between items-center">
               <div className="text-sm text-muted">
-                已选择 {selectedMemberIds.length} 个成员
+                {t.modals.selectedCount.replace('{count}', String(selectedMemberIds.length))}
               </div>
               <div className="flex gap-2">
                 <button
                   onClick={() => setAddMemberModalVisible(false)}
                   className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 >
-                  取消
+                  {t.buttons.cancel}
                 </button>
                 <button
                   onClick={handleAddMemberSubmit}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                 >
-                  确定
+                  {t.buttons.confirm}
                 </button>
               </div>
             </div>
@@ -1425,7 +1425,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">编辑成员角色</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.editMemberRole}</h3>
               <button
                 onClick={() => setEditRoleModalVisible(false)}
                 className="text-muted hover:text-foreground"
@@ -1436,19 +1436,19 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             
             <div className="p-6">
               <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">成员信息</h4>
-                <p className="text-sm text-muted">用户名：{currentEditMember.userName}</p>
-                <p className="text-sm text-muted">当前角色：{currentEditMember.roleName || '暂无角色'}</p>
+                <h4 className="font-semibold text-sm mb-2">{t.modals.memberInfo}</h4>
+                <p className="text-sm text-muted">{t.table.userName}：{currentEditMember.userName}</p>
+                <p className="text-sm text-muted">{t.modals.currentRole}{currentEditMember.roleName || t.modals.noRole}</p>
               </div>
 
                 <div>
-                <label className="block text-sm font-medium text-foreground mb-2">选择新角色</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.modals.selectNewRole}</label>
                 <select
                   value={selectedRoleId}
                   onChange={(e) => setSelectedRoleId(Number(e.target.value))}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                 >
-                  <option value={0}>暂无角色</option>
+                  <option value={0}>{t.modals.noRole}</option>
                   {teamRoleList.map((role) => (
                     <option key={role.roleId} value={role.roleId}>
                       {role.roleName}
@@ -1463,13 +1463,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 onClick={() => setEditRoleModalVisible(false)}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   >
-                    取消
+                    {t.buttons.cancel}
                   </button>
                   <button
                 onClick={handleEditRoleSubmit}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
                   >
-                确定
+                {t.buttons.confirm}
                   </button>
                 </div>
               </div>
@@ -1481,7 +1481,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full mx-4">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">修改成员权限</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.editMemberAuth}</h3>
               <button
                 onClick={() => setEditAuthModalVisible(false)}
                 className="text-muted hover:text-foreground"
@@ -1492,20 +1492,20 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             
             <div className="p-6">
               <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="font-semibold text-sm mb-2">成员信息</h4>
-                <p className="text-sm text-muted">用户名：{currentEditMember.userName}</p>
-                <p className="text-sm text-muted">当前权限：{getAuthTypeText(currentEditMember.userAuthType)}</p>
+                <h4 className="font-semibold text-sm mb-2">{t.modals.memberInfo}</h4>
+                <p className="text-sm text-muted">{t.table.userName}：{currentEditMember.userName}</p>
+                <p className="text-sm text-muted">{t.modals.currentAuth}{getAuthTypeText(currentEditMember.userAuthType)}</p>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">选择新权限</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.modals.selectNewAuth}</label>
                 <select
                   value={selectedAuthType}
                   onChange={(e) => setSelectedAuthType(Number(e.target.value))}
                   className="w-full px-4 py-2 border border-border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                 >
-                  <option value={1}>成员</option>
-                  <option value={2}>leader</option>
+                  <option value={1}>{t.authTypes.member}</option>
+                  <option value={2}>{t.authTypes.leader}</option>
                 </select>
               </div>
             </div>
@@ -1515,13 +1515,13 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 onClick={() => setEditAuthModalVisible(false)}
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
               >
-                取消
+                {t.buttons.cancel}
               </button>
               <button
                 onClick={handleEditAuthSubmit}
                 className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
               >
-                确定
+                {t.buttons.confirm}
               </button>
             </div>
           </div>
@@ -1543,7 +1543,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-lg w-full mx-4">
             <div className="p-6 border-b border-border flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-foreground">配额给团队成员</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.modals.allocateQuota}</h3>
               <button
                 onClick={() => setAllocateQuotaModalVisible(false)}
                 className="text-muted hover:text-foreground"
@@ -1555,12 +1555,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
             <div className="p-6 space-y-5">
               {/* 成员信息部分 */}
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="text-sm font-semibold text-foreground mb-3">成员信息</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-3">{t.modals.memberInfoTitle}</h4>
                 <p className="text-sm text-muted mb-2">
-                  用户名：{currentAllocateMember.userName}
+                  {t.table.userName}：{currentAllocateMember.userName}
                 </p>
                 <p className="text-sm text-muted mb-2">
-                  当前余额：¥{formatRmb(currentAllocateMember.quota)}
+                  {t.modals.currentBalance}¥{formatRmb(currentAllocateMember.quota)}
                   {allocateQuotaAmountRmb > 0 && (
                     <span className="text-green-600 font-semibold ml-2">
                       → ¥{memberAfterQuotaRmb}
@@ -1568,7 +1568,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   )}
                 </p>
                 <p className="text-sm text-muted mb-2">
-                  积分：{calculateScore(currentAllocateMember.quota, currentUserQuotaInfo?.memberLevel)}
+                  {t.modals.score}{calculateScore(currentAllocateMember.quota, currentUserQuotaInfo?.memberLevel)}
                   {allocateQuotaAmountRmb > 0 && (
                     <span className="text-green-600 font-semibold ml-2">
                       → {memberAfterQuotaScore}
@@ -1576,7 +1576,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   )}
                 </p>
                 <p className="text-sm text-muted">
-                  会员等级：
+                  {t.modals.memberLevel}
                   <span className={`ml-2 text-xs px-2 py-1 rounded ${getMemberLevelColor(currentAllocateMember.memberLevel)}`}>
                     {getMemberLevelText(currentAllocateMember.memberLevel)}
                   </span>
@@ -1585,9 +1585,9 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
               {/* 我的余额部分 */}
               <div className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                <h4 className="text-sm font-semibold text-foreground mb-3">我的余额</h4>
+                <h4 className="text-sm font-semibold text-foreground mb-3">{t.modals.myBalance}</h4>
                 <p className="text-sm text-muted mb-2">
-                  当前余额：¥{currentUserQuotaInfo?.quotaRmb || '0.00'}
+                  {t.modals.currentBalance}¥{currentUserQuotaInfo?.quotaRmb || '0.00'}
                   {allocateQuotaAmountRmb > 0 && (
                     <span className="text-green-600 font-semibold ml-2">
                       → ¥{myAfterQuotaRmb}
@@ -1595,7 +1595,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   )}
                 </p>
                 <p className="text-sm text-muted mb-2">
-                  积分：{currentUserQuotaInfo?.score || '0.00'}
+                  {t.modals.score}{currentUserQuotaInfo?.score || '0.00'}
                   {allocateQuotaAmountRmb > 0 && (
                     <span className="text-green-600 font-semibold ml-2">
                       → {myAfterQuotaScore}
@@ -1603,7 +1603,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                   )}
                 </p>
                 <p className="text-sm text-muted">
-                  会员等级：
+                  {t.modals.memberLevel}
                   <span className={`ml-2 text-xs px-2 py-1 rounded ${getMemberLevelColor(currentUserQuotaInfo?.memberLevel)}`}>
                     {getMemberLevelText(currentUserQuotaInfo?.memberLevel)}
                   </span>
@@ -1612,7 +1612,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
 
               {/* 配额金额输入 */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">配额金额（人民币）</label>
+                <label className="block text-sm font-medium text-foreground mb-2">{t.modals.quotaAmount}</label>
                 <div className="flex items-center">
                   <span className="px-3 py-2 bg-gray-100 dark:bg-gray-700 border border-r-0 border-border rounded-l-lg text-sm">
                     ¥
@@ -1624,12 +1624,12 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                     step={0.01}
                     value={allocateQuotaAmountRmb || ''}
                     onChange={(e) => setAllocateQuotaAmountRmb(parseFloat(e.target.value) || 0)}
-                    placeholder="请输入配额金额"
+                    placeholder={t.modals.quotaAmountPlaceholder}
                     className="flex-1 px-4 py-2 border border-border rounded-r-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none bg-background"
                   />
                 </div>
                 <p className="text-xs text-muted mt-1">
-                  配额金额不能超过您的剩余余额 ¥{currentUserQuotaInfo?.quotaRmb || '0.00'}
+                  {t.modals.quotaAmountHint.replace('{amount}', currentUserQuotaInfo?.quotaRmb || '0.00')}
                 </p>
               </div>
             </div>
@@ -1644,7 +1644,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                 disabled={quotaLoading}
               >
-                取消
+                {t.buttons.cancel}
               </button>
               <button
                 onClick={handleAllocateQuotaSubmit}
@@ -1652,7 +1652,7 @@ const EnterprisePage: React.FC<EnterprisePageProps> = ({ t }) => {
                 disabled={quotaLoading}
               >
                 {quotaLoading && <Loader2 size={16} className="animate-spin" />}
-                确定
+                {t.buttons.confirm}
               </button>
             </div>
           </div>

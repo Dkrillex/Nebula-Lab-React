@@ -38,6 +38,8 @@ export const templateService = {
    * Endpoint: /ads/labTemplate
    */
   updateLabTemplate: (data: LabTemplate) => {
-    return request.put<void>('/ads/labTemplate', data);
+    return request.put<void>('/ads/labTemplate', data, {
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+    });
   }
 };

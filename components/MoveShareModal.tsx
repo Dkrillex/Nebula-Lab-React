@@ -17,6 +17,26 @@ interface MoveShareModalProps {
   teamIds: string; // 逗号分隔的团队ID列表
   excludeIds: number[]; // 排除的文件夹ID（避免循环引用）
   currentFolderId?: string | null; // 当前文件所在的文件夹ID
+  translations?: {
+    title?: string;
+    personalFolder?: string;
+    sharedFolder?: string;
+    allFiles?: string;
+    loading?: string;
+    newFolder?: string;
+    newFolderPlaceholder?: string;
+    unnamedFolder?: string;
+    noFolders?: string;
+    enterTeamFolderFirst?: string;
+    enterTeamFolderBeforeSave?: string;
+    fileAlreadyInCurrentFolder?: string;
+    moveToHere?: string;
+    cancel?: string;
+    fetchFoldersFailed?: string;
+    enterFolderName?: string;
+    folderCreatedSuccess?: string;
+    folderCreateFailed?: string;
+  };
 }
 
 interface PathItem {
@@ -33,14 +53,16 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   hasTeams,
   teamIds,
   excludeIds,
-  currentFolderId
+  currentFolderId,
+  translations
 }) => {
+  const t = translations || {};
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'personal' | 'shared'>(sourceTab);
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [folders, setFolders] = useState<AdsAssetsVO[]>([]);
   const [loading, setLoading] = useState(false);
-  const [currentPath, setCurrentPath] = useState<PathItem[]>([{ id: null, name: '全部文件' }]);
+  const [currentPath, setCurrentPath] = useState<PathItem[]>([{ id: null, name: t.allFiles || '全部文件' }]);
   const [showCreateInput, setShowCreateInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -96,7 +118,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       }
     } catch (error) {
       console.error('获取文件夹列表失败:', error);
-      toast.error('获取文件夹列表失败');
+      toast.error(t.fetchFoldersFailed || '获取文件夹列表失败');
     } finally {
       setLoading(false);
     }
@@ -106,7 +128,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   const handleEnterFolder = (folder: AdsAssetsVO) => {
     setCurrentPath(prev => [...prev, {
       id: String(folder.id),
-      name: folder.assetName || '未命名文件夹',
+      name: folder.assetName || (t.unnamedFolder || '未命名文件夹'),
       teamId: (folder as any).teamId
     }]);
     fetchFolders(folder.id);
@@ -118,7 +140,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   const handleBreadcrumbClick = (index: number) => {
     if (index === 0) {
       // 回到根目录
-      setCurrentPath([{ id: null, name: '全部文件' }]);
+      setCurrentPath([{ id: null, name: t.allFiles || '全部文件' }]);
       fetchFolders(null);
       setSelectedFolderId(null);
     } else {
@@ -140,13 +162,13 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   const handleConfirm = () => {
     // 共享文件模式：检查是否在根目录
     if (activeTab === 'shared' && isInRootOfShared) {
-      toast.error('请进入团队文件夹后再保存');
+      toast.error(t.enterTeamFolderBeforeSave || '请进入团队文件夹后再保存');
       return;
     }
     
     // 检查是否选择了当前文件夹（只有在移动模式下才检查）
     if (selectedFolderId === currentFolderId && activeTab === sourceTab) {
-      toast.error('文件已在当前文件夹中，请选择其他文件夹');
+      toast.error(t.fileAlreadyInCurrentFolder || '文件已在当前文件夹中，请选择其他文件夹');
       return;
     }
     
@@ -173,7 +195,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   // 取消选择
   const handleCancel = () => {
     setSelectedFolderId(null);
-    setCurrentPath([{ id: null, name: '全部文件' }]);
+    setCurrentPath([{ id: null, name: t.allFiles || '全部文件' }]);
     onClose();
   };
 
@@ -193,7 +215,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   // 确认创建文件夹
   const handleConfirmCreate = async () => {
     if (!newFolderName.trim()) {
-      toast.error('请输入文件夹名称');
+      toast.error(t.enterFolderName || '请输入文件夹名称');
       return;
     }
     
@@ -245,7 +267,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       }
       
       await assetsService.addAssets(folderData as AdsAssetsVO);
-      toast.success('文件夹创建成功');
+      // toast.success(t.folderCreatedSuccess || '文件夹创建成功');
       
       // 等待一小段时间确保数据已写入
       await new Promise(resolve => setTimeout(resolve, 300));
@@ -258,7 +280,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       setNewFolderName('');
     } catch (error) {
       console.error('创建文件夹失败:', error);
-      toast.error('创建文件夹失败');
+      // toast.error(t.folderCreateFailed || '创建文件夹失败');
     } finally {
       setCreating(false);
     }
@@ -274,7 +296,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
   const handleTabChange = (tab: 'personal' | 'shared') => {
     setActiveTab(tab);
     setSelectedFolderId(null);
-    setCurrentPath([{ id: null, name: '全部文件' }]);
+    setCurrentPath([{ id: null, name: t.allFiles || '全部文件' }]);
     setShowCreateInput(false);
     setNewFolderName('');
     // 传递 tab 参数，确保使用正确的 tab 值
@@ -294,13 +316,13 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
       
       setActiveTab(initialTab);
       setSelectedFolderId(null);
-      setCurrentPath([{ id: null, name: '全部文件' }]);
+      setCurrentPath([{ id: null, name: t.allFiles || '全部文件' }]);
       setShowCreateInput(false);
       setNewFolderName('');
       // 传递 initialTab 参数，确保使用正确的 tab 值
       fetchFolders(null, initialTab);
     }
-  }, [visible, sourceTab, hasTeams]);
+  }, [visible, sourceTab, hasTeams, t.allFiles]);
 
   if (!visible) return null;
 
@@ -315,7 +337,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-            移动到
+            {t.title || '移动到'}
           </h3>
           <button 
             onClick={handleCancel}
@@ -337,7 +359,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                个人文件夹
+                {t.personalFolder || '个人文件夹'}
               </button>
               <button
                 onClick={() => handleTabChange('shared')}
@@ -347,7 +369,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
                     : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                共享文件夹
+                {t.sharedFolder || '共享文件夹'}
               </button>
             </div>
           </div>
@@ -378,7 +400,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
         <div className="flex-1 overflow-y-auto px-6 py-4" style={{ minHeight: '200px' }}>
           {loading ? (
             <div className="flex justify-center items-center h-full">
-              <div className="text-gray-500 text-sm">加载中...</div>
+              <div className="text-gray-500 text-sm">{t.loading || '加载中...'}</div>
             </div>
           ) : (
             <div className="flex flex-col gap-1">
@@ -398,7 +420,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
                           handleCancelCreate();
                         }
                       }}
-                      placeholder="新建文件夹"
+                      placeholder={t.newFolderPlaceholder || t.newFolder || '新建文件夹'}
                       className="folder-name-input w-full border-none outline-none bg-transparent text-sm text-gray-900 dark:text-white"
                       autoFocus
                     />
@@ -450,7 +472,7 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
                 !showCreateInput && (
                   <div className="flex flex-col items-center justify-center h-48 text-gray-500">
                     <div className="text-5xl mb-4 opacity-50">📁</div>
-                    <div className="text-sm">该目录下没有文件夹</div>
+                    <div className="text-sm">{t.noFolders || '该目录下没有文件夹'}</div>
                   </div>
                 )
               )}
@@ -466,11 +488,11 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
                 onClick={handleCreateFolder}
                 className="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300"
               >
-                新建文件夹
+                {t.newFolder || '新建文件夹'}
               </button>
             ) : (
               <div className="text-sm text-yellow-600 dark:text-yellow-400">
-                请进入团队文件夹后再进行操作
+                {t.enterTeamFolderFirst || '请进入团队文件夹后再进行操作'}
               </div>
             )}
           </div>
@@ -479,14 +501,14 @@ const MoveShareModal: React.FC<MoveShareModalProps> = ({
               onClick={handleCancel}
               className="px-4 py-2 rounded text-sm font-medium bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
             >
-              取消
+              {t.cancel || '取消'}
             </button>
             <button
               onClick={handleConfirm}
               disabled={!canSaveToCurrentLocation}
               className="px-4 py-2 rounded text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:border-gray-300 dark:disabled:border-gray-600 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed transition-colors"
             >
-              移动到此处
+              {t.moveToHere || '移动到此处'}
             </button>
           </div>
         </div>

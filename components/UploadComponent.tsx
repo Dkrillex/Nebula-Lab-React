@@ -7,7 +7,7 @@ import { useAuthStore } from '../stores/authStore';
 import { showAuthModal } from '../lib/authModalManager';
 
 export interface UploadComponentRef {
-  triggerUpload: () => Promise<void>;
+  triggerUpload: () => Promise<UploadedFile | null>;
   clear: () => void;
   file: File | null;
 }
@@ -41,6 +41,15 @@ interface UploadComponentProps {
   disabled?: boolean;
   // Optional: Whether to show the confirm upload button (default: true)
   showConfirmButton?: boolean;
+  // Optional: Translation texts
+  translations?: {
+    uploading?: string;
+    clickOrDragToUpload?: string;
+    releaseToUpload?: string;
+    supportedFormats?: string;
+    confirmUpload?: string;
+    audioFile?: string;
+  };
 }
 
 const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
@@ -57,16 +66,26 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onFileSelected,
   onClear,
   disabled = false,
-  showConfirmButton = true
+  showConfirmButton = true,
+  translations = {}
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState(false); // 是否已上传成功
+  const [uploadResult, setUploadResult] = useState<UploadedFile | null>(null); // 缓存上传结果
   const [useIframe, setUseIframe] = useState(false); // 是否使用 iframe（遇到跨域问题时）
   const [isDragging, setIsDragging] = useState(false); // 拖拽状态
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { isAuthenticated } = useAuthStore();
+
+  // 监听 uploadType 变化，如果变化则重置上传状态（因为不同通道需要不同的 ID）
+  React.useEffect(() => {
+    if (file && uploaded) {
+      setUploaded(false);
+      setUploadResult(null);
+    }
+  }, [uploadType]);
 
   // Update preview URL when initialUrl changes
   React.useEffect(() => {
@@ -81,13 +100,18 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   useImperativeHandle(ref, () => ({
     triggerUpload: async () => {
       if (file && !uploading) {
-        await uploadFile(file);
+        if (uploaded && uploadResult) {
+          return uploadResult;
+        }
+        return await uploadFile(file);
       }
+      return null;
     },
     clear: () => {
         setFile(null);
         setPreviewUrl('');
         setUploaded(false);
+        setUploadResult(null);
         if (fileInputRef.current) fileInputRef.current.value = '';
     },
     file: file
@@ -184,6 +208,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     setPreviewUrl(objectUrl);
     setUseIframe(false); // 重置 iframe 状态，新文件先尝试 video 标签
     setUploaded(false); // 重置上传状态
+    setUploadResult(null);
 
     if (onFileSelected) {
       onFileSelected(selectedFile);
@@ -199,7 +224,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     await processFile(selectedFile!);
   };
 
-  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string) => {
+  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string): Promise<UploadedFile | null> => {
     console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
     try {
@@ -278,6 +303,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       
       // 标记为已上传成功
       setUploaded(true);
+      setUploadResult(uploadedFile);
       
       // 确保 onUploadComplete 被调用
       if (onUploadComplete) {
@@ -285,10 +311,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       } else {
         console.warn('onUploadComplete 回调未定义');
       }
+      return uploadedFile;
     } catch (error: any) {
       console.error('Upload error:', error);
       const err = error instanceof Error ? error : new Error('文件上传失败');
       onError ? onError(err) : toast.error(err.message);
+      return null;
     } finally {
       setUploading(false);
     }
@@ -299,6 +327,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
       setFile(null);
       setPreviewUrl('');
       setUploaded(false);
+      setUploadResult(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
       if (onClear) onClear();
   };
@@ -401,7 +430,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
           <div className="absolute inset-0 bg-white/50 dark:bg-black/50 flex items-center justify-center z-10 rounded-xl backdrop-blur-[1px]">
               <div className="flex flex-col items-center bg-white dark:bg-gray-800 p-3 rounded-lg shadow-lg">
                   <Loader className="animate-spin text-indigo-600 mb-2" />
-                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">上传中...</span>
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">{translations.uploading || '上传中...'}</span>
               </div>
           </div>
       )}
@@ -477,7 +506,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             ) : fileType === 'audio' ? (
                 <div className="flex flex-col items-center justify-center w-full h-full p-4">
                     <FileIcon size={32} className="text-indigo-500 mb-2" />
-                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || '音频文件'}</span>
+                    <span className="text-xs text-gray-600 dark:text-gray-300 truncate max-w-[90%]">{file?.name || translations.audioFile || '音频文件'}</span>
                     <audio 
                       src={previewUrl} 
                       className="w-full mt-2 h-8" 
@@ -524,7 +553,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
                     onClick={(e) => { e.stopPropagation(); uploadFile(file); }}
                     className="absolute bottom-2 right-2 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow-lg hover:bg-indigo-700 z-20 transition-colors"
                  >
-                    确认上传
+                    {translations.confirmUpload || '确认上传'}
                  </button>
             )}
         </>
@@ -533,9 +562,9 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
             <div className="text-center text-gray-500 p-4">
                 <Upload size={24} className={`mx-auto mb-2 ${isDragging ? 'text-indigo-500' : 'text-gray-400'}`} />
                 <p className={`text-xs font-medium ${isDragging ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>
-                  {isDragging ? '松开以上传文件' : '点击或拖拽文件到此处上传'}
+                  {isDragging ? (translations.releaseToUpload || '松开以上传文件') : (translations.clickOrDragToUpload || '点击或拖拽文件到此处上传')}
                 </p>
-                <p className="text-[10px] text-gray-400 mt-1">支持 {accept.replace(/image\/|video\/|audio\//g, '').toUpperCase()}</p>
+                <p className="text-[10px] text-gray-400 mt-1">{translations.supportedFormats || '支持'} {accept.replace(/image\/|video\/|audio\//g, '').toUpperCase()}</p>
             </div>
         )
       )}

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Upload, X, Loader, Image as ImageIcon, PlayCircle, Plus, Trash2, Download, Check, RotateCcw } from 'lucide-react';
 import { useActivate, useUnactivate } from 'react-activation';
 import { avatarService, ProductAvatar, ProductAvatarCategory } from '../../../services/avatarService';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import ProductCanvas, { ProductCanvasRef } from './ProductCanvas';
 import { useProductAvatarStore } from '../../../stores/productAvatarStore';
 import { useNavigate } from 'react-router-dom';
@@ -53,6 +53,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
   const [removingBackground, setRemovingBackground] = useState(false);
   const removeBgTimerRef = useRef<NodeJS.Timeout | null>(null);
   const productCanvasRef = useRef<ProductCanvasRef | null>(null);
+  const customAvatarUploadRef = useRef<UploadComponentRef>(null);
+  const userFaceUploadRef = useRef<UploadComponentRef>(null);
+  const productUploadRef = useRef<UploadComponentRef>(null);
   
   // Result
   const [generating, setGenerating] = useState(false);
@@ -334,16 +337,20 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
       return;
     }
     
-    if (!productImage) {
+    // 1. Validation
+    // Check Product Image
+    if (!productImage && !productUploadRef.current?.file) {
         showError(t?.rightPanel?.uploadProductImg || 'Please upload product image');
         return;
     }
-    if (!selectedAvatar && !customAvatarImage) {
+    
+    // Check Avatar
+    if (!selectedAvatar && !customAvatarImage && !customAvatarUploadRef.current?.file) {
         showError(t?.rightPanel?.uploadAvatar || 'Please select an avatar');
         return;
     }
     
-    // Manual mode validation
+    // Manual mode additional validation
     if (activeMode === 'highPrecision') {
       if (!bgRemovedProductImage) {
         showError(t?.rightPanel?.waitBackgroundRemoval || 'Please wait for background removal to complete');
@@ -357,6 +364,86 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
     
     try {
         setGenerating(true);
+        
+        // 2. Handle Delayed Uploads
+        let currentProductImage = productImage;
+        let currentUserFaceImage = userFaceImage;
+        let currentCustomAvatarImage = customAvatarImage;
+
+        // 2.1 Product Image (Only for Normal Mode, as High Precision requires pre-upload for bg removal)
+        if (activeMode === 'normal') {
+            // If file is selected but not uploaded (fileId is empty)
+            if (productUploadRef.current?.file && (!currentProductImage || !currentProductImage.fileId)) {
+                try {
+                    const uploaded = await productUploadRef.current.triggerUpload();
+                    if (uploaded && uploaded.fileId) {
+                        currentProductImage = { fileId: uploaded.fileId, url: uploaded.fileUrl };
+                        setProductImage(currentProductImage);
+                    } else {
+                        throw new Error('Product image upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showError('Failed to upload product image');
+                    setGenerating(false);
+                    return;
+                }
+            }
+            
+            // Final check for product image
+            if (!currentProductImage || !currentProductImage.fileId) {
+                 showError('Product image is missing');
+                 setGenerating(false);
+                 return;
+            }
+        }
+
+        // 2.2 Custom Avatar Image (If selected)
+        if (!selectedAvatar) {
+             if (customAvatarUploadRef.current?.file && (!currentCustomAvatarImage || !currentCustomAvatarImage.fileId)) {
+                try {
+                    const uploaded = await customAvatarUploadRef.current.triggerUpload();
+                    if (uploaded && uploaded.fileId) {
+                        currentCustomAvatarImage = { fileId: uploaded.fileId, url: uploaded.fileUrl };
+                        setCustomAvatarImage(currentCustomAvatarImage);
+                    } else {
+                        throw new Error('Custom avatar upload failed');
+                    }
+                } catch (e) {
+                    console.error(e);
+                    showError('Failed to upload custom avatar');
+                    setGenerating(false);
+                    return;
+                }
+            }
+            
+            if (!currentCustomAvatarImage || !currentCustomAvatarImage.fileId) {
+                 showError('Custom avatar image is missing');
+                 setGenerating(false);
+                 return;
+            }
+        }
+
+        // 2.3 User Face Image (Optional)
+        if (userFaceUploadRef.current?.file && (!currentUserFaceImage || !currentUserFaceImage.fileId)) {
+            try {
+                const uploaded = await userFaceUploadRef.current.triggerUpload();
+                if (uploaded && uploaded.fileId) {
+                    currentUserFaceImage = { fileId: uploaded.fileId, url: uploaded.fileUrl };
+                    setUserFaceImage(currentUserFaceImage);
+                } else {
+                     // If user selected a face file, we expect it to upload successfully
+                     throw new Error('Face image upload failed');
+                }
+            } catch (e) {
+                console.error(e);
+                showError('Failed to upload face image');
+                setGenerating(false);
+                return;
+            }
+        }
+
+        // 3. Submission
         let params: any;
         
         if (activeMode === 'highPrecision') {
@@ -364,9 +451,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           params = {
             generateImageMode: 'manual',
             avatarId: selectedAvatar?.avatarId || '',
-            templateImageFileId: customAvatarImage?.fileId || '',
+            templateImageFileId: currentCustomAvatarImage?.fileId || '',
             productImageWithoutBackgroundFileId: bgRemovedProductImage!.fileId,
-            userFaceImageFileId: userFaceImage?.fileId || '',
+            userFaceImageFileId: currentUserFaceImage?.fileId || '',
             location: productLocation as any
           };
           
@@ -374,9 +461,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           const resultData = (res as any).result || res;
           
           if (resultData?.taskId) {
-            // Save to store and navigate to result page in new tab
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
-            // Use navigate with replace: false to create a new tab in the tab system
             navigate(`/create/product-replace?taskId=${resultData.taskId}&v2=true`, { replace: false });
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
@@ -385,9 +470,9 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           // V1 normal mode
           params = {
             avatarId: selectedAvatar?.avatarId || '',
-            templateImageFileId: customAvatarImage?.fileId || '',
-            productImageFileId: productImage.fileId,
-            userFaceImageFileId: userFaceImage?.fileId || '',
+            templateImageFileId: currentCustomAvatarImage?.fileId || '',
+            productImageFileId: currentProductImage!.fileId, // Checked above
+            userFaceImageFileId: currentUserFaceImage?.fileId || '',
             imageEditPrompt: prompt,
             productSize: String(productSize)
           };
@@ -396,19 +481,16 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
           const resultData = (res as any).result || res;
           
           if (resultData?.taskId) {
-            // Save to store and navigate to result page in new tab
             productAvatarStore.setData(resultData.taskId, { ...params, taskId: resultData.taskId });
-            // Use navigate with replace: false to create a new tab in the tab system
             navigate(`/create/product-replace?taskId=${resultData.taskId}`, { replace: false });
           } else {
             throw new Error((res as any).msg || (res as any).message || 'Task submission failed');
           }
         }
     } catch (error: any) {
+        console.error('Generation Error:', error);
         toast.error(error.message || 'Generation failed');
-    } finally {
-      // Reset generating state after navigation
-      setGenerating(false);
+        setGenerating(false);
     }
   };
 
@@ -510,9 +592,15 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
             {/* Upload Custom Item */}
             <div className="w-[calc(33.33%-8px)] sm:w-[calc(25%-9px)] lg:w-[calc(20%-10px)] aspect-[9/16]">
             <UploadComponent
+                ref={customAvatarUploadRef}
                 uploadType="tv"
                 accept=".png,.jpg,.jpeg,.webp"
-                immediate={true}
+                immediate={false}
+                showConfirmButton={false}
+                onFileSelected={(file) => {
+                    setCustomAvatarImage({ fileId: '', url: URL.createObjectURL(file) });
+                    setSelectedAvatar(null);
+                }}
                 onUploadComplete={(file) => {
                     setCustomAvatarImage({ fileId: file.fileId, url: file.fileUrl || '' });
                     setSelectedAvatar(null);
@@ -633,24 +721,37 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                       {(selectedAvatar || customAvatarImage) && (
                           <div className="absolute bottom-4 right-4 z-30">
                               <div className="relative group">
-                                  {userFaceImage ? (
+                                  <div className={userFaceImage ? 'block' : 'hidden'}>
                                       <div className="w-12 h-12 rounded-lg overflow-hidden border-2 border-white shadow-lg relative">
-                                          <img src={userFaceImage.url} className="w-full h-full object-cover" />
-                                          <button onClick={() => setUserFaceImage(null)} className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center rounded-bl text-[10px] z-20">×</button>
+                                          {userFaceImage && <img src={userFaceImage.url} className="w-full h-full object-cover" />}
+                                          <button 
+                                              onClick={() => {
+                                                  setUserFaceImage(null);
+                                                  userFaceUploadRef.current?.clear();
+                                              }} 
+                                              className="absolute top-0 right-0 bg-red-500 text-white w-4 h-4 flex items-center justify-center rounded-bl text-[10px] z-20"
+                                          >
+                                              ×
+                                          </button>
                                       </div>
-                                  ) : (
+                                  </div>
+                                  
+                                  <div className={!userFaceImage ? 'block' : 'hidden'}>
                                       <UploadComponent
+                                          ref={userFaceUploadRef}
                                           uploadType="tv"
                                           accept=".png,.jpg,.jpeg,.webp"
-                                          immediate={true}
+                                          immediate={false}
+                                          showConfirmButton={false}
                                           showPreview={false}
+                                          onFileSelected={(file) => setUserFaceImage({ fileId: '', url: URL.createObjectURL(file) })}
                                           onUploadComplete={(file) => setUserFaceImage({ fileId: file.fileId, url: file.fileUrl || '' })}
                                           className="w-12 h-12 bg-black/60 hover:bg-black/80 text-white rounded-lg flex flex-col items-center justify-center backdrop-blur-sm border border-white/30 transition !border-solid"
                                       >
                                           <Upload size={16} />
                                           <span className="text-[10px] mt-1">{t?.rightPanel?.uploadMyFace || 'Upload Face'}</span>
                                       </UploadComponent>
-                                  )}
+                                  </div>
                               </div>
                           </div>
                       )}
@@ -665,7 +766,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                   </h3>
                   
                   {/* Product Upload */}
-                  {productImage ? (
+                  <div className={productImage ? 'block' : 'hidden'}>
                       <div className="relative h-40 bg-gray-50 dark:bg-gray-700/50 rounded-xl overflow-hidden border-2 border-indigo-500/20">
                           {removingBackground ? (
                             <div className="flex flex-col items-center justify-center h-full">
@@ -674,12 +775,13 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                             </div>
                           ) : (
                             <>
-                              <img src={bgRemovedProductImage?.url || productImage.url} className="w-full h-full object-contain p-2" alt="Product" />
+                              {productImage && <img src={bgRemovedProductImage?.url || productImage.url} className="w-full h-full object-contain p-2" alt="Product" />}
                               <button 
                                   onClick={() => {
                                     setProductImage(null);
                                     setBgRemovedProductImage(null);
                                     setProductLocation([]);
+                                    productUploadRef.current?.clear();
                                   }} 
                                   className="absolute top-2 right-2 bg-red-500 text-white w-6 h-6 flex items-center justify-center rounded-full hover:bg-red-600 transition shadow-sm"
                               >
@@ -688,11 +790,21 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                             </>
                           )}
                       </div>
-                  ) : (
+                  </div>
+                  
+                  <div className={!productImage ? 'block' : 'hidden'}>
                     <UploadComponent
+                        ref={productUploadRef}
                         uploadType="tv"
                         accept=".png,.jpg,.jpeg,.webp"
-                        immediate={true}
+                        immediate={activeMode === 'highPrecision'}
+                        showConfirmButton={false}
+                        onFileSelected={(file) => {
+                            if (activeMode === 'normal') {
+                                // Clear previous state but keep url for preview
+                                setProductImage({ fileId: '', url: URL.createObjectURL(file) });
+                            }
+                        }}
                         onUploadComplete={(file) => handleProductImageUpload({ fileId: file.fileId, fileUrl: file.fileUrl || '' })}
                         className="h-40"
                     >
@@ -701,7 +813,7 @@ const DigitalHumanProduct: React.FC<DigitalHumanProductProps> = ({
                                 <p className="text-sm">{t?.rightPanel?.uploadProductImg || 'Upload Product Image'}</p>
                             </div>
                     </UploadComponent>
-                  )}
+                  </div>
 
                   {/* Product Size - Only show in normal mode */}
                   {productImage && activeMode === 'normal' && (

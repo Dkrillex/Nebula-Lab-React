@@ -1,12 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Upload, Loader2, CheckCircle, AlertCircle, Info, Copy, Video, FileVideo } from 'lucide-react';
 import { avatarService, UploadedFile, CustomAvatarTaskResult } from '../../../services/avatarService';
 import { uploadService } from '../../../services/uploadService';
 import { useAuthStore } from '../../../stores/authStore';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 interface UploadCustomAvatarPageProps {
   t?: any;
@@ -54,6 +55,15 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
   
   // Modals
   const [showMaterialModal, setShowMaterialModal] = useState(false);
+  const pollerRef = useRef<PollingController | null>(null);
+  const uploadRef = useRef<UploadComponentRef>(null);
+  const stopActivePoller = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+    setQueryLoading(false);
+  }, []);
 
   // useEffect(() => {
   //   const queryTaskId = searchParams.get('taskId');
@@ -89,14 +99,171 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
     toast.success(t?.script?.success?.s1 || '视频上传成功');
   };
 
+  useEffect(() => {
+    return () => {
+      stopActivePoller();
+    };
+  }, [stopActivePoller]);
+
+  const handleTaskSuccess = useCallback(
+    async (taskResult: CustomAvatarTaskResult) => {
+      setResult(taskResult);
+      setTaskStatus('success');
+      setProgress(100);
+      toast.success(t?.script?.success?.s3 || '任务完成');
+
+      const videoUrl = taskResult.aiAvatar?.previewVideoUrl;
+      const coverUrl = taskResult.aiAvatar?.coverUrl;
+
+      if (videoUrl) {
+        try {
+          const uploadRes = await uploadService.uploadByVideoUrl(videoUrl, 'mp4');
+          const finalVideoUrl = uploadRes.url || videoUrl;
+          setPreviewVideoUrl(finalVideoUrl);
+          setAiAvatar({
+            ...taskResult.aiAvatar,
+            previewVideoUrl: finalVideoUrl,
+            coverUrl,
+          });
+
+          if (coverUrl) {
+            uploadService
+              .uploadByImageUrl(coverUrl, 'jpg')
+              .then(res => {
+                setAiAvatar((prev: any) => ({
+                  ...(prev || taskResult.aiAvatar),
+                  coverUrl: res.url || coverUrl,
+                }));
+              })
+              .catch(e => console.warn('Cover upload failed', e));
+          }
+        } catch (e) {
+          console.error('Failed to upload result to OSS', e);
+          setPreviewVideoUrl(videoUrl);
+          setAiAvatar(taskResult.aiAvatar);
+        }
+      } else {
+        setPreviewVideoUrl('');
+        setAiAvatar(taskResult.aiAvatar);
+      }
+    },
+    [t]
+  );
+
+  const startPolling = useCallback(
+    (currentTaskId: string) => {
+      if (!currentTaskId) return;
+      stopActivePoller();
+      setQueryLoading(true);
+
+      const poller = createTaskPoller<CustomAvatarTaskResult | null>({
+        request: async () => {
+          const res = await avatarService.queryCustomAvatarTask(currentTaskId);
+          if (res.code !== '200' || !res.result) {
+            throw new Error(res.message || '查询失败');
+          }
+          return res.result;
+        },
+        parseStatus: result => result?.status,
+        isPending: status => {
+          if (!status) return true;
+          return ['running', 'init'].includes(status);
+        },
+        isSuccess: status => status === 'success',
+        isFailure: status => status === 'fail',
+        onProgress: value => setProgress(value),
+        onSuccess: async result => {
+          if (result) {
+            await handleTaskSuccess(result);
+          }
+          stopActivePoller();
+        },
+        onFailure: result => {
+          setResult(result);
+          setTaskStatus('fail');
+          const errKey = result?.errorMsg === 'no face detected' ? t?.script?.errors?.e7 || '未检测到人脸' : null;
+          const errMsg = errKey || result?.errorMsg || result?.errorMessage || t?.script?.errors?.e5 || '生成失败';
+          toast.error(errMsg);
+          stopActivePoller();
+        },
+        onTimeout: () => {
+          toast.error(t?.script?.errors?.timeout || '任务超时，请稍后重试');
+          setTaskStatus('fail');
+          stopActivePoller();
+        },
+        onError: error => {
+          console.error('Query failed:', error);
+          toast.error(error?.message || t?.script?.errors?.e5 || '查询失败');
+          setTaskStatus('fail');
+          stopActivePoller();
+        },
+        intervalMs: 10_000,
+        progressMode: 'medium',
+        continueOnError: () => false,
+      });
+
+      pollerRef.current = poller;
+      poller.start();
+    },
+    [handleTaskSuccess, stopActivePoller, t]
+  );
+
   const handleSubmit = async () => {
     if (!token) {
       toast.error('请先登录');
       return;
     }
-    if (!validateForm()) return;
+    
+    // Handle manual upload before validation/submission
+    let currentVideoFileId = formData.videoFileId;
+    
+    if (!formData.avatarName.trim()) {
+      toast.error(t?.script?.errors?.e1 || '请输入数字人名称');
+      return;
+    }
+    if (formData.avatarName.length < 2 || formData.avatarName.length > 20) {
+      toast.error(t?.script?.errors?.e2 || '名称长度在2-20个字符之间');
+      return;
+    }
+
+    // Check if file is selected (either uploaded or waiting to upload)
+    if (!currentVideoFileId && (!uploadRef.current || !uploadRef.current.file)) {
+       toast.error(t?.script?.errors?.e3 || '请上传视频文件');
+       return;
+    }
+    
+    if (uploadRef.current && uploadRef.current.file && !currentVideoFileId) {
+       try {
+          setLoading(true);
+          const uploaded = await uploadRef.current.triggerUpload();
+          if (uploaded) {
+             currentVideoFileId = uploaded.fileId;
+             // Sync state
+             setFormData(prev => ({
+               ...prev,
+               videoFileId: uploaded.fileId,
+               avatarName: prev.avatarName || uploaded.fileName.replace(/\.[^/.]+$/, '').slice(0, 20)
+             }));
+             setUploadedFile(uploaded);
+          } else {
+             throw new Error('Upload failed');
+          }
+       } catch (error) {
+          console.error('Manual upload failed:', error);
+          setLoading(false);
+          toast.error('视频上传失败');
+          return;
+       }
+    }
+
+    if (!currentVideoFileId) {
+      toast.error(t?.script?.errors?.e3 || '请上传视频文件');
+      setLoading(false);
+      return;
+    }
 
     try {
+      stopActivePoller();
       setLoading(true);
       setProgress(0);
       setTaskStatus('running');
@@ -104,7 +271,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
       const res = await avatarService.submitCustomAvatarTask({
         avatarName: formData.avatarName,
         noticeUrl: formData.noticeUrl,
-        videoFileId: formData.videoFileId,
+        videoFileId: currentVideoFileId,
         score: formData.score
       });
 
@@ -114,8 +281,7 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
         toast.success(t?.script?.success?.s2 || '任务提交成功');
         // Update URL without reloading
         // navigate(`?taskId=${newTaskId}`, { replace: true });
-        // Start querying
-        queryResult(newTaskId);
+        startPolling(newTaskId);
       } else {
         throw new Error(res.message || '提交失败');
       }
@@ -128,74 +294,8 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
     }
   };
 
-  const queryResult = async (currentTaskId: string) => {
-    if (!currentTaskId) return;
-
-    try {
-      setQueryLoading(true);
-      const res = await avatarService.queryCustomAvatarTask(currentTaskId);
-      
-      if (res.code !== '200' || !res.result) {
-          throw new Error(res.message || '查询失败');
-      }
-
-      const taskResult = res.result;
-      setResult(taskResult);
-      setTaskStatus(taskResult.status);
-
-      if (taskResult.status === 'running' || taskResult.status === 'init') {
-        // Simulate progress
-        if (progress < 90) {
-          setProgress(prev => Math.min(prev + Math.random() * 5, 90));
-        }
-        // Poll again
-        setTimeout(() => queryResult(currentTaskId), 10000);
-      } else if (taskResult.status === 'success') {
-        setProgress(100);
-        toast.success(t?.script?.success?.s3 || '任务完成');
-        
-        // Process result URLs (transfer to OSS)
-        const videoUrl = taskResult.aiAvatar?.previewVideoUrl;
-        const coverUrl = taskResult.aiAvatar?.coverUrl;
-        
-        if (videoUrl) {
-             // In React version we might just use the URL directly or upload if needed.
-             // The Vue version uploads to OSS to prevent expiration.
-             try {
-                 const uploadRes = await uploadService.uploadByVideoUrl(videoUrl, 'mp4');
-                 setPreviewVideoUrl(uploadRes.url || videoUrl);
-                 setAiAvatar({
-                     ...taskResult.aiAvatar,
-                     previewVideoUrl: uploadRes.url || videoUrl,
-                     coverUrl: coverUrl // We'll deal with cover upload if needed, or just use video frame
-                 });
-                 
-                 if (coverUrl) {
-                      uploadService.uploadByImageUrl(coverUrl, 'jpg').then(res => {
-                           setAiAvatar((prev: any) => ({ ...prev, coverUrl: res.url || coverUrl }));
-                      }).catch(e => console.warn('Cover upload failed', e));
-                 }
-             } catch (e) {
-                 console.error('Failed to upload result to OSS', e);
-                 setPreviewVideoUrl(videoUrl);
-                 setAiAvatar(taskResult.aiAvatar);
-             }
-        }
-      } else if (taskResult.status === 'fail') {
-        if (taskResult.errorMsg === 'no face detected') {
-             toast.error(t?.script?.errors?.e7 || '未检测到人脸');
-        } else {
-             toast.error(taskResult.errorMsg || taskResult.errorMessage || '生成失败');
-        }
-      }
-    } catch (error) {
-      console.error('Query failed:', error);
-    } finally {
-      setQueryLoading(false);
-    }
-  };
-
   const resetForm = () => {
+    stopActivePoller();
     setFormData({
       avatarName: '',
       noticeUrl: '',
@@ -245,13 +345,30 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                   {t?.tips?.form?.label || '视频文件'}
                 </label>
                 <UploadComponent
+                  ref={uploadRef}
                   onUploadComplete={handleUploadComplete}
                   uploadType="tv"
                   accept=".mp4,.mov"
                   maxSize={100}
-                  immediate={true}
+                  immediate={false}
+                  showConfirmButton={false}
                   className="h-64"
                   initialUrl={uploadedFile?.fileUrl}
+                  onFileSelected={(file) => {
+                      setUploadedFile({
+                        fileId: '',
+                        fileName: file.name,
+                        fileUrl: URL.createObjectURL(file),
+                        format: file.name.split('.').pop() || '',
+                      });
+                      // Auto fill name if empty
+                      if (!formData.avatarName) {
+                        setFormData(prev => ({
+                          ...prev,
+                          avatarName: file.name.replace(/\.[^/.]+$/, '').slice(0, 20)
+                        }));
+                      }
+                  }}
                 >
                     <div className="flex flex-col items-center justify-center text-gray-500">
                         <Upload className="w-10 h-10 mb-2 text-gray-400" />
@@ -289,8 +406,8 @@ const UploadCustomAvatarPage: React.FC<UploadCustomAvatarPageProps> = ({ t }) =>
                   onClick={handleSubmit}
                   disabled={
                     loading ||
-                    taskStatus !== 'idle' ||
-                    !formData.videoFileId ||
+                    taskStatus === 'running' ||
+                    !uploadedFile ||
                     !formData.avatarName
                   }
                   className="flex-1 py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"

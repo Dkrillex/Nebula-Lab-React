@@ -5,6 +5,7 @@ import { tansParams, errorCode, stringifyParams } from '../utils/ruoyi';
 import { generateAesKey, encryptWithAes, encryptBase64, decryptBase64, decryptWithAes } from '../utils/crypto';
 import { encrypt as rsaEncrypt, decrypt as rsaDecrypt } from '../utils/jsencrypt';
 import { useAuthStore } from '../stores/authStore';
+import { getStorageKey } from '../utils/storageNamespace';
 import toast from 'react-hot-toast';
 import React from 'react';
 import { translations } from '../translations';
@@ -16,7 +17,7 @@ const ENABLE_ENCRYPT = import.meta.env.VITE_ENABLE_ENCRYPT !== 'false';
 
 // 默认语言（可以从 localStorage 或 store 获取）
 function getLanguage(): string {
-  const lang = localStorage.getItem('language') || 'zh';
+  const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
   // 转换为后端格式：zh -> zh_CN, en -> en_US, id -> id_ID
   if (lang === 'zh') return 'zh_CN';
   if (lang === 'id') return 'id_ID';
@@ -27,7 +28,7 @@ function getLanguage(): string {
  * 获取当前语言的翻译对象
  */
 function getCurrentTranslation() {
-  const lang = localStorage.getItem('language') || 'zh';
+  const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
   return translations[lang] || translations['zh'];
 }
 
@@ -61,6 +62,9 @@ export class ApiError extends Error {
     this.data = data;
   }
 }
+
+// Track manual cancellation signals
+export const manualCancelSignals = new WeakMap<AbortSignal, boolean>();
 
 // Flags for state management
 let isLogoutProcessing = false;
@@ -210,7 +214,7 @@ function showErrorMessage(message: string, mode?: 'modal' | 'message' | 'none') 
 
 function getToken(): string | null {
   const store = useAuthStore.getState();
-  return store.token || localStorage.getItem('token');
+  return store.token || localStorage.getItem(getStorageKey('token'));
 }
 
 // 跳过认证的 API 列表
@@ -223,6 +227,7 @@ const SKIP_AUTH_APIS: string[] = [
   '/auth/logout',
   '/api/models/list',
   '/api/pricing/list',
+  '/system/priceList/list', // 定价列表页面不需要登录
   '/ads/labTemplate/list',
 ];
 
@@ -503,8 +508,8 @@ function createRequestClient(
           const userStore = useAuthStore.getState();
           
           // 清除 localStorage
-          localStorage.removeItem('token');
-          localStorage.removeItem('userInfo');
+          localStorage.removeItem(getStorageKey('token'));
+          localStorage.removeItem(getStorageKey('userInfo'));
           
           // 重置 store 状态
           userStore.setUserInfo(null);

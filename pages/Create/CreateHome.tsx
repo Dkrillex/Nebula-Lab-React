@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useActivate, useUnactivate } from 'react-activation';
 import { 
@@ -18,6 +18,73 @@ const CREATE_IMAGE_PAYLOAD_KEY = 'createImagePayload';
 const MAX_CREATE_UPLOAD_IMAGES = 4;
 const MAX_CREATE_UPLOAD_SIZE_MB = 10;
 
+const LazyMedia: React.FC<{
+  src?: string;
+  type: 'image' | 'video';
+  alt?: string;
+  className?: string;
+  [key: string]: any;
+}> = ({ src, type, alt, className, ...props }) => {
+  const [shouldRender, setShouldRender] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        setShouldRender(true);
+        // 一旦加载，就不再卸载，防止反复加载导致的闪烁和流量浪费
+        observer.disconnect();
+      }
+    }, { rootMargin: '400px' }); // 提前 400px 加载
+
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  if (!src) return null;
+
+  // 如果不该渲染，显示占位符
+  if (!shouldRender) {
+    return (
+      <div 
+        ref={ref} 
+        className={`bg-gray-100 dark:bg-gray-800 animate-pulse w-full ${className}`}
+        style={{ height: '200px' }} // 仅在占位阶段保持高度，确保能被观测到
+      />
+    );
+  }
+
+  if (type === 'video') {
+    return (
+      <div ref={ref} className="w-full">
+        <video 
+          src={src} 
+          className={`${className} transition-opacity duration-500 opacity-0 data-[loaded=true]:opacity-100`}
+          onLoadedData={(e) => {
+             e.currentTarget.setAttribute('data-loaded', 'true');
+          }}
+          {...props} 
+        />
+      </div>
+    );
+  }
+  
+  return (
+    <div ref={ref} className="w-full">
+      <img 
+        src={src} 
+        alt={alt} 
+        className={`${className} transition-opacity duration-500 opacity-0 data-[loaded=true]:opacity-100`}
+        onLoad={(e) => {
+           e.currentTarget.setAttribute('data-loaded', 'true');
+        }}
+        {...props} 
+      />
+    </div>
+  );
+};
+
 const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const { t: contextT, handleNavClick } = useAppOutletContext();
   
@@ -35,9 +102,11 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const [inputValue, setInputValue] = useState('');
   const [pendingImages, setPendingImages] = useState<string[]>([]);
   const [isUploadingImages, setIsUploadingImages] = useState(false);
+  const [isCreateDragOver, setIsCreateDragOver] = useState(false);
   
   const [labTemplateData, setLabTemplateData] = useState<LabTemplate[]>([]);
   const [loading, setLoading] = useState(false);
+  const loadingRef = useRef(false);
   const [hasMore, setHasMore] = useState(true);
   const [templateName, setTemplateName] = useState('');
   const [params, setParams] = useState<LabTemplateQuery>({
@@ -54,6 +123,38 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const masonryRef = useRef<HTMLDivElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
   const imageInputRef = useRef<HTMLInputElement | null>(null);
+  
+  // 瀑布流列数计算
+  const [columnsCount, setColumnsCount] = useState(2);
+
+  useEffect(() => {
+    const calculateColumns = () => {
+      const width = window.innerWidth;
+      if (width >= 1280) return 5; // xl
+      if (width >= 1024) return 4; // lg
+      if (width >= 768) return 3;  // md
+      return 2;                    // default/sm
+    };
+    
+    const handleResize = () => {
+      setColumnsCount(calculateColumns());
+    };
+
+    handleResize(); // 初始化
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // 将数据分配到各列（从左到右排列）
+  const columns = useMemo(() => {
+    const cols: LabTemplate[][] = Array.from({ length: columnsCount }, () => []);
+    labTemplateData.forEach((item, index) => {
+      // 简单轮询分配：0->col0, 1->col1, 2->col2...
+      // 这样能保证视觉上是从左到右加载，且追加数据时旧数据位置不变
+      cols[index % columnsCount].push(item);
+    });
+    return cols;
+  }, [labTemplateData, columnsCount]);
   
   // 滚动位置保存
   const scrollTopRef = useRef<number>(0);
@@ -156,7 +257,8 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
   // 加载模板数据
   const loadTemplates = useCallback(async () => {
-    if (loading) return;
+    if (loadingRef.current) return;
+    loadingRef.current = true;
     setLoading(true);
     try {
       const currentParams = {
@@ -202,7 +304,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
         const processedRows = newRows.map(item => ({
           ...item,
           isLike: item.isLike ?? false
-        }));
+         }));
         
         // 更新数据
         setLabTemplateData(prev => {
@@ -229,9 +331,10 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
         setParams(prev => ({ ...prev, pageNum: currentPageNum - 1 }));
       }
     } finally {
+      loadingRef.current = false;
       setLoading(false);
     }
-  }, [loading, params.pageNum, params.pageSize, templateName]);
+  }, [params.pageNum, params.pageSize, templateName]);
 
   // 设置无限滚动观察器
   const setupInfiniteScroll = useCallback(() => {
@@ -249,6 +352,21 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       (entries) => {
         const entry = entries[0];
         if (entry?.isIntersecting && hasMore && !loading) {
+          // 增加检查：如果是第一页加载后的首次触发，检查内容高度是否足够填满屏幕
+          // 且检查用户是否真的滚动了（防止 Sentinel 刚渲染时被误判为可见）
+          const scrollContainer = document.getElementById('dashboard-main-scroll');
+          if (scrollContainer && params.pageNum === 1) {
+             // 只有当内容高度超过可视高度（可滚动），且用户还在顶部附近时，我们怀疑这是误触
+             const isContentOverflowing = scrollContainer.scrollHeight > scrollContainer.clientHeight;
+             const isAtTop = scrollContainer.scrollTop < 10;
+             
+             // 如果内容已经填满屏幕，且用户未滚动，忽略此次触发
+             // 如果内容没填满屏幕 (!isContentOverflowing)，则允许触发（自动加载下一页以填满屏幕）
+             if (isContentOverflowing && isAtTop) {
+               return;
+             }
+          }
+
           setParams(prev => {
             const nextPageNum = (prev.pageNum || 1) + 1;
             return { ...prev, pageNum: nextPageNum };
@@ -257,7 +375,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       },
       { 
         threshold: 0, 
-        rootMargin: '300px 0px', // 提前300px加载，确保用户滚动时能及时加载
+        rootMargin: '300px 0px', // 减小预加载距离，防止初始加载时误触第二页
         root: document.getElementById('dashboard-main-scroll') // 显式指定滚动容器
       }
     );
@@ -272,8 +390,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     // 如果已有数据且参数未变（通常发生在 KeepAlive 恢复时），不要重新加载
     // 但这里 pageNum 变化肯定是需要加载的
     loadTemplates();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [params.pageNum, templateName]); 
+  }, [loadTemplates]); 
 
   // 设置无限滚动
   useEffect(() => {
@@ -281,7 +398,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       // 延迟设置观察器，确保 DOM 已渲染
       const timer = setTimeout(() => {
         setupInfiniteScroll();
-      }, 500);
+      }, 1000); // 增加延迟时间，确保图片布局渲染完成
 
       return () => {
         clearTimeout(timer);
@@ -377,20 +494,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
   const handleDoSame = (item: LabTemplate) => {
     const goToUrl = () => {
       setShowTemplateDetail(false);
-      const isImageType = item.templateType === 1 || item.templateType === 2;
-      const isImageToVideo = item.templateType === 4;
-
-      // 根据旧系统逻辑，统一跳转到 /chat 页面
-      const targetUrl = isImageType
-        ? '/chat?mode=image'
-        : '/chat?mode=video';
-
       const transferId = `transfer_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
-
-      // 固定模型名称，与旧系统保持一致
-      const modelName = isImageType
-        ? 'doubao-seedream-4-0-250828'
-        : 'veo-3.1-fast-generate-preview';
 
       const referenceMedia = (() => {
         if (item.templateType === 1) return ''; // 文生图，无需参考图
@@ -398,7 +502,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
           // 图生图，使用原图
           return item.videoTemplateUrl || item.templateUrl || '';
         }
-        if (isImageToVideo) {
+        if (item.templateType === 4) {
           // 图生视频，优先使用原图作为参考
           return item.videoTemplateUrl || item.templateUrl || '';
         }
@@ -409,12 +513,53 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       // 处理图片 URL，移除反引号等特殊字符
       const cleanImageUrl = referenceMedia ? referenceMedia.replace(/`/g, '') : '';
       const images = cleanImageUrl ? [cleanImageUrl] : [];
-      
-      // 使用 store 存储数据
-      setData(transferId, {
+      const basePayload = {
         images,
         sourcePrompt: item.templateDesc,
         timestamp: Date.now(),
+      };
+
+      if (item.templateType === 1) {
+        // 文生图 -> 文生图模块
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:textToImage',
+        });
+        navigate(`/create/textToImage?transferId=${transferId}`);
+        return;
+      }
+
+      if (item.templateType === 2) {
+        // 图生图 -> 图生图模块（携带 prompt + 参考图）
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:imageToImage',
+        });
+        navigate(`/create/textToImage?transferId=${transferId}`);
+        return;
+      }
+
+      if (item.templateType === 4) {
+        // 图生视频 -> 图生视频页（携带 prompt + 参考图）
+        setData(transferId, {
+          ...basePayload,
+          source: 'createHome:imageToVideo',
+        });
+        navigate(`/create/imgToVideo?transferId=${transferId}`);
+        return;
+      }
+
+      const isImageType = item.templateType === 1 || item.templateType === 2;
+      const isImageToVideo = item.templateType === 4;
+
+      // 固定模型名称，与旧系统保持一致
+      const modelName = isImageType
+        ? 'doubao-seedream-4-0-250828'
+        : 'veo-3.1-fast-generate-preview';
+
+      // 使用 store 存储数据
+      setData(transferId, {
+        ...basePayload,
         source: isImageType 
           ? 'imageGenerates' 
           : (isImageToVideo ? 'videoGenerates:image2video' : 'videoGenerates:text2video'),
@@ -472,24 +617,25 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     imageInputRef.current?.click();
   };
 
-  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { files } = event.target;
-    if (!files || files.length === 0) return;
+  const processPendingImages = async (filesInput: FileList | File[] | null) => {
+    if (!filesInput) return;
 
     const remainingSlots = MAX_CREATE_UPLOAD_IMAGES - pendingImages.length;
     if (remainingSlots <= 0) {
       toast.error(`最多上传 ${MAX_CREATE_UPLOAD_IMAGES} 张图片`);
-      event.target.value = '';
       return;
     }
 
-    const imageFiles = Array.from(files)
+    const filesArray = Array.isArray(filesInput)
+      ? filesInput
+      : Array.from(filesInput as ArrayLike<File>);
+
+    const imageFiles = filesArray
       .filter((file) => file.type.startsWith('image/'))
       .slice(0, remainingSlots);
 
     if (imageFiles.length === 0) {
       toast.error('请选择图片文件');
-      event.target.value = '';
       return;
     }
 
@@ -498,7 +644,6 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
     );
     if (oversizeFile) {
       toast.error(`单张图片不能超过 ${MAX_CREATE_UPLOAD_SIZE_MB}MB`);
-      event.target.value = '';
       return;
     }
 
@@ -511,7 +656,35 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
       toast.error('图片读取失败，请重试');
     } finally {
       setIsUploadingImages(false);
-      event.target.value = '';
+    }
+  };
+
+  const handleImageSelection = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    await processPendingImages(event.target.files);
+    event.target.value = '';
+  };
+
+  const handleCreateDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!e.dataTransfer?.types || !Array.from(e.dataTransfer.types).includes('Files')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(true);
+  };
+
+  const handleCreateDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(false);
+  };
+
+  const handleCreateDrop = async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsCreateDragOver(false);
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      await processPendingImages(files);
     }
   };
 
@@ -573,6 +746,24 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
   return (
     <div className="w-full">
+      <style>{`
+        /* 隐藏主滚动容器的滚动条 */
+        #dashboard-main-scroll::-webkit-scrollbar {
+          display: none;
+        }
+        #dashboard-main-scroll {
+          -ms-overflow-style: none;  /* IE and Edge */
+          scrollbar-width: none;  /* Firefox */
+        }
+        /* 隐藏横向滚动区域的滚动条 */
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
       <div className="container mx-auto px-4 py-8 md:py-12 max-w-7xl">
             {/* Hero Greeting */}
             <div className="text-center mb-8">
@@ -582,7 +773,14 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
 
               {/* Input Box */}
               <div className="max-w-3xl mx-auto relative mb-12">
-                <div className="relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary">
+                <div
+                  className={`relative overflow-hidden rounded-2xl border border-border bg-surface shadow-lg transition-shadow focus-within:shadow-xl focus-within:ring-1 focus-within:ring-primary ${
+                    isCreateDragOver ? 'border-primary bg-primary/5' : ''
+                  }`}
+                  onDragOver={handleCreateDragOver}
+                  onDragLeave={handleCreateDragLeave}
+                  onDrop={handleCreateDrop}
+                >
                   <textarea 
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -648,7 +846,7 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
             </div>
 
             {/* Creative Types (Horizontal Scroll) */}
-            <div className="mb-8 overflow-x-auto pb-4 custom-scrollbar">
+            <div className="mb-8 overflow-x-auto pb-4 hide-scrollbar">
               <div className="flex gap-4 min-w-max px-1">
                 {creativeTypes.map((item) => (
                   <div 
@@ -683,71 +881,77 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
               ))}
             </div>
 
-            {/* Templates Masonry Grid - Using CSS Columns for stability */}
+            {/* Templates Masonry Grid - Manual JS Implementation for horizontal ordering */}
             <div className="pb-8">
               <div 
                 ref={masonryRef}
-                className="columns-2 md:columns-3 lg:columns-4 xl:columns-5 gap-4 space-y-4"
+                className="flex gap-4 items-start"
               >
-                 {labTemplateData.map((item, index) => (
-                   <div 
-                     key={item.id} 
-                     className="break-inside-avoid rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer mb-4"
-                     onClick={() => handleTemplateClick(item)}
-                   >
-                      <div className="relative">
-                         {/* Media Content */}
-                         {item.templateType === 3 || item.templateType === 4 ? (
-                            <video 
-                              src={item.templateUrl?.replace(/`/g, '')}
-                              className="w-full h-auto object-cover"
-                              loop
-                              muted
-                              playsInline
-                              onMouseEnter={(e) => {
-                                const video = e.currentTarget;
-                                video.play().catch(console.error);
-                              }}
-                              onMouseLeave={(e) => {
-                                e.currentTarget.pause();
-                              }}
-                            />
-                         ) : (
-                            <img 
-                              src={item.templateUrl?.replace(/`/g, '')}
-                              alt={item.templateName}
-                              className="w-full h-auto object-cover"
-                              loading="lazy"
-                            />
-                         )}
-                         
-                         {/* Overlay Info */}
-                         <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end min-h-[80px]">
-                            <div className="flex justify-between items-center mb-1">
-                              <h3 className="text-sm font-bold truncate pr-2">{item.templateName}</h3>
-                              <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white whitespace-nowrap">{renderDict(item.templateType)}</span>
-                            </div>
-                            <p className="text-[10px] text-white/80 line-clamp-2 mb-2">{item.templateDesc}</p>
-                            <div className="flex justify-between items-center text-xs">
-                               <button 
-                                 className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm"
-                                 onClick={(e) => {
-                                   e.stopPropagation();
-                                   handleDoSame(item);
-                                 }}
-                               >
-                                 {t.templateDetail?.makeSame || '做同款'}
-                               </button>
-                               <div 
-                                 className="flex items-center gap-1 cursor-pointer" 
-                                 onClick={(e) => clickTemplateLike(e, item, item.isLike)}
-                               >
-                                  <span className="text-base">{item.isLike ? '❤️' : '🤍'}</span>
-                                  <span>{item.likeCount || 0}</span>
-                               </div>
-                            </div>
-                         </div>
-                      </div>
+                 {columns.map((colItems, colIndex) => (
+                   <div key={colIndex} className="flex-1 space-y-4 min-w-0">
+                     {colItems.map((item) => (
+                       <div 
+                         key={item.id} 
+                         className="rounded-xl bg-surface border border-border overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer"
+                         style={{ contentVisibility: 'auto' } as React.CSSProperties} // 浏览器渲染优化
+                         onClick={() => handleTemplateClick(item)}
+                       >
+                          <div className="relative">
+                             {/* Media Content */}
+                             {item.templateType === 3 || item.templateType === 4 ? (
+                                <LazyMedia
+                                  type="video"
+                                  src={item.templateUrl?.replace(/`/g, '')}
+                                  className="w-full h-auto object-cover"
+                                  loop
+                                  muted
+                                  playsInline
+                                  onMouseEnter={(e: any) => {
+                                    const video = e.currentTarget;
+                                    video.play().catch(console.error);
+                                  }}
+                                  onMouseLeave={(e: any) => {
+                                    e.currentTarget.pause();
+                                  }}
+                                />
+                             ) : (
+                                <LazyMedia 
+                                  type="image"
+                                  src={item.templateUrl?.replace(/`/g, '')}
+                                  alt={item.templateName}
+                                  className="w-full h-auto object-cover"
+                                />
+                             )}
+                             
+                             {/* Overlay Info */}
+                             <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end min-h-[80px]">
+                                <div className="flex justify-between items-center mb-1">
+                                  <h3 className="text-sm font-bold truncate pr-2">{item.templateName}</h3>
+                                  <span className="text-[10px] bg-indigo-600 px-1.5 py-0.5 rounded text-white whitespace-nowrap">{renderDict(item.templateType)}</span>
+                                </div>
+                                <p className="text-[10px] text-white/80 line-clamp-2 mb-2">{item.templateDesc}</p>
+                                <div className="flex justify-between items-center text-xs">
+                                   <button 
+                                     className="bg-white/20 hover:bg-white/40 px-2 py-1 rounded text-[10px] backdrop-blur-sm"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       handleDoSame(item);
+                                     }}
+                                   >
+                                     {t.templateDetail?.makeSame || '做同款'}
+                                   </button>
+                                   <div 
+                                     className="flex items-center gap-1 cursor-pointer" 
+                                     onClick={(e) => clickTemplateLike(e, item, item.isLike)}
+                                   >
+                                      <span className="text-base">{item.isLike ? '❤️' : '🤍'}</span>
+                                      <span>{item.likeCount || 0}</span>
+                                   </div>
+                                </div>
+                             </div>
+                          </div>
+                       </div>
+                     ))}
                    </div>
                  ))}
               </div>
@@ -758,12 +962,12 @@ const CreateHome: React.FC<{ t?: any }> = ({ t: propT }) => {
                    ref={sentinelRef}
                    className="w-full h-20 flex justify-center items-center mt-4"
                  >
-                    {loading && <Loader2 className="animate-spin text-indigo-500" size={24} />}
+                    {loading && labTemplateData.length > 0 && <Loader2 className="animate-spin text-indigo-500" size={24} />}
                  </div>
                )}
             </div>
             
-            {loading && (
+            {loading && labTemplateData.length === 0 && (
               <div className="flex justify-center py-8">
                 <Loader2 className="animate-spin text-indigo-500" size={32} />
               </div>

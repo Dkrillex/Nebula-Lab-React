@@ -40,6 +40,9 @@ export interface VideoProcessQueryResult {
     status: 'success' | 'failed' | 'processing' | 'pending';
     resizedVideoUrl?: string;
     trackingVideoPath?: string;
+    duration?: number; // 视频时长（秒）
+    fps?: number; // 视频帧率
+    frames?: number; // 视频总帧数
   };
 }
 
@@ -119,7 +122,9 @@ export const videoProcessService = {
    * @returns 任务ID
    */
   taskSubmit: async (params: VideoProcessSubmitParams): Promise<VideoProcessSubmitResult> => {
-    return request.post<VideoProcessSubmitResult>('/tp/v1/VideoProcessSubmit', params);
+    return request.post<VideoProcessSubmitResult>('/tp/v1/VideoProcessSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -131,6 +136,7 @@ export const videoProcessService = {
   queryTask: async (taskId: string, needCloudFrontUrl: boolean = true): Promise<VideoProcessQueryResult> => {
     return request.get<VideoProcessQueryResult>('/tp/v1/VideoProcessQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -154,7 +160,7 @@ export interface ImageMaskDrawingQueryParams {
 export interface ImageMaskDrawingQueryResult {
   result: {
     taskId: string;
-    status: 'success' | 'failed' | 'processing' | 'pending';
+    status: 'success' | 'failed' | 'fail' | 'processing' | 'pending';
     mask?: string; // base64 编码的遮罩图片（修改区域，红色）
     protectMask?: string; // base64 编码的遮罩图片（保护区域，绿色）
     costCredit?: number;
@@ -197,7 +203,9 @@ export const imageMaskDrawingService = {
    * @returns 任务ID
    */
   submit: async (params: ImageMaskDrawingSubmitParams) => {
-    return request.post<{ result: { taskId: string } }>('/tp/v1/ImageMaskDrawingSubmit', params);
+    return request.post<{ result: { taskId: string } }>('/tp/v1/ImageMaskDrawingSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -209,6 +217,7 @@ export const imageMaskDrawingService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<ImageMaskDrawingQueryResult>('/tp/v1/ImageMaskDrawingQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -223,7 +232,9 @@ export const videoMaskDrawingService = {
    * @returns 任务ID
    */
   submit: async (params: VideoMaskDrawingSubmitParams) => {
-    return request.post<{ result: { taskId: string } }>('/tp/v1/VideoMaskDrawingSubmit', params);
+    return request.post<{ result: { taskId: string } }>('/tp/v1/VideoMaskDrawingSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -235,6 +246,7 @@ export const videoMaskDrawingService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<VideoMaskDrawingQueryResult>('/tp/v1/VideoMaskDrawingQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };
@@ -249,7 +261,9 @@ export const videoCharacterSwapService = {
    * @returns 任务ID
    */
   submit: async (params: VideoCharacterSwapSubmitParams): Promise<VideoCharacterSwapSubmitResult> => {
-    return request.post<VideoCharacterSwapSubmitResult>('/tp/v1/VideoCharacterSwapSubmit', params);
+    return request.post<VideoCharacterSwapSubmitResult>('/tp/v1/VideoCharacterSwapSubmit', params, {
+      errorMessageMode: 'message',
+    });
   },
 
   /**
@@ -261,6 +275,7 @@ export const videoCharacterSwapService = {
     const { taskId, needCloudFrontUrl = true } = params;
     return request.get<VideoCharacterSwapQueryResult>('/tp/v1/VideoCharacterSwapQuery', {
       params: { taskId, needCloudFrontUrl },
+      errorMessageMode: 'message',
     });
   },
 };

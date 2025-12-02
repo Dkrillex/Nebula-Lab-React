@@ -67,12 +67,12 @@ const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
         </div>
 
         <div className="p-6 border-t border-border flex justify-end gap-2">
-          <button
+          {/* <button
             onClick={onCancel}
             className="px-4 py-2 border border-border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
           >
             {cancelText}
-          </button>
+          </button> */}
           <button
             onClick={onConfirm}
             className={`px-4 py-2 text-white rounded-lg transition-colors ${getButtonStyles()}`}

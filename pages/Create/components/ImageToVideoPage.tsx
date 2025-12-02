@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Video, UploadCloud, X, Wand2, Loader2, Play, Download, Plus, Settings2, Info, Maximize2, FolderPlus, Check } from 'lucide-react';
 import { imageToVideoService, I2VTaskResult } from '../../../services/imageToVideoService';
@@ -9,8 +9,9 @@ import { showAuthModal } from '../../../lib/authModalManager';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '../../../components/AddMaterialModal';
 import { AdsAssetsVO } from '../../../services/assetsService';
-import UploadComponent from '../../../components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '../../../components/UploadComponent';
 import { UploadedFile } from '../../../services/avatarService';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 
 import demoProduct from '../../../assets/demo/1111.png';
 
@@ -90,6 +91,9 @@ interface ImageToVideoPageProps {
     };
     generating?: string;
     progressStatusShort?: string;
+    messages?: {
+      requestFailed: string;
+    };
   };
 }
 
@@ -102,7 +106,7 @@ interface UploadedImage {
 
 const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const [searchParams] = useSearchParams();
-  const { getData } = useVideoGenerationStore();
+  const { getData, removeData } = useVideoGenerationStore();
   const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'traditional' | 'startEnd'>('traditional');
   
@@ -142,8 +146,9 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
   // --- Refs ---
   // const advancedFileInputRef = useRef<HTMLInputElement>(null); // Advanced Mode not open to public yet
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const startUploadRef = useRef<UploadComponentRef>(null);
+  const endUploadRef = useRef<UploadComponentRef>(null);
+  const pollerRef = useRef<PollingController | null>(null);
 
   // Handle "Make Same Style" data transfer
   useEffect(() => {
@@ -169,20 +174,27 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
             //   fileUrl: data.images[0]
             // }]);
           }
+          removeData(transferId);
         }
       } catch (error) {
         console.error('Failed to load transfer data:', error);
       }
     }
-  }, [searchParams, getData]);
+  }, [searchParams, getData, removeData]);
+
+  const stopActivePoller = useCallback(() => {
+    if (pollerRef.current) {
+      pollerRef.current.stop();
+      pollerRef.current = null;
+    }
+  }, []);
 
   // Cleanup
   useEffect(() => {
     return () => {
-      if (pollingInterval.current) clearInterval(pollingInterval.current);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopActivePoller();
     };
-  }, []);
+  }, [stopActivePoller]);
 
   // Validate Duration on Tab/Model Change
   useEffect(() => {
@@ -306,6 +318,24 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   const handleStartClear = () => setStartImage(null);
   const handleEndClear = () => setEndImage(null);
 
+  const handleStartFileSelected = (file: File) => {
+    setStartImage({
+      fileId: '', // Pending upload
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file),
+      file: file
+    });
+  };
+
+  const handleEndFileSelected = (file: File) => {
+    setEndImage({
+      fileId: '', // Pending upload
+      fileName: file.name,
+      fileUrl: URL.createObjectURL(file),
+      file: file
+    });
+  };
+
   // Advanced Mode functions (commented out - Advanced Mode not open to public yet)
   // const removeAdvancedImage = (index: number) => {
   //   setAdvancedImages(prev => prev.filter((_, i) => i !== index));
@@ -347,83 +377,96 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
   };
 
   // --- Polling ---
-  const startPolling = (taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
-    if (pollingInterval.current) clearInterval(pollingInterval.current);
-    
-    let pollCount = 0;
-    pollingInterval.current = setInterval(async () => {
-      try {
-        pollCount++;
-        if (pollCount > 120) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           setIsGenerating(false);
-           toast.error('Generation timed out');
-           return;
-        }
+  const startPolling = useCallback((taskId: string, mode: 'traditional' | 'startEnd', extraArgs?: any) => {
+    if (!taskId) return;
+    stopActivePoller();
+    setProgress(0);
 
+    const extractResponseData = (res: any) => res.data || (res as any).result || res;
+
+    const poller = createTaskPoller<any>({
+      request: async () => {
         let res;
         if (mode === 'traditional') {
-           res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
+          res = await imageToVideoService.queryTraditional(taskId, extraArgs?.isVolcano);
         } else {
-           res = await imageToVideoService.queryStartEnd(taskId);
+          res = await imageToVideoService.queryStartEnd(taskId);
         }
-        // Handle different response structures
-        const responseData = res.data || (res as any).result || res;
-        if (!responseData) return;
+        return extractResponseData(res);
+      },
+      parseStatus: data => {
+        let status = data?.status || data?.task_status;
+        if (!status && (data as any)?.status) status = (data as any).status;
+        return status;
+      },
+      isSuccess: status => {
+        if (!status) return false;
+        return ['succeeded', 'success', 'completed', 'done'].includes(status.toLowerCase());
+      },
+      isFailure: status => {
+        if (!status) return false;
+        return ['failed', 'fail', 'error', 'expired'].includes(status.toLowerCase());
+      },
+      onProgress: value => setProgress(value),
+      onSuccess: responseData => {
+        setProgress(100);
+        setIsGenerating(false);
 
-        // Normalize status
-        let status = responseData.status || responseData.task_status;
-        if (!status && (res as any).status) status = (res as any).status; // Handle top-level status if any
+        let videoUrl = responseData.videoUrl || responseData.video_url || responseData.file_url;
+        let coverUrl = responseData.coverUrl || responseData.cover_url;
 
-        const isSuccess = ['succeeded', 'success', 'completed', 'done'].includes(status?.toLowerCase());
-        const isFailed = ['failed', 'fail', 'error', 'expired'].includes(status?.toLowerCase());
-        
-        if (isSuccess) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           if (progressInterval.current) clearInterval(progressInterval.current);
-           setProgress(100);
-           
-           let videoUrl = responseData.videoUrl || responseData.video_url || responseData.file_url;
-           let coverUrl = responseData.coverUrl || responseData.cover_url;
-
-           if (responseData.content) {
-             videoUrl = responseData.content.video_url || videoUrl;
-             coverUrl = responseData.content.last_frame_url || coverUrl;
-           }
-           
-           if (Array.isArray(responseData.videos) && responseData.videos.length > 0) {
-              const v = responseData.videos[0];
-              if (v.originVideo) videoUrl = v.originVideo.filePath;
-              else if (v.url) videoUrl = v.url;
-           }
-
-           if (videoUrl) {
-              const newVideo: I2VTaskResult = {
-                ...responseData,
-                videoUrl: videoUrl,
-                coverUrl: coverUrl,
-                status: 'success',
-                id: taskId,
-                taskId: taskId
-              };
-              setGeneratedVideos(prev => [newVideo, ...prev]);
-              setSelectedVideo(newVideo);
-           } else {
-              toast.error('Task succeeded but no video URL found');
-           }
-           setIsGenerating(false);
-        } else if (isFailed) {
-           if (pollingInterval.current) clearInterval(pollingInterval.current);
-           if (progressInterval.current) clearInterval(progressInterval.current);
-           setIsGenerating(false);
-           const errorMsg = responseData.error || responseData.errorMsg || responseData.message || 'Generation failed';
-           toast.error(errorMsg);
+        if (responseData.content) {
+          videoUrl = responseData.content.video_url || videoUrl;
+          coverUrl = responseData.content.last_frame_url || coverUrl;
         }
-      } catch (error) {
+
+        if (Array.isArray(responseData.videos) && responseData.videos.length > 0) {
+          const v = responseData.videos[0];
+          if (v.originVideo) videoUrl = v.originVideo.filePath;
+          else if (v.url) videoUrl = v.url;
+        }
+
+        if (videoUrl) {
+          const newVideo: I2VTaskResult = {
+            ...responseData,
+            videoUrl: videoUrl,
+            coverUrl: coverUrl,
+            status: 'success',
+            id: taskId,
+            taskId: taskId
+          };
+          setGeneratedVideos(prev => [newVideo, ...prev]);
+          setSelectedVideo(newVideo);
+        } else {
+          toast.error('Task succeeded but no video URL found');
+        }
+        stopActivePoller();
+      },
+      onFailure: responseData => {
+        setIsGenerating(false);
+        const errorMsg = responseData?.error || responseData?.errorMsg || responseData?.message || 'Generation failed';
+        toast.error(errorMsg);
+        stopActivePoller();
+      },
+      onTimeout: () => {
+        setIsGenerating(false);
+        toast.error('Generation timed out');
+        stopActivePoller();
+      },
+      onError: error => {
         console.error('Polling error:', error);
-      }
-    }, 5000);
-  };
+        setIsGenerating(false);
+        toast.error(error?.message || 'Polling failed');
+        stopActivePoller();
+      },
+      intervalMs: 10_000,
+      progressMode: 'fast',
+      continueOnError: () => false,
+    });
+
+    pollerRef.current = poller;
+    poller.start();
+  }, [stopActivePoller]);
 
   // --- Submit ---
   const handleGenerate = async (e?: React.MouseEvent) => {
@@ -452,23 +495,47 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       return;
     }
 
+    stopActivePoller();
     setIsGenerating(true);
-    setProgress(0);
-    
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 90) return 90;
-        return prev + Math.floor(Math.random() * 3) + 1;
-      });
-    }, 800);
-
     try {
       let taskId = '';
       
+      // --- Upload Step ---
+      let currentStartImage = startImage;
+      let currentEndImage = endImage;
+
+      // Upload Start Image if local file exists
+      if (startUploadRef.current && startUploadRef.current.file) {
+         const uploaded = await startUploadRef.current.triggerUpload();
+         if (uploaded) {
+            currentStartImage = mapUploadedFile(uploaded);
+            setStartImage(currentStartImage);
+         }
+      }
+      
+      // Upload End Image if local file exists
+      if (activeTab === 'startEnd' && endUploadRef.current && endUploadRef.current.file) {
+         const uploaded = await endUploadRef.current.triggerUpload();
+         if (uploaded) {
+            currentEndImage = mapUploadedFile(uploaded);
+            setEndImage(currentEndImage);
+         }
+      }
+
+      // Re-validate presence of fileId after potential upload
+      if (activeTab === 'traditional' && (!currentStartImage || !currentStartImage.fileId)) {
+          // If it's a local file pending upload and upload failed/didn't return fileId
+          throw new Error('Start image upload failed');
+      }
+      if (activeTab === 'startEnd') {
+          if (!currentStartImage?.fileId) throw new Error('Start image upload failed');
+          if (!currentEndImage?.fileId) throw new Error('End image upload failed');
+      }
+
       if (activeTab === 'traditional') {
          const res = await imageToVideoService.submitTraditional({
-           imageFileId: startImage!.fileId,
-           imageUrl: startImage!.fileUrl,
+           imageFileId: currentStartImage!.fileId,
+           imageUrl: currentStartImage!.fileUrl,
            prompt,
            negativePrompt,
            mode: quality,
@@ -481,9 +548,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          const isVolcano = ['lite', 'plus', 'pro'].includes(quality); 
          
          // Normalize response data (handle potential unwrapped response)
-         const responseData = (res as any).data || res;
-         
-         if ((res as any).code === 200 || responseData.id || responseData.taskId) {
+         const responseData = (res as any).data || (res as any).result || res;
+         if (responseData.id || responseData.taskId) {
             // Support both id (Volcano) and taskId (Topview)
             taskId = responseData.taskId || responseData.id || '';
             if (!taskId) {
@@ -495,19 +561,13 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
          }
 
       } else if (activeTab === 'startEnd') {
-         if (!startImage?.fileUrl) {
-            toast.error('Please upload start image');
-            setIsGenerating(false);
-            return;
-         }
-         if (!endImage?.fileUrl) {
-            toast.error('Please upload end image');
-            setIsGenerating(false);
-            return;
+         // For startEnd, ensure we have valid URLs
+         if (!currentStartImage?.fileUrl || !currentEndImage?.fileUrl) {
+             throw new Error('Missing image URLs');
          }
          
          const res = await imageToVideoService.submitStartEnd({
-           imageUrls: [startImage.fileUrl, endImage.fileUrl],
+           imageUrls: [currentStartImage.fileUrl, currentEndImage.fileUrl],
            prompt,
            duration: duration,
            score: calculatedScore
@@ -524,9 +584,9 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(error.message || 'Generation failed');
+      toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
       setIsGenerating(false);
-      if (progressInterval.current) clearInterval(progressInterval.current);
+      stopActivePoller();
       setProgress(0);
     }
   };
@@ -626,13 +686,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                   <div className="flex gap-4">
                      <div className="flex-1 relative">
                         <UploadComponent
+                          ref={startUploadRef}
                           onUploadComplete={handleStartUploadComplete}
+                          onFileSelected={handleStartFileSelected}
                           onClear={handleStartClear}
                           onError={handleUploadError}
-                          uploadType="oss"
+                          uploadType={quality === 'best' ? 'tv' : 'oss'}
                           accept=".png,.jpg,.jpeg,.webp"
                           maxSize={10}
-                          immediate={true}
+                          immediate={false}
+                          showConfirmButton={false}
                           initialUrl={startImage?.fileUrl || ''}
                           className="h-32"
                         >
@@ -652,13 +715,16 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
                      {activeTab === 'startEnd' && (
                         <div className="flex-1 relative">
                            <UploadComponent
+                             ref={endUploadRef}
                              onUploadComplete={handleEndUploadComplete}
+                             onFileSelected={handleEndFileSelected}
                              onClear={handleEndClear}
                              onError={handleUploadError}
-                             uploadType="oss"
+                             uploadType={quality === 'best' ? 'tv' : 'oss'}
                              accept=".png,.jpg,.jpeg,.webp"
                              maxSize={10}
-                             immediate={true}
+                             immediate={false}
+                             showConfirmButton={false}
                              initialUrl={endImage?.fileUrl || ''}
                              className="h-32"
                            >

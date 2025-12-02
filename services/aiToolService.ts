@@ -64,6 +64,8 @@ export const aiToolService = {
     return request.post<AiTemplateResponse>('/aiTool/v1/AiTemplate', requestData, {
       timeout: 60000,
       isTransformResponse: false,
+      successMessageMode: 'message', // 使用动态接口返回的成功消息
+      errorMessageMode: 'message', // 使用动态接口返回的错误消息
     });
   },
 

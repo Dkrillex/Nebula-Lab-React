@@ -5,9 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --mode development",
-    "build": "vite build --mode production.lab",
+    "build": "pnpm run package:lab",
     "build:api": "vite build --mode production.api",
     "build:lab": "vite build --mode production.lab",
+    "package:api": "pnpm run clean:lab && pnpm run build:api && pnpm run zip:lab",
+    "package:lab": "pnpm run clean:lab && pnpm run build:lab && pnpm run zip:lab",
+    "clean:lab": "node scripts/clean-lab.mjs",
+    "zip:lab": "node scripts/zip-lab.mjs",
     "preview": "vite preview",
     "preview:api": "vite preview --mode production.api",
     "preview:lab": "vite preview --mode production.lab"
@@ -17,6 +21,7 @@
     "@types/prismjs": "^1.26.5",
     "@types/three": "^0.181.0",
     "@vitejs/plugin-react": "^5.1.1",
+    "cropperjs": "^1.6.1",
     "crypto-js": "4.2.0",
     "jsencrypt": "^3.5.4",
     "jszip": "^3.4.1",
@@ -26,6 +31,7 @@
     "qrcode.react": "^4.2.0",
     "react": "^19.2.0",
     "react-activation": "^0.13.4",
+    "react-cropper": "^2.3.3",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
     "react-markdown": "^10.1.0",
@@ -45,7 +51,14 @@
     "@prerenderer/rollup-plugin": "^0.3.12",
     "@types/node": "^22.14.0",
     "@vitejs/plugin-react": "^5.0.0",
+    "archiver": "^7.0.1",
+    "autoprefixer": "^10.4.17",
+    "postcss": "^8.4.35",
+    "rollup-plugin-visualizer": "^5.12.0",
+    "tailwindcss": "^3.4.1",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-imagemin": "^0.6.1"
   }
 }

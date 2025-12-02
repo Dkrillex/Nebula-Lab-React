@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause, Send, Shield, Trash2, Eye } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { videoMaskDrawingService, imageMaskDrawingService } from '../../../services/faceSwapService';
 import { useAppOutletContext } from '../../../router/context';
 import { translations } from '../../../translations';
@@ -22,6 +23,7 @@ export interface VideoEditingModalProps {
   videoProcessTaskId?: string;
   onSave?: (markers: VideoMarker[]) => void;
   onVideoMaskSuccess?: (data: { taskId: string; trackingVideoPath: string }) => void;
+  videoFps?: number; // 从接口获取的fps值
 }
 
 // 格式化时间显示（秒转换为 MM:SS）
@@ -40,6 +42,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
   videoProcessTaskId,
   onSave,
   onVideoMaskSuccess,
+  videoFps,
 }) => {
   const { t: rootT } = useAppOutletContext();
   // 添加空值保护，防止页面崩溃
@@ -104,6 +107,35 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     const availableWidth = trackWidth - 80; // thumbnailWidth
     return `${(progressPercentage / 100) * (availableWidth / trackWidth) * 100}%`;
   }, [progressPercentage]);
+
+  // 计算标记点在进度条上的位置
+  const markerPositions = React.useMemo(() => {
+    if (!timelineTrackRef.current || duration <= 0 || markers.length === 0) {
+      return [];
+    }
+    
+    const trackWidth = timelineTrackRef.current.clientWidth;
+    const availableWidth = trackWidth - 80; // thumbnailWidth
+    const thumbnailWidth = 80;
+    
+    // 去重：同一个时间点只显示一个标记（优先显示修改区域）
+    const timeMap = new Map<number, VideoMarker>();
+    markers.forEach((mark) => {
+      const existing = timeMap.get(mark.time);
+      if (!existing || (existing.type === 'protect' && mark.type === 'modify')) {
+        timeMap.set(mark.time, mark);
+      }
+    });
+    
+    return Array.from(timeMap.values()).map((mark) => {
+      const percent = duration > 0 ? (mark.time / duration) * 100 : 0;
+      const position = thumbnailWidth + (percent / 100) * availableWidth;
+      return {
+        ...mark,
+        position,
+      };
+    });
+  }, [markers, duration]);
 
   // 初始化视频
   const initVideo = useCallback(async () => {
@@ -235,7 +267,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
   // 播放/暂停切换
   const togglePlayPause = useCallback(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isSubmittingMask) return;
 
     if (videoRef.current.paused) {
       videoRef.current.play();
@@ -244,11 +276,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       videoRef.current.pause();
       setIsPlaying(false);
     }
-  }, []);
+  }, [isSubmittingMask]);
 
   // 时间轴点击
   const handleTimelineClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!videoRef.current || !timelineTrackRef.current) return;
+    if (!videoRef.current || !timelineTrackRef.current || isSubmittingMask) return;
 
     const trackRect = timelineTrackRef.current.getBoundingClientRect();
     const clickX = e.clientX - trackRect.left;
@@ -266,10 +298,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         setShouldShowMask(true);
       }
     }
-  }, [duration]);
+  }, [duration, isSubmittingMask]);
 
   // 开始拖拽时间轴
   const startDragging = useCallback((e: React.MouseEvent) => {
+    if (isSubmittingMask) {
+      e.preventDefault();
+      return;
+    }
     e.preventDefault();
     setIsDragging(true);
     setShouldShowMask(false); // 拖拽时隐藏遮罩层
@@ -304,7 +340,7 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
 
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-  }, [duration]);
+  }, [duration, isSubmittingMask]);
 
   // 当模态框打开时初始化视频
   useEffect(() => {
@@ -334,6 +370,11 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     const handleEnded = () => {
       setIsPlaying(false);
       setCurrentTime(0);
+      // 确保视频被暂停并重置到开始位置
+      if (video) {
+        video.pause();
+        video.currentTime = 0;
+      }
     };
 
     video.addEventListener('play', handlePlay);
@@ -347,9 +388,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     };
   }, []);
 
-  // 获取视频帧率（默认30fps）
+  // 获取视频帧率（优先使用接口返回的fps）
   const getVideoFrameRate = useCallback((): number => {
-    if (!videoRef.current) return 30;
+    // 优先使用接口返回的fps
+    if (videoFps !== undefined && videoFps !== null && videoFps > 0 && videoFps <= 120) {
+      return videoFps;
+    }
+    
+    if (!videoRef.current) return videoFps && videoFps > 0 ? videoFps : 24;
     
     // 尝试从视频播放质量获取帧率
     if (typeof videoRef.current.getVideoPlaybackQuality === 'function') {
@@ -362,8 +408,9 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
       }
     }
     
-    return 30;
-  }, []);
+    // 如果都没有，使用接口返回的fps作为默认值（如果存在），否则使用24
+    return videoFps && videoFps > 0 ? videoFps : 24;
+  }, [videoFps]);
 
   // 根据时间计算帧索引
   const calculateFrameIndex = useCallback((time: number): number => {
@@ -587,6 +634,17 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
     setMarkers([]);
     setSelectedMarkId(null);
     setHoveredMarkId(null);
+    // 清除已提交的标记ID集合
+    setSubmittedMarkIds(new Set());
+    // 清除所有遮罩层数据
+    setFrameMaskMap(new Map());
+    // 清除画布上的遮罩层显示
+    if (maskCanvasRef.current) {
+      const ctx = maskCanvasRef.current.getContext('2d');
+      if (ctx) {
+        ctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+      }
+    }
   }, []);
 
   // 清除所有标记和遮罩层（不提交）- 借鉴 Nebula1
@@ -788,8 +846,39 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
                   console.log('已保存帧', inputInfo.index, '的遮罩数据');
                   
                   break;
-                } else if (queryResult.result?.status === 'failed') {
+                } else if (queryResult.result?.status === 'fail') {
                   console.log('获取帧', inputInfo.index, '的图像掩码绘制查询任务失败');
+                  
+                  // 清除该帧相关的标记点
+                  setMarkers((prev) => {
+                    return prev.filter((mark) => !inputInfo.markIds.includes(mark.id));
+                  });
+                  
+                  // 从已提交集合中移除该帧的标记ID
+                  setSubmittedMarkIds((prev) => {
+                    const newSet = new Set(prev);
+                    inputInfo.markIds.forEach(markId => newSet.delete(markId));
+                    return newSet;
+                  });
+                  
+                  // 清除该帧的遮罩数据
+                  setFrameMaskMap((prev) => {
+                    const newMap = new Map(prev);
+                    newMap.delete(inputInfo.index);
+                    return newMap;
+                  });
+                  
+                  // 清除画布上的遮罩层显示
+                  if (maskCanvasRef.current) {
+                    const ctx = maskCanvasRef.current.getContext('2d');
+                    if (ctx) {
+                      ctx.clearRect(0, 0, maskCanvasRef.current.width, maskCanvasRef.current.height);
+                    }
+                  }
+                  
+                  // 提示用户重新标记
+                  toast.error(t.markFailed || '标记失败，请重新标记该区域');
+                  
                   break;
                 } else {
                   // 其他状态（如 'processing', 'pending' 等）继续轮询
@@ -1301,13 +1390,13 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         </div>
 
         {/* 视频预览区域 */}
-        <div className="flex-1 flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden" style={{ maxHeight: 'calc(90vh - 200px)' }}>
+        <div className="flex items-center justify-center p-6 bg-[#0a0a0a] overflow-hidden aaa" style={{ height : '600px' }}>
           <div
             ref={videoContainerRef}
-            className="relative w-full max-w-[400px] flex items-center justify-center"
+            className="relative w-full h-full max-w-[400px] max-h-[600px] flex items-center justify-center"
             style={{ 
-              height: '600px',
-              aspectRatio: 'auto'
+              minHeight: 0,
+              minWidth: 0
             }}
             onClick={handleVideoContainerClick}
           >
@@ -1334,6 +1423,14 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               }}
               onLoadedMetadata={handleVideoLoaded}
               onTimeUpdate={handleTimeUpdate}
+              onEnded={() => {
+                setIsPlaying(false);
+                setCurrentTime(0);
+                if (videoRef.current) {
+                  videoRef.current.pause();
+                  videoRef.current.currentTime = 0;
+                }
+              }}
               onError={(e) => {
                 console.error('视频加载错误:', e);
                 setIsLoading(false);
@@ -1423,30 +1520,39 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
         <div className="px-6 py-4 bg-[#2a2a2a] border-t border-b border-[#3a3a3a]">
           <div
             ref={timelineTrackRef}
-            className="relative w-full h-[60px] bg-[#1a1a1a] rounded cursor-pointer overflow-hidden"
+            className={`relative w-full h-[60px] bg-[#1a1a1a] rounded overflow-hidden ${
+              isSubmittingMask ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+            }`}
             onClick={handleTimelineClick}
           >
             {/* 视频缩略图和播放按钮 */}
             <div
-              className="absolute left-0 top-0 bottom-0 w-20 rounded-l overflow-hidden cursor-pointer flex items-center justify-center transition-opacity hover:opacity-100"
+              className={`absolute left-0 top-0 bottom-0 w-20 rounded-l overflow-hidden flex items-center justify-center transition-opacity hover:opacity-100 ${
+                isSubmittingMask ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+              }`}
               style={{
                 backgroundImage: videoThumbnail ? `url(${videoThumbnail})` : 'none',
                 backgroundSize: 'cover',
                 backgroundPosition: 'center',
-                opacity: videoThumbnail ? 0.9 : 1,
+                opacity: videoThumbnail ? (isSubmittingMask ? 0.45 : 0.9) : (isSubmittingMask ? 0.5 : 1),
               }}
               onClick={(e) => {
                 e.stopPropagation();
-                togglePlayPause();
+                if (!isSubmittingMask) {
+                  togglePlayPause();
+                }
               }}
             >
               {!videoThumbnail && (
                 <div className="absolute inset-0 bg-gradient-to-br from-[#2c2c2c] to-[#111]"></div>
               )}
               <button
-                className={`relative z-10 w-10 h-10 rounded-full bg-white/95 border-2 border-white/80 text-[#1a1a1a] flex items-center justify-center transition-all hover:scale-110 hover:bg-white shadow-lg ${
-                  isPlaying ? '' : ''
-                }`}
+                disabled={isSubmittingMask}
+                className={`relative z-10 w-10 h-10 rounded-full bg-white/95 border-2 border-white/80 text-[#1a1a1a] flex items-center justify-center transition-all shadow-lg ${
+                  isSubmittingMask 
+                    ? 'opacity-50 cursor-not-allowed' 
+                    : 'hover:scale-110 hover:bg-white'
+                } ${isPlaying ? '' : ''}`}
               >
                 {isPlaying ? (
                   <Pause className="w-5 h-5" />
@@ -1462,13 +1568,38 @@ const VideoEditingModal: React.FC<VideoEditingModalProps> = ({
               style={{ width: progressWidth }}
             />
 
+            {/* 标记点指示器 */}
+            {markerPositions.map((marker) => (
+              <div
+                key={marker.id}
+                className="absolute top-0 bottom-0 w-0.5 pointer-events-none"
+                style={{
+                  left: `${marker.position}px`,
+                  transform: 'translateX(-50%)',
+                  backgroundColor: marker.type === 'modify' ? '#ff4d4f' : '#52c41a',
+                  zIndex: 5,
+                }}
+              >
+                <div
+                  className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full shadow-sm"
+                  style={{
+                    backgroundColor: marker.type === 'modify' ? '#ff4d4f' : '#52c41a',
+                  }}
+                />
+              </div>
+            ))}
+
             {/* 时间轴指示器 */}
             <div
               className="absolute top-0 bottom-0 w-0.5 bg-white pointer-events-none z-10 transition-transform"
               style={{ left: `${indicatorPosition}px`, transform: 'translateX(-50%)' }}
             >
               <div
-                className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md cursor-grab active:cursor-grabbing hover:scale-110 transition-transform z-10 pointer-events-auto"
+                className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow-md transition-transform z-10 pointer-events-auto ${
+                  isSubmittingMask 
+                    ? 'cursor-not-allowed opacity-50' 
+                    : 'cursor-grab active:cursor-grabbing hover:scale-110'
+                }`}
                 onMouseDown={startDragging}
               />
             </div>

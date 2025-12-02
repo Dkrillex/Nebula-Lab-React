@@ -73,7 +73,13 @@ const Header: React.FC<HeaderProps> = ({
       return;
     }
     
-    onNavClick(href);
+    // 点击模型中心时跳转到简介页面
+    let targetHref = href;
+    if (href === '/models') {
+      targetHref = '/models-intro';
+    }    
+    
+    onNavClick(targetHref);
     setShowUserMenu(false);
   };
 
@@ -255,18 +261,26 @@ const Header: React.FC<HeaderProps> = ({
                 return keys1.every(key => params1[key] === params2[key]);
               };
               
-              const isActive = tab.view === currentView && 
-                               (tab.view !== 'create' || (tab.activeTool === activeTool && 
-                                compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined)));
+              // 首页 Tab 在模型中心简介和创作中心首页时也保持高亮
+              const isHomeActive = tab.view === 'home' && 
+                (currentView === 'home' || currentView === 'models-intro' || (currentView === 'create' && !activeTool));
+              
+              const isActive = isHomeActive || (tab.view === currentView && 
+                               (tab.view === 'create' 
+                                 ? (tab.activeTool === activeTool && compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined))
+                                 : tab.view === 'chat'
+                                   ? compareSearchParams(tab.searchParams, Object.keys(currentSearchParams).length > 0 ? currentSearchParams : undefined)
+                                   : true
+                               ));
               
               // 生成唯一的 key，包含所有查询参数（如果存在）
               let tabKey = `${tab.view}-${tab.activeTool || index}`;
-              if (tab.view === 'create' && tab.activeTool && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
+              if ((tab.view === 'create' || tab.view === 'chat') && tab.searchParams && Object.keys(tab.searchParams).length > 0) {
                 const paramsKey = Object.entries(tab.searchParams)
                   .sort(([a], [b]) => a.localeCompare(b))
                   .map(([key, value]) => `${key}=${value}`)
                   .join('&');
-                tabKey = `${tab.view}-${tab.activeTool}-${paramsKey}`;
+                tabKey = `${tab.view}-${tab.activeTool || ''}-${paramsKey}`;
               }
               return (
                 <div 
@@ -313,7 +327,7 @@ const Header: React.FC<HeaderProps> = ({
             {filteredNav.map((item) => {
               // Determine if item is active based on current view/path
               const isActive = 
-                (item.href === '/models' && ['models', 'chat', 'keys'].includes(currentView)) ||
+                (item.href === '/models' && ['models-intro','models', 'chat', 'keys'].includes(currentView)) ||
                 (item.href === '/create' && currentView === 'create') ||
                 (item.href === '/profile' && ['profile', 'assets', 'pricing', 'expenses'].includes(currentView));
 
@@ -328,6 +342,14 @@ const Header: React.FC<HeaderProps> = ({
                 </a>
               );
             })}
+            {/* 充值链接 */}
+            <a 
+              href="/pricing" 
+              onClick={(e) => handleNavClick(e, '/pricing')}
+              className={`transition-colors ${currentView === 'pricing' ? 'text-foreground font-semibold' : 'hover:text-foreground'}`}
+            >
+              {lang === 'zh' ? '充值' : lang === 'id' ? 'Isi Ulang' : 'Recharge'}
+            </a>
           </nav>
           
           <div className="flex items-center gap-3 pl-2 border-l border-border">

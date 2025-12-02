@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useOutletContext } from 'react-router-dom';
 import { Check, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { pricingService, PriceListVO } from '../../services/pricingService';
@@ -7,19 +6,21 @@ import { orderService, OrderInfo } from '../../services/orderService';
 import { useAuthStore } from '../../stores/authStore';
 import BaseModal from '../../components/BaseModal';
 import InvoiceForm, { InvoiceFormRef } from '../../components/InvoiceForm';
+import EnterpriseContactModal from '../../components/EnterpriseContactModal';
 import { UserInvoiceForm } from '../../services/invoiceService';
 import toast from 'react-hot-toast';
 import { translations } from '../../translations';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import PricingCard from './components/PricingCard';
 import ModelCenterCard from './components/ModelCenterCard';
+import { useAppOutletContext } from '../../router/context';
 
 interface PricingPageProps {}
 
 const PricingPage: React.FC<PricingPageProps> = () => {
-  const outletContext = useOutletContext<{ t: any }>();
+  const { t: rootT } = useAppOutletContext();
   const defaultPricingT = translations['zh'].pricingPage;
-  const t = outletContext?.t?.pricingPage || defaultPricingT;
+  const t = rootT?.pricingPage || defaultPricingT;
   const { user } = useAuthStore();
 
   // Hooks must be called unconditionally at the top level
@@ -48,6 +49,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
   const [orderInfo, setOrderInfo] = useState<OrderInfo | null>(null);
   const [payLoading, setPayLoading] = useState(false);
   const [payStatus, setPayStatus] = useState<'pending' | 'success' | 'failed'>('pending');
+
 
   const pollTimer = useRef<NodeJS.Timeout | null>(null);
   const alipayPollTimer = useRef<NodeJS.Timeout | null>(null);
@@ -422,6 +424,7 @@ const PricingPage: React.FC<PricingPageProps> = () => {
     stopPolling();
     setPayStatus('pending');
   };
+
 
   // Early return if t is missing, AFTER all hooks are called
   if (!t) {
@@ -844,72 +847,11 @@ const PricingPage: React.FC<PricingPageProps> = () => {
       </BaseModal>
 
       {/* 企业定制服务 Modal */}
-      <BaseModal
+      <EnterpriseContactModal
         isOpen={contactModalOpen}
         onClose={() => setContactModalOpen(false)}
-        title={t.enterpriseModal?.title || '企业定制服务'}
-        width="max-w-2xl"
-      >
-         <div className="py-2">
-            {/* 副标题 */}
-            <div className="text-center mb-6">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                {t.enterpriseModal?.subtitle || '为您提供专业的AI解决方案'}
-              </p>
-            </div>
-
-            {/* 联系内容 */}
-            <div className="flex flex-col md:flex-row gap-8 mb-8">
-              {/* 联系信息 */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="text-2xl flex-shrink-0">📱</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t.enterpriseModal?.phone || '联系电话'}</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">19210015325</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
-                  <div className="text-2xl flex-shrink-0">⏰</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs text-gray-600 dark:text-gray-400 mb-1">{t.enterpriseModal?.serviceTime || '服务时间'}</div>
-                    <div className="text-base font-medium text-gray-900 dark:text-white">{t.enterpriseModal?.workDays || '工作日 9:00-18:00'}</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* 微信联系 */}
-              <div className="flex-shrink-0 text-center">
-                <div className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-                  {t.enterpriseModal?.wechatContact || '微信联系'}
-                </div>
-                <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 mb-3">
-                  <img 
-                    src="/lab/zhenshangWxCode.png" 
-                    alt="微信联系方式" 
-                    className="w-[200px] h-[200px] object-contain mx-auto"
-                  />
-                </div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">
-                  {t.enterpriseModal?.scanToAdd || '扫码添加企业微信'}
-                </div>
-              </div>
-            </div>
-
-            {/* 功能标签 */}
-            <div className="flex justify-center gap-3 flex-wrap">
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                {t.enterpriseModal?.customSolution || '🎯 定制化方案'}
-              </div>
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                {t.enterpriseModal?.techSupport || '🔧 技术支持'}
-              </div>
-              <div className="px-4 py-2 bg-gradient-to-r from-blue-50 to-slate-50 dark:from-blue-900/20 dark:to-slate-900/20 border border-blue-200 dark:border-blue-800 rounded-full text-xs font-medium text-blue-700 dark:text-blue-400">
-                {t.enterpriseModal?.dataAnalysis || '📊 数据分析'}
-              </div>
-            </div>
-         </div>
-      </BaseModal>
+        translations={t.enterpriseModal}
+      />
 
       {/* Invoice Form Modal */}
       <InvoiceForm

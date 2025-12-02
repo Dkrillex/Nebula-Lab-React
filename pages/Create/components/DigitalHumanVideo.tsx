@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Upload, PenTool, Music, ChevronDown, FileAudio, X, Play, Loader, Check, AlertCircle, Video as VideoIcon, Plus, Trash2, Download, Maximize2 } from 'lucide-react';
 import { avatarService, AiAvatar, Voice, Caption, UploadedFile } from '../../../services/avatarService';
@@ -10,8 +10,9 @@ import demoVideo from '../../../assets/demo/ec6-4dbbffde26e2.mp4';
 import demoAudio from '../../../assets/demo/file_example_MP3_700KB.mp3';
 import { uploadTVFile } from '@/utils/upload';
 import toast from 'react-hot-toast';
+import { createTaskPoller, PollingController } from '../../../utils/taskPolling';
 import AddMaterialModal from '@/components/AddMaterialModal';
-import UploadComponent from '@/components/UploadComponent';
+import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
 interface DigitalHumanVideoProps {
   t: any;
   onShowAvatarModal: (isCustom: boolean) => void;
@@ -91,6 +92,8 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   const [isSampleLoading, setIsSampleLoading] = useState(false);
   const [showMaterialModal, setShowMaterialModal] = useState(false);
   const [generatedVideos, setGeneratedVideos] = useState<GeneratedVideo[]>([]);
+  const taskPollerRef = useRef<PollingController | null>(null);
+  const videoUploadRef = useRef<UploadComponentRef>(null);
 
   useEffect(() => {
     if (!resultsSectionRef.current) return;
@@ -100,6 +103,20 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
   }, [generatedVideos.length, generating, taskStatus]);
 
   // Removed initial load of voice/caption lists as they are now handled in Modals
+
+  const stopTaskPolling = useCallback(() => {
+    if (taskPollerRef.current) {
+      taskPollerRef.current.stop();
+      taskPollerRef.current = null;
+    }
+    setGenerating(false);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      stopTaskPolling();
+    };
+  }, [stopTaskPolling]);
 
   const handleVideoUploadComplete = (file: UploadedFile) => {
     setUploadedVideo(file);
@@ -241,40 +258,70 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
     }
     
     try {
-      setGenerating(true);
-      setTaskStatus('running');
+      stopTaskPolling();
       setPreviewVideoUrl(null);
+      setGenerating(true);
 
+      // 判断用户是否上传了视频或者选择了数字人
       if (!uploadedVideo && !selectedAvatar) {
-        toast.error('请上传数字人视频或选择数字人');
-        setGenerating(false);
-        return;
+        // 如果没有已上传的视频，也没有选择数字人，
+        // 进一步检查是否选择了待上传的文件（通过 videoUploadRef）
+        const hasPendingFile = videoUploadRef.current && videoUploadRef.current.file;
+        
+        if (!hasPendingFile) {
+          toast.error('请上传数字人视频或选择数字人');
+          return;
+        }
       }
 
       if (scriptMode === 'text') {
         if (!text.trim()) {
           toast.error('请输入文本内容');
-          setGenerating(false);
           return;
         }
         if (!selectedVoice) {
           toast.error('请选择音色');
-          setGenerating(false);
           return;
         }
       } else {
         if (!uploadedAudio) {
           toast.error('请上传音频文件');
-          setGenerating(false);
           return;
         }
+      }
+
+      let currentVideoFileId = uploadedVideo?.fileId;
+
+      // Handle delayed upload for video
+      if (!selectedAvatar && (!currentVideoFileId || currentVideoFileId === '')) {
+          if (videoUploadRef.current && videoUploadRef.current.file) {
+              try {
+                  // Toast for upload starting? Maybe too noisy since button says "Generate"
+                  const uploaded = await videoUploadRef.current.triggerUpload();
+                  if (uploaded && uploaded.fileId) {
+                      currentVideoFileId = uploaded.fileId;
+                      // Update state to reflect successful upload
+                      handleVideoUploadComplete(uploaded);
+                  } else {
+                      throw new Error('Video upload failed');
+                  }
+              } catch (err) {
+                  console.error(err);
+                  toast.error('视频上传失败');
+                  return; // Stop generation
+              }
+          } else {
+               // Should have been caught by !uploadedVideo check, but just in case
+               toast.error('请上传数字人视频');
+               return;
+          }
       }
 
       const points = pointsTip;
       // Reconstruct params to match index.vue logic
       const params: any = {
-        avatarSourceFrom: uploadedVideo ? 0 : 1, // 0: User uploaded video, 1: Public avatar
-        videoFileId: uploadedVideo?.fileId || '',
+        avatarSourceFrom: currentVideoFileId ? 0 : 1, // 0: User uploaded video, 1: Public avatar
+        videoFileId: currentVideoFileId || '',
         aiAvatarId: selectedAvatar?.aiavatarId || '',
         audioSourceFrom: scriptMode === 'text' ? 1 : 0, // 0: User uploaded audio, 1: TTS
         audioFileId: uploadedAudio?.fileId || '',
@@ -317,7 +364,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
 
       if (newTaskId) {
         setTaskId(newTaskId);
-        pollTaskStatus(newTaskId);
+        startTaskPolling(newTaskId);
       } else {
         throw new Error('任务提交失败：未获取到 TaskId');
       }
@@ -327,71 +374,64 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
       toast.error(error.message || '生成失败');
       setTaskStatus('fail');
       setGenerating(false);
+      stopTaskPolling();
     }
   };
 
-  const pollTaskStatus = async (id: string) => {
-    const maxAttempts = 60;
-    const interval = 5000;
-    let attempts = 0;
+  const startTaskPolling = useCallback((id: string) => {
+    if (!id) return;
+    stopTaskPolling();
+    setGenerating(true);
+    setTaskStatus('running');
 
-    const poll = async () => {
-      try {
+    const poller = createTaskPoller<any>({
+      request: async () => {
         const res = await avatarService.queryVideoCreationTask(id);
-        let taskData: any = res;
-         if ((res as any).result) {
-            taskData = (res as any).result;
-         } else if (res.data) {
-            taskData = res.data;
-         }
+        if ((res as any).result) return (res as any).result;
+        if ((res as any).data) return (res as any).data;
+        return res;
+      },
+      parseStatus: data => data?.status,
+      isSuccess: status => status === 'success',
+      isFailure: status => status === 'fail',
+      onProgress: () => {},
+      onSuccess: taskData => {
+        setTaskStatus('success');
+        setPreviewVideoUrl(taskData.outputVideoUrl);
+        setGeneratedVideos(prev => {
+          if (prev.some(v => v.id === id)) return prev;
+          return [{ id, url: taskData.outputVideoUrl, timestamp: Date.now() }, ...prev];
+        });
+        setGenerating(false);
+        stopTaskPolling();
+      },
+      onFailure: taskData => {
+        setTaskStatus('fail');
+        setGenerating(false);
+        toast.error(taskData?.errorMsg || '任务执行失败');
+        stopTaskPolling();
+      },
+      onTimeout: () => {
+        setTaskStatus('fail');
+        setGenerating(false);
+        toast.error('任务超时');
+        stopTaskPolling();
+      },
+      onError: error => {
+        console.error('查询失败', error);
+        setTaskStatus('fail');
+        setGenerating(false);
+        toast.error('查询失败');
+        stopTaskPolling();
+      },
+      intervalMs: 10_000,
+      progressMode: 'fast',
+      continueOnError: () => false,
+    });
 
-        if (taskData) {
-          const status = taskData.status;
-          if (status === 'success') {
-            setTaskStatus('success');
-            setPreviewVideoUrl(taskData.outputVideoUrl);
-            
-            // Add to history
-            setGeneratedVideos(prev => {
-                if (prev.some(v => v.id === id)) return prev;
-                return [{
-                    id: id,
-                    url: taskData.outputVideoUrl,
-                    timestamp: Date.now()
-                }, ...prev];
-            });
-
-            setGenerating(false);
-            return;
-          } else if (status === 'fail') {
-            setTaskStatus('fail');
-            toast.error(taskData.errorMsg || '任务执行失败');
-            setGenerating(false);
-            return;
-          } else {
-            attempts++;
-            if (attempts < maxAttempts) {
-              setTimeout(poll, interval);
-            } else {
-              setTaskStatus('fail');
-              toast.error('任务超时');
-              setGenerating(false);
-            }
-          }
-        }
-      } catch (error) {
-        attempts++;
-        if (attempts < maxAttempts) {
-            setTimeout(poll, interval);
-        } else {
-             setTaskStatus('fail');
-             toast.error('查询失败');
-             setGenerating(false);
-        }
-      }
-    };
-    poll();
-  };
+    taskPollerRef.current = poller;
+    poller.start();
+  }, [stopTaskPolling]);
 
   const handleAddToMaterials = () => {
       if (!previewVideoUrl) return;
@@ -437,7 +477,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           <h2 className="font-bold text-lg text-gray-800 dark:text-gray-200">{t.leftPanel.myDigitalHuman}</h2>
           
           {/* Avatar Selection Display */}
-          {selectedAvatar ? (
+          {selectedAvatar && (
               <div className="relative">
                   <div className="border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] bg-gray-100 max-h-[57vh] mx-auto">
                       {selectedAvatar.previewVideoUrl ? (
@@ -466,7 +506,9 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                       <X size={16} className="text-gray-600" />
                   </button>
               </div>
-          ) : uploadedVideo ? (
+          )}
+          
+          {!selectedAvatar && uploadedVideo && (
               <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden aspect-[9/16] max-h-[570px] mx-auto bg-gray-100">
                   <video 
                     src={uploadedVideo.url || uploadedVideo.fileUrl} 
@@ -482,17 +524,34 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                       }
                     }}
                   />
-                  <button onClick={() => setUploadedVideo(null)} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
+                  <button onClick={() => {
+                      setUploadedVideo(null);
+                      videoUploadRef.current?.clear();
+                  }} className="absolute top-2 right-2 p-1 bg-white rounded-full shadow hover:bg-red-50">
                       <X size={16} className="text-gray-600" />
                   </button>
               </div>
-          ) : (
+          )}
+
+          <div className={selectedAvatar || uploadedVideo ? 'hidden' : 'block'}>
               <UploadComponent
+                  ref={videoUploadRef}
                   onUploadComplete={handleVideoUploadComplete}
                   uploadType="tv"
                   accept=".mp4,.mov,.webm"
                   maxSize={200}
-                  immediate={true}
+                  immediate={false}
+                  showConfirmButton={false}
+                  onFileSelected={(file) => {
+                      setUploadedVideo({
+                          fileId: '',
+                          fileName: file.name,
+                          fileUrl: URL.createObjectURL(file),
+                          format: file.name.split('.').pop() || '',
+                          duration: 0
+                      });
+                      setSelectedAvatar(null);
+                  }}
                   className="min-h-[300px] border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 transition cursor-pointer group"
                   showPreview={false}
               >
@@ -506,7 +565,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                       </div>
                   </div>
               </UploadComponent>
-          )}
+          </div>
 
         </div>
         <div>
@@ -900,7 +959,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
                   <button
                     className="action-btn primary large flex-1 py-3 rounded-xl bg-indigo-600 text-white font-bold hover:bg-indigo-700 transition disabled:opacity-50 flex items-center justify-center gap-2"
                     onClick={handleGenerate}
-                    disabled={generating || uploading || pointsTip === 0 || (!selectedAvatar && !uploadedVideo) || (scriptMode === 'text' ? !text.trim() : !uploadedAudio)}
+                    disabled={generating || uploading || pointsTip === 0 || (!selectedAvatar && !uploadedVideo) || (scriptMode === 'text' ? (!text.trim() || !selectedVoice) : !uploadedAudio)}
                   >
                     {generating ? (
                       <span className="flex items-center gap-2">
@@ -935,7 +994,7 @@ const DigitalHumanVideo: React.FC<DigitalHumanVideoProps> = ({
           isOpen={showMaterialModal}
           onClose={() => setShowMaterialModal(false)}
           onSuccess={() => {
-              toast.success('已添加到素材库');
+              // 成功提示已由接口返回的动态消息处理，避免重复提示
               setShowMaterialModal(false);
           }}
           initialData={{
