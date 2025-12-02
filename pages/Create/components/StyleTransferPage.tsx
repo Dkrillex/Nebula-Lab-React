@@ -966,55 +966,53 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   );
 
   return (
-    <div className="w-full h-full bg-gray-50 dark:bg-background p-4 md:p-8 flex flex-col gap-6 overflow-hidden">
-      
-      {/* Header Removed as per request */}
+    <div className="flex flex-col h-[calc(100vh-64px)] bg-white dark:bg-gray-900">
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+        {/* Leftmost Column - Vertical Mode Selector */}
+        <div className="w-20 md:w-24 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-visible flex-shrink-0">
+          <div className="p-2 flex flex-col gap-2">
+            {modes.map((mode) => (
+              <button
+                key={mode.id}
+                onClick={() => setSelectedMode(mode.id as any)}
+                className={`relative flex flex-col items-center justify-center gap-1.5 px-2 py-4 rounded-lg transition-all ${
+                  selectedMode === mode.id 
+                    ? 'bg-indigo-600 text-white shadow-sm' 
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`}
+                title={`${mode.title}: ${mode.desc}`}
+              >
+                {selectedMode === mode.id && (
+                  <div className="absolute -left-2 top-0 bottom-0 w-1 bg-indigo-300 dark:bg-indigo-400 rounded-r-full"></div>
+                )}
+                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
+                   selectedMode === mode.id ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
+                }`}>
+                   <mode.icon size={20} className={selectedMode === mode.id && mode.id === 'creative' ? 'text-yellow-200' : ''} />
+                </div>
+                <div className={`text-[11px] font-medium text-center leading-tight ${selectedMode === mode.id ? 'text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+                   {mode.title}
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
 
-      {/* Mode Selector */}
-      <div className="flex flex-wrap justify-center gap-4">
-        {modes.map((mode) => (
-          <button
-            key={mode.id}
-            onClick={() => setSelectedMode(mode.id as any)}
-            className={`flex items-center gap-3 px-6 py-3 rounded-xl border transition-all duration-200 min-w-[240px] text-left ${
-              selectedMode === mode.id 
-                ? 'bg-indigo-600 border-indigo-600 shadow-lg scale-105' 
-                : 'bg-white dark:bg-surface border-slate-200 dark:border-border hover:border-indigo-300'
-            }`}
-          >
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-               selectedMode === mode.id ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
-            }`}>
-               <mode.icon size={20} className={selectedMode === mode.id && mode.id === 'creative' ? 'text-yellow-200' : ''} />
-            </div>
-            <div>
-              <div className={`font-bold text-sm ${selectedMode === mode.id ? 'text-white' : 'text-slate-800 dark:text-slate-200'}`}>
-                 {mode.title}
-              </div>
-              <div className={`text-xs ${selectedMode === mode.id ? 'text-indigo-100' : 'text-slate-500 dark:text-slate-400'}`}>
-                 {mode.desc}
-              </div>
-            </div>
-          </button>
-        ))}
-      </div>
-
-      {/* Main Content Grid */}
-      <div className={`grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0 overflow-hidden`}>
+        {/* Middle Panel - Upload Function Components */}
+        <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
         
-        {/* Creative Mode Layout: 2 Columns */}
+        {/* Creative Mode Layout */}
         {selectedMode === 'creative' ? (
-          <>
-            {/* Left Column: Combined Input */}
-            <div className="lg:col-span-2 bg-white dark:bg-surface rounded-2xl p-4 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
+          <div className="flex flex-col gap-6">
                 {/* 1. Product Image (Canvas) - Always Top */}
-                <div className="flex-shrink-0">
+                <div className="mb-6">
                     <div className="flex justify-between items-center mb-2">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base flex items-center gap-2">
+                        <h3 className="text-sm font-bold text-foreground">
                             {t.creative.productTitle}
-                            <span className="text-[10px] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</span>
                         </h3>
                     </div>
+                    <p className="text-xs text-muted-foreground mb-3">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</p>
                     
                     {productImage ? (
                         <div className="flex flex-col gap-2">
@@ -1183,15 +1181,15 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 </div>
 
                 {/* 2. Bottom Section: Prompt + Reference Image */}
-                <div className="flex flex-col md:flex-row gap-4 flex-1">
-                     {/* Prompt Section (Grow) */}
-                     <div className="flex-1 flex flex-col">
+                <div className="mb-6">
+                     {/* Prompt Section */}
+                     <div className="flex-1 flex flex-col mb-4">
                         <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">{t.creative.promptTitle}</h3>
+                            <h3 className="text-sm font-bold text-foreground">{t.creative.promptTitle}</h3>
                             <div className="flex items-center gap-2">
                                 <button
                                   onClick={(e) => handleTryExample(e)}
-                                  className="px-3 py-1.5 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors"
+                                  className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm text-xs font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                                 >
                                   试用示例
                                 </button>
@@ -1205,26 +1203,24 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                                  </button>
                             </div>
                         </div>
-                        <div className="relative flex-1">
+                        <div className="relative">
                             <textarea 
                                 value={prompt}
                                 onChange={(e) => setPrompt(e.target.value)}
                                 placeholder={t.creative.promptPlaceholder}
-                                className="w-full h-full min-h-[150px] p-4 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                className="w-full h-28 p-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none pr-16"
                                 maxLength={1500}
                             />
-                            <div className="absolute bottom-3 right-3 text-xs text-slate-400">
-                                {prompt.length} / 1500
-                            </div>
+                            <span className="absolute bottom-3 right-3 text-[10px] text-gray-400">{prompt.length}/1500</span>
                         </div>
                     </div>
 
-                    {/* Reference Image Section (Fixed Width) */}
-                    <div className="w-full md:w-64 flex flex-col">
+                    {/* Reference Image Section */}
+                    <div className="w-full flex flex-col">
                         <div className="flex justify-between items-center mb-2">
                             <div className="flex items-center gap-1.5">
-                                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">参考图片</h3>
-                                <span className="text-xs text-slate-400">(可选)</span>
+                                <h3 className="text-sm font-bold text-foreground">参考图片</h3>
+                                <span className="text-xs text-muted-foreground">(可选)</span>
                             </div>
                             {referenceImage && (
                                 <button
@@ -1291,59 +1287,20 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                         </div>
                     </div>
                 </div>
-
-                {/* Generate Button */}
-                <button 
-                  onClick={(e) => handleGenerate(e)}
-                  disabled={isGenerating || !productImage || !prompt.trim()}
-                  className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      Generating... {progress}%
-                    </>
-                  ) : (
-                    <>
-                      <Gem size={18} />
-                      <div className="flex items-center gap-1">
-                        <span>{t.common.generate}</span>
-                        <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
-                      </div>
-                    </>
-                  )}
-                </button>
-            </div>
-          </>
+          </div>
         ) : (
           <>
-            {/* Standard/Clothing Mode Layout: 3 Columns */}
+            {/* Standard/Clothing Mode Layout */}
             
-            {/* Column 1: Left Input */}
-            <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
-               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">
+            {/* Product/Garment Image Upload */}
+            <div className="mb-6">
+               <h3 className="text-sm font-bold mb-3 text-foreground">
                    {selectedMode === 'clothing' ? t.clothing.garmentTitle : t.standard.productTitle}
                </h3>
                
                <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-line">
                    {selectedMode === 'clothing' ? t.clothing.garmentDesc : TEXTS.standard.productDesc}
                </p>
-
-               {selectedMode === 'clothing' && (
-                   <div className="bg-slate-50 dark:bg-surface/50 rounded-lg p-3 border border-slate-200 dark:border-border">
-                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">选择服装类型</label>
-                      <div className="flex gap-3">
-                          {renderRadio('top', t.clothing.types.top)}
-                          {renderRadio('bottom', t.clothing.types.bottom)}
-                          {renderRadio('full', t.clothing.types.full)}
-                      </div>
-                      {clothingType === 'full' && (
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
-                          全身模式需要上传两张图片：第一张为上衣，第二张为下衣
-                        </p>
-                      )}
-                   </div>
-               )}
 
                {selectedMode === 'standard' && productImage ? (
                  <div className="flex flex-col gap-3 flex-1">
@@ -1396,7 +1353,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                    </div>
                  </div>
                ) : (
-                 <div className="flex-1 min-h-[300px]">
+                 <div className="flex-1 mb-2">
                     {selectedMode === 'clothing' ? (
                       clothingType === 'full' ? (
                         // 全身模式：始终显示两个上传框
@@ -1584,6 +1541,23 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                  </div>
                )}
 
+               
+              {selectedMode === 'clothing' && (
+                   <div className="bg-slate-50 dark:bg-surface/50 rounded-lg p-3 border border-slate-200 dark:border-border">
+                      <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">选择服装类型</label>
+                      <div className="flex gap-3">
+                          {renderRadio('top', t.clothing.types.top)}
+                          {renderRadio('bottom', t.clothing.types.bottom)}
+                          {renderRadio('full', t.clothing.types.full)}
+                      </div>
+                      {clothingType === 'full' && (
+                        <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2">
+                          全身模式需要上传两张图片：第一张为上衣，第二张为下衣
+                        </p>
+                      )}
+                   </div>
+               )}
+
                {/* Try Example Button - 仅标准模式显示 */}
                {selectedMode === 'standard' && !productImage && (
                  <div className="mt-auto pt-4 flex justify-center">
@@ -1597,9 +1571,9 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                )}
             </div>
 
-            {/* Column 2: Middle Input / Config */}
-            <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col gap-4 shadow-sm border border-slate-200 dark:border-border overflow-hidden">
-                <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg">
+            {/* Template/Model Image Upload */}
+            <div className="mb-6">
+                <h3 className="text-sm font-bold mb-3 text-foreground">
                    {selectedMode === 'clothing' ? t.clothing.modelTitle : TEXTS.standard.areaTitle}
                 </h3>
                 
@@ -1707,94 +1681,106 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                     )}
                   </div>
                 )}
+            </div>
 
-                {selectedMode === 'standard' && (
-                  <div className="mt-auto pt-4 space-y-2">
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!isAuthenticated) {
-                          showAuthModal();
-                          return;
-                        }
-                        setShowTemplateModal(true);
-                      }}
-                      disabled={isGenerating}
-                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {t.standard.selectTemplate}
-                    </button>
-                    
-                    {selectedTemplate && (
-                      <div className="p-2 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
-                        <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
-                          已选择: {selectedTemplate.templateCategoryList[0]?.categoryName || selectedTemplate.templateId}
-                        </p>
-                      </div>
-                    )}
-
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (!isAuthenticated) {
-                          showAuthModal();
-                          return;
-                        }
-                        setTemplateImage(null);
-                        setSelectedTemplate(null);
-                        if (templateInputRef.current) templateInputRef.current.value = '';
-                      }}
-                      disabled={isGenerating}
-                      className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      重新上传
-                    </button>
+          </>
+        )}
+          </div>
+          
+          {/* Fixed Bottom Actions */}
+          <div className="flex-shrink-0 p-6 pt-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 space-y-3">
+            {/* Standard Mode Template Actions */}
+            {selectedMode === 'standard' && (
+              <div className="space-y-2">
+                <button 
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isAuthenticated) {
+                      showAuthModal();
+                      return;
+                    }
+                    setShowTemplateModal(true);
+                  }}
+                  disabled={isGenerating}
+                  className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {t.standard.selectTemplate}
+                </button>
+                
+                {selectedTemplate && (
+                  <div className="p-2 border border-indigo-200 rounded-lg bg-indigo-50 dark:bg-indigo-900/20">
+                    <p className="text-xs text-indigo-600 dark:text-indigo-400 font-medium">
+                      已选择: {selectedTemplate.templateCategoryList[0]?.categoryName || selectedTemplate.templateId}
+                    </p>
                   </div>
                 )}
 
                 <button 
-                  onClick={(e) => handleGenerate(e)}
-                  disabled={isGenerating || 
-                    (selectedMode === 'clothing' ? (garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)) : (!productImage || (!templateImage && !selectedTemplate)))}
-                  className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 mt-4 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (!isAuthenticated) {
+                      showAuthModal();
+                      return;
+                    }
+                    setTemplateImage(null);
+                    setSelectedTemplate(null);
+                    if (templateInputRef.current) templateInputRef.current.value = '';
+                  }}
+                  disabled={isGenerating}
+                  className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 size={18} className="animate-spin" />
-                      生成中... {progress}%
-                    </>
-                  ) : (
-                    <>
-                      <Gem size={18} />
-                      <div className="flex items-center gap-1">
-                        <span>{t.common.generate}</span>
-                        <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
-                      </div>
-                    </>
-                  )}
+                  重新上传
                 </button>
-            </div>
-          </>
-        )}
+              </div>
+            )}
 
-        {/* Column 3: Output (Common for all modes) */}
-        <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col shadow-sm border border-slate-200 dark:border-border overflow-hidden">
-           <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-6">{t.common.resultTitle}</h3>
-           
+            {/* Generate Button */}
+            <button 
+              onClick={(e) => handleGenerate(e)}
+              disabled={isGenerating || 
+                (selectedMode === 'clothing' ? (garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)) : 
+                 (selectedMode === 'creative' ? (!productImage || !prompt.trim()) : (!productImage || (!templateImage && !selectedTemplate))))}
+              className="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  生成中... {progress}%
+                </>
+              ) : (
+                <>
+                  <Gem size={18} />
+                  <div className="flex items-center gap-1">
+                    <span>{t.common.generate}</span>
+                    <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                  </div>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Right Panel - Preview */}
+        <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-hidden">
+          <div className="p-6 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+            <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+              <Palette className="w-5 h-5" /> {t.common.resultTitle}
+            </h2>
+          </div>
+          
+          {/* Result Display Area */}
+          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
            {isGenerating ? (
-             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-surface/30 rounded-xl border-2 border-dashed border-slate-100 dark:border-border relative overflow-hidden min-h-[300px]">
+             <div className="flex-1 flex flex-col items-center justify-center">
                <div className="flex flex-col items-center gap-4">
-                 <Loader2 size={48} className="animate-spin text-indigo-600" />
-                 <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">
-                   AI正在生成中... {progress}%
-                 </p>
+                 <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
+                 <p className="text-indigo-600 dark:text-indigo-400 font-medium">AI正在生成中... {progress}%</p>
                </div>
              </div>
            ) : generatedImages.length > 0 ? (
-             <div className="flex-1 overflow-y-auto custom-scrollbar">
-               <div className="grid grid-cols-1 gap-4">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  {generatedImages.map((img) => (
                    <div key={img.key} className="relative group border-2 border-slate-200 dark:border-border rounded-xl overflow-hidden">
                      <img 
@@ -1854,26 +1840,19 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                      </div>
                    </div>
                  ))}
-               </div>
              </div>
            ) : (
-             <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/50 dark:bg-surface/30 rounded-xl border-2 border-dashed border-slate-100 dark:border-border relative overflow-hidden min-h-[300px]">
-               <div className="relative z-10 flex flex-col items-center gap-4 text-center max-w-xs">
-                 <div className="w-20 h-20 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center shadow-inner">
-                   <Palette size={40} className="text-amber-500" />
+             <div className="flex-1 flex flex-col items-center justify-center">
+               <div className="flex flex-col items-center text-slate-400">
+                 <div className="w-20 h-20 bg-slate-200 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
+                   <Palette size={40} className="opacity-50 text-slate-400 dark:text-slate-500" />
                  </div>
-                 <p className="text-sm text-slate-400 leading-relaxed font-medium">
-                   {t.common.resultPlaceholder}
-                 </p>
+                 <p className="text-sm max-w-xs text-center text-slate-500 dark:text-slate-400">{t.common.resultPlaceholder}</p>
                </div>
-               
-               {/* Decorative circles */}
-               <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-indigo-50 dark:bg-indigo-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70"></div>
-               <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-purple-50 dark:bg-purple-500/10 rounded-full mix-blend-multiply dark:mix-blend-screen filter blur-3xl opacity-70"></div>
              </div>
            )}
+          </div>
         </div>
-
       </div>
       
       {/* Template Selection Modal */}

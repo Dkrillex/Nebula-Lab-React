@@ -37,6 +37,7 @@ const TemplateUiPage = React.lazy(() => import('../../pages/Create/components/Te
 const WorkshopPage = React.lazy(() => import('../../pages/Create/components/WorkshopPage'));
 const ProductReplacePage = React.lazy(() => import('../../pages/Create/components/ProductReplacePage'));
 const UploadCustomAvatarPage = React.lazy(() => import('../../pages/Create/components/UploadCustomAvatarPage'));
+const ClothingExtractionPage = React.lazy(() => import('../../pages/Create/components/ClothingExtractionPage'));
 // Wrapper components defined inline or imported if complex logic needed
 // For now, we assume components can handle their own data fetching or use hooks
 
@@ -151,6 +152,11 @@ export const localRoutes: AppRouteObject[] = [
             path: 'uploadCustomAvatar',
             element: <RouteWrapper component={UploadCustomAvatarPage} translationKey="createPage.uploadCustomAvatar" />,
             meta: { title: 'Upload Custom Avatar', keepAlive: true }
+          },
+          {
+            path: 'clothing-extraction',
+            element: <RouteWrapper component={ClothingExtractionPage} translationKey="createPage.clothingExtraction" />,
+            meta: { title: 'Clothing Extraction', keepAlive: true }
           }
         ]
       },
