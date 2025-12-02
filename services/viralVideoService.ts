@@ -99,11 +99,21 @@ export const viralVideoService = {
     try {
       const response = await chatService.chatCompletions(requestData);
       
-      if (response.code !== 200 || !response.data?.choices?.[0]?.message?.content) {
+      // 处理不同的响应格式
+      let chatResponse: any;
+      if (response.code === 200 && response.data) {
+        chatResponse = response.data;
+      } else if (response.choices) {
+        chatResponse = response;
+      } else {
+        throw new Error('AI分析失败，请重试');
+      }
+      
+      if (!chatResponse.choices?.[0]?.message?.content) {
         throw new Error('AI分析失败，请重试');
       }
 
-      const content = response.data.choices[0].message.content.trim();
+      const content = chatResponse.choices[0].message.content.trim();
       
       // 尝试提取JSON（可能包含markdown代码块）
       let jsonStr = content;
@@ -219,11 +229,25 @@ export const viralVideoService = {
     try {
       const response = await chatService.chatCompletions(requestData);
       
-      if (response.code !== 200 || !response.data?.choices?.[0]?.message?.content) {
+      // 处理不同的响应格式：
+      // 1. 标准格式：{ code: 200, data: { choices: [...] } }
+      // 2. 直接格式：{ choices: [...] }
+      let chatResponse: any;
+      if (response.code === 200 && response.data) {
+        // 标准格式
+        chatResponse = response.data;
+      } else if (response.choices) {
+        // 直接格式（后端直接返回数据）
+        chatResponse = response;
+      } else {
+        throw new Error('AI分析失败，请重试');
+      }
+      
+      if (!chatResponse.choices?.[0]?.message?.content) {
         throw new Error('AI分析失败，请重试');
       }
 
-      const responseContent = response.data.choices[0].message.content.trim();
+      const responseContent = chatResponse.choices[0].message.content.trim();
       
       // 尝试提取JSON（可能包含markdown代码块）
       let jsonStr = responseContent;
@@ -333,11 +357,21 @@ export const viralVideoService = {
     try {
       const response = await chatService.chatCompletions(requestData);
       
-      if (response.code !== 200 || !response.data?.choices?.[0]?.message?.content) {
+      // 处理不同的响应格式
+      let chatResponse: any;
+      if (response.code === 200 && response.data) {
+        chatResponse = response.data;
+      } else if (response.choices) {
+        chatResponse = response;
+      } else {
+        throw new Error('脚本生成失败，请重试');
+      }
+      
+      if (!chatResponse.choices?.[0]?.message?.content) {
         throw new Error('脚本生成失败，请重试');
       }
 
-      const content = response.data.choices[0].message.content.trim();
+      const content = chatResponse.choices[0].message.content.trim();
       
       // 提取JSON数组
       let jsonStr = content;
@@ -397,7 +431,7 @@ export const viralVideoService = {
 - 台词要口语化，符合短视频风格
 - 合理分配商品卖点，每个分镜突出1-2个卖点
 
-请以JSON格式返回，格式如下：
+请以JSON格式返回，不要带有其它信息,格式如下：
 {
   "scriptTitle": "脚本标题",
   "scriptSubtitle": "脚本副标题",
@@ -457,11 +491,13 @@ ${uploadedImages.map((url, idx) => `图片${idx + 1}: ${url}`).join('\n')}
     try {
       const response = await chatService.chatCompletions(requestData);
       
-      if (response.code !== 200 || !response.data?.choices?.[0]?.message?.content) {
+      // requestClient 会解包后端返回的最外层数据接口，只返回 data
+      // 所以 response 已经是解包后的数据，直接使用
+      if (!response.choices?.[0]?.message?.content) {
         throw new Error('分镜生成失败，请重试');
       }
 
-      const content = response.data.choices[0].message.content.trim();
+      const content = response.choices[0].message.content.trim();
       
       // 提取JSON
       let jsonStr = content;

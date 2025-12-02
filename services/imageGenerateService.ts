@@ -47,6 +47,13 @@ export interface ImageGenerateRequest {
     role: string;
     parts: Array<{ text?: string; image?: string }>;
   }>;
+  // qwen-image-edit 特定参数
+  parameters?: {
+    n?: number;
+    negative_prompt?: string;
+    watermark?: boolean;
+    seed?: number;
+  };
 }
 
 // 图片生成响应

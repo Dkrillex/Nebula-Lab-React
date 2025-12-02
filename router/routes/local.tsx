@@ -73,6 +73,11 @@ export const localRoutes: AppRouteObject[] = [
             meta: { title: 'Viral Video', keepAlive: true }
           },
           {
+            path: 'viralVideo-old',
+            element: <RouteWrapper component={ViralVideoPageOld} translationKey="createPage.viralVideo" />,
+            meta: { title: 'Viral Video (Old)', keepAlive: true }
+          },
+          {
             path: 'imgToVideo',
             element: <RouteWrapper component={ImageToVideoPage} translationKey="createPage.imgToVideo" />,
             meta: { title: 'Image to Video', keepAlive: true }
