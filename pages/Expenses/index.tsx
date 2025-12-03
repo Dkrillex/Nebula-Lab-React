@@ -1442,7 +1442,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.userName}</th>
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.tokenName}</th>
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.modelName}</th>
-                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.cost}</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">
+                                  {`${(t.teamLogs.cost || 'Cost').replace(/\([^)]+\)/g, '').trim()} (${currencySymbol})`}
+                                </th>
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.expenseTypeLabel}</th>
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.createdAt}</th>
                                 <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 dark:text-zinc-200">{t.teamLogs.promptTokens}</th>
