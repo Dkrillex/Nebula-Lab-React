@@ -1223,6 +1223,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                 mode="balance" 
                 data={dailySummary} 
                 t={t}
+                language={language}
                 onDateClick={fetchDateDetails}
                 selectedDate={selectedDate}
               />

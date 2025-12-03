@@ -140,6 +140,12 @@ export interface BalanceDailySummary {
   netAmount: number; // 净额（充值-消费）
   usageCount: number; // 使用次数
   totalTokens: number; // 总Token数
+  totalConsumptionUsd?: number;
+  totalConsumptionIdr?: number;
+  totalRechargeUsd?: number;
+  totalRechargeIdr?: number;
+  netAmountUsd?: number;
+  netAmountIdr?: number;
 }
 
 // 积分日汇总
