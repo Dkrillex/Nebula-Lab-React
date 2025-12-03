@@ -151,7 +151,6 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
     
     // 确保在开始轮询时显示进度条
     setIsGenerating(true);
-    setProgress(10);
     
     const extractTaskResult = (res: any) => {
       if (res.result) return res.result;
@@ -254,8 +253,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
     
     stopTaskPolling();
     setIsGenerating(true);
-    setProgress(10); // 设置初始进度，让 ResultDisplay 显示进度条
-    setGeneratedImages([]);
+    setProgress(0);
 
     try {
       // Parallel Uploads
@@ -393,7 +391,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
         immediate={false}
         showConfirmButton={false}
         accept=".png,.jpg,.jpeg,.webp"
-        className="h-full min-h-[200px] w-full"
+        className="h-[11rem] w-full"
         disabled={disabled}
       >
         <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
@@ -401,7 +399,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
             <Upload size={24} />
           </div>
           <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
-          <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
+          <p className="text-[0.625rem] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
             {t.standard.support}
           </p>
         </div>
@@ -410,12 +408,12 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden h-full">
       {/* Left Column: Upload Section */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div className="w-full md:w-[22rem] lg:w-[25rem] bg-white dark:bg-gray-900 md:border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden min-h-[60vh] md:min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
           {/* Product Image Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-2">
               {t.standard.productTitle}
             </h3>
@@ -425,7 +423,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
             
             {productImage ? (
               <div className="flex flex-col gap-3">
-                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[400px]">
+                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[16rem]">
                   <MaskCanvas
                     ref={productMaskCanvasRef}
                     imageUrl={productImage.fileUrl}
@@ -469,7 +467,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                       onChange={(e) => setBrushSize(Number(e.target.value))}
                       className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
-                    <span className="text-xs text-slate-400 min-w-[24px]">{brushSize}px</span>
+                    <span className="text-xs text-slate-400 min-w-[24px]">{brushSize}</span>
                   </div>
                 </div>
               </div>
@@ -490,7 +488,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
           </div>
 
           {/* Template Image Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-2">
               {TEXTS.areaTitle}
             </h3>
@@ -500,7 +498,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
 
             {(templateImage || selectedTemplate) ? (
               <div className="flex flex-col gap-3">
-                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[400px]">
+                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[16rem]">
                   <MaskCanvas
                     ref={templateMaskCanvasRef}
                     imageUrl={(templateImage?.fileUrl || selectedTemplate?.templateImageUrl) ?? null}
@@ -549,15 +547,19 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                       onChange={(e) => setTemplateBrushSize(Number(e.target.value))}
                       className="w-full h-1.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                     />
-                    <span className="text-xs text-slate-400 min-w-[24px]">{templateBrushSize}px</span>
+                    <span className="text-xs text-slate-400 min-w-[24px]">{templateBrushSize}</span>
                   </div>
                 </div>
               </div>
             ) : (
               renderUploadBox(templateImage, 'template', TEXTS.templateUpload, templateInputRef, isGenerating)
             )}
+          </div>
+        </div>
 
-            <div className="mt-4 space-y-2">
+        {/* Generate Button - Fixed at Bottom */}
+        <div className="p-5 pt-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 z-10">
+        <div className="mt-4 space-y-2 mb-2">
               <button 
                 onClick={() => {
                   if (!isAuthenticated) {
@@ -567,7 +569,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                   setShowTemplateModal(true);
                 }}
                 disabled={isGenerating}
-                className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 text-sm rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {t.standard.selectTemplate}
               </button>
@@ -591,30 +593,27 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                   if (templateInputRef.current) templateInputRef.current.value = '';
                 }}
                 disabled={isGenerating}
-                className="w-full py-3 rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2.5 text-sm rounded-xl border border-slate-200 dark:border-border text-slate-700 dark:text-slate-300 font-bold hover:bg-slate-50 dark:hover:bg-surface transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 重新上传
               </button>
             </div>
-          </div>
-
-          {/* Generate Button */}
           <button 
             onClick={handleGenerate}
             disabled={isGenerating || !productImage || (!templateImage && !selectedTemplate)}
-            className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
-                生成中... {progress}%
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">生成中... {progress}%</span>
               </>
             ) : (
               <>
-                <Gem size={18} />
+                <Gem size={16} />
                 <div className="flex items-center gap-1">
-                  <span>{t.common.generate}</span>
-                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                  <span className="text-sm">{t.common.generate}</span>
+                  <span className="text-[0.625rem] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
                 </div>
               </>
             )}
@@ -623,7 +622,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
       </div>
 
       {/* Right Column: Result Display */}
-      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-hidden">
+      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-y-auto md:overflow-hidden min-h-[500px] md:min-h-0">
         <ResultDisplay
           isGenerating={isGenerating}
           progress={progress}

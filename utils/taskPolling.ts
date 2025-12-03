@@ -49,6 +49,8 @@ export interface PollingOptions<TResponse = any> {
     progressMode?: 'fast' | 'medium' | 'slow';
     /** 是否在 start 后立刻执行一次请求，默认 true；为 false 时等待一个 interval */
     immediate?: boolean;
+    /** 是否仅显示假进度条，不执行真正的轮询请求，默认 false */
+    fakeProgressOnly?: boolean;
 }
 
 export interface PollingController {
@@ -159,6 +161,7 @@ export const createTaskPoller = <TResponse = any>(
         progressMode = 'fast',
         initialProgress = 0,
         immediate = true,
+        fakeProgressOnly = false,
     } = options;
 
     let timer: ReturnType<typeof setTimeout> | null = null;
@@ -167,6 +170,8 @@ export const createTaskPoller = <TResponse = any>(
     let startTime = 0;
     let running = false;
     const simulator = progressSimulator ?? createProgressSimulator(progressMode);
+
+    const fakeProgressInterval = intervalMs;
 
     const clearTimer = () => {
         if (timer) {
@@ -188,6 +193,22 @@ export const createTaskPoller = <TResponse = any>(
             status: undefined,
         });
 
+        // 假进度条模式：只更新进度，不执行请求
+        if (fakeProgressOnly) {
+            // 假进度条最大值为 99%，不会自动完成，需要外部控制
+            progress = Math.min(99, simulator(progress));
+            const ctx: PollingContext<TResponse> = {
+                ...ctxBase(),
+                status: 'running',
+            };
+            onProgress?.(progress, ctx);
+
+            // 保持在 99%，继续运行，等待外部调用 stop() 或手动设置为 100%
+            timer = setTimeout(tick, fakeProgressInterval);
+            return;
+        }
+
+        // 正常轮询模式
         try {
             const response = await request();
             const status = parseStatus(response);
@@ -264,7 +285,7 @@ export const createTaskPoller = <TResponse = any>(
         if (immediate) {
             void tick();
         } else {
-            timer = setTimeout(tick, intervalMs);
+            timer = setTimeout(tick, fakeProgressOnly ? fakeProgressInterval : intervalMs);
         }
     };
 

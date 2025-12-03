@@ -119,97 +119,6 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
     }
   }, []);
 
-  // 轮询任务状态
-  const startPolling = useCallback((taskId: string) => {
-    if (!taskId) return;
-    stopTaskPolling();
-    
-    // 确保在开始轮询时显示进度条
-    setIsGenerating(true);
-    setProgress(10);
-    
-    const extractTaskResult = (res: any) => {
-      if (res.result) return res.result;
-      if (res.data) return res.data;
-      return res;
-    };
-
-    const processResultImages = (taskResult: any): GeneratedImage[] => {
-      let images: GeneratedImage[] = [];
-      
-      if (taskResult.data && Array.isArray(taskResult.data)) {
-        images = taskResult.data.map((item: any, index: number) => ({
-          key: index + 1,
-          url: item.url || item.image_url || '',
-          revised_prompt: item.revised_prompt,
-          previewVisible: false
-        })).filter(img => img.url);
-      } else if (taskResult.url) {
-        images = [{
-          key: 1,
-          url: taskResult.url,
-          previewVisible: false
-        }];
-      }
-      
-      return images;
-    };
-
-    const poller = createTaskPoller<any>({
-      request: async () => {
-        const res = await styleTransferService.queryCreative(taskId);
-        return extractTaskResult(res);
-      },
-      parseStatus: data => data?.status,
-      isSuccess: status => {
-        if (!status) return false;
-        return ['success', 'succeeded', 'done'].includes(status.toLowerCase());
-      },
-      isFailure: status => {
-        if (!status) return false;
-        return ['fail', 'failed', 'error'].includes(status.toLowerCase());
-      },
-      isPending: status => {
-        if (!status) return false;
-        return ['running', 'init', 'in_queue', 'generating'].includes(status.toLowerCase());
-      },
-      onProgress: value => setProgress(value),
-      onSuccess: taskResult => {
-        setProgress(100);
-        const images = processResultImages(taskResult);
-        setGeneratedImages(images);
-        setTimeout(() => {
-          setIsGenerating(false);
-        }, 1000);
-        stopTaskPolling();
-      },
-      onFailure: taskResult => {
-        setIsGenerating(false);
-        setProgress(0);
-        const errorMsg = taskResult?.errorMsg || taskResult?.error || taskResult?.message || 'Generation failed';
-        toast.error(errorMsg);
-        stopTaskPolling();
-      },
-      onTimeout: () => {
-        setIsGenerating(false);
-        setProgress(0);
-        toast.error('任务超时');
-        stopTaskPolling();
-      },
-      onError: error => {
-        console.error('轮询查询出错:', error);
-        toast.error('查询失败');
-        setIsGenerating(false);
-        stopTaskPolling();
-      },
-      intervalMs: 10_000,
-      progressMode: 'fast',
-      continueOnError: () => false,
-    });
-
-    pollerRef.current = poller;
-    poller.start();
-  }, [stopTaskPolling]);
 
   // 文本润色
   const handlePolishText = async () => {
@@ -276,8 +185,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
     
     stopTaskPolling();
     setIsGenerating(true);
-    setProgress(10); // 设置初始进度，让 ResultDisplay 显示进度条
-    setGeneratedImages([]);
+    setProgress(0);
 
     try {
       // 构建parts数组
@@ -299,40 +207,53 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
         parts.push({ image: refBase64 });
       }
 
+      // 在请求之前启动假进度条
+      stopTaskPolling();
+      
+      const fakePoller = createTaskPoller<any>({
+        request: async () => ({}), // 假进度条模式不需要真正的请求
+        onProgress: value => setProgress(value),
+        fakeProgressOnly: true,
+        progressMode: 'fast',
+        initialProgress: 10,
+      });
+      pollerRef.current = fakePoller;
+      fakePoller.start();
+
       const res = await styleTransferService.submitCreative({
         size: '2K',
         contents: [{ parts }]
       });
 
-      let images: GeneratedImage[] = [];
-      let taskId: string | undefined;
-
+      // 处理返回结果
+      let resultImages: GeneratedImage[] = [];
       if (Array.isArray(res)) {
-        images = res.map((item: any, index: number) => ({
+        resultImages = res.map((item: any, index: number) => ({
           key: `${Date.now()}_${index}`,
           url: item.url || item.image_url || '',
           revised_prompt: item.revised_prompt,
           b64_json: item.b64_json
         }));
       } else if (res && res.data && Array.isArray(res.data)) {
-        images = res.data.map((item: any, index: number) => ({
+        resultImages = res.data.map((item: any, index: number) => ({
           key: `${Date.now()}_${index}`,
           url: item.url || item.image_url || '',
           revised_prompt: item.revised_prompt,
           b64_json: item.b64_json
         }));
-      } else if (res && (res.id || res.taskId)) {
-        taskId = res.id || res.taskId;
       }
 
-      if (images.length > 0) {
-        setGeneratedImages(images);
-        setProgress(100);
-        setIsGenerating(false);
+      // 接口返回数据后，停止假进度条并设置为 100%
+      if (resultImages.length > 0) {
         stopTaskPolling();
-      } else if (taskId) {
-        startPolling(taskId);
+        setGeneratedImages(resultImages);
+        setProgress(100);
+        setTimeout(() => {
+          setIsGenerating(false);
+        }, 1000);
       } else {
+        // 如果请求失败，停止假进度条
+        stopTaskPolling();
         throw new Error('Unexpected response format or empty result');
       }
 
@@ -351,22 +272,22 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
   }, [stopTaskPolling]);
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden h-full">
       {/* Left Column: Upload Section */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div className="w-full md:w-[22rem] lg:w-[25rem] bg-white dark:bg-gray-900 md:border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden min-h-[60vh] md:min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
           {/* Product Image Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base flex items-center gap-2">
                 {t.creative.productTitle}
-                <span className="text-[10px] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</span>
+                <span className="text-[0.625rem] text-slate-400 font-normal">高清图片效果最佳 | jpg/jpeg/png | 文件&lt;10MB</span>
               </h3>
             </div>
             
             {productImage ? (
               <div className="flex flex-col gap-2">
-                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[450px]">
+                <div className="relative border-2 border-indigo-500 rounded-xl overflow-hidden h-[16rem]">
                   <MaskCanvas
                     ref={creativeMaskCanvasRef}
                     imageUrl={productImage.fileUrl}
@@ -491,7 +412,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
                         </div>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 flex-1 min-w-[180px] max-w-[240px]">
+                      <div className="flex items-center gap-2 flex-1 min-w-[11.25rem] max-w-[15rem]">
                         <span className="text-xs text-slate-400 whitespace-nowrap">大小</span>
                         <input
                           type="range"
@@ -534,7 +455,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
                 immediate={false}
                 showConfirmButton={false}
                 accept=".png,.jpg,.jpeg"
-                className="w-full min-h-[380px]"
+                className="w-full h-[11rem]"
               >
                 <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
                   <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
@@ -547,7 +468,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
           </div>
 
           {/* Prompt Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="flex justify-between items-center mb-2">
               <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">{t.creative.promptTitle}</h3>
               <div className="flex items-center gap-2">
@@ -572,7 +493,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder={t.creative.promptPlaceholder}
-                className="w-full min-h-[150px] p-4 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                className="w-full min-h-[8.5rem] p-3.5 rounded-xl border border-slate-200 dark:border-border bg-white dark:bg-background resize-none text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                 maxLength={1500}
               />
               <div className="absolute bottom-3 right-3 text-xs text-slate-400">
@@ -582,7 +503,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
           </div>
 
           {/* Reference Image Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <div className="flex justify-between items-center mb-2">
               <div className="flex items-center gap-1.5">
                 <h3 className="font-bold text-slate-800 dark:text-slate-200 text-base">参考图片</h3>
@@ -598,13 +519,13 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
               )}
             </div>
             
-            <div className="flex-1 min-h-[150px] border-2 border-dashed border-slate-200 dark:border-border rounded-xl overflow-hidden relative bg-slate-50 dark:bg-surface/50 hover:bg-slate-100 dark:hover:bg-surface transition-colors">
+            <div className="flex-1 min-h-[8.5rem] border-2 border-dashed border-slate-200 dark:border-border rounded-xl overflow-hidden relative bg-slate-50 dark:bg-surface/50 hover:bg-slate-100 dark:hover:bg-surface transition-colors">
               {referenceImage ? (
-                <div className="w-full h-full relative group">
+                <div className="w-full h-[11rem] relative group">
                   <img 
                     src={referenceImage.fileUrl} 
                     alt="Reference" 
-                    className="w-full h-full object-cover" 
+                    className="w-full h-full object-contain" 
                     crossOrigin="anonymous"
                     referrerPolicy="no-referrer"
                   />
@@ -641,24 +562,26 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
               )}
             </div>
           </div>
+        </div>
 
-          {/* Generate Button */}
+        {/* Generate Button - Fixed at Bottom */}
+        <div className="p-5 pt-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 z-10">
           <button 
             onClick={handleGenerate}
             disabled={isGenerating || !productImage || !prompt.trim()}
-            className="w-full py-3 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
-                Generating... {progress}%
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">Generating... {progress}%</span>
               </>
             ) : (
               <>
-                <Gem size={18} />
+                <Gem size={16} />
                 <div className="flex items-center gap-1">
-                  <span>{t.common.generate}</span>
-                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                  <span className="text-sm">{t.common.generate}</span>
+                  <span className="text-[0.625rem] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
                 </div>
               </>
             )}
@@ -667,7 +590,7 @@ const CreativeMode = React.forwardRef<CreativeModeRef, CreativeModeProps>(({ t, 
       </div>
 
       {/* Right Column: Result Display */}
-      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-hidden">
+      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-y-auto md:overflow-hidden min-h-[500px] md:min-h-0">
         <ResultDisplay
           isGenerating={isGenerating}
           progress={progress}

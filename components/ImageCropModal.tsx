@@ -20,7 +20,7 @@ const DEFAULT_ASPECT_RATIOS: AspectRatioOption[] = [
 interface ImageCropModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (base64: string) => void;
+  onConfirm: (base64: string, aspectRatio: number) => void;
   src: string;
   aspectRatio?: number;
   aspectRatioOptions?: AspectRatioOption[];
@@ -143,7 +143,7 @@ const ImageCropModal: React.FC<ImageCropModalProps> = ({
       console.log('实际输出尺寸:', { width: canvas.width, height: canvas.height });
 
       const base64 = canvas.toDataURL('image/png');
-      onConfirm(base64);
+      onConfirm(base64, currentAspectRatio);
     } catch (error) {
       console.error('裁剪失败', error);
     } finally {
