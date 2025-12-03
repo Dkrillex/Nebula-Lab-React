@@ -8,6 +8,12 @@ export interface BalanceDailySummary {
   netAmount: number;
   usageCount: number;
   totalTokens: number;
+  totalConsumptionUsd?: number;
+  totalConsumptionIdr?: number;
+  totalRechargeUsd?: number;
+  totalRechargeIdr?: number;
+  netAmountUsd?: number;
+  netAmountIdr?: number;
 }
 
 // 积分日汇总数据类型
@@ -23,6 +29,7 @@ interface BalanceDailySummaryTableProps {
   t?: any;
   onDateClick?: (date: string) => void;
   selectedDate?: string | null;
+  language: 'zh' | 'en' | 'id';
 }
 
 interface PointsDailySummaryTableProps {
@@ -42,13 +49,35 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
 
   // 余额模式表格
   if (mode === 'balance') {
+    const balanceProps = props as BalanceDailySummaryTableProps;
+    const language = balanceProps.language;
+    const getCurrencySymbol = (lang: 'zh' | 'en' | 'id') => {
+      if (lang === 'en') return '$';
+      if (lang === 'id') return 'Rp';
+      return '¥';
+    };
+    const currencySymbol = getCurrencySymbol(language);
+
+    const getCurrencyFieldValue = (
+      day: BalanceDailySummary,
+      baseField: 'totalConsumption' | 'totalRecharge' | 'netAmount'
+    ) => {
+      if (language === 'en') {
+        return Number(day[`${baseField}Usd` as keyof BalanceDailySummary] ?? day[baseField]);
+      }
+      if (language === 'id') {
+        return Number(day[`${baseField}Idr` as keyof BalanceDailySummary] ?? day[baseField]);
+      }
+      return Number(day[baseField]);
+    };
+
     const balanceData = data as BalanceDailySummary[];
     // 确保数值字段是数字类型（后端可能返回字符串）
     const normalizedData = balanceData.map(day => ({
       ...day,
-      totalConsumption: Number(day.totalConsumption) || 0,
-      totalRecharge: Number(day.totalRecharge) || 0,
-      netAmount: Number(day.netAmount) || 0,
+      totalConsumption: getCurrencyFieldValue(day, 'totalConsumption') || 0,
+      totalRecharge: getCurrencyFieldValue(day, 'totalRecharge') || 0,
+      netAmount: getCurrencyFieldValue(day, 'netAmount') || 0,
       usageCount: Number(day.usageCount) || 0,
       totalTokens: Number(day.totalTokens) || 0,
     }));
@@ -68,9 +97,15 @@ const DailySummaryTable: React.FC<DailySummaryTableProps> = (props) => {
                 <th className="px-3 py-2 text-left font-medium text-gray-600 dark:text-zinc-400">{t?.date || '日期'}</th>
                 <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.times || '次数'}</th>
                 <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.token || 'Token'}</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.consumption || '消费'}</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.recharge || '充值'}</th>
-                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">{t?.netAmount || '净额'}</th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">
+                  {t?.consumption || '消费'} ({currencySymbol})
+                </th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">
+                  {t?.recharge || '充值'} ({currencySymbol})
+                </th>
+                <th className="px-3 py-2 text-right font-medium text-gray-600 dark:text-zinc-400">
+                  {t?.netAmount || '净额'} ({currencySymbol})
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-zinc-900">
