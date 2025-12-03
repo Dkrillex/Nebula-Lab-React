@@ -301,12 +301,12 @@ export const viralVideoService = {
     analysis: ProductAnalysis,
     model: string = 'qwen3-omni-flash'
   ): Promise<ScriptOption[]> => {
-    const systemPrompt = `你是一个专业的短视频营销脚本创作专家。基于商品信息，生成3-5个营销脚本模板。
+    const systemPrompt = `你是一个专业的短视频营销脚本创作专家。基于商品信息，生成5个营销脚本模板。
 
 每个脚本应包含：
 1. 标题（简洁有力，如"白裙公式"、"氛围穿搭"等）
 2. 副标题（描述脚本特点，如"外观样式+上身效果+..."）
-3. 预计时长（如"30s"、"25s"等）
+3. 预计时长（如"25s"、"20s"等）
 4. 简要描述（可选）
 
 脚本类型可以包括：
@@ -316,19 +316,48 @@ export const viralVideoService = {
 - 人设背书型（人设+外观）
 - 经典永恒型（经典+外观）
 
+请确保生成5个不同的脚本选项，每个脚本都有独特的风格和角度。
+
 请以JSON数组格式返回，格式如下：
 [
   {
     "id": "script-1",
     "title": "脚本标题",
     "subtitle": "副标题描述",
-    "time": "30s",
+    "time": "25s",
     "description": "脚本描述"
   },
-  ...
+  {
+    "id": "script-2",
+    "title": "脚本标题",
+    "subtitle": "副标题描述",
+    "time": "25s",
+    "description": "脚本描述"
+  },
+  {
+    "id": "script-3",
+    "title": "脚本标题",
+    "subtitle": "副标题描述",
+    "time": "25s",
+    "description": "脚本描述"
+  },
+  {
+    "id": "script-4",
+    "title": "脚本标题",
+    "subtitle": "副标题描述",
+    "time": "25s",
+    "description": "脚本描述"
+  },
+  {
+    "id": "script-5",
+    "title": "脚本标题",
+    "subtitle": "副标题描述",
+    "time": "25s",
+    "description": "脚本描述"
+  }
 ]
 
-只返回JSON数组，不要其他文字说明。`;
+只返回JSON数组，必须包含5个脚本，不要其他文字说明。`;
 
     const userPrompt = `商品信息：
 - 商品名称：${analysis.productName}
@@ -425,17 +454,18 @@ export const viralVideoService = {
 4. 每个分镜可以有1-2个镜头（shots）
 
 分镜要求：
-- 总时长控制在30-40秒
-- 每个分镜约5-10秒
+- 总时长控制在20-25秒
+- 每个分镜固定为5秒
+- 分镜数量固定为4-5个（优先4个，如果内容需要可以5个）
 - 画面描述要具体，包含镜头运动（如：从下往上缓慢移动、缓慢拉近、特写等）
-- 台词要口语化，符合短视频风格
+- 台词要口语化，符合短视频风格，每个分镜的台词长度要适合5秒时长
 - 合理分配商品卖点，每个分镜突出1-2个卖点
 
 请以JSON格式返回，不要带有其它信息,格式如下：
 {
   "scriptTitle": "脚本标题",
   "scriptSubtitle": "脚本副标题",
-  "totalDuration": "35s",
+  "totalDuration": "20s",
   "scenes": [
     {
       "id": 1,
@@ -450,13 +480,13 @@ export const viralVideoService = {
           "desc": "镜头缓慢拉近，聚焦于胸前的珍珠扣和蕾丝边细节。"
         }
       ],
-      "lines": "台词内容，自然流畅的口语化表达。"
+      "lines": "台词内容，自然流畅的口语化表达，适合5秒时长。"
     },
     ...
   ]
 }
 
-只返回JSON，不要其他文字说明。`;
+只返回JSON，必须包含4-5个分镜（每个分镜5秒），不要其他文字说明。`;
 
     const userPrompt = `脚本信息：
 - 标题：${script.title}

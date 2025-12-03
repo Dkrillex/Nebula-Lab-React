@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, FolderOpen, Loader, X, CheckCircle2 } from 'lucide-react';
-import { uploadService } from '../../../../services/uploadService';
-import { assetsService, AdsAssetsVO } from '../../../../services/assetsService';
-import { viralVideoService } from '../../../../services/viralVideoService';
-import { labProjectService } from '../../../../services/labProjectService';
+import { uploadService } from '@/services/uploadService.ts';
+import { assetsService, AdsAssetsVO } from '@/services/assetsService.ts';
+import { viralVideoService } from '@/services/viralVideoService.ts';
+import { labProjectService } from '@/services/labProjectService.ts';
 import toast from 'react-hot-toast';
 import BaseModal from '../../../../components/BaseModal';
 import ImageEditModal from '../ImageEditModal';
-import { downloadVideo } from '../../../../utils/videoUtils';
+import { downloadVideo } from '@/utils/videoUtils.ts';
 import { HomePage } from './HomePage';
 import { MaterialsAndSellingPoints } from './MaterialsAndSellingPoints';
 import { SelectScript } from './SelectScript';
