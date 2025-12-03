@@ -31,8 +31,7 @@ interface MaterialsAndSellingPointsProps {
   onGenerateScript?: () => void;
   onBack?: () => void;
   onHelpWrite?: () => Promise<void>;
-  onSave?: () => Promise<void>;
-  projectId?: string | number | null;
+  onStepChange: (step: number) => void; // Added onStepChange
 }
 
 export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps> = ({
@@ -63,8 +62,7 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
   onGenerateScript,
   onBack,
   onHelpWrite,
-  onSave,
-  projectId,
+  onStepChange, // Destructure onStepChange
 }) => {
   const [productName, setProductName] = useState(analysisResult?.productName || '');
   const [sellingPoints, setSellingPoints] = useState(
@@ -178,11 +176,8 @@ export const MaterialsAndSellingPoints: React.FC<MaterialsAndSellingPointsProps>
       <WorkflowProgress 
         step={step} 
         videoId={videoId} 
-        projectId={projectId}
-        projectIdStr={undefined}
         onBack={step === 1 ? onBack : undefined}
-        onSave={undefined}
-        isSaving={false}
+        onStepChange={onStepChange}
       />
 
       {/* Main Content */}

@@ -87,6 +87,7 @@ export interface ViralVideoProjectData {
   selectedScript: string;
   storyboard: Storyboard | null;
   editedStoryboard: Storyboard | null;
+  storyboardsByScriptId?: Record<string, Storyboard>; // 所有脚本的分镜缓存
   storyboardVideos: Record<number, StoryboardVideo>;
   finalVideoUrl: string;
   videoId: string;

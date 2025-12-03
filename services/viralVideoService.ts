@@ -316,7 +316,11 @@ export const viralVideoService = {
 - 人设背书型（人设+外观）
 - 经典永恒型（经典+外观）
 
-请确保生成5个不同的脚本选项，每个脚本都有独特的风格和角度。
+**重要要求：**
+- 必须生成正好5个不同的脚本选项，每个脚本都有独特的风格和角度。不能少于5个，也不能多于5个。
+- 脚本描述要日常化、口语化，贴近真实用户的表达方式
+- 避免过于正式或营销化的语言，使用自然、亲切的表达
+- 让脚本看起来像真实用户在分享，而不是广告
 
 请以JSON数组格式返回，格式如下：
 [
@@ -357,7 +361,7 @@ export const viralVideoService = {
   }
 ]
 
-只返回JSON数组，必须包含5个脚本，不要其他文字说明。`;
+**只返回JSON数组，必须包含且仅包含5个脚本，不要其他文字说明。**`;
 
     const userPrompt = `商品信息：
 - 商品名称：${analysis.productName}
@@ -417,7 +421,7 @@ export const viralVideoService = {
       const scripts = JSON.parse(jsonStr) as ScriptOption[];
       
       // 验证和规范化
-      return scripts
+      const validScripts = scripts
         .filter(s => s.title && s.subtitle && s.time)
         .map((s, index) => ({
           id: s.id || `script-${index + 1}`,
@@ -426,6 +430,17 @@ export const viralVideoService = {
           time: s.time,
           description: s.description || '',
         }));
+      
+      // 确保返回正好5个脚本
+      if (validScripts.length < 5) {
+        console.warn(`AI只返回了 ${validScripts.length} 个脚本，期望5个`);
+        // 如果少于5个，可以抛出错误要求重试，或者补充默认脚本
+        // 这里我们选择抛出错误，让用户重试
+        throw new Error(`脚本生成不完整：期望5个脚本，但只生成了 ${validScripts.length} 个。请重试。`);
+      }
+      
+      // 如果超过5个，只取前5个
+      return validScripts.slice(0, 5);
     } catch (error: any) {
       console.error('脚本生成失败:', error);
       throw new Error(error.message || '脚本生成失败，请重试');
@@ -457,9 +472,12 @@ export const viralVideoService = {
 - 总时长控制在20-25秒
 - 每个分镜固定为5秒
 - 分镜数量固定为4-5个（优先4个，如果内容需要可以5个）
-- 画面描述要具体，包含镜头运动（如：从下往上缓慢移动、缓慢拉近、特写等）
-- 台词要口语化，符合短视频风格，每个分镜的台词长度要适合5秒时长
+- 画面描述要具体、生动，使用日常用语，避免专业术语
+- 视频描述要像朋友在分享一样自然，不要过于正式或生硬
+- 台词要口语化、自然流畅，像朋友聊天一样，不要过于正式或生硬
+- 每个分镜的台词要符合短视频风格，简短有力，容易理解，长度要适合5秒时长
 - 合理分配商品卖点，每个分镜突出1-2个卖点
+- 参考日常短视频的表达方式，让描述和台词更贴近真实用户
 
 请以JSON格式返回，不要带有其它信息,格式如下：
 {
@@ -501,7 +519,13 @@ export const viralVideoService = {
 可用图片：${uploadedImages.length}张
 ${uploadedImages.map((url, idx) => `图片${idx + 1}: ${url}`).join('\n')}
 
-请为这个脚本生成详细的分镜方案。在shots的img字段中，可以使用"图片1"、"图片2"等引用，或者使用具体的图片URL。`;
+请为这个脚本生成详细的分镜方案。在shots的img字段中，可以使用"图片1"、"图片2"等引用，或者使用具体的图片URL。
+
+**重要提示：**
+- 视频描述要具体、生动，使用日常用语，像真实用户在分享使用体验
+- 台词要口语化、自然，像朋友聊天一样，避免过于正式或营销化的表达
+- 参考日常短视频的表达方式，让描述和台词更贴近真实用户
+- 每个分镜的台词要简短有力，容易理解，适合5秒时长`;
 
     const requestData: ChatRequest = {
       model,

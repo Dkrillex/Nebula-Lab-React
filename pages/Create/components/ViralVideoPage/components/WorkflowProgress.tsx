@@ -11,6 +11,7 @@ interface WorkflowProgressProps {
   onSave?: () => Promise<void>;
   isSaving?: boolean;
   onStepChange?: (step: number) => void; // 支持点击步骤跳转
+  canGoBack?: boolean; // 是否允许返回（如果为false，则禁止点击"素材与卖点"返回）
 }
 
 export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({ 
@@ -22,6 +23,7 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
   onSave,
   isSaving = false,
   onStepChange,
+  canGoBack = true, // 默认允许返回
 }) => {
   const steps = [
     { id: 1, name: '素材与卖点', active: step === 1, completed: step > 1 },
@@ -49,9 +51,13 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
               <React.Fragment key={s.id}>
                 <div 
                   className={`flex items-center gap-2 ${
-                    onStepChange && (s.completed || s.active) ? 'cursor-pointer hover:opacity-80 transition-opacity' : ''
+                    onStepChange && (s.completed || s.active) && !(s.id === 1 && canGoBack === false) ? 'cursor-pointer hover:opacity-80 transition-opacity' : 'cursor-default'
                   }`}
                   onClick={() => {
+                    // 如果canGoBack为false且点击的是"素材与卖点"（step 1），则不执行
+                    if (s.id === 1 && canGoBack === false) {
+                      return;
+                    }
                     if (onStepChange && (s.completed || s.active)) {
                       onStepChange(s.id);
                     }

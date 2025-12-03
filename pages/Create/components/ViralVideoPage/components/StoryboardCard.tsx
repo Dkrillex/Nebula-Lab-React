@@ -1,21 +1,26 @@
 import React, { useState, useEffect } from 'react';
-import { Loader, CheckCircle2 } from 'lucide-react';
-import { VideoStatus } from '../types';
+import { Loader, CheckCircle2, Trash2, GripVertical } from 'lucide-react';
+import { VideoStatus, Shot } from '../types';
 
 interface StoryboardCardProps {
   index: number;
-  images: string[];
+  sceneIndex: number; // 分镜序号（1, 2, 3...）
+  images: Shot[]; // 改为使用 Shot 数组，包含图片和描述
   text: string;
   onTextChange?: (text: string) => void;
   videoStatus?: VideoStatus;
   videoUrl?: string;
   videoProgress?: number;
   isGenerating?: boolean;
-  onGenerateVideo?: () => void | Promise<void>;
+  onGenerateVideo?: (shotIndex?: number) => void | Promise<void>; // shotIndex 表示第几个镜头
+  onDelete?: () => void;
+  isSelected?: boolean;
+  onClick?: () => void;
 }
 
 export const StoryboardCard: React.FC<StoryboardCardProps> = ({ 
-  index, 
+  index,
+  sceneIndex,
   images, 
   text, 
   onTextChange,
@@ -23,7 +28,10 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
   videoUrl,
   videoProgress,
   isGenerating,
-  onGenerateVideo
+  onGenerateVideo,
+  onDelete,
+  isSelected = false,
+  onClick,
 }) => {
   const [localText, setLocalText] = useState(text);
 
@@ -40,15 +48,34 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
   };
 
   return (
-    <div className="min-w-[400px] w-[400px] bg-background border border-border rounded-xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-shadow">
+    <div 
+      className={`min-w-[400px] w-[400px] bg-background border rounded-xl overflow-hidden flex flex-col shadow-sm hover:shadow-md transition-all cursor-pointer ${isSelected ? 'border-indigo-500 ring-2 ring-indigo-500' : 'border-border'}`}
+      onClick={onClick}
+    >
       <div className="p-3 border-b border-border text-sm font-bold text-foreground flex items-center justify-between">
-        <span>分镜 {index}</span>
-        {videoStatus === 'succeeded' && (
-          <CheckCircle2 size={16} className="text-green-500" />
-        )}
-        {isGenerating && (
-          <Loader className="animate-spin" size={16} />
-        )}
+        <div className="flex items-center gap-2">
+          <GripVertical size={16} className="text-muted cursor-move" />
+          <span>分镜 {sceneIndex}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          {videoStatus === 'succeeded' && (
+            <CheckCircle2 size={16} className="text-green-500" />
+          )}
+          {isGenerating && (
+            <Loader className="animate-spin" size={16} />
+          )}
+          {onDelete && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="p-1 hover:bg-red-50 hover:text-red-500 rounded transition-colors"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
+        </div>
       </div>
       <div className="p-3 flex gap-2 h-64 bg-surface/50">
         {/* 如果视频生成成功，显示视频；否则显示图片 */}
@@ -59,12 +86,40 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
               controls
               className="w-full h-full object-contain"
               preload="metadata"
+              onClick={(e) => e.stopPropagation()}
             />
           </div>
         ) : (
-          images.map((img, idx) => (
-            <div key={idx} className="flex-1 h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50">
-              <img src={img} alt={`Shot ${idx}`} className="w-full h-full object-contain hover:scale-105 transition-transform duration-500" />
+          /* 显示所有图片，每个图片都有独立的图转视频按钮 */
+          images.map((shot, idx) => (
+            <div key={idx} className="flex-1 h-full rounded-lg bg-gray-100 dark:bg-zinc-800 overflow-hidden relative border border-border/50 group">
+              <img 
+                src={shot.img} 
+                alt={`Shot ${idx + 1}`} 
+                className="w-full h-full object-contain hover:scale-105 transition-transform duration-500" 
+              />
+              {/* 图转视频按钮 - 悬停时显示 */}
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onGenerateVideo) {
+                      onGenerateVideo(idx);
+                    }
+                  }}
+                  disabled={isGenerating}
+                  className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader className="animate-spin" size={12} />
+                      生成中
+                    </>
+                  ) : (
+                    '图转视频'
+                  )}
+                </button>
+              </div>
             </div>
           ))
         )}
@@ -82,38 +137,23 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
           />
         </div>
         <div className="flex items-center gap-2">
-          {videoStatus === 'succeeded' && videoUrl ? (
-            <div className="flex-1 text-xs text-green-600 flex items-center gap-1">
-              <CheckCircle2 size={12} />
-              视频已生成
-            </div>
-          ) : videoStatus === 'processing' ? (
-            <div className="flex-1">
-              <div className="text-xs text-muted mb-1">生成中 {videoProgress || 0}%</div>
-              <div className="w-full h-1 bg-surface rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-indigo-600 transition-all"
-                  style={{ width: `${videoProgress || 0}%` }}
-                />
-              </div>
-            </div>
-          ) : videoStatus === 'failed' ? (
-            <div className="flex-1 text-xs text-red-600">生成失败</div>
-          ) : null}
           <button
-            onClick={onGenerateVideo}
-            disabled={isGenerating || videoStatus === 'processing'}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onGenerateVideo) {
+                onGenerateVideo(); // 不传 shotIndex 表示批量生成所有图片
+              }
+            }}
+            disabled={isGenerating}
             className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
           >
-            {isGenerating || videoStatus === 'processing' ? (
+            {isGenerating ? (
               <>
                 <Loader className="animate-spin" size={12} />
                 生成中
               </>
-            ) : videoStatus === 'succeeded' ? (
-              '重新生成'
             ) : (
-              '生成视频'
+              '批量图转视频'
             )}
           </button>
         </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { ChevronRight, ChevronLeft, BookOpen, Trash2, Loader, ArrowRight } from 'lucide-react';
 import { WorkflowProgress } from './components/WorkflowProgress';
 import { StoryboardCard } from './components/StoryboardCard';
@@ -17,8 +17,11 @@ interface EditStoryboardProps {
   generatingScenes: number[];
   onStepChange: (step: number) => void;
   onUpdateSceneLines: (sceneId: number, lines: string) => void;
-  onGenerateSceneVideo: (sceneId: number) => void;
+  onGenerateSceneVideo: (sceneId: number, shotIndex?: number) => void;
   onGenerateAllSceneVideos: () => void;
+  onDeleteScene?: (sceneId: number) => void;
+  onReorderScenes?: (fromIndex: number, toIndex: number) => void;
+  onSelectScene?: (sceneId: number) => void;
   onSave?: () => Promise<void>;
   isSaving?: boolean;
 }
@@ -37,9 +40,125 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
   onUpdateSceneLines,
   onGenerateSceneVideo,
   onGenerateAllSceneVideos,
+  onDeleteScene,
+  onReorderScenes,
+  onSelectScene,
   onSave,
   isSaving = false,
 }) => {
+  const [selectedSceneId, setSelectedSceneId] = useState<number | null>(null);
+  const [draggedSceneId, setDraggedSceneId] = useState<number | null>(null);
+  const [draggedTimelineIndex, setDraggedTimelineIndex] = useState<number | null>(null);
+  const [dragOverSceneId, setDragOverSceneId] = useState<number | null>(null);
+  const [dragOverTimelineIndex, setDragOverTimelineIndex] = useState<number | null>(null);
+
+  const currentStoryboard = editedStoryboard || storyboard;
+
+  // 计算预计总时长：所有图片数量 × 5秒
+  const totalDuration = useMemo(() => {
+    if (!currentStoryboard) return 0;
+    const totalImages = currentStoryboard.scenes.reduce((sum, scene) => sum + scene.shots.length, 0);
+    return totalImages * 5; // 每张图片5秒
+  }, [currentStoryboard]);
+
+  // 格式化时长显示
+  const formatDuration = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`;
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return secs > 0 ? `${mins}分${secs}秒` : `${mins}分钟`;
+  };
+
+  // 处理分镜选择
+  const handleSceneSelect = (sceneId: number) => {
+    setSelectedSceneId(sceneId);
+    if (onSelectScene) {
+      onSelectScene(sceneId);
+    }
+  };
+
+  // 处理分镜删除
+  const handleDeleteScene = (sceneId: number) => {
+    if (window.confirm('确定要删除这个分镜吗？')) {
+      if (onDeleteScene) {
+        onDeleteScene(sceneId);
+      }
+    }
+  };
+
+  // 处理分镜拖拽开始
+  const handleDragStart = (e: React.DragEvent, sceneId: number, isTimeline: boolean = false) => {
+    setDraggedSceneId(sceneId);
+    if (isTimeline) {
+      const index = currentStoryboard?.scenes.findIndex(s => s.id === sceneId) ?? -1;
+      setDraggedTimelineIndex(index);
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    // 设置拖拽时的视觉效果
+    if (e.dataTransfer) {
+      e.dataTransfer.effectAllowed = 'move';
+    }
+  };
+
+  // 处理分镜拖拽结束
+  const handleDragEnd = () => {
+    setDraggedSceneId(null);
+    setDraggedTimelineIndex(null);
+    setDragOverSceneId(null);
+    setDragOverTimelineIndex(null);
+  };
+
+  // 处理分镜拖拽进入
+  const handleDragEnter = (e: React.DragEvent, targetSceneId: number, isTimeline: boolean = false) => {
+    e.preventDefault();
+    if (draggedSceneId && draggedSceneId !== targetSceneId) {
+      if (isTimeline) {
+        const index = currentStoryboard?.scenes.findIndex(s => s.id === targetSceneId) ?? -1;
+        setDragOverTimelineIndex(index);
+      } else {
+        setDragOverSceneId(targetSceneId);
+      }
+    }
+  };
+
+  // 处理分镜拖拽离开
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    // 只有当真正离开元素时才清除（不是进入子元素）
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    const x = e.clientX;
+    const y = e.clientY;
+    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+      setDragOverSceneId(null);
+      setDragOverTimelineIndex(null);
+    }
+  };
+
+  // 处理分镜拖拽放置
+  const handleDrop = (e: React.DragEvent, targetSceneId: number, isTimeline: boolean = false) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedSceneId || !onReorderScenes || !currentStoryboard) return;
+
+    const fromIndex = currentStoryboard.scenes.findIndex(s => s.id === draggedSceneId);
+    const toIndex = currentStoryboard.scenes.findIndex(s => s.id === targetSceneId);
+
+    if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+      onReorderScenes(fromIndex, toIndex);
+    }
+
+    setDraggedSceneId(null);
+    setDraggedTimelineIndex(null);
+    setDragOverSceneId(null);
+    setDragOverTimelineIndex(null);
+  };
+
+  // 处理拖拽悬停
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+  };
   return (
     <div className="bg-background min-h-full flex flex-col h-[calc(100vh-64px)]">
       {/* 工作流进度条 */}
@@ -95,9 +214,9 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
         <div className="max-w-[1600px] mx-auto">
           {/* Title Row */}
           <div className="flex items-baseline gap-4 mb-6">
-            <h2 className="text-2xl font-bold text-foreground">{storyboard?.scriptTitle || editedStoryboard?.scriptTitle || '分镜编辑'}</h2>
-            <span className="text-sm text-muted">{storyboard?.scriptSubtitle || editedStoryboard?.scriptSubtitle || ''}</span>
-            <span className="text-sm text-muted border-l border-border pl-4 ml-2">预计总时长: {storyboard?.totalDuration || editedStoryboard?.totalDuration || '0s'}</span>
+            <h2 className="text-2xl font-bold text-foreground">{currentStoryboard?.scriptTitle || '分镜编辑'}</h2>
+            <span className="text-sm text-muted">{currentStoryboard?.scriptSubtitle || ''}</span>
+            <span className="text-sm text-muted border-l border-border pl-4 ml-2">预计总时长: {formatDuration(totalDuration)}</span>
             <button
               onClick={onGenerateAllSceneVideos}
               disabled={generatingScenes.length > 0}
@@ -115,25 +234,50 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
           </div>
 
           {/* Storyboard Cards - Horizontal Scroll */}
-          {(editedStoryboard || storyboard) && (
+          {currentStoryboard && (
             <div className="flex gap-6 overflow-x-auto pb-6">
-              {(editedStoryboard || storyboard).scenes.map((scene) => {
+              {currentStoryboard.scenes.map((scene, sceneIndex) => {
                 const video = storyboardVideos[scene.id];
                 const isGenerating = generatingScenes.includes(scene.id);
+                const isSelected = selectedSceneId === scene.id;
+                const isDragging = draggedSceneId === scene.id;
+                
+                const isDragOver = dragOverSceneId === scene.id;
                 
                 return (
-                  <StoryboardCard 
+                  <div
                     key={scene.id}
-                    index={scene.id}
-                    images={scene.shots.map((shot) => shot.img)}
-                    text={scene.lines}
-                    onTextChange={(text) => onUpdateSceneLines(scene.id, text)}
-                    videoStatus={video?.status}
-                    videoUrl={video?.url}
-                    videoProgress={video?.progress}
-                    isGenerating={isGenerating}
-                    onGenerateVideo={() => onGenerateSceneVideo(scene.id)}
-                  />
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, scene.id)}
+                    onDragEnd={handleDragEnd}
+                    onDragEnter={(e) => handleDragEnter(e, scene.id)}
+                    onDragLeave={handleDragLeave}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, scene.id)}
+                    className={`flex-shrink-0 transition-all duration-200 ${
+                      isDragging 
+                        ? 'opacity-40 scale-95 cursor-grabbing' 
+                        : isDragOver 
+                        ? 'scale-105 ring-2 ring-indigo-400 ring-offset-2' 
+                        : 'cursor-grab hover:scale-[1.02]'
+                    } ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}
+                  >
+                    <StoryboardCard 
+                      index={scene.id}
+                      sceneIndex={sceneIndex + 1}
+                      images={scene.shots}
+                      text={scene.lines}
+                      onTextChange={(text) => onUpdateSceneLines(scene.id, text)}
+                      videoStatus={video?.status}
+                      videoUrl={video?.url}
+                      videoProgress={video?.progress}
+                      isGenerating={isGenerating}
+                      onGenerateVideo={(shotIndex?: number) => onGenerateSceneVideo(scene.id, shotIndex)}
+                      onDelete={onDeleteScene ? () => handleDeleteScene(scene.id) : undefined}
+                      isSelected={isSelected}
+                      onClick={() => handleSceneSelect(scene.id)}
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -157,14 +301,39 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
         {/* Tracks */}
         <div className="flex-1 p-4 overflow-x-auto custom-scrollbar">
           <div className="flex gap-1 h-full items-center pl-2">
-            {(editedStoryboard || storyboard)?.scenes.map((scene, idx) => (
-              <TimelineItem 
-                key={scene.id}
-                index={scene.id}
-                img={scene.shots[0]?.img || ''}
-                width="w-48"
-              />
-            ))}
+            {currentStoryboard?.scenes.map((scene, idx) => {
+              const isSelected = selectedSceneId === scene.id;
+              const isDragging = draggedTimelineIndex === idx;
+              const isDragOver = dragOverTimelineIndex === idx;
+              
+              return (
+                <div
+                  key={scene.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, scene.id, true)}
+                  onDragEnd={handleDragEnd}
+                  onDragEnter={(e) => handleDragEnter(e, scene.id, true)}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, scene.id, true)}
+                  onClick={() => handleSceneSelect(scene.id)}
+                  className={`transition-all duration-200 ${
+                    isDragging 
+                      ? 'opacity-40 scale-95 cursor-grabbing' 
+                      : isDragOver 
+                      ? 'scale-110 ring-2 ring-indigo-400 ring-offset-1 z-10' 
+                      : 'cursor-grab hover:scale-105'
+                  } ${isSelected ? 'ring-2 ring-indigo-500' : ''}`}
+                >
+                  <TimelineItem 
+                    index={idx + 1}
+                    sceneId={scene.id}
+                    images={scene.shots.map(shot => shot.img)}
+                    width="w-48"
+                  />
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>

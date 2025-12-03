@@ -12,6 +12,7 @@ interface SelectScriptProps {
   availableScripts: ScriptOption[];
   selectedScript: string;
   storyboard: Storyboard | null;
+  storyboardsByScriptId?: Record<string, Storyboard>; // 所有脚本的分镜缓存
   isGeneratingScripts: boolean;
   isGeneratingStoryboard: boolean;
   onStepChange: (step: number) => void;
@@ -30,6 +31,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
   availableScripts,
   selectedScript,
   storyboard,
+  storyboardsByScriptId = {},
   isGeneratingScripts,
   isGeneratingStoryboard,
   onStepChange,
@@ -38,6 +40,31 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
   onSave,
   isSaving = false,
 }) => {
+  // 计算脚本时长：所有分镜的图片总数 × 5秒
+  const calculateScriptDuration = (scriptId: string): string => {
+    const scriptStoryboard = storyboardsByScriptId[scriptId];
+    if (!scriptStoryboard) {
+      // 如果分镜未生成，使用脚本的time字段作为占位
+      const script = availableScripts.find(s => s.id === scriptId);
+      return script?.time || '0s';
+    }
+    
+    // 计算所有分镜的图片总数
+    const totalImages = scriptStoryboard.scenes.reduce((sum, scene) => {
+      return sum + (scene.shots?.length || 0);
+    }, 0);
+    
+    // 总时长 = 图片数 × 5秒
+    const totalSeconds = totalImages * 5;
+    
+    if (totalSeconds < 60) {
+      return `${totalSeconds}s`;
+    } else {
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return seconds > 0 ? `${minutes}分${seconds}秒` : `${minutes}分钟`;
+    }
+  };
   return (
     <div className="bg-background min-h-full flex flex-col pb-12">
       {/* 工作流进度条 */}
@@ -49,6 +76,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
         onSave={onSave}
         isSaving={isSaving}
         onStepChange={onStepChange}
+        canGoBack={availableScripts.length === 0} // 如果已生成脚本，禁止返回
       />
 
       {/* Header */}
@@ -88,7 +116,7 @@ export const SelectScript: React.FC<SelectScriptProps> = ({
                   <div className="text-[10px] text-muted truncate mb-2">{script.subtitle}</div>
                   <div className="flex items-center gap-1 text-[10px] text-muted bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded w-fit">
                     <Clock size={10} />
-                    {script.time}
+                    {calculateScriptDuration(script.id)}
                   </div>
                 </button>
               ))}

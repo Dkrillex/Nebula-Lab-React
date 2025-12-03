@@ -27,13 +27,15 @@ export const useProjectSave = ({ projectId, setProjectId, getProjectData, projec
       };
 
       const response = await labProjectService.createProject(formData);
-      if (response.code === 200 && response.data) {
-        const newProjectId = response.data.id;
+      // requestClient 会解包最外层的数据结构，只返回 data
+      // 所以 response 直接就是 data 对象（LabProjectVO）
+      if (response && response.id) {
+        const newProjectId = response.id;
         setProjectId(newProjectId);
         toast.success('项目保存成功');
         return newProjectId;
       } else {
-        throw new Error(response.msg || '创建项目失败');
+        throw new Error('创建项目失败：响应数据格式错误');
       }
     } catch (error: any) {
       console.error('创建项目失败:', error);
@@ -63,11 +65,9 @@ export const useProjectSave = ({ projectId, setProjectId, getProjectData, projec
       };
 
       const response = await labProjectService.updateProject(formData);
-      if (response.code === 200) {
-        return true;
-      } else {
-        throw new Error(response.msg || '更新项目失败');
-      }
+      // requestClient 会解包最外层的数据结构，只返回 data
+      // updateProject 返回 void，所以只要没有抛出异常就表示成功
+      return true;
     } catch (error: any) {
       console.error('更新项目失败:', error);
       toast.error(error.message || '更新项目失败，请重试');

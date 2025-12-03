@@ -50,6 +50,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [availableScripts, setAvailableScripts] = useState<ScriptOption[]>([]);
   const [selectedScript, setSelectedScript] = useState<string>('');
   const [storyboard, setStoryboard] = useState<Storyboard | null>(null);
+  const [storyboardsByScriptId, setStoryboardsByScriptId] = useState<Record<string, Storyboard>>({}); // 存储所有脚本的分镜
   const [isGeneratingScripts, setIsGeneratingScripts] = useState(false);
   const [isGeneratingStoryboard, setIsGeneratingStoryboard] = useState(false);
 
@@ -69,7 +70,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const MAX_IMAGES = 10;
   const [showEditModal, setShowEditModal] = useState(false);
   const [editModalImageStartIndex, setEditModalImageStartIndex] = useState(0); // 记录要编辑的图片起始索引
-  const [videoId, setVideoId] = useState<string>('');
+  const [finalVideoId, setFinalVideoId] = useState<string>(''); // 统一视频ID管理
   const [productName, setProductName] = useState<string>('');
   const [sellingPoints, setSellingPoints] = useState<string>('');
   const [projectId, setProjectId] = useState<string | number | null>(null);
@@ -93,6 +94,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   const {
     storyboardVideos,
+    setStoryboardVideos, // 添加设置函数
     generatingScenes,
     generateSceneVideo,
     generateAllSceneVideos,
@@ -108,7 +110,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     mergeAllVideos,
   } = useVideoMerge({
     onMergeComplete: (url, id) => {
-      setVideoId(id);
+      setFinalVideoId(id); // 统一设置视频ID
     },
   });
 
@@ -124,9 +126,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       selectedScript,
       storyboard,
       editedStoryboard,
+      storyboardsByScriptId, // 保存所有脚本的分镜
       storyboardVideos,
       finalVideoUrl,
-      videoId: videoId || mergedVideoId || '',
+      videoId: finalVideoId, // 使用统一的视频ID
     };
   }, [
     step,
@@ -138,10 +141,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     selectedScript,
     storyboard,
     editedStoryboard,
+    storyboardsByScriptId, // 添加到依赖
     storyboardVideos,
     finalVideoUrl,
-    videoId,
-    mergedVideoId,
+    finalVideoId, // 使用统一的视频ID
   ]);
 
   // 项目保存Hook
@@ -191,6 +194,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
 
     setIsGeneratingScripts(true);
+    setIsGeneratingStoryboard(true); // 同时生成分镜，也显示分镜生成状态
     try {
       // 如果还没有项目ID，先生成前端项目ID
       if (!projectIdStr) {
@@ -203,8 +207,52 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       
       if (scripts.length > 0) {
         setSelectedScript(scripts[0].id);
-        // 自动生成第一个脚本的分镜
-        await generateStoryboard(scripts[0]);
+        
+        // 并发为所有脚本生成分镜
+        toast.loading(`正在为 ${scripts.length} 个脚本生成分镜...`, { id: 'generating-all-storyboards' });
+        
+        const imageUrls = uploadedImages.map(img => img.url);
+        const storyboardPromises = scripts.map(async (script) => {
+          try {
+            const storyboardData = await viralVideoService.generateStoryboard(
+              script,
+              analysisResult,
+              imageUrls,
+              defaultModel
+            );
+            return { scriptId: script.id, storyboard: storyboardData };
+          } catch (error: any) {
+            console.error(`脚本 ${script.id} 分镜生成失败:`, error);
+            // 单个失败不影响其他，返回 null
+            return { scriptId: script.id, storyboard: null };
+          }
+        });
+
+        const storyboardResults = await Promise.all(storyboardPromises);
+        
+        // 构建分镜映射
+        const newStoryboardsByScriptId: Record<string, Storyboard> = {};
+        storyboardResults.forEach(({ scriptId, storyboard: sb }) => {
+          if (sb) {
+            newStoryboardsByScriptId[scriptId] = sb;
+          }
+        });
+
+        setStoryboardsByScriptId(newStoryboardsByScriptId);
+        
+        // 设置第一个脚本的分镜为当前显示的分镜
+        if (newStoryboardsByScriptId[scripts[0].id]) {
+          setStoryboard(newStoryboardsByScriptId[scripts[0].id]);
+        }
+
+        toast.dismiss('generating-all-storyboards');
+        
+        const successCount = Object.keys(newStoryboardsByScriptId).length;
+        if (successCount === scripts.length) {
+          toast.success(`成功生成 ${scripts.length} 个脚本和分镜`);
+        } else {
+          toast.success(`成功生成 ${scripts.length} 个脚本，${successCount} 个分镜`);
+        }
       }
       
       // 生成脚本后创建项目
@@ -217,13 +265,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       } else {
         await updateProject();
       }
-      
-      toast.success(`成功生成 ${scripts.length} 个脚本选项`);
     } catch (error: any) {
       console.error('脚本生成失败:', error);
       toast.error(error.message || '脚本生成失败，请重试');
     } finally {
       setIsGeneratingScripts(false);
+      setIsGeneratingStoryboard(false);
     }
   };
 
@@ -247,6 +294,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       setStoryboard(storyboardData);
       setSelectedScript(script.id);
       
+      // 更新分镜缓存
+      setStoryboardsByScriptId(prev => ({
+        ...prev,
+        [script.id]: storyboardData,
+      }));
+      
       toast.success('分镜生成完成');
     } catch (error: any) {
       console.error('分镜生成失败:', error);
@@ -263,8 +316,37 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
     setSelectedScript(scriptId);
     
-    // 生成新脚本的分镜
-    await generateStoryboard(script);
+    // 从缓存中获取分镜，如果不存在则生成
+    if (storyboardsByScriptId[scriptId]) {
+      // 直接从缓存中读取
+      setStoryboard(storyboardsByScriptId[scriptId]);
+    } else {
+      // 如果缓存中没有，则生成（这种情况不应该发生，但作为兜底）
+      console.warn(`脚本 ${scriptId} 的分镜未找到，正在生成...`);
+      setIsGeneratingStoryboard(true);
+      try {
+        const imageUrls = uploadedImages.map(img => img.url);
+        const storyboardData = await viralVideoService.generateStoryboard(
+          script,
+          analysisResult!,
+          imageUrls,
+          defaultModel
+        );
+        
+        setStoryboard(storyboardData);
+        
+        // 更新缓存
+        setStoryboardsByScriptId(prev => ({
+          ...prev,
+          [scriptId]: storyboardData,
+        }));
+      } catch (error: any) {
+        console.error('分镜生成失败:', error);
+        toast.error(error.message || '分镜生成失败，请重试');
+      } finally {
+        setIsGeneratingStoryboard(false);
+      }
+    }
     
     // 选择脚本后更新项目
     if (projectId) {
@@ -277,7 +359,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     if (step === 2 && analysisResult && availableScripts.length === 0 && !isGeneratingScripts) {
       generateScripts();
     }
-  }, [step, analysisResult]);
+  }, [step, analysisResult, availableScripts.length, isGeneratingScripts]);
 
   // ==================== Step 1 处理函数 ====================
 
@@ -567,8 +649,105 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   };
 
   // 生成单个分镜视频（使用hook）
-  const handleGenerateSceneVideo = async (sceneId: number) => {
+  const handleGenerateSceneVideo = async (sceneId: number, shotIndex?: number) => {
+    // shotIndex 表示第几个镜头，如果提供则只生成该镜头的视频
+    // 目前 hook 不支持单个镜头生成，先实现整个分镜的生成
     await generateSceneVideo(sceneId, storyboard, editedStoryboard);
+  };
+
+  // 删除分镜
+  const handleDeleteScene = (sceneId: number) => {
+    if (!editedStoryboard && !storyboard) return;
+    
+    const currentStoryboard = editedStoryboard || storyboard;
+    if (!currentStoryboard) return;
+
+    const newScenes = currentStoryboard.scenes.filter(s => s.id !== sceneId);
+    
+    // 重新分配ID，保持连续性
+    const updatedScenes = newScenes.map((scene, index) => ({
+      ...scene,
+      id: index + 1,
+      scene: index + 1,
+    }));
+
+    if (!editedStoryboard) {
+      setEditedStoryboard({ ...currentStoryboard, scenes: updatedScenes });
+    } else {
+      setEditedStoryboard({ ...editedStoryboard, scenes: updatedScenes });
+    }
+
+    // 删除对应的视频状态
+    setStoryboardVideos((prev) => {
+      const newVideos = { ...prev };
+      delete newVideos[sceneId];
+      // 重新映射视频状态到新的ID
+      const remappedVideos: Record<number, typeof prev[number]> = {};
+      updatedScenes.forEach((scene, index) => {
+        const oldId = currentStoryboard.scenes[index]?.id;
+        if (oldId && prev[oldId]) {
+          remappedVideos[scene.id] = prev[oldId];
+        }
+      });
+      return remappedVideos;
+    });
+
+    // 更新项目
+    if (projectId) {
+      setTimeout(() => {
+        updateProject();
+      }, 500);
+    }
+  };
+
+  // 重排序分镜
+  const handleReorderScenes = (fromIndex: number, toIndex: number) => {
+    if (!editedStoryboard && !storyboard) return;
+    
+    const currentStoryboard = editedStoryboard || storyboard;
+    if (!currentStoryboard) return;
+
+    const newScenes = [...currentStoryboard.scenes];
+    const [movedScene] = newScenes.splice(fromIndex, 1);
+    newScenes.splice(toIndex, 0, movedScene);
+
+    // 重新分配ID，保持连续性
+    const updatedScenes = newScenes.map((scene, index) => ({
+      ...scene,
+      id: index + 1,
+      scene: index + 1,
+    }));
+
+    if (!editedStoryboard) {
+      setEditedStoryboard({ ...currentStoryboard, scenes: updatedScenes });
+    } else {
+      setEditedStoryboard({ ...editedStoryboard, scenes: updatedScenes });
+    }
+
+    // 重新映射视频状态
+    setStoryboardVideos((prev) => {
+      const remappedVideos: Record<number, typeof prev[number]> = {};
+      updatedScenes.forEach((scene, index) => {
+        const oldId = currentStoryboard.scenes[index]?.id;
+        if (oldId && prev[oldId]) {
+          remappedVideos[scene.id] = prev[oldId];
+        }
+      });
+      return remappedVideos;
+    });
+
+    // 更新项目
+    if (projectId) {
+      setTimeout(() => {
+        updateProject();
+      }, 500);
+    }
+  };
+
+  // 选择分镜（用于点击进度条时选中）
+  const handleSelectScene = (sceneId: number) => {
+    // 可以在这里添加选中逻辑，比如滚动到对应分镜
+    // 目前由 EditStoryboard 组件内部处理
   };
 
   // 批量生成所有分镜视频（使用hook）
@@ -593,7 +772,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     if (step === 4 && !finalVideoUrl && !isMerging) {
       handleMergeAllVideos();
     }
-  }, [step]);
+  }, [step, finalVideoUrl, isMerging, handleMergeAllVideos]);
 
   // 进入Step 2前检查
   const handleGoToStep2 = () => {
@@ -647,8 +826,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const loadProject = useCallback(async (projectIdToLoad: string | number) => {
     try {
       const response = await labProjectService.getProjectInfo(projectIdToLoad);
-      if (response.code === 200 && response.data && response.data.projectJson) {
-        const projectData: ViralVideoProjectData = JSON.parse(response.data.projectJson);
+      // requestClient 会解包最外层的数据结构，只返回 data
+      // 所以 response 直接就是 data 对象（LabProjectVO）
+      if (response && response.projectJson) {
+        const projectData: ViralVideoProjectData = JSON.parse(response.projectJson);
         
         // 恢复所有状态
         setStep(projectData.step);
@@ -660,15 +841,25 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         setSelectedScript(projectData.selectedScript);
         setStoryboard(projectData.storyboard);
         setEditedStoryboard(projectData.editedStoryboard);
-        // storyboardVideos 需要从 hook 中恢复，这里先跳过
-        setVideoId(projectData.videoId);
+        
+        // 恢复所有脚本的分镜缓存
+        if (projectData.storyboardsByScriptId) {
+          setStoryboardsByScriptId(projectData.storyboardsByScriptId);
+        }
+        
+        setFinalVideoId(projectData.videoId); // 使用统一的视频ID
         setProjectId(projectIdToLoad);
         
         // 恢复项目ID字符串（如果有）
-        if (response.data.projectId) {
-          setProjectIdStr(response.data.projectId);
+        if (response.projectId) {
+          setProjectIdStr(response.projectId);
         }
         
+        // 恢复视频生成状态
+        if (projectData.storyboardVideos) {
+          setStoryboardVideos(projectData.storyboardVideos);
+        }
+
         toast.success('项目加载成功');
       } else {
         throw new Error('项目数据格式错误');
@@ -677,7 +868,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       console.error('加载项目失败:', error);
       toast.error(error.message || '加载项目失败，请重试');
     }
-  }, []);
+  }, [setStoryboardVideos]); // Add setStoryboardVideos to dependencies
 
   // 从URL参数加载项目
   useEffect(() => {
@@ -686,13 +877,18 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     if (projectIdParam && !projectId) {
       loadProject(projectIdParam);
     }
-  }, []);
+  }, [projectId, loadProject]);
 
   // 处理任务点击
   const handleTaskClick = useCallback(async (taskProjectId: string | number) => {
     await loadProject(taskProjectId);
     setShowTaskListModal(false);
   }, [loadProject]);
+
+  // 处理显示所有任务
+  const handleShowAllTasks = useCallback(() => {
+    setShowTaskListModal(true);
+  }, []);
 
   // 一键做同款（从首页示例图片）
   const handleStartTemplate = () => {
@@ -760,6 +956,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onFileChange={handleFileChange}
           onStartMaking={handleStartMaking}
           onStartTemplate={handleStartTemplate}
+          onTaskClick={handleTaskClick}
+          onShowAllTasks={handleShowAllTasks}
         />
       )}
       
@@ -767,7 +965,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <MaterialsAndSellingPoints
           t={t}
           step={step}
-          videoId={videoId}
+          videoId={finalVideoId} // Use finalVideoId
           uploadedImages={uploadedImages}
           analysisResult={analysisResult}
           isAnalyzing={isAnalyzing}
@@ -796,7 +994,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onGenerateScript={handleGenerateScript}
           onBack={handleBackToHome}
           onHelpWrite={handleHelpWrite}
-          projectId={projectId}
+          onStepChange={setStep} // Pass setStep for navigation
         />
       )}
 
@@ -804,12 +1002,13 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <SelectScript
           t={t}
           step={step}
-          videoId={videoId}
+          videoId={finalVideoId} // Use finalVideoId
           projectId={projectId}
           projectIdStr={projectIdStr}
           availableScripts={availableScripts}
           selectedScript={selectedScript}
           storyboard={storyboard}
+          storyboardsByScriptId={storyboardsByScriptId}
           isGeneratingScripts={isGeneratingScripts}
           isGeneratingStoryboard={isGeneratingStoryboard}
           onStepChange={setStep}
@@ -824,7 +1023,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <EditStoryboard
           t={t}
           step={step}
-          videoId={videoId}
+          videoId={finalVideoId} // Use finalVideoId
           projectId={projectId}
           projectIdStr={projectIdStr}
           storyboard={storyboard}
@@ -835,6 +1034,9 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           onUpdateSceneLines={updateSceneLines}
           onGenerateSceneVideo={handleGenerateSceneVideo}
           onGenerateAllSceneVideos={handleGenerateAllSceneVideos}
+          onDeleteScene={handleDeleteScene}
+          onReorderScenes={handleReorderScenes}
+          onSelectScene={handleSelectScene}
           onSave={handleSaveProject}
           isSaving={isSaving}
         />
@@ -844,47 +1046,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <GenerateVideo
           t={t}
           step={step}
-          videoId={videoId || mergedVideoId}
-          projectId={projectId}
-          projectIdStr={projectIdStr}
-          finalVideoUrl={finalVideoUrl}
-          isMerging={isMerging}
-          analysisResult={analysisResult}
-          uploadedImages={uploadedImages}
-          storyboard={storyboard}
-          editedStoryboard={editedStoryboard}
-          onStepChange={setStep}
-          onMergeAllVideos={handleMergeAllVideos}
-          onSave={handleSaveProject}
-          isSaving={isSaving}
-        />
-      )}
-
-      {step === 3 && (
-        <EditStoryboard
-          t={t}
-          step={step}
-          videoId={videoId}
-          projectId={projectId}
-          projectIdStr={projectIdStr}
-          storyboard={storyboard}
-          editedStoryboard={editedStoryboard}
-          storyboardVideos={storyboardVideos}
-          generatingScenes={generatingScenes}
-          onStepChange={setStep}
-          onUpdateSceneLines={updateSceneLines}
-          onGenerateSceneVideo={handleGenerateSceneVideo}
-          onGenerateAllSceneVideos={handleGenerateAllSceneVideos}
-          onSave={handleSaveProject}
-          isSaving={isSaving}
-        />
-      )}
-
-      {step === 4 && (
-        <GenerateVideo
-          t={t}
-          step={step}
-          videoId={videoId || mergedVideoId}
+          videoId={finalVideoId} // Use finalVideoId
           projectId={projectId}
           projectIdStr={projectIdStr}
           finalVideoUrl={finalVideoUrl}

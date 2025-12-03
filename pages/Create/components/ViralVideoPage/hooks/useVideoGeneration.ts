@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { videoGenerateService } from '@/services/videoGenerateService';
+import { ttsService } from '@/services/ttsService';
 import toast from 'react-hot-toast';
 import { StoryboardVideo, VideoStatus, Storyboard, StoryboardScene } from '../types';
 import { UploadedImage } from '../types';
@@ -13,6 +14,60 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
   const [storyboardVideos, setStoryboardVideos] = useState<Record<number, StoryboardVideo>>({});
   const [generatingScenes, setGeneratingScenes] = useState<number[]>([]);
   const videoPollingIntervals = useRef<Record<number, NodeJS.Timeout>>({});
+  const audioBlobUrls = useRef<Record<number, string>>({}); // 存储生成的音频blob URL，用于清理
+
+  // 生成音频（TTS）
+  const generateAudioFromText = useCallback(async (text: string): Promise<string | null> => {
+    if (!text || !text.trim()) {
+      return null;
+    }
+
+    return new Promise((resolve) => {
+      const audioChunks: Uint8Array[] = [];
+      let audioUrl: string | null = null;
+
+      const controller = ttsService.generateStream(
+        {
+          text: text.trim(),
+          voice: 'CHERRY', // 默认语音
+          language_type: 'Auto',
+          score: 1,
+        },
+        // onChunk
+        (chunk: Uint8Array) => {
+          audioChunks.push(chunk);
+        },
+        // onComplete
+        (audioInfo: { audioUrl?: string; requestId?: string }) => {
+          if (audioInfo.audioUrl) {
+            // 使用服务器返回的URL
+            audioUrl = audioInfo.audioUrl;
+            resolve(audioUrl);
+          } else if (audioChunks.length > 0) {
+            // 拼接所有chunks并创建blob URL
+            const completeAudio = new Uint8Array(
+              audioChunks.reduce((acc, chunk) => acc + chunk.length, 0)
+            );
+            let offset = 0;
+            for (const chunk of audioChunks) {
+              completeAudio.set(chunk, offset);
+              offset += chunk.length;
+            }
+            const blob = new Blob([completeAudio], { type: 'audio/wav' });
+            audioUrl = URL.createObjectURL(blob);
+            resolve(audioUrl);
+          } else {
+            resolve(null);
+          }
+        },
+        // onError
+        (error: Error) => {
+          console.warn('TTS生成失败:', error);
+          resolve(null); // TTS失败不影响视频生成
+        }
+      );
+    });
+  }, []);
 
   // 生成单个分镜视频
   const generateSceneVideo = useCallback(async (
@@ -39,60 +94,58 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
     }));
 
     try {
-      // 构建视频生成prompt（使用分镜的图片和台词）
+      // 构建视频生成参数
       const imageUrl = scene.shots[0]?.img || uploadedImages[0]?.url || '';
-      const prompt = scene.lines || '生成视频';
+      if (!imageUrl) {
+        throw new Error('缺少图片，无法生成视频');
+      }
 
-      // doubao-seedance-1-0-lite-i2v-250428 模型参数配置
-      // 根据分镜特点：3:4 宽高比，720p 分辨率，5秒时长
-      const videoAspectRatio = '3:4';
-      const videoResolution = '720p';
+      // 1. 先调用TTS将台词转为音频
+      let audioUrl: string | null = null;
+      if (scene.lines && scene.lines.trim()) {
+        try {
+          toast.loading('正在生成音频...', { id: `tts-${sceneId}` });
+          audioUrl = await generateAudioFromText(scene.lines);
+          toast.dismiss(`tts-${sceneId}`);
+          if (audioUrl) {
+            // 如果是blob URL，保存起来以便后续清理
+            if (audioUrl.startsWith('blob:')) {
+              audioBlobUrls.current[sceneId] = audioUrl;
+            }
+            console.log('✅ 音频生成成功:', audioUrl);
+          } else {
+            console.warn('⚠️ 音频生成失败，将生成无音频视频');
+          }
+        } catch (error: any) {
+          console.warn('TTS生成失败:', error);
+          toast.dismiss(`tts-${sceneId}`);
+          // TTS失败不影响视频生成，继续执行
+        }
+      }
+
+      // 2. 使用 wan2.5-i2v-preview 模型生成视频
       const videoDuration = 5;
-      
-      // 计算视频尺寸（3:4 宽高比，720p 分辨率）
-      const [width, height] = videoAspectRatio === '3:4'
-        ? videoResolution === '720p' ? [720, 960] : [1080, 1440]
-        : [720, 960]; // 默认值
+      const videoResolution = '720p'; // 固定使用720p
 
-      // 构建 content 数组（doubao-seedance 系列使用 content 格式）
-      const content: Array<{
-        type: 'text' | 'image_url';
-        text?: string;
-        image_url?: {
-          url: string;
-        };
-        role?: 'first_frame' | 'last_frame' | 'reference_image';
-      }> = [
-        {
-          type: 'text',
-          text: prompt,
-        },
-      ];
+      // wan2.5-i2v-preview 模型参数配置
+      const requestData: any = {
+        model: 'wan2.5-i2v-preview',
+        prompt: scene.lines || '生成视频',
+        duration: videoDuration,
+        resolution: videoResolution,
+        image: imageUrl,
+        smart_rewrite: false,
+        generate_audio: false, // 因为我们已经传入音频
+      };
 
-      // 添加图片（首帧模式）
-      if (imageUrl) {
-        content.push({
-          type: 'image_url',
-          image_url: {
-            url: imageUrl,
-          },
-          role: 'first_frame', // 使用首帧模式
-        });
+      // 如果TTS成功，添加音频URL
+      if (audioUrl) {
+        requestData.audio_url = audioUrl;
+        console.log('🎵 添加音频URL到视频生成请求:', audioUrl);
       }
 
       // 提交视频生成任务
-      const submitResponse = await videoGenerateService.submitVideoTask({
-        model: 'doubao-seedance-1-0-lite-i2v-250428',
-        prompt,
-        width,
-        height,
-        seconds: videoDuration,
-        resolution: videoResolution,
-        aspectRatio: videoAspectRatio,
-        duration: videoDuration,
-        watermark: false, // 默认不加水印
-        content,
-      });
+      const submitResponse = await videoGenerateService.submitVideoTask(requestData);
 
       // request.ts 在成功时会返回 resData.data，所以 submitResponse 已经是 data 对象
       // 根据实际响应结构，task_id 可能在 submitResponse.task_id 或 submitResponse.output.task_id
@@ -118,7 +171,7 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
       setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
       toast.error(error.message || '生成视频失败，请重试');
     }
-  }, [uploadedImages]);
+  }, [uploadedImages, generateAudioFromText]);
 
   // 轮询视频生成任务状态
   const pollVideoTask = useCallback((sceneId: number, taskId: string) => {
@@ -291,17 +344,25 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
     }
   }, [storyboardVideos, generateSceneVideo]);
 
-  // 清理轮询定时器
+  // 清理轮询定时器和音频blob URL
   useEffect(() => {
     return () => {
+      // 清理轮询定时器
       Object.values(videoPollingIntervals.current).forEach((interval: NodeJS.Timeout) => {
         clearInterval(interval);
+      });
+      // 清理音频blob URL
+      Object.values(audioBlobUrls.current).forEach((url) => {
+        if (url.startsWith('blob:')) {
+          URL.revokeObjectURL(url);
+        }
       });
     };
   }, []);
 
   return {
     storyboardVideos,
+    setStoryboardVideos, // 导出设置函数，用于恢复项目状态
     generatingScenes,
     generateSceneVideo,
     generateAllSceneVideos,
