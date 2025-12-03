@@ -329,7 +329,7 @@ const LayoutContent: React.FC = () => {
   const safeT = t || translations['zh'];
   
   return (
-      <div className="min-h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col">
+      <div className="h-screen bg-background font-sans text-foreground selection:bg-indigo-500/30 transition-colors duration-300 flex flex-col overflow-hidden">
         <Header 
           isDark={isDark} 
           toggleTheme={() => setIsDark(!isDark)} 
@@ -349,7 +349,10 @@ const LayoutContent: React.FC = () => {
           isMobileMenuOpen={isMobileMenuOpen}
         />
         
-        <main className="flex-1">
+        <main 
+          id="dashboard-main-scroll"
+          className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0"
+        >
           <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal() }} />
         </main>
         
