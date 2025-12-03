@@ -106,16 +106,38 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
   ];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] bg-white dark:bg-gray-900">
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-        {/* Leftmost Column - Vertical Mode Selector */}
-        <div className="w-20 md:w-24 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-visible flex-shrink-0">
-          <div className="p-2 flex flex-col gap-2">
+    <>
+      <style>{`
+        // 隐藏滚动条
+        // #style-transfer-right-column {
+        //   scrollbar-width: none; /* Firefox */
+        //   -ms-overflow-style: none; /* IE/Edge */
+        // }
+        // #style-transfer-right-column::-webkit-scrollbar {
+        //   display: none; /* Chrome/Safari */
+        //   width: 0;
+        //   height: 0;
+        // }
+        // #style-transfer-right-column * {
+        //   scrollbar-width: none; /* Firefox */
+        //   -ms-overflow-style: none; /* IE/Edge */
+        // }
+        // #style-transfer-right-column *::-webkit-scrollbar {
+        //   display: none; /* Chrome/Safari */
+        //   width: 0;
+        //   height: 0;
+        // }
+      `}</style>
+      <div className="flex flex-col h-[calc(100vh-64px)] bg-white dark:bg-gray-900">
+        <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+          {/* Leftmost Column - Vertical Mode Selector */}
+          <div className="w-auto md:w-24 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-row md:flex-col overflow-x-auto md:overflow-y-auto overflow-y-hidden md:overflow-x-hidden flex-shrink-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none] [-ms-overflow-style:none]">
+          <div className="p-2 flex flex-row md:flex-col gap-2 min-w-max md:min-w-0">
             {modes.map((mode) => (
               <button
                 key={mode.id}
                 onClick={() => setSelectedMode(mode.id)}
-                className={`relative flex flex-col items-center justify-center gap-1.5 px-2 py-4 rounded-lg transition-all ${
+                className={`relative flex flex-row md:flex-col items-center justify-center gap-1.5 px-3 md:px-2 py-3 md:py-4 rounded-lg transition-all min-w-[80px] md:min-w-0 ${
                   selectedMode === mode.id 
                     ? 'bg-indigo-600 text-white shadow-sm' 
                     : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
@@ -123,7 +145,12 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
                 title={`${mode.title}: ${mode.desc}`}
               >
                 {selectedMode === mode.id && (
-                  <div className="absolute -left-2 top-0 bottom-0 w-1 bg-indigo-300 dark:bg-indigo-400 rounded-r-full"></div>
+                  <>
+                    {/* Mobile: bottom indicator */}
+                    <div className="absolute -bottom-2 left-0 right-0 h-1 rounded-t-full bg-indigo-300 dark:bg-indigo-400 md:hidden"></div>
+                    {/* Desktop: left indicator */}
+                    <div className="hidden md:block absolute -left-2 top-0 bottom-0 w-1 rounded-r-full bg-indigo-300 dark:bg-indigo-400"></div>
+                  </>
                 )}
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${
                    selectedMode === mode.id ? 'bg-white/20 text-white' : 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
@@ -140,7 +167,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
 
         {/* Right Column: Mode Components (Each component contains its own upload and result sections) */}
         {/* 使用 hidden 类保持组件挂载，切换模式时保留所有数据状态 */}
-        <div className="flex-1 overflow-hidden relative">
+        <div id="style-transfer-right-column" className="flex-1 overflow-hidden relative">
           {/* Standard Mode - Keep mounted to preserve state */}
           <div className={`absolute inset-0 ${selectedMode === 'standard' ? 'block' : 'hidden'} ${selectedMode !== 'standard' ? 'pointer-events-none' : ''}`}>
             <StandardMode
@@ -194,6 +221,7 @@ const StyleTransferPage: React.FC<StyleTransferPageProps> = ({ t }) => {
         downloadPrefix="style_transfer"
       />
     </div>
+    </>
   );
 };
 

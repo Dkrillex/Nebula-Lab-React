@@ -65,12 +65,12 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({
   const currentPreviewImg = getCurrentPreviewImage();
 
   return (
-    <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col shadow-sm border border-slate-200 dark:border-border overflow-hidden h-full">
+    <div className="bg-white dark:bg-surface rounded-2xl p-5 flex flex-col shadow-sm border border-slate-200 dark:border-border overflow-y-auto md:overflow-hidden h-full">
       <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-6">{resultTitle}</h3>
 
       {/* Main Preview Area */}
-      <div className="w-full h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
-        {isGenerating && progress > 0 ? (
+      <div className="w-full h-[300px] md:h-[450px] shrink-0 flex flex-col items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 mb-6 relative overflow-hidden">
+        {isGenerating ? (
           <div className="flex flex-col items-center gap-4 z-10">
             <div className="w-16 h-16 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin"></div>
             <p className="text-indigo-600 dark:text-indigo-400 font-medium">AI正在生成中... {progress}%</p>
@@ -146,7 +146,7 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({
               <img 
                 src={img.url} 
                 alt="History" 
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain"
                 crossOrigin="anonymous"
                 referrerPolicy="no-referrer"
                 onError={(e) => {

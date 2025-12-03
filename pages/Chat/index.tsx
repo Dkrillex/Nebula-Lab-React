@@ -2730,16 +2730,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                    }
                 }
 
+                const aspectRatioOptions = [
+                  { label: '16:9', value: 16 / 9 },
+                  { label: '9:16', value: 9 / 16 },
+                ];
                 showImageCrop({
                     src: base64,
                     targetWidth: targetDim.width,
                     targetHeight: targetDim.height,
                     aspectRatio: targetDim.width / targetDim.height,
                     title: t.imageValidation.sora2CropTitle,
-                    aspectRatioOptions: [
-                      { label: '16:9', value: 16 / 9 },
-                      { label: '9:16', value: 9 / 16 },
-                    ],
+                    aspectRatioOptions,
                     texts: {
                       title: componentsT.imageCrop.title,
                       ratio: componentsT.imageCrop.ratio,
@@ -2748,6 +2749,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                       confirm: componentsT.imageCrop.confirm,
                     }
                 }).then(result => {
+                    // 根据返回的 aspectRatio 值，在 aspectRatioOptions 中查找匹配的选项
+                    const matchedOption = aspectRatioOptions.find(
+                      option => Math.abs(option.value - result.aspectRatio) < 0.01
+                    );
+                    if (matchedOption) {
+                      setVideoAspectRatio(matchedOption.label);
+                    }
                     resolve({ valid: true, base64: result.base64 });
                 }).catch(() => {
                     const dimsList = restrictions.requiredDimensions!

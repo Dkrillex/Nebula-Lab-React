@@ -26,26 +26,40 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onSignIn: propOnSignI
   const outletContext = context || { 
     t: defaultT, 
     handleNavClick: () => {}, 
-    onSignIn: () => {} 
+    onSignIn: () => {},
+    lang: 'zh',
   };
 
   return (
-    <div className="flex min-h-[calc(100vh-64px)] bg-background">
-      <Sidebar 
-        t={t?.createPage?.sideMenu} 
-        isCollapsed={isSidebarCollapsed} 
-        setIsCollapsed={setIsSidebarCollapsed}
-        onSignIn={onSignIn}
-      />
-      
-      {/* Main Content Area */}
-      <main 
-        id="dashboard-main-scroll"
-        className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0"
-      >
-        <Outlet context={outletContext} />
-      </main>
-    </div>
+    <>
+      <style>{`
+        #dashboard-main-scroll {
+          scrollbar-width: none; /* Firefox */
+          -ms-overflow-style: none; /* IE/Edge */
+        }
+        #dashboard-main-scroll::-webkit-scrollbar {
+          display: none; /* Chrome/Safari */
+          width: 0;
+          height: 0;
+        }
+      `}</style>
+      <div className="flex min-h-[calc(100vh-64px)] bg-background">
+        <Sidebar 
+          t={t?.createPage?.sideMenu} 
+          isCollapsed={isSidebarCollapsed} 
+          setIsCollapsed={setIsSidebarCollapsed}
+          onSignIn={onSignIn}
+        />
+        
+        {/* Main Content Area */}
+        <main 
+          id="dashboard-main-scroll"
+          className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0"
+        >
+          <Outlet context={outletContext} />
+        </main>
+      </div>
+    </>
   );
 };
 

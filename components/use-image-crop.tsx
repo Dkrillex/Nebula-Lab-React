@@ -27,6 +27,7 @@ export interface ImageCropResult {
   base64: string;
   width: number;
   height: number;
+  aspectRatio: number;
 }
 
 export function showImageCrop(options: ImageCropOptions): Promise<ImageCropResult> {
@@ -45,13 +46,14 @@ export function showImageCrop(options: ImageCropOptions): Promise<ImageCropResul
       }, 100);
     };
 
-    const handleConfirm = (base64: string) => {
+    const handleConfirm = (base64: string, aspectRatio: number) => {
       const img = new Image();
       img.onload = () => {
         resolve({
           base64,
           width: img.width,
           height: img.height,
+          aspectRatio,
         });
         cleanup();
       };

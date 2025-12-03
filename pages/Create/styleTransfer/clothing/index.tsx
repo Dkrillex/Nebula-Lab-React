@@ -123,7 +123,6 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
     
     // 确保在开始轮询时显示进度条
     setIsGenerating(true);
-    setProgress(10);
     
     const extractTaskResult = (res: any) => {
       if (res.result) return res.result;
@@ -234,8 +233,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
     
     stopTaskPolling();
     setIsGenerating(true);
-    setProgress(10); // 设置初始进度，让 ResultDisplay 显示进度条
-    setGeneratedImages([]);
+    setProgress(0);
 
     try {
       // Uploads
@@ -336,14 +334,14 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
         immediate={false}
         showConfirmButton={false}
         accept=".png,.jpg,.jpeg,.webp"
-        className="h-full min-h-[200px] w-full"
+        className="h-full min-h-[11rem] w-full"
       >
         <div className="text-center text-gray-500 p-4 flex flex-col items-center gap-2">
           <div className="w-12 h-12 rounded-xl bg-white dark:bg-surface shadow-sm flex items-center justify-center text-indigo-500">
             <Upload size={24} />
           </div>
           <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm whitespace-pre-line">{label}</p>
-          <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
+          <p className="text-[0.625rem] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full mt-2">
             {t.standard.support}
           </p>
         </div>
@@ -352,12 +350,12 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
   };
 
   return (
-    <div className="flex flex-1 overflow-hidden h-full">
+    <div className="flex flex-col md:flex-row flex-1 overflow-y-auto md:overflow-hidden h-full">
       {/* Left Column: Upload Section */}
-      <div className="w-full md:w-[400px] lg:w-[450px] bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden">
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
+      <div className="w-full md:w-[22rem] lg:w-[25rem] bg-white dark:bg-gray-900 md:border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-hidden min-h-[60vh] md:min-h-0">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-5">
           {/* Clothing Type Selection */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-2">
               {t.clothing.garmentTitle}
             </h3>
@@ -409,7 +407,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
                           <Upload size={24} className="text-indigo-500" />
                         </div>
                         <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传上衣</p>
-                        <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                        <p className="text-[0.625rem] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
                           {t.standard.support}
                         </p>
                       </div>
@@ -458,7 +456,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
                           <Upload size={24} className="text-indigo-500" />
                         </div>
                         <p className="text-indigo-600 dark:text-indigo-400 font-bold text-sm">上传下衣</p>
-                        <p className="text-[10px] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
+                        <p className="text-[0.625rem] text-gray-400 bg-slate-100 dark:bg-surface px-2 py-1 rounded-full">
                           {t.standard.support}
                         </p>
                       </div>
@@ -469,7 +467,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
             ) : (
               garmentImages.length > 0 ? (
                 <div className="flex flex-col gap-3">
-                  <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+                  <div className="relative w-full border-2 border-indigo-500 rounded-xl overflow-hidden h-[13rem]">
                     <img 
                       src={garmentImages[0].fileUrl} 
                       alt="Garment" 
@@ -485,7 +483,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
                     </button>
                   </div>
                   <div 
-                    className="relative w-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors min-h-[100px]"
+                    className="relative w-full border-2 border-dashed border-indigo-300 rounded-xl overflow-hidden cursor-pointer hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-colors min-h-[3.5rem]"
                     onClick={() => garmentInputRef.current?.click()}
                   >
                     <div className="w-full h-full flex flex-col items-center justify-center gap-2 p-4">
@@ -528,7 +526,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
         </div>
 
           {/* Model Image Section */}
-          <div className="mb-6">
+          <div className="mb-5">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-2">
               {t.clothing.modelTitle}
             </h3>
@@ -539,7 +537,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
             </p>
 
             {modelImage ? (
-              <div className="relative w-full h-full border-2 border-indigo-500 rounded-xl overflow-hidden min-h-[300px]">
+              <div className="relative w-full border-2 border-indigo-500 rounded-xl overflow-hidden h-[13rem]">
                 <img 
                   src={modelImage.fileUrl} 
                   alt="Model" 
@@ -558,24 +556,26 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
               renderUploadBox(modelImage, 'model', t.clothing.uploadModel, modelInputRef)
             )}
           </div>
+        </div>
 
-          {/* Generate Button */}
+        {/* Generate Button - Fixed at Bottom */}
+        <div className="p-5 pt-0 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 sticky bottom-0 z-10">
           <button 
             onClick={handleGenerate}
             disabled={isGenerating || garmentImages.length === 0 || !modelImage || (clothingType === 'full' && garmentImages.length < 2)}
-            className="w-full py-3.5 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-2.5 text-sm bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 dark:shadow-none transform transition-transform active:scale-95 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isGenerating ? (
               <>
-                <Loader2 size={18} className="animate-spin" />
-                生成中... {progress}%
+                <Loader2 size={16} className="animate-spin" />
+                <span className="text-sm">生成中... {progress}%</span>
               </>
             ) : (
               <>
-                <Gem size={18} />
+                <Gem size={16} />
                 <div className="flex items-center gap-1">
-                  <span>{t.common.generate}</span>
-                  <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
+                  <span className="text-sm">{t.common.generate}</span>
+                  <span className="text-[0.625rem] bg-white/20 px-1.5 py-0.5 rounded-md font-medium opacity-90">消耗1积分</span>
                 </div>
               </>
             )}
@@ -584,7 +584,7 @@ const ClothingMode = React.forwardRef<ClothingModeRef, ClothingModeProps>(({ t, 
       </div>
 
       {/* Right Column: Result Display */}
-      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-hidden">
+      <div className="flex-1 bg-slate-50 dark:bg-slate-900/50 flex flex-col relative overflow-y-auto md:overflow-hidden min-h-[500px] md:min-h-0">
         <ResultDisplay
           isGenerating={isGenerating}
           progress={progress}
