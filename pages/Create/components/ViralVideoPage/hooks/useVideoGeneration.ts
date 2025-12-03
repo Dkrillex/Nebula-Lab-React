@@ -6,11 +6,12 @@ import { UploadedImage } from '../types';
 
 interface UseVideoGenerationOptions {
   uploadedImages: UploadedImage[];
+  initialVideos?: Record<number, StoryboardVideo>; // 初始视频状态（用于项目恢复）
 }
 
 export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
-  const { uploadedImages } = options;
-  const [storyboardVideos, setStoryboardVideos] = useState<Record<number, StoryboardVideo>>({});
+  const { uploadedImages, initialVideos } = options;
+  const [storyboardVideos, setStoryboardVideos] = useState<Record<number, StoryboardVideo>>(initialVideos || {});
   const [generatingScenes, setGeneratingScenes] = useState<number[]>([]);
   const videoPollingIntervals = useRef<Record<number, NodeJS.Timeout>>({});
 
@@ -302,6 +303,7 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
 
   return {
     storyboardVideos,
+    setStoryboardVideos, // 添加设置函数，用于外部恢复状态
     generatingScenes,
     generateSceneVideo,
     generateAllSceneVideos,
