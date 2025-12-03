@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Upload, FolderOpen, Loader, X, CheckCircle2 } from 'lucide-react';
-import { uploadService } from '../../../../services/uploadService';
-import { assetsService, AdsAssetsVO } from '../../../../services/assetsService';
-import { viralVideoService } from '../../../../services/viralVideoService';
-import { labProjectService } from '../../../../services/labProjectService';
+import { uploadService } from '@/services/uploadService.ts';
+import { assetsService, AdsAssetsVO } from '@/services/assetsService.ts';
+import { viralVideoService } from '@/services/viralVideoService.ts';
+import { labProjectService } from '@/services/labProjectService.ts';
 import toast from 'react-hot-toast';
 import BaseModal from '../../../../components/BaseModal';
 import ImageEditModal from '../ImageEditModal';
-import { downloadVideo } from '../../../../utils/videoUtils';
+import { downloadVideo } from '@/utils/videoUtils.ts';
 import { HomePage } from './HomePage';
 import { MaterialsAndSellingPoints } from './MaterialsAndSellingPoints';
 import { SelectScript } from './SelectScript';
@@ -69,7 +69,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const MAX_IMAGES = 10;
   const [showEditModal, setShowEditModal] = useState(false);
   const [editModalImageStartIndex, setEditModalImageStartIndex] = useState(0); // 记录要编辑的图片起始索引
-  const [finalVideoId, setFinalVideoId] = useState<string>(''); // 统一视频ID管理
+  const [videoId, setVideoId] = useState<string>('');
   const [productName, setProductName] = useState<string>('');
   const [sellingPoints, setSellingPoints] = useState<string>('');
   const [projectId, setProjectId] = useState<string | number | null>(null);
@@ -93,7 +93,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
   const {
     storyboardVideos,
-    setStoryboardVideos, // 添加设置函数
     generatingScenes,
     generateSceneVideo,
     generateAllSceneVideos,
@@ -109,7 +108,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     mergeAllVideos,
   } = useVideoMerge({
     onMergeComplete: (url, id) => {
-      setFinalVideoId(id); // 统一设置视频ID
+      setVideoId(id);
     },
   });
 
@@ -127,7 +126,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       editedStoryboard,
       storyboardVideos,
       finalVideoUrl,
-      videoId: finalVideoId, // 使用统一的视频ID
+      videoId: videoId || mergedVideoId || '',
     };
   }, [
     step,
@@ -141,7 +140,8 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     editedStoryboard,
     storyboardVideos,
     finalVideoUrl,
-    finalVideoId, // 使用统一的视频ID
+    videoId,
+    mergedVideoId,
   ]);
 
   // 项目保存Hook
@@ -150,22 +150,6 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setProjectId,
     getProjectData,
     projectIdStr,
-    onSaveStart: () => {
-      // 保存开始时的回调
-      console.log('项目保存开始...');
-      toast.loading('正在保存项目...');
-    },
-    onSaveComplete: (success) => {
-      // 保存完成时的回调
-      toast.dismiss(); // 清除loading状态
-      if (success) {
-        console.log('项目保存成功');
-        toast.success('项目保存成功');
-      } else {
-        console.log('项目保存失败');
-        toast.error('项目保存失败，请重试');
-      }
-    },
   });
 
   // 保存项目
@@ -677,19 +661,14 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         setStoryboard(projectData.storyboard);
         setEditedStoryboard(projectData.editedStoryboard);
         // storyboardVideos 需要从 hook 中恢复，这里先跳过
-        setFinalVideoId(projectData.videoId); // 使用统一的视频ID
+        setVideoId(projectData.videoId);
         setProjectId(projectIdToLoad);
         
         // 恢复项目ID字符串（如果有）
         if (response.data.projectId) {
           setProjectIdStr(response.data.projectId);
         }
-
-        // 恢复视频生成状态
-        if (projectData.storyboardVideos) {
-          setStoryboardVideos(projectData.storyboardVideos);
-        }
-
+        
         toast.success('项目加载成功');
       } else {
         throw new Error('项目数据格式错误');
@@ -865,7 +844,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <GenerateVideo
           t={t}
           step={step}
-          videoId={finalVideoId}
+          videoId={videoId || mergedVideoId}
           projectId={projectId}
           projectIdStr={projectIdStr}
           finalVideoUrl={finalVideoUrl}
@@ -905,7 +884,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         <GenerateVideo
           t={t}
           step={step}
-          videoId={finalVideoId}
+          videoId={videoId || mergedVideoId}
           projectId={projectId}
           projectIdStr={projectIdStr}
           finalVideoUrl={finalVideoUrl}
