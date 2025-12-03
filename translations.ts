@@ -1018,28 +1018,28 @@ interface Translation {
     consumption: string;
     recharge: string;
     netAmount: string;
-      total: string;
-      consumedPoints: string;
+    total: string;
+    consumedPoints: string;
+    points: string;
+    pointsBill: string;
+    exportHeaders: {
+      time: string;
+      serviceType: string;
       points: string;
-      pointsBill: string;
-      exportHeaders: {
-        time: string;
-        serviceType: string;
-        points: string;
-        status: string;
-        taskId: string;
-      };
-      balanceExportHeaders: {
-        time: string;
-        serviceModel: string;
-        type: string;
-        cost: string;
-        duration: string;
-        inputToken: string;
-        outputToken: string;
-      };
-      balanceBill: string;
-      record: {
+      status: string;
+      taskId: string;
+    };
+    balanceExportHeaders: {
+      time: string;
+      serviceModel: string;
+      type: string;
+      cost: string;
+      duration: string;
+      inputToken: string;
+      outputToken: string;
+    };
+    balanceBill: string;
+    record: {
       type: string;
       duration: string;
       input: string;
@@ -1078,14 +1078,14 @@ interface Translation {
       recordsPerPage: string;
       logsBill: string;
     };
-      exportError: string;
-      exportSuccess: string;
-      selectTeamFirst: string;
-      unknownService: string;
-      serviceTypes: {
-        [key: number]: string;
-      };
+    exportError: string;
+    exportSuccess: string;
+    selectTeamFirst: string;
+    unknownService: string;
+    serviceTypes: {
+      [key: number]: string;
     };
+  };
   pricingPage: {
     title: string;
     subtitle: string;
@@ -2516,6 +2516,59 @@ export const translations: Record<string, Translation> = {
           KOREAN: 'Korean',
           FRENCH: 'French',
           RUSSIAN: 'Russian'
+        },
+        voiceSelectModal: {
+          title: 'Select Voice',
+          labels: {
+            scenario: 'Scenario',
+            age: 'Age',
+            gender: 'Gender',
+            supportedLanguages: 'Supported Languages'
+          },
+          scenarios: {
+            all: 'All Scenarios',
+            customerService: 'Customer Service',
+            consumerElectronics: 'Consumer Electronics',
+            audiobook: 'Audiobook',
+            shortVideo: 'Short Video Dubbing',
+            companionChat: 'Companion Chat',
+            voiceAssistant: 'Voice Assistant',
+            ecommerceLive: 'E-commerce Live'
+          },
+          ages: {
+            all: 'All Ages',
+            child: 'Child',
+            youth: 'Youth',
+            middle: 'Middle',
+            elderly: 'Elderly'
+          },
+          genders: {
+            all: 'All Genders',
+            male: 'Male',
+            female: 'Female',
+            neutral: 'Neutral'
+          },
+          languages: {
+            all: 'All Languages',
+            chinese: 'Chinese',
+            english: 'English',
+            french: 'French',
+            german: 'German',
+            russian: 'Russian',
+            italian: 'Italian',
+            spanish: 'Spanish',
+            portuguese: 'Portuguese',
+            japanese: 'Japanese',
+            korean: 'Korean',
+            other: 'Other',
+            chineseDialects: 'Chinese Dialects',
+            otherLanguages: 'Other Languages'
+          },
+          buttons: {
+            cancel: 'Cancel',
+            confirm: 'Confirm'
+          },
+          noResults: 'No matching voices found'
         }
       },
       threeDModelPage: {
@@ -4916,6 +4969,59 @@ export const translations: Record<string, Translation> = {
           KOREAN: '韩语',
           FRENCH: '法语',
           RUSSIAN: '俄语'
+        },
+        voiceSelectModal: {
+          title: '选择音色',
+          labels: {
+            scenario: '场景',
+            age: '年龄',
+            gender: '性别',
+            supportedLanguages: '可生成对应语种语言'
+          },
+          scenarios: {
+            all: '全部场景',
+            customerService: '电话客服',
+            consumerElectronics: '消费电子',
+            audiobook: '有声书',
+            shortVideo: '短视频配音',
+            companionChat: '陪伴聊天',
+            voiceAssistant: '语音助手',
+            ecommerceLive: '电商直播'
+          },
+          ages: {
+            all: '全部年龄',
+            child: '儿童',
+            youth: '青年',
+            middle: '中年',
+            elderly: '老人'
+          },
+          genders: {
+            all: '全部性别',
+            male: '男声',
+            female: '女声',
+            neutral: '中性'
+          },
+          languages: {
+            all: '全部语言',
+            chinese: '中文',
+            english: '英语',
+            french: '法语',
+            german: '德语',
+            russian: '俄语',
+            italian: '意大利语',
+            spanish: '西班牙语',
+            portuguese: '葡萄牙语',
+            japanese: '日语',
+            korean: '韩语',
+            other: '其他',
+            chineseDialects: '中文方言',
+            otherLanguages: '其他语言'
+          },
+          buttons: {
+            cancel: '取消',
+            confirm: '确定'
+          },
+          noResults: '没有找到匹配的音色'
         }
       },
       threeDModelPage: {
@@ -7284,6 +7390,59 @@ export const translations: Record<string, Translation> = {
           KOREAN: 'Korea',
           FRENCH: 'Prancis',
           RUSSIAN: 'Rusia'
+        },
+        voiceSelectModal: {
+          title: 'Pilih Suara',
+          labels: {
+            scenario: 'Skenario',
+            age: 'Usia',
+            gender: 'Jenis Kelamin',
+            supportedLanguages: 'Bahasa yang Didukung'
+          },
+          scenarios: {
+            all: 'Semua Skenario',
+            customerService: 'Layanan Pelanggan',
+            consumerElectronics: 'Elektronik Konsumen',
+            audiobook: 'Buku Audio',
+            shortVideo: 'Pengisi Suara Video Pendek',
+            companionChat: 'Obrolan Pendamping',
+            voiceAssistant: 'Asisten Suara',
+            ecommerceLive: 'Live E-commerce'
+          },
+          ages: {
+            all: 'Semua Usia',
+            child: 'Anak-anak',
+            youth: 'Pemuda',
+            middle: 'Paruh Baya',
+            elderly: 'Lansia'
+          },
+          genders: {
+            all: 'Semua Jenis Kelamin',
+            male: 'Pria',
+            female: 'Wanita',
+            neutral: 'Netral'
+          },
+          languages: {
+            all: 'Semua Bahasa',
+            chinese: 'Cina',
+            english: 'Inggris',
+            french: 'Prancis',
+            german: 'Jerman',
+            russian: 'Rusia',
+            italian: 'Italia',
+            spanish: 'Spanyol',
+            portuguese: 'Portugis',
+            japanese: 'Jepang',
+            korean: 'Korea',
+            other: 'Lainnya',
+            chineseDialects: 'Dialek Cina',
+            otherLanguages: 'Bahasa Lainnya'
+          },
+          buttons: {
+            cancel: 'Batal',
+            confirm: 'Konfirmasi'
+          },
+          noResults: 'Tidak ada suara yang cocok ditemukan'
         }
       },
       threeDModelPage: {
