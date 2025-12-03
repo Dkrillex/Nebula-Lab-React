@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface BaseModalProps {
@@ -31,8 +32,11 @@ const BaseModal: React.FC<BaseModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
       <div
         className={`bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full ${width} flex flex-col max-h-[90vh] ${className}`}
         onClick={(e) => e.stopPropagation()}
@@ -55,6 +59,9 @@ const BaseModal: React.FC<BaseModalProps> = ({
       </div>
     </div>
   );
+
+  // 使用 Portal 将模态框渲染到 body，避免被父组件样式影响
+  return createPortal(modalContent, document.body);
 };
 
 export default BaseModal;

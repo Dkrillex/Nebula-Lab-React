@@ -6,13 +6,16 @@ import {
   Wand2,
   Volume2,
   Check,
-  Sparkles
+  Sparkles,
+  ChevronDown,
+  Globe
 } from 'lucide-react';
 import { ttsService, TtsGenerateParams } from '@/services/ttsService';
 import { uploadService } from '@/services/uploadService';
 import { assetsService, AdsAssetsForm } from '@/services/assetsService';
 import { useAuthStore } from '@/stores/authStore';
 import AddMaterialModal from '@/components/AddMaterialModal';
+import VoiceSelectModal, { VoiceOption } from '@/components/VoiceSelectModal';
 import toast from 'react-hot-toast';
 import { useAppOutletContext } from '@/router/context';
 import { translations } from '@/translations';
@@ -68,6 +71,7 @@ const TtsPage: React.FC = () => {
   
   const [text, setText] = useState('');
   const [voice, setVoice] = useState('Cherry');
+  const [selectedVoiceData, setSelectedVoiceData] = useState<VoiceOption | null>(null);
   const [languageType, setLanguageType] = useState('Auto');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedAudio, setGeneratedAudio] = useState<GeneratedAudio | null>(null);
@@ -277,33 +281,43 @@ const TtsPage: React.FC = () => {
           {/* 音色选择 */}
           <div className="control-section">
             <h3 className="section-title">{t.voice}</h3>
-            <select
-              value={voice}
-              onChange={(e) => setVoice(e.target.value)}
-              className="voice-select"
-            >
-              {voiceOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <VoiceSelectModal
+              selectedVoice={voice}
+              selectedVoiceData={selectedVoiceData}
+              onVoiceChange={(selectedVoice) => {
+                setVoice(selectedVoice.value);
+                setSelectedVoiceData(selectedVoice);
+              }}
+            />
           </div>
 
           {/* 语言选择 */}
           <div className="control-section">
             <h3 className="section-title">{t.language}</h3>
-            <select
-              value={languageType}
-              onChange={(e) => setLanguageType(e.target.value)}
-              className="language-select"
-            >
-              {languageOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative language-select-wrapper">
+              <select
+                value={languageType}
+                onChange={(e) => setLanguageType(e.target.value)}
+                className="language-select-button"
+              >
+                {languageOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              <div className="language-select-content">
+                <div className="language-select-icon">
+                  <Globe size={18} />
+                </div>
+                <div className="language-select-text">
+                  <span className="language-select-label">
+                    {languageOptions.find(opt => opt.value === languageType)?.label || languageOptions[0].label}
+                  </span>
+                </div>
+              </div>
+              <ChevronDown size={20} className="language-select-arrow" />
+            </div>
           </div>
 
           {/* 生成按钮 */}
@@ -394,6 +408,7 @@ const TtsPage: React.FC = () => {
         disableAssetTypeSelection={true}
         isImportMode={true}
       />
+
     </div>
   );
 };
@@ -485,28 +500,223 @@ const styles = `
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
-.voice-select,
-.language-select {
+.voice-select-button {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 1rem;
   font-size: 0.875rem;
-  background: white;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
   border: 2px solid #e2e8f0;
   border-radius: 12px;
   transition: all 0.3s ease;
   outline: none;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #2d3748;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
-.voice-select:hover,
-.language-select:hover {
+.voice-select-button:hover {
   border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
 }
 
-.voice-select:focus,
-.language-select:focus {
+.voice-select-button:active {
+  transform: translateY(0);
+}
+
+.voice-select-button:focus {
   border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.language-select-wrapper {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease;
+}
+
+.language-select-wrapper:hover {
+  border-color: #667eea;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  transform: translateY(-1px);
+  background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+}
+
+.language-select-button {
+  width: 100%;
+  padding: 1rem;
+  padding-right: 3rem;
+  font-size: 0.875rem;
+  background: transparent;
+  border: none;
+  border-radius: 12px;
+  transition: all 0.3s ease;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  position: relative;
+  z-index: 2;
+  color: transparent;
+}
+
+.language-select-button:hover {
+  background: transparent;
+}
+
+.language-select-button option {
+  color: #2d3748;
+  background: white;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 0.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  .language-select-button option {
+    color: #e5e7eb;
+    background: #1f2937;
+  }
+}
+
+.language-select-button option:hover {
+  background: #f3f4f6;
+}
+
+@media (prefers-color-scheme: dark) {
+  .language-select-button option:hover {
+    background: #374151;
+  }
+}
+
+.language-select-button option:checked {
+  background: #667eea;
+  color: white;
+}
+
+.language-select-wrapper:active {
+  transform: translateY(0);
+}
+
+.language-select-wrapper:has(.language-select-button:focus) {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1), 0 4px 12px rgba(102, 126, 234, 0.15);
+}
+
+.language-select-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 3rem;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  padding-right: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.language-select-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  flex-shrink: 0;
+}
+
+.language-select-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.language-select-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #2d3748;
+  line-height: 1.4;
+}
+
+.language-select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.voice-select-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.voice-select-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  flex-shrink: 0;
+}
+
+.voice-select-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+}
+
+.voice-select-label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #2d3748;
+  line-height: 1.4;
+}
+
+.voice-select-desc {
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.voice-select-arrow {
+  color: #9ca3af;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.voice-select-button:hover .voice-select-arrow {
+  color: #667eea;
+  transform: translateY(2px);
 }
 
 .generate-button {
