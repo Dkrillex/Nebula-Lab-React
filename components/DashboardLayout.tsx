@@ -26,7 +26,8 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ onSignIn: propOnSignI
   const outletContext = context || { 
     t: defaultT, 
     handleNavClick: () => {}, 
-    onSignIn: () => {} 
+    onSignIn: () => {},
+    lang: 'zh',
   };
 
   return (

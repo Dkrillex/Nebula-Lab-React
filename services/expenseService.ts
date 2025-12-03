@@ -5,7 +5,8 @@ import { ApiResponse } from '../types';
 export interface UserQuotaInfo {
   quotaRmb: number; // 人民币余额
   quota: number; // 美元余额（或通用余额）
-  quotaDollar?: string; // 美元余额字符串
+  quotaDollar?: string | number; // 美元余额
+  quotaIdr?: string | number; // 印尼盾余额
   id: number;
   nebulaId: number;
   usedQuota: number; // 已使用额度
@@ -38,6 +39,8 @@ export interface ExpenseLog {
   modelName: string;
   quota?: number; // 消费金额（旧字段）
   quotaRmb?: number; // 人民币消费金额（新字段，优先使用）
+  quotaDollar?: number | string; // 美元消费金额
+  quotaIdr?: number | string; // 印尼盾消费金额
   promptTokens: number; // 输入token数
   completionTokens: number; // 输出token数
   useTime: number | string; // 使用时长（秒）
@@ -121,6 +124,7 @@ export interface TeamLog {
   modelName?: string; // 功能/模型
   quotaRmb?: number | string; // 费用(￥)
   quotaDollar?: number | string; // 费用($)
+  quotaIdr?: number | string; // 费用(印尼盾)
   type?: number | string; // 费用类型：1=充值，2=消费
   createdAt?: string; // 时间
   promptTokens?: number; // 输入(Tokens)

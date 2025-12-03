@@ -1,10 +1,12 @@
 import { createContext, useContext } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { Language } from '../types';
 
 export interface AppOutletContextType {
   t: any;
   handleNavClick: (href: string) => void;
   onSignIn: () => void;
+  lang?: Language;
 }
 
 export const AppContext = createContext<AppOutletContextType | null>(null);
@@ -25,7 +27,8 @@ export function useAppOutletContext() {
     return {
       t: {}, // Return empty object instead of null to allow safe property access (e.g. t.header)
       handleNavClick: () => { console.warn('handleNavClick called but context missing'); },
-      onSignIn: () => { console.warn('onSignIn called but context missing'); }
+      onSignIn: () => { console.warn('onSignIn called but context missing'); },
+      lang: 'zh',
     };
   }
 
