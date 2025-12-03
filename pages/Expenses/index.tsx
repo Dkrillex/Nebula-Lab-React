@@ -9,7 +9,38 @@ import { teamUserService } from '../../services/teamUserService';
 import TeamLogsImportModal from '../../components/TeamLogsImportModal';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import DailySummaryTable from './components/DailySummaryTable';
-import { getStorageKey } from '../../utils/storageNamespace';
+
+const mapLanguageToBackend = (language: 'zh' | 'en' | 'id'): string => {
+  if (language === 'zh') return 'zh_CN';
+  if (language === 'id') return 'id_ID';
+  return 'en_US';
+};
+const getCurrencySymbol = (language: 'zh' | 'en' | 'id'): string => {
+  if (language === 'en') return '$';
+  if (language === 'id') return 'Rp';
+  return '¥';
+};
+
+const getBalanceByLanguage = (quotaInfo: UserQuotaInfo | null, language: 'zh' | 'en' | 'id'): number => {
+  if (!quotaInfo) return 0;
+  if (language === 'en') {
+    return Number(quotaInfo.quotaDollar || quotaInfo.quota || 0);
+  }
+  if (language === 'id') {
+    return Number(quotaInfo.quotaIdr || quotaInfo.quota || 0);
+  }
+  return Number(quotaInfo.quotaRmb || quotaInfo.quota || 0);
+};
+
+const getCostByLanguage = (log: ExpenseLog | TeamLog, language: 'zh' | 'en' | 'id'): number => {
+  if (language === 'en') {
+    return Number(log.quotaDollar || log.quotaRmb || log.quota || 0);
+  }
+  if (language === 'id') {
+    return Number(log.quotaIdr || log.quotaRmb || log.quota || 0);
+  }
+  return Number(log.quotaRmb || log.quota || 0);
+};
 
 interface ExpensesPageProps {
   t?: any;
@@ -40,11 +71,13 @@ const parseLocalDate = (dateString: string): Date => {
 };
 
 const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
-  const { t: rootT } = useAppOutletContext();
+  const { t: rootT, lang } = useAppOutletContext();
   // 添加空值保护，防止页面崩溃
   const t = props.t || rootT?.expensesPage || translations['zh'].expensesPage;
+  const language: 'zh' | 'en' | 'id' = lang || 'zh';
   
   const { user } = useAuthStore();
+  const currencySymbol = getCurrencySymbol(language);
   // 模式切换：'balance' 余额模式，'points' 积分模式，'logos' 日志/账单模式
   const [currentMode, setCurrentMode] = useState<'balance' | 'points' | 'logos'>('balance');
 
@@ -419,7 +452,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         t.balanceExportHeaders?.time || '时间',
         t.balanceExportHeaders?.serviceModel || '服务/模型',
         t.balanceExportHeaders?.type || '类型',
-        t.balanceExportHeaders?.cost || '费用(¥)',
+        t.balanceExportHeaders?.cost || `费用(${currencySymbol})`,
         t.balanceExportHeaders?.duration || '用时',
         t.balanceExportHeaders?.inputToken || '输入Token',
         t.balanceExportHeaders?.outputToken || '输出Token'
@@ -428,7 +461,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         const isConsumption = String(log.type) === '2';
         const timeStr = log.createTime || (log.createdAt ? new Date(log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000).toLocaleString('zh-CN') : '-');
         // type=1 是充值（正数），type=2 是扣费（负数）
-        const costValue = Number(log.quotaRmb || log.quota || 0);
+        const costValue = getCostByLanguage(log, language);
         const cost = isConsumption ? -Math.abs(costValue) : Math.abs(costValue);
         return [
           timeStr,
@@ -556,14 +589,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const startTime = getTimestamp(dateRange[0]);
       const endTime = getTimestamp(dateRange[1]);
       
-      // 获取当前语言（与 request.tsx 中的 getLanguage 保持一致）
-      const getLanguage = (): string => {
-        const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
-        // 转换为后端格式：zh -> zh_CN, en -> en_US, id -> id_ID
-        if (lang === 'zh') return 'zh_CN';
-        if (lang === 'id') return 'id_ID';
-        return 'en_US';
-      };
+      const backendLanguage = mapLanguageToBackend(language);
       
       // 借鉴 Nebula1 的传参方式（与查询接口保持一致）
       const params: TeamLogsQuery = {
@@ -577,7 +603,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         startTime,
         endTime,
         // 传递语言参数，确保后端生成多语言的 Excel 表头
-        language: getLanguage(),
+        language: backendLanguage,
       };
       
       console.log('导出日志参数（借鉴 Nebula1）:', params);
@@ -890,7 +916,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     const useTime = log.useTime ? `${log.useTime}s` : '0s';
     const isConsumption = String(log.type) === '2';
     // type=1 是充值（正数），type=2 是扣费（负数）
-    const costValue = Number(log.quotaRmb || log.quota || 0);
+    const costValue = getCostByLanguage(log, language);
     const cost = isConsumption ? -Math.abs(costValue) : Math.abs(costValue);
     
     return {
@@ -906,7 +932,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
     };
   };
 
-  const balance = Number(quotaInfo?.quotaRmb) || 0;
+  const balance = getBalanceByLanguage(quotaInfo, language);
   const points = Number(quotaInfo?.score) || 0;
 
   const totalPoints = userAccounts.reduce((sum, account) => {
@@ -928,7 +954,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
             <>
               <div className="text-sm text-gray-600 dark:text-zinc-400 mb-2">{t.balanceLabel}</div>
               <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-3">
-                ¥{quotaLoading ? '...' : formatPoints(balance)}
+                {currencySymbol}{quotaLoading ? '...' : formatPoints(balance)}
               </div>
               <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400">
                 <span>{t.convertPoints}</span>
@@ -1426,6 +1452,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                             <tbody>
                               {teamLogs.map((log) => {
                                 const isConsumption = String(log.type) === '2';
+                                const costValue = getCostByLanguage(log, language);
                                 return (
                                   <tr key={log.id} className="border-b border-gray-100 dark:border-zinc-700 hover:bg-gray-50 dark:hover:bg-zinc-700/50 transition-colors">
                                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.teamName || '-'}</td>
@@ -1433,7 +1460,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.tokenName || '-'}</td>
                                     <td className="px-4 py-3 text-sm text-gray-800 dark:text-zinc-200">{log.modelName || '-'}</td>
                                     <td className={`px-4 py-3 text-sm font-medium ${isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
-                                      {isConsumption ? '-' : '+'}¥{Number(log.quotaRmb || 0).toFixed(6)}
+                                      {isConsumption ? '-' : '+'}{currencySymbol}{costValue.toFixed(6)}
                                     </td>
                                     <td className="px-4 py-3 text-sm">
                                       <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
@@ -1533,7 +1560,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
                           <div className="space-y-2">
                             {currentMode === 'balance' ? (
                               expenseLogs.map((log) => (
-                                <ExpenseListItem key={log.id} record={convertLogToExpenseRecord(log)} t={t} />
+                                <ExpenseListItem key={log.id} record={convertLogToExpenseRecord(log)} t={t} currencySymbol={currencySymbol} />
                               ))
                             ) : (
                               scoreList.map((score) => (
@@ -1604,7 +1631,8 @@ const ExpenseListItem: React.FC<{
     timestamp: string;
   }; 
   t: ExpensesPageProps['t'];
-}> = ({ record, t }) => {
+  currencySymbol: string;
+}> = ({ record, t, currencySymbol }) => {
   const isConsumption = record.type === 'consumption';
   const totalTokens = record.totalTokens || 0;
   const promptTokens = record.promptTokens || 0;
@@ -1663,7 +1691,7 @@ const ExpenseListItem: React.FC<{
       <div className={`text-sm font-medium whitespace-nowrap self-center ${
         isConsumption ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
       }`}>
-        ￥ {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
+        {currencySymbol} {record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
       </div>
     </div>
   );
@@ -1773,7 +1801,8 @@ const ExpenseRow: React.FC<{
     timestamp: string;
   }; 
   t: ExpensesPageProps['t'];
-}> = ({ record, t }) => {
+  currencySymbol: string;
+}> = ({ record, t, currencySymbol }) => {
   const isConsumption = record.type === 'consumption';
   const promptTokens = record.promptTokens || 0;
   const completionTokens = record.completionTokens || 0;
@@ -1793,7 +1822,7 @@ const ExpenseRow: React.FC<{
             ? 'text-red-600 dark:text-red-400 bg-pink-50 dark:bg-red-900/30' 
             : 'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30'
         }`}>
-          ¥{record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
+          {currencySymbol}{record.cost >= 0 ? '+' : ''}{record.cost.toFixed(6)}
         </div>
       </div>
 

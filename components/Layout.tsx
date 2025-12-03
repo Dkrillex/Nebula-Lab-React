@@ -350,7 +350,7 @@ const LayoutContent: React.FC = () => {
         />
         
         <main className="flex-1">
-          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal() }} />
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal(), lang }} />
         </main>
         
         <MobileSidebar 
