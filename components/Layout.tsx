@@ -353,7 +353,7 @@ const LayoutContent: React.FC = () => {
           id="dashboard-main-scroll"
           className="flex-1 overflow-y-auto h-[calc(100vh-64px)] min-w-0"
         >
-          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal() }} />
+          <Outlet context={{ t: safeT, handleNavClick, onSignIn: () => showAuthModal(), lang }} />
         </main>
         
         <MobileSidebar 
