@@ -25,6 +25,7 @@ import {
   ProductAnalysis, 
   ScriptOption, 
   Storyboard,
+  StoryboardVideo,
   ViralVideoProjectData
 } from './types';
 
@@ -855,9 +856,16 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           setProjectIdStr(response.projectId);
         }
         
-        // 恢复视频生成状态
+        // 恢复视频生成状态（需要将字符串键转换为数字键）
         if (projectData.storyboardVideos) {
-          setStoryboardVideos(projectData.storyboardVideos);
+          const convertedVideos: Record<number, StoryboardVideo> = {};
+          Object.keys(projectData.storyboardVideos).forEach((key) => {
+            const numKey = Number(key);
+            if (!isNaN(numKey)) {
+              convertedVideos[numKey] = projectData.storyboardVideos[key as any];
+            }
+          });
+          setStoryboardVideos(convertedVideos);
         }
 
         toast.success('项目加载成功');
