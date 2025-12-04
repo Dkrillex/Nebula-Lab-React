@@ -3,7 +3,6 @@ import Hero from './components/Hero';
 import ModelList from './components/ModelList';
 import StatsRow from './components/StatsRow';
 import HomeFooter from './components/HomeFooter';
-import AnnouncementModal from '../../components/AnnouncementModal';
 import { useAppOutletContext } from '../../router/context';
 import { CURRENT_SYSTEM, SYSTEM_TYPE } from '../../constants';
 import CreateHome from '../Create/CreateHome';
@@ -13,8 +12,8 @@ const Home: React.FC = () => {
   
   return (
     <div className="w-full min-h-full">
-      {/* 新版本公告弹窗 */}
-      <AnnouncementModal />
+      {/* 新版本公告弹窗（暂时屏蔽） */}
+      {/* <AnnouncementModal /> */}
 
       {/* 当系统为Both的时候，显示CreateHome，不显示Hero和下面的ModelList、StatsRow、HomeFooter*/}
       {CURRENT_SYSTEM === SYSTEM_TYPE.BOTH && (

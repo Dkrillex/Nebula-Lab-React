@@ -49,11 +49,16 @@ const Header: React.FC<HeaderProps> = ({
   const [canScrollRight, setCanScrollRight] = useState(false);
   
   const toggleLang = () => {
-    // 循环切换：zh -> en -> id -> zh
+    // 目前只在 zh/en 之间切换，暂时隐藏印尼语
+    // if (lang === 'zh') {
+    //   setLang('en');
+    // } else if (lang === 'en') {
+    //   setLang('id');
+    // } else {
+    //   setLang('zh');
+    // }
     if (lang === 'zh') {
       setLang('en');
-    } else if (lang === 'en') {
-      setLang('id');
     } else {
       setLang('zh');
     }

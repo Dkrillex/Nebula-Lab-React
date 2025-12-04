@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'aiExperience', icon: Sparkles, label: t.aiExperience, path: '/chat' },
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
-        { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
+        { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://oepnai-nebula.apifox.cn/' },
         { id: 'rank', icon: Trophy, label: t.rank, path: '/rank' },
       ]
     },
@@ -334,8 +334,11 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                 <div className="flex items-start gap-2 mb-1 text-indigo-500">
                   <Sparkles size={14} className="mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-bold tracking-wider">
+                    {/* <span className="text-[9px] font-bold tracking-wider">
                       {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}新版本上线
+                    </span> */}
+                    <span className="text-[9px] font-bold tracking-wider">
+                      {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}
                     </span>
                   </div>
               </div>

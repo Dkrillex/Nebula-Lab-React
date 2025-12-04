@@ -15,12 +15,13 @@ export const uploadService = {
    * @param otherData 其他参数，例如 bucketName, objectName 等
    * @returns requestClient已处理，直接返回data部分: { url, fileName, ossId }
    */
-  uploadFile: (file: File, otherData?: Record<string, any>) => {
+  uploadFile: (file: File, otherData?: Record<string, any>, options?: Record<string, any>) => {
     // Using request.upload helper which handles FormData correctly
     // Note: requestClient strips outer wrapper, returns UploadResult directly
-    return request.upload<UploadResult>('/resource/oss/upload', file, {
-      timeout: 60000
-    });
+      return request.upload<UploadResult>('/resource/oss/upload', file, {
+        timeout: 120000,
+        ...options
+      });
   },
 
   /**

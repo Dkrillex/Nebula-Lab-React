@@ -6,8 +6,13 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '../stores/authStore';
 import { showAuthModal } from '../lib/authModalManager';
 
+export interface TriggerUploadOptions {
+  requestOptions?: Record<string, any>;
+  suppressErrorToast?: boolean;
+}
+
 export interface UploadComponentRef {
-  triggerUpload: () => Promise<UploadedFile | null>;
+  triggerUpload: (options?: TriggerUploadOptions) => Promise<UploadedFile | null>;
   clear: () => void;
   file: File | null;
 }
@@ -67,7 +72,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
   onClear,
   disabled = false,
   showConfirmButton = true,
-  translations = {}
+  translations = {} as UploadComponentProps['translations']
 }, ref) => {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string>(initialUrl);
@@ -98,12 +103,12 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
-    triggerUpload: async () => {
+    triggerUpload: async (options?: TriggerUploadOptions) => {
       if (file && !uploading) {
         if (uploaded && uploadResult) {
           return uploadResult;
         }
-        return await uploadFile(file);
+        return await uploadFile(file, undefined, options);
       }
       return null;
     },
@@ -224,7 +229,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     await processFile(selectedFile!);
   };
 
-  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string): Promise<UploadedFile | null> => {
+  const uploadFile = async (fileToUpload: File, localPreviewUrl?: string, options?: TriggerUploadOptions): Promise<UploadedFile | null> => {
     console.log('uploadFile 被调用, uploadType:', uploadType, 'file:', fileToUpload.name, 'type:', fileToUpload.type);
     setUploading(true);
     try {
@@ -232,7 +237,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
 
       if (uploadType === 'oss') {
         console.log('使用 OSS 上传方式');
-        const res = await uploadService.uploadFile(fileToUpload);
+        const res = await uploadService.uploadFile(fileToUpload, undefined, options?.requestOptions);
         // uploadService.uploadFile 直接返回 data 部分: { url, fileName, ossId }
         // 但也可能返回包装结构 { code, data, msg }
         const data = (res as any).data || res;
@@ -262,7 +267,7 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
         }
 
         console.log('准备获取TopView上传凭证, fileType:', fileType);
-        const credRes = await avatarService.getUploadCredential(fileType);
+        const credRes = await avatarService.getUploadCredential(fileType, options?.requestOptions);
         console.log('上传凭证响应:', credRes);
         
         // TopView API 返回的 code 是字符串类型,成功时为 "200"
@@ -315,7 +320,13 @@ const UploadComponent = forwardRef<UploadComponentRef, UploadComponentProps>(({
     } catch (error: any) {
       console.error('Upload error:', error);
       const err = error instanceof Error ? error : new Error('文件上传失败');
-      onError ? onError(err) : toast.error(err.message);
+      if (!options?.suppressErrorToast) {
+        onError ? onError(err) : toast.error(err.message);
+      } else {
+        if (onError) {
+          onError(err);
+        }
+      }
       return null;
     } finally {
       setUploading(false);

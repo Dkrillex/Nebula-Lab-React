@@ -25,6 +25,7 @@ import { translations } from '../../translations';
 import CodeBlock from './components/CodeBlock';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import TooltipIcon from './components/TooltipIcon';
+import { DoubaoSeedream4SizeSelector } from './components/DoubaoSeedream4SizeSelector';
 import AddMaterialModal from '../../components/AddMaterialModal';
 import AuthModal from '../../components/AuthModal';
 import BaseModal from '../../components/BaseModal';
@@ -122,7 +123,6 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [sequentialImageGeneration, setSequentialImageGeneration] = useState(false);
   const [sequentialImageGenerationOptions, setSequentialImageGenerationOptions] = useState({
     max_images: 4,
-    layout: 'grid' as 'grid' | 'sequence',
   });
   const [optimizePromptOptionsMode, setOptimizePromptOptionsMode] = useState<'standard' | 'fast'>('standard');
   
@@ -204,6 +204,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     assetType: number;
     assetName?: string;
     assetDesc?: string;
+    assetId?: string;
   } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -311,6 +312,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         'doubao-seededit-3-0-i2i-250628',
         'doubao-seedream-3-0-t2i-250415',
         'doubao-seedream-4-0-250828',
+        'doubao-seedream-4-5-251128',
         'gemini-2.5-flash-image',
         'gemini-2.5-flash-image-preview',
         'gemini-3-pro-image-preview',
@@ -687,17 +689,25 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 图片模式：根据模型重置配置
     if (currentMode === 'image') {
       // 重置图片尺寸为模型默认值
-      const sizes = getImageSizes(selectedModel);
-      if (sizes.length > 0) {
-        if (selectedModel === 'qwen-image-plus') {
-          // qwen-image-plus 使用专用尺寸
-          if (!sizes.some(s => s.id === qwenImageSize)) {
-            setQwenImageSize('1328*1328');
-          }
-        } else {
-          // 其他模型使用通用尺寸
-          if (!sizes.some(s => s.id === imageSize)) {
-            setImageSize(sizes[0].id);
+      if (ModelCapabilities.isDoubaoSeedream4Series(selectedModel)) {
+        // doubao-seedream-4 系列使用默认 4K 1:1
+        const defaultSize = '2048x2048';
+        if (imageSize !== defaultSize) {
+          setImageSize(defaultSize);
+        }
+      } else {
+        const sizes = getImageSizes(selectedModel);
+        if (sizes.length > 0) {
+          if (selectedModel === 'qwen-image-plus') {
+            // qwen-image-plus 使用专用尺寸
+            if (!sizes.some(s => s.id === qwenImageSize)) {
+              setQwenImageSize('1328*1328');
+            }
+          } else {
+            // 其他模型使用通用尺寸
+            if (!sizes.some(s => s.id === imageSize)) {
+              setImageSize(sizes[0].id);
+            }
           }
         }
       }
@@ -731,18 +741,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         setSequentialImageGeneration(false);
         setSequentialImageGenerationOptions({
           max_images: 4,
-          layout: 'grid',
         });
       } else {
-        // doubao-seedream-4-0-250828 重置组图配置
+        // doubao-seedream-4.x 系列重置组图配置
         setSequentialImageGenerationOptions({
           max_images: 4,
-          layout: 'grid',
         });
       }
 
       // 重置提示词优化模式
       if (!ModelCapabilities.supportsOptimizePromptOptions(selectedModel)) {
+        setOptimizePromptOptionsMode('standard');
+      } else if (ModelCapabilities.isDoubaoSeedream4Or45(selectedModel)) {
+        // doubao-seedream-4.5 当前仅支持 standard 模式
         setOptimizePromptOptionsMode('standard');
       }
 
@@ -2175,13 +2186,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     }
     
     setIsExportingMaterial(true);
+    let finalAssetId: string | undefined;
     try {
       let finalUrl = url;
       
       if (type === 'image') {
         // 处理图片上传
         const imageType = detectImageType({ url });
-        
+
         // 如果已经是 OSS 链接，直接使用
         if (imageType === 'oss') {
           const dateStr = new Date().toISOString().slice(0, 10);
@@ -2196,10 +2208,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           setIsAddMaterialModalOpen(true);
           return;
         }
-        
+
         const ossResult = await processImageToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
+          finalAssetId = ossResult.ossId;
         } else {
           toast.error(t.toasts.imageUploadFailed, { id: 'upload-oss' });
           setIsExportingMaterial(false);
@@ -2208,7 +2221,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       } else {
         // 处理视频上传
         const videoType = detectVideoType({ url });
-        
+
         // 如果已经是 OSS 链接，直接使用
         if (videoType === 'oss') {
           const dateStr = new Date().toISOString().slice(0, 10);
@@ -2223,13 +2236,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           setIsAddMaterialModalOpen(true);
           return;
         }
-        
+
         // 需要上传到 OSS
         toast.loading(t.toasts.uploadingVideoToOSS, { id: 'upload-oss' });
-        
+
         const ossResult = await processVideoToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
+          finalAssetId = ossResult.ossId;
           toast.success(t.toasts.videoUploadSuccess, { id: 'upload-oss' });
         } else {
           toast.error(t.toasts.videoUploadFailed, { id: 'upload-oss' });
@@ -2247,6 +2261,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         assetType: type === 'image' ? 7 : 14, // 7: AI生图, 14: AI视频生成
         assetName: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
         assetDesc: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
+        assetId: finalAssetId,
       });
       setIsAddMaterialModalOpen(true);
     } catch (error) {
@@ -2757,6 +2772,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           const width = img.width;
           const height = img.height;
 
+          // doubao 模型检查宽高长度 > 14
+          if (selectedModel.startsWith('doubao-')) {
+            if (width <= 14 || height <= 14) {
+              resolve({
+                valid: false,
+                error: `图片宽高长度必须大于 14 像素，当前尺寸：${width}x${height}`,
+              });
+              return;
+            }
+          }
+
           // 检查最小/最大尺寸
           if (restrictions.minImageSize && (width < restrictions.minImageSize || height < restrictions.minImageSize)) {
             resolve({
@@ -2850,8 +2876,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           // doubao- 模型检查宽高比
           if (selectedModel.startsWith('doubao-')) {
              const aspectRatio = width / height;
-             const minAspectRatio = 1 / 3;
-             const maxAspectRatio = 3;
+             // doubao-seedream-4.0 和 4.5 的宽高比范围是 [1/16, 16]
+             // doubao-seededit-3.0 的宽高比范围是 [1/3, 3]
+             let minAspectRatio: number;
+             let maxAspectRatio: number;
+             if (ModelCapabilities.isDoubaoSeedream4Or45(selectedModel)) {
+               minAspectRatio = 1 / 16;
+               maxAspectRatio = 16;
+             } else {
+               minAspectRatio = 1 / 3;
+               maxAspectRatio = 3;
+             }
              if (aspectRatio < minAspectRatio || aspectRatio > maxAspectRatio) {
                  resolve({
                      valid: false,
@@ -3457,10 +3492,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         (requestData as any).watermark = watermark;
         (requestData as any).size = imageSize;
         
-        // doubao-seedream-4-0-250828 专用属性
-        if (selectedModel === 'doubao-seedream-4-0-250828') {
+        // doubao-seedream-4.x 系列专用属性
+        if (ModelCapabilities.isDoubaoSeedream4Series(selectedModel)) {
           (requestData as any).sequential_image_generation = sequentialImageGeneration ? 'auto' : 'disabled';
-          (requestData as any).sequential_image_generation_options = sequentialImageGenerationOptions;
+          // 确保不包含 layout 字段
+          const { layout, ...optionsWithoutLayout } = sequentialImageGenerationOptions as any;
+          (requestData as any).sequential_image_generation_options = optionsWithoutLayout;
           (requestData as any).optimize_prompt_options = {
             mode: optimizePromptOptionsMode,
           };
@@ -4349,26 +4386,34 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             {currentMode === 'image' && (
               <>
                 {/* 图片尺寸 */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">图片尺寸</label>
-                  <select
-                    value={selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize}
-                    onChange={(e) => {
-                      if (selectedModel === 'qwen-image-plus') {
-                        setQwenImageSize(e.target.value);
-                      } else {
-                        setImageSize(e.target.value);
-                      }
-                    }}
-                    className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                  >
-                    {getImageSizes(selectedModel).map((size) => (
-                      <option key={size.id} value={size.id}>
-                        {size.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {ModelCapabilities.isDoubaoSeedream4Series(selectedModel) ? (
+                  <DoubaoSeedream4SizeSelector
+                    value={imageSize}
+                    onChange={(size) => setImageSize(size)}
+                    t={t}
+                  />
+                ) : (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">图片尺寸</label>
+                    <select
+                      value={selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize}
+                      onChange={(e) => {
+                        if (selectedModel === 'qwen-image-plus') {
+                          setQwenImageSize(e.target.value);
+                        } else {
+                          setImageSize(e.target.value);
+                        }
+                      }}
+                      className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                    >
+                      {getImageSizes(selectedModel).map((size) => (
+                        <option key={size.id} value={size.id}>
+                          {size.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 {/* 创意度 (仅 Gemini 模型) */}
                 {(selectedModel === 'gemini-2.5-flash-image-preview' || 
@@ -4409,6 +4454,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                  !ModelCapabilities.supportsQwenImageEditN(selectedModel) &&
                  selectedModel !== 'qwen-image-plus' &&
                  selectedModel !== 'doubao-seedream-4-0-250828' &&
+                 selectedModel !== 'doubao-seedream-4-5-251128' &&
                  selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
                  selectedModel !== 'doubao-seedream-3-0-t2i-250415' &&
                  selectedModel !== 'gemini-2.5-flash-image-preview' &&
@@ -4481,30 +4527,33 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     <div className="flex items-center gap-1.5">
                       <label className="text-sm font-medium">组图功能</label>
                       <TooltipIcon
-                        title="多图生成功能说明"
+                        title={t?.sequentialImageGeneration?.multiImageGenerationTitle || '多图生成功能说明'}
                         content={
                           <div>
                             <div className="mb-2">
-                              <strong>一、启用多图生成模式</strong>
+                              <strong>{t?.sequentialImageGeneration?.enableMultiImageTitle || '一、启用多图生成模式'}</strong>
                               <br />
-                              当开启多图生成功能时，支持基于文本或参考图片生成一组内容关联的图片，具体场景包括：
+                              {t?.sequentialImageGeneration?.enableMultiImageDesc || '当开启多图生成功能时，支持基于文本或参考图片生成一组内容关联的图片，具体场景包括：'}
                               <br />
-                              1. <strong>文生多图</strong>：仅通过文本提示词，生成一组内容关联的图片，最多可生成4张；
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.textToMultiImage || '1. <strong>文生多图</strong>：仅通过文本提示词，生成一组内容关联的图片，最多可生成4张；' }} />
                               <br />
-                              2. <strong>单图生多图</strong>：上传1张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，最多可生成4张；
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.imageToMultiImage || '2. <strong>单图生多图</strong>：上传1张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，最多可生成4张；' }} />
                               <br />
-                              3. <strong>多图生多图</strong>：上传2-7张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，且「参考图片总数+生成图片数」不超过11张。
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.multiImageToMultiImage || '3. <strong>多图生多图</strong>：上传2-7张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，且「参考图片总数+生成图片数」不超过11张。' }} />
                             </div>
                             <div>
-                              <strong>二、关闭多图生成模式（默认单图生成）</strong>
+                              <strong>{t?.sequentialImageGeneration?.disableMultiImageTitle || '二、关闭多图生成模式（默认单图生成）'}</strong>
                               <br />
-                              当关闭多图生成功能时，仅支持基于文本或参考图片生成单张图片，具体场景包括：
+                              {t?.sequentialImageGeneration?.disableMultiImageDesc || '当关闭多图生成功能时，仅支持基于文本或参考图片生成单张图片，具体场景包括：'}
                               <br />
-                              1. <strong>文生单图</strong>：仅通过文本提示词，生成1张符合描述的图片；
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.textToSingleImage || '1. <strong>文生单图</strong>：仅通过文本提示词，生成1张符合描述的图片；' }} />
                               <br />
-                              2. <strong>单图生单图</strong>：上传1张参考图片+补充文本提示词，生成1张与参考图内容关联的图片；
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.imageToSingleImage || '2. <strong>单图生单图</strong>：上传1张参考图片+补充文本提示词，生成1张与参考图内容关联的图片；' }} />
                               <br />
-                              3. <strong>多图生单图</strong>：上传2-7张参考图片+补充文本提示词，生成1张融合参考图核心元素的图片。
+                              <span dangerouslySetInnerHTML={{ __html: t?.sequentialImageGeneration?.multiImageToSingleImage || '3. <strong>多图生单图</strong>：上传2-7张参考图片+补充文本提示词，生成1张融合参考图核心元素的图片。' }} />
+                            </div>
+                            <div className="mt-2 pt-2 border-t border-gray-200">
+                              <strong>{t?.sequentialImageGeneration?.importantNote || '重要提示'}</strong>：{t?.sequentialImageGeneration?.importantNoteContent || '最多可生成4张图片，实际数量受文本提示词影响'}
                             </div>
                           </div>
                         }
@@ -4523,7 +4572,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                       <div className="space-y-2">
                         <label className="text-sm font-medium">生成图像数量 ({sequentialImageGenerationOptions.max_images})</label>
                         <input 
-                          type="range" min="1" max="4" step="1" 
+                          type="range" min="1" max={ModelCapabilities.getMaxImagesForDoubaoSeedream4(selectedModel)} step="1" 
                           value={sequentialImageGenerationOptions.max_images}
                           onChange={(e) => setSequentialImageGenerationOptions({
                             ...sequentialImageGenerationOptions,
@@ -4531,7 +4580,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           })}
                           className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                         />
-                        <p className="text-xs text-muted">最多可生成4张图片，实际数量受文本提示词影响</p>
+                        <p className="text-xs text-muted">{t?.sequentialImageGeneration?.maxImagesNote || '最多可生成4张图片，实际数量受文本提示词影响'}</p>
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center gap-1.5">
@@ -4552,8 +4601,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           onChange={(e) => setOptimizePromptOptionsMode(e.target.value as 'standard' | 'fast')}
                           className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                         >
-                          <option value="standard">标准模式（质量更高但耗时较长）</option>
-                          <option value="fast">快速模式（耗时更短但质量一般）</option>
+                          <option value="standard">标准模式</option>
+                          {!ModelCapabilities.isDoubaoSeedream4Or45(selectedModel) && (
+                            <option value="fast">快速模式</option>
+                          )}
                         </select>
                       </div>
                     </>
@@ -5447,6 +5498,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           }}
           initialData={{
             assetUrl: selectedMaterial.url,
+            assetId: selectedMaterial.assetId,
             assetName: selectedMaterial.assetName || (selectedMaterial.prompt 
               ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'}-${selectedMaterial.prompt.slice(0, 10)}`
               : selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'),
