@@ -61,6 +61,11 @@ const GlobalAuthModal: React.FC = () => {
     privacyPolicy: t.privacyPolicy || '隐私政策',
     terms: t.terms || '服务条款',
     loginSubtitle: t.loginSubtitle,
+    channelQuestion: t.channelQuestion || '您是从哪里了解到我们的？',
+    channelOptions: t.channelOptions || {},
+    agreementPrefix: t.agreementPrefix || '使用未注册手机号登录即视为您已同意 ',
+    agreementSuffix: t.agreementSuffix || ' 并自动创建账号',
+    phoneActionLabel: t.phoneActionLabel || '登录/注册',
     countries: t.countries,
   };
 

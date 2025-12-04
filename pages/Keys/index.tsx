@@ -7,6 +7,7 @@ import { useAuthStore } from '../../stores/authStore';
 import TokenForm from './components/TokenForm';
 import ConfirmDialog from '../../components/ConfirmDialog';
 import toast from 'react-hot-toast';
+import { getStorageKey } from '../../utils/storageNamespace';
 
 interface KeysPageProps {
   t?: any;
@@ -225,7 +226,7 @@ const KeysPage: React.FC<KeysPageProps> = (props) => {
   // 格式化过期时间
   const formatExpiration = (token: TokenVO) => {
     const expiredTime = token.expiredTime;
-    const lang = localStorage.getItem('language') || 'zh';
+    const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
     const locale = lang === 'en' ? 'en-US' : lang === 'id' ? 'id-ID' : 'zh-CN';
     
     if (expiredTime === null || expiredTime === undefined) {
