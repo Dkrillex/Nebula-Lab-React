@@ -1,6 +1,6 @@
 import { NavItem } from './types';
 
-interface Translation {
+export interface Translation {
   header: {
     searchPlaceholder: string;
     signIn: string;
@@ -228,6 +228,11 @@ interface Translation {
       agreePolicy?: string;
       privacyPolicy?: string;
       terms?: string;
+      channelQuestion?: string;
+      channelOptions?: Record<string, string>;
+      agreementPrefix?: string;
+      agreementSuffix?: string;
+      phoneActionLabel?: string;
     };
     textToImage: {
       title: string;
@@ -303,6 +308,46 @@ interface Translation {
         makeSame: string;
       };
       examples: string;
+      toasts: {
+        analysisRequired: string;
+        scriptsGenerated: string;
+        scriptsFailed: string;
+        storyboardSuccess: string;
+        storyboardFailed: string;
+        storyboardMissing: string;
+        storyboardNotFound: string;
+        uploadLimitAutoTrim: string;
+        uploadLimit: string;
+        uploadSuccess: string;
+        uploadFailed: string;
+        fetchAssetsFailed: string;
+        invalidAssetUrl: string;
+        assetSelected: string;
+        enterImageLink: string;
+        enterValidLink: string;
+        importSuccess: string;
+        importFailed: string;
+        requireMinImages: string;
+        analysisSuccess: string;
+        analysisFailed: string;
+        videoGenerationFailed: string;
+        sceneVideoSuccess: string;
+        sceneVideoFailed: string;
+        sceneVideoTimeout: string;
+        taskQueryFailed: string;
+        allSceneVideosReady: string;
+        batchGenerationStart: string;
+        completeAllSceneVideos: string;
+        mergingStart: string;
+        mergingSuccess: string;
+        mergingFailed: string;
+        noDownloadableVideo: string;
+        videoDownloadStart: string;
+        downloadFailed: string;
+        scriptRequired: string;
+        videoIdCopied: string;
+        unknownError: string;
+      };
     };
     imgToVideo: {
       title: string;
@@ -568,6 +613,18 @@ interface Translation {
         uploadTemplate: string;
         selectTemplate: string;
         support: string;
+        tryExample: string;
+        toasts: {
+          unsupportedFormat: string;
+          sizeLimitExceeded: string;
+          taskTimeout: string;
+          queryFailed: string;
+          missingProductImage: string;
+          missingTemplateImage: string;
+          generationFailed: string;
+          loadExampleFailed: string;
+          uploadFailed: string;
+        };
       };
       clothing: {
         garmentTitle: string;
@@ -795,6 +852,15 @@ interface Translation {
           s4: string;
           s5: string;
         };
+      };
+    };
+    imageEditModal: {
+      title: string;
+      applyButton: string;
+      toasts: {
+        editSuccess: string;
+        editFailed: string;
+        imageLoadFailed: string;
       };
     };
     useToolPage: {
@@ -1478,11 +1544,26 @@ interface Translation {
     sendCode: string;
     codeSent: string;
     signIn: string;
+    agreePolicy?: string;
+    privacyPolicy?: string;
+    terms?: string;
+    channelQuestion?: string;
+    channelOptions?: Record<string, string>;
+    agreementPrefix?: string;
+    agreementSuffix?: string;
+    phoneActionLabel?: string;
     countries?: {
       china: string;
       japan: string;
       indonesia: string;
     };
+  };
+  authStore: {
+    inviteSuccessCompanyAndTeam: string;
+    inviteSuccessCompany: string;
+    inviteSuccessTeam: string;
+    welcomeBack: string;
+    loginSuccess: string;
   };
   aiVideoFaceSwapPage: {
     title: string;
@@ -1942,6 +2023,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: 'I agree to the',
         privacyPolicy: 'Privacy Policy',
         terms: 'Terms of Service',
+      channelQuestion: 'How did you hear about us?',
+      channelOptions: {
+        wechat_group: 'WeChat Group',
+        wechat_official: 'WeChat Official Account',
+        wechat_video: 'WeChat Video',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Search Engine',
+        friend: 'Friend Referral',
+        community: 'Community Article',
+        other: 'Other',
+      },
+      agreementPrefix: 'By logging in with an unregistered phone number, you agree to ',
+      agreementSuffix: ' and automatically create an account.',
+      phoneActionLabel: 'Login / Register',
       },
       textToImage: {
         title: 'AI Image Generation',
@@ -2016,7 +2113,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: 'Generate Broadcast Video',
           makeSame: 'One-click Make Same'
         },
-        examples: 'Excellent Examples'
+        examples: 'Excellent Examples',
+        toasts: {
+          analysisRequired: 'Please complete the image analysis first.',
+          scriptsGenerated: 'Successfully generated {count} script options.',
+          scriptsFailed: 'Script generation failed, please try again.',
+          storyboardSuccess: 'Storyboard generation completed.',
+          storyboardFailed: 'Storyboard generation failed, please try again.',
+          storyboardMissing: 'Storyboard data is missing.',
+          storyboardNotFound: 'Storyboard not found.',
+          uploadLimitAutoTrim: 'You can only upload up to {limit} images; automatically kept the first {kept}.',
+          uploadLimit: 'You can only upload up to {limit} images.',
+          uploadSuccess: 'Successfully uploaded {count} images.',
+          uploadFailed: 'Upload failed, please try again.',
+          fetchAssetsFailed: 'Failed to fetch portfolio assets, please retry.',
+          invalidAssetUrl: 'Selected asset does not have a valid image URL.',
+          assetSelected: 'Asset selected.',
+          enterImageLink: 'Please enter an image URL.',
+          enterValidLink: 'Please enter a valid URL.',
+          importSuccess: 'Image imported successfully.',
+          importFailed: 'Import failed, please try again.',
+          requireMinImages: 'Please upload at least {min} images first.',
+          analysisSuccess: 'Successfully analyzed {count} images.',
+          analysisFailed: 'Image analysis failed, please try again.',
+          videoGenerationFailed: 'Video generation failed, please try again.',
+          sceneVideoSuccess: 'Scene {sceneId} video generation completed.',
+          sceneVideoFailed: 'Scene {sceneId} video generation failed: {error}',
+          sceneVideoTimeout: 'Scene {sceneId} video generation timed out.',
+          taskQueryFailed: 'Failed to query task status.',
+          allSceneVideosReady: 'All scene videos are ready.',
+          batchGenerationStart: 'Starting batch generation of {count} scene videos.',
+          completeAllSceneVideos: 'Please complete generating all scene videos first.',
+          mergingStart: 'Starting video merge, please wait...',
+          mergingSuccess: 'Video merge completed.',
+          mergingFailed: 'Video merge failed, please try again.',
+          noDownloadableVideo: 'No downloadable videos available.',
+          videoDownloadStart: 'Video download started.',
+          downloadFailed: 'Video download failed, please try again.',
+          scriptRequired: 'Please select a script and generate a storyboard first.',
+          videoIdCopied: 'Video ID copied.',
+          unknownError: 'Unknown error'
+        }
       },
       imgToVideo: {
         title: 'Image to Video',
@@ -2284,7 +2421,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: 'Upload template image or select from templates',
           uploadTemplate: 'Upload Template Image',
           selectTemplate: 'Select Template',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: 'Try Example',
+          toasts: {
+            unsupportedFormat: 'Unsupported file format: {fileName}. Please upload PNG, JPG, JPEG, or WEBP.',
+            sizeLimitExceeded: 'File size exceeds the limit: {fileName}. The maximum allowed size is 10MB.',
+            taskTimeout: 'Task timed out. Please try again later.',
+            queryFailed: 'Failed to query the task. Please retry.',
+            missingProductImage: 'Please upload a product image.',
+            missingTemplateImage: 'Please upload a template image or select one.',
+            generationFailed: 'Generation failed. Please try again.',
+            loadExampleFailed: 'Failed to load sample images. Please ensure the assets directory is available.',
+            uploadFailed: 'Upload failed. Please try again.'
+          }
         },
         clothing: {
           garmentTitle: 'Garment Image',
@@ -3177,6 +3326,15 @@ export const translations: Record<string, Translation> = {
             s5: 'Successfully added to assets'
           }
         }
+      },
+      imageEditModal: {
+        title: 'Adjust Video Fit Ratio',
+        applyButton: 'Apply & Submit',
+        toasts: {
+          editSuccess: 'Applied edits and refreshed all images.',
+          editFailed: 'Edit failed, please try again.',
+          imageLoadFailed: 'Failed to load image.'
+        }
       }
     },
     rankPage: {
@@ -3394,7 +3552,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Credits/Balance Center',
       subtitle: 'View and manage your credit balance, understand credit usage',
-      balanceLabel: 'Available Balance (CNY)',
+      balanceLabel: 'Available Balance ({currency})',
       convertPoints: 'Convertible Points:',
       memberLevel: 'Member Level:',
       quickActions: 'Quick Actions',
@@ -4148,12 +4306,38 @@ export const translations: Record<string, Translation> = {
       sendCode: 'Send Code',
       codeSent: 'Sent!',
       signIn: 'Sign In',
+      agreePolicy: 'I agree to the',
+      privacyPolicy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      channelQuestion: 'How did you hear about us?',
+      channelOptions: {
+        wechat_group: 'WeChat Group',
+        wechat_official: 'WeChat Official Account',
+        wechat_video: 'WeChat Video',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Search Engine',
+        friend: 'Friend Referral',
+        community: 'Community Article',
+        other: 'Other',
+      },
+      agreementPrefix: 'By logging in with an unregistered phone number, you agree to ',
+      agreementSuffix: ' and automatically create an account.',
+      phoneActionLabel: 'Login / Register',
       countries: {
         china: 'China',
         japan: 'Japan',
         indonesia: 'Indonesia'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: 'Successfully joined company and team',
+    inviteSuccessCompany: 'Successfully joined company',
+    inviteSuccessTeam: 'Successfully joined team',
+    welcomeBack: 'Login successful, welcome back: {name}',
+    loginSuccess: 'Login successful',
+  },
     error: {
       sessionExpired: 'Invalid session or session has expired, please log in again.',
       unknownError: 'Unknown error',
@@ -4394,6 +4578,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: '我已阅读并同意',
         privacyPolicy: '隐私政策',
         terms: '服务条款',
+      channelQuestion: '您是从哪里了解到我们的？',
+      channelOptions: {
+        wechat_group: '微信群',
+        wechat_official: '公众号',
+        wechat_video: '视频号',
+        xiaohongshu: '小红书',
+        kuaishou: '快手',
+        douyin: '抖音',
+        search: '搜索引擎',
+        friend: '朋友推荐',
+        community: '社区文章',
+        other: '其他',
+      },
+      agreementPrefix: '使用未注册手机号登录即视为您已同意 ',
+      agreementSuffix: ' 并自动创建账号',
+      phoneActionLabel: '登录/注册',
 
       },
       textToImage: {
@@ -4469,7 +4669,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: '生成口播视频',
           makeSame: '一键做同款'
         },
-        examples: '优秀案例'
+        examples: '优秀案例',
+      toasts: {
+        analysisRequired: '请先完成图片分析',
+        scriptsGenerated: '成功生成 {count} 个脚本选项',
+        scriptsFailed: '脚本生成失败，请重试',
+        storyboardSuccess: '分镜生成完成',
+        storyboardFailed: '分镜生成失败，请重试',
+        storyboardMissing: '分镜数据不存在',
+        storyboardNotFound: '分镜不存在',
+        uploadLimitAutoTrim: '最多只能上传 {limit} 张图片，已自动保留前 {kept} 张',
+        uploadLimit: '最多只能上传 {limit} 张图片。',
+        uploadSuccess: '成功上传 {count} 张图片',
+        uploadFailed: '上传失败，请重试',
+        fetchAssetsFailed: '获取素材列表失败，请重试',
+        invalidAssetUrl: '该素材没有有效的图片URL',
+        assetSelected: '已选择素材',
+        enterImageLink: '请输入图片链接',
+        enterValidLink: '请输入有效的图片链接',
+        importSuccess: '图片导入成功',
+        importFailed: '导入失败，请重试',
+        requireMinImages: '请先上传至少 {min} 张图片',
+        analysisSuccess: '成功分析 {count} 张图片',
+        analysisFailed: '图片分析失败，请重试',
+        videoGenerationFailed: '生成视频失败，请重试',
+        sceneVideoSuccess: '分镜 {sceneId} 视频生成完成',
+        sceneVideoFailed: '分镜 {sceneId} 视频生成失败: {error}',
+        sceneVideoTimeout: '分镜 {sceneId} 视频生成超时',
+        taskQueryFailed: '查询任务状态失败',
+        allSceneVideosReady: '所有分镜视频已生成',
+        batchGenerationStart: '开始批量生成 {count} 个分镜视频',
+        completeAllSceneVideos: '请先完成所有分镜视频的生成',
+        mergingStart: '开始合并视频，请稍候...',
+        mergingSuccess: '视频合并完成',
+        mergingFailed: '视频合并失败，请重试',
+        noDownloadableVideo: '没有可下载的视频',
+        videoDownloadStart: '视频下载开始',
+        downloadFailed: '下载失败，请重试',
+        scriptRequired: '请先选择脚本并生成分镜',
+        videoIdCopied: '视频编号已复制',
+        unknownError: '未知错误'
+      }
       },
       imgToVideo: {
         title: '图生视频',
@@ -4737,7 +4977,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: '上传模板图片或从模板库中选择',
           uploadTemplate: '上传模板图片',
           selectTemplate: '选择模板',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: '试用示例',
+          toasts: {
+            unsupportedFormat: '不支持的文件格式：{fileName}，请上传 PNG、JPG、JPEG、WEBP 格式的图片',
+            sizeLimitExceeded: '文件大小超过限制：{fileName}，文件大小不能超过 10MB',
+            taskTimeout: '任务超时，请稍后再试',
+            queryFailed: '查询失败，请稍后重试',
+            missingProductImage: '请上传产品图片',
+            missingTemplateImage: '请上传模板图片或选择模板',
+            generationFailed: '生成失败，请重试',
+            loadExampleFailed: '加载示例图片失败，请确保 assets 目录正确',
+            uploadFailed: '上传失败，请稍后重试'
+          }
         },
         clothing: {
           garmentTitle: '服装图片',
@@ -5630,6 +5882,15 @@ export const translations: Record<string, Translation> = {
             s5: '已成功加入素材库'
           }
         }
+      },
+      imageEditModal: {
+        title: '修改视频拟合比例',
+        applyButton: '完成并提交',
+        toasts: {
+          editSuccess: '已应用编辑并更新全部图片。',
+          editFailed: '编辑失败，请重试。',
+          imageLoadFailed: '图片加载失败。'
+        }
       }
     },
     rankPage: {
@@ -6195,7 +6456,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: '费用中心',
       subtitle: '查看和管理您的余额和积分，了解使用情况',
-      balanceLabel: '可用余额 (CNY)',
+      balanceLabel: '可用余额（{currency}）',
       convertPoints: '可转换积分:',
       memberLevel: '会员等级:',
       quickActions: '快捷操作',
@@ -6490,12 +6751,38 @@ export const translations: Record<string, Translation> = {
       sendCode: '获取验证码',
       codeSent: '已发送',
       signIn: '立即登录',
+      agreePolicy: '我已阅读并同意',
+      privacyPolicy: '隐私政策',
+      terms: '服务条款',
+      channelQuestion: '您是从哪里了解到我们的？',
+      channelOptions: {
+        wechat_group: '微信群',
+        wechat_official: '公众号',
+        wechat_video: '视频号',
+        xiaohongshu: '小红书',
+        kuaishou: '快手',
+        douyin: '抖音',
+        search: '搜索引擎',
+        friend: '朋友推荐',
+        community: '社区文章',
+        other: '其他',
+      },
+      agreementPrefix: '使用未注册手机号登录即视为您已同意 ',
+      agreementSuffix: ' 并自动创建账号',
+      phoneActionLabel: '登录/注册',
       countries: {
         china: '中国大陆',
         japan: '日本',
         indonesia: '印度尼西亚'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: '加入企业和团队成功',
+    inviteSuccessCompany: '加入企业成功',
+    inviteSuccessTeam: '加入团队成功',
+    welcomeBack: '登录成功，欢迎回来：{name}',
+    loginSuccess: '登录成功',
+  },
     enterprisePage: {
       title: '团队管理',
       subtitle: '管理团队信息、成员邀请和角色分配',
@@ -6880,6 +7167,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: 'Saya setuju dengan',
         privacyPolicy: 'Kebijakan Privasi',
         terms: 'Ketentuan Layanan',
+      channelQuestion: 'Anda mengetahui kami dari mana?',
+      channelOptions: {
+        wechat_group: 'Grup WeChat',
+        wechat_official: 'Akun Resmi WeChat',
+        wechat_video: 'Video WeChat',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Mesin Pencari',
+        friend: 'Rekomendasi Teman',
+        community: 'Artikel Komunitas',
+        other: 'Lainnya',
+      },
+      agreementPrefix: 'Dengan menggunakan nomor telepon yang belum terdaftar, Anda menyetujui ',
+      agreementSuffix: ' dan secara otomatis membuat akun.',
+      phoneActionLabel: 'Masuk / Daftar',
       },
       textToImage: {
         title: 'Pembuatan Gambar AI',
@@ -6954,7 +7257,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: 'Hasilkan Video Siaran',
           makeSame: 'Buat yang Sama dengan Satu Klik'
         },
-        examples: 'Contoh Terbaik'
+        examples: 'Contoh Terbaik',
+        toasts: {
+        analysisRequired: 'Silakan selesaikan analisis gambar terlebih dahulu.',
+        scriptsGenerated: 'Berhasil menghasilkan {count} pilihan skrip.',
+        scriptsFailed: 'Pembuatan skrip gagal, silakan coba lagi.',
+        storyboardSuccess: 'Pembuatan storyboard selesai.',
+        storyboardFailed: 'Pembuatan storyboard gagal, silakan coba lagi.',
+        storyboardMissing: 'Data storyboard tidak tersedia.',
+        storyboardNotFound: 'Storyboard tidak ditemukan.',
+        uploadLimitAutoTrim: 'Anda hanya boleh mengunggah hingga {limit} gambar; secara otomatis menyimpan {kept} pertama.',
+        uploadLimit: 'Anda hanya boleh mengunggah hingga {limit} gambar.',
+        uploadSuccess: 'Berhasil mengunggah {count} gambar.',
+        uploadFailed: 'Unggahan gagal, silakan coba lagi.',
+        fetchAssetsFailed: 'Gagal mengambil aset portofolio, silakan ulangi.',
+        invalidAssetUrl: 'Aset yang dipilih tidak memiliki URL gambar yang valid.',
+        assetSelected: 'Aset dipilih.',
+        enterImageLink: 'Silakan masukkan URL gambar.',
+        enterValidLink: 'Silakan masukkan URL yang valid.',
+        importSuccess: 'Gambar berhasil diimpor.',
+        importFailed: 'Impor gagal, silakan coba lagi.',
+        requireMinImages: 'Silakan unggah minimal {min} gambar.',
+        analysisSuccess: 'Berhasil menganalisis {count} gambar.',
+        analysisFailed: 'Analisis gambar gagal, silakan coba lagi.',
+        videoGenerationFailed: 'Pembuatan video gagal, silakan coba lagi.',
+        sceneVideoSuccess: 'Video adegan {sceneId} selesai dibuat.',
+        sceneVideoFailed: 'Video adegan {sceneId} gagal dibuat: {error}',
+        sceneVideoTimeout: 'Video adegan {sceneId} melebihi batas waktu.',
+        taskQueryFailed: 'Gagal memeriksa status tugas.',
+        allSceneVideosReady: 'Semua video adegan telah siap.',
+        batchGenerationStart: 'Mulai membuat {count} video adegan secara batch.',
+        completeAllSceneVideos: 'Silakan selesaikan pembuatan semua video adegan terlebih dahulu.',
+        mergingStart: 'Mulai menggabungkan video, harap tunggu...',
+        mergingSuccess: 'Penggabungan video selesai.',
+        mergingFailed: 'Penggabungan video gagal, silakan coba lagi.',
+        noDownloadableVideo: 'Tidak ada video yang dapat diunduh.',
+        videoDownloadStart: 'Unduhan video dimulai.',
+        downloadFailed: 'Unduhan video gagal, silakan coba lagi.',
+        scriptRequired: 'Silakan pilih skrip dan buat storyboard terlebih dahulu.',
+        videoIdCopied: 'ID video disalin.',
+        unknownError: 'Kesalahan tidak diketahui'
+      }
       },
       imgToVideo: {
         title: 'Gambar ke Video',
@@ -7158,7 +7501,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: 'Unggah gambar template atau pilih dari template',
           uploadTemplate: 'Unggah Gambar Template',
           selectTemplate: 'Pilih Template',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: 'Coba Contoh',
+          toasts: {
+            unsupportedFormat: 'Format file tidak didukung: {fileName}. Unggah PNG, JPG, JPEG, atau WEBP.',
+            sizeLimitExceeded: 'Ukuran file terlalu besar: {fileName}. Maksimal 10MB.',
+            taskTimeout: 'Tugas melebihi batas waktu. Silakan coba lagi.',
+            queryFailed: 'Gagal memeriksa status tugas. Silakan coba lagi.',
+            missingProductImage: 'Silakan unggah gambar produk.',
+            missingTemplateImage: 'Silakan unggah gambar template atau pilih template.',
+            generationFailed: 'Pembuatan gagal. Silakan coba lagi.',
+            loadExampleFailed: 'Gagal memuat contoh gambar, pastikan folder assets tersedia.',
+            uploadFailed: 'Pengunggahan gagal. Silakan coba lagi.'
+          }
         },
         clothing: {
           garmentTitle: 'Gambar Pakaian',
@@ -7654,6 +8009,15 @@ export const translations: Record<string, Translation> = {
             s5: 'Berhasil ditambahkan ke aset'
           }
         }
+      },
+      imageEditModal: {
+        title: 'Ubah Rasio Video',
+        applyButton: 'Selesai & Kirim',
+        toasts: {
+          editSuccess: 'Terapkan edit dan perbarui semua gambar.',
+          editFailed: 'Edit gagal, silakan coba lagi.',
+          imageLoadFailed: 'Gagal memuat gambar.'
+        }
       }
     },
     rankPage: {
@@ -7871,7 +8235,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Pusat Kredit/Saldo',
       subtitle: 'Lihat dan kelola saldo kredit Anda, pahami penggunaan kredit',
-      balanceLabel: 'Saldo Tersedia (CNY)',
+      balanceLabel: 'Saldo Tersedia ({currency})',
       convertPoints: 'Poin yang Dapat Dikonversi:',
       memberLevel: 'Level Anggota:',
       quickActions: 'Tindakan Cepat',
@@ -8625,12 +8989,38 @@ export const translations: Record<string, Translation> = {
       sendCode: 'Kirim Kode',
       codeSent: 'Terkirim!',
       signIn: 'Masuk',
+      agreePolicy: 'Saya setuju dengan',
+      privacyPolicy: 'Kebijakan Privasi',
+      terms: 'Ketentuan Layanan',
+      channelQuestion: 'Anda mengetahui kami dari mana?',
+      channelOptions: {
+        wechat_group: 'Grup WeChat',
+        wechat_official: 'Akun Resmi WeChat',
+        wechat_video: 'Video WeChat',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Mesin Pencari',
+        friend: 'Rekomendasi Teman',
+        community: 'Artikel Komunitas',
+        other: 'Lainnya',
+      },
+      agreementPrefix: 'Dengan menggunakan nomor telepon yang belum terdaftar, Anda menyetujui ',
+      agreementSuffix: ' dan secara otomatis membuat akun.',
+      phoneActionLabel: 'Masuk / Daftar',
       countries: {
         china: 'China',
         japan: 'Jepang',
         indonesia: 'Indonesia'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: 'Berhasil bergabung dengan perusahaan dan tim',
+    inviteSuccessCompany: 'Berhasil bergabung dengan perusahaan',
+    inviteSuccessTeam: 'Berhasil bergabung dengan tim',
+    welcomeBack: 'Login berhasil, selamat datang kembali: {name}',
+    loginSuccess: 'Login berhasil',
+  },
     error: {
       sessionExpired: 'Sesi tidak valid atau sesi telah kedaluwarsa, silakan masuk lagi.',
       unknownError: 'Kesalahan tidak diketahui',

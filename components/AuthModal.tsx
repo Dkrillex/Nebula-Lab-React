@@ -30,6 +30,11 @@ interface AuthModalProps {
     agreePolicy?: string;
     privacyPolicy?: string;
     terms?: string;
+    channelQuestion?: string;
+    channelOptions?: Record<string, string>;
+    agreementPrefix?: string;
+    agreementSuffix?: string;
+    phoneActionLabel?: string;
     loginSubtitle?: string; // 新增国际化字段
   };
 }
@@ -462,7 +467,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
                 </div>
                 {/* 渠道来源选择 */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted">您是从哪里了解到我们的？</label>
+                  <label className="text-xs font-medium text-muted">{t.channelQuestion}</label>
                   <div className="grid grid-cols-3 gap-2">
                     {channelSourceOptions.map((option) => (
                       <button
@@ -475,7 +480,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
                             : 'bg-background text-muted border-border hover:border-primary/50'
                         }`}
                       >
-                        {option.label}
+                        {t.channelOptions?.[option.value] ?? option.label}
                       </button>
                     ))}
                   </div>
@@ -490,7 +495,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
                     className="mt-1"
                   />
                   <label htmlFor="agreePolicy" className="text-xs text-muted cursor-pointer">
-                    使用未注册手机号登录即视为您已同意
+                    {t.agreementPrefix || '使用未注册手机号登录即视为您已同意 '}
                     <button
                       type="button"
                       onClick={showPrivacyPolicy}
@@ -498,7 +503,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
                     >
                       {t.privacyPolicy || '隐私政策'} & {t.terms || '服务条款'}
                     </button>
-                    并自动创建账号
+                    {t.agreementSuffix || ' 并自动创建账号'}
                   </label>
                 </div>
               </>
@@ -510,7 +515,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLoginSuccess, 
               className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-3 text-sm font-medium text-white shadow-lg shadow-primary/20 hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-surface transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {loading && <Loader2 size={16} className="animate-spin" />}
-              {mode === 'phone' ? '登录/注册' : t.signIn}
+              {mode === 'phone' ? (t.phoneActionLabel || '登录/注册') : t.signIn}
             </button>
           </form>
         </div>

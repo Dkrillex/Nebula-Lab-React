@@ -123,7 +123,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
         { id: 'aiExperience', icon: Sparkles, label: t.aiExperience, path: '/chat' },
         { id: 'modelSquare', icon: Grid, label: t.modelSquare, path: '/models' },
         { id: 'apiKeys', icon: Key, label: t.apiKeys, path: '/keys' },
-        { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://s.apifox.cn/34d9d7f6-bfe9-4f3a-a084-2d88f34b7ed1/7231166m0' },
+        { id: 'apiDocs', icon: FileText, label: t.apiDocs, externalLink: 'https://oepnai-nebula.apifox.cn/' },
         { id: 'rank', icon: Trophy, label: t.rank, path: '/rank' },
       ]
     },

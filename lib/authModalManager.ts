@@ -1,4 +1,5 @@
 import { translations } from '../translations';
+import { getStorageKey } from '../utils/storageNamespace';
 
 /**
  * 登录成功回调函数类型
@@ -18,7 +19,7 @@ class AuthModalManager {
    * 获取当前语言
    */
   private getLanguage(): string {
-    return localStorage.getItem('language') || 'zh';
+    return localStorage.getItem(getStorageKey('language')) || 'zh';
   }
 
   /**

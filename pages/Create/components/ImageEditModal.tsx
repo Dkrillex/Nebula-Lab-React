@@ -3,6 +3,8 @@ import BaseModal from '@/components/BaseModal';
 import { Upload, X } from 'lucide-react';
 import { uploadService } from '@/services/uploadService';
 import toast from 'react-hot-toast';
+import { useAppOutletContext } from '@/router/context';
+import { translations } from '@/translations';
 
 interface ImageEditModalProps {
   isOpen: boolean;
@@ -15,6 +17,8 @@ const RATIO_OPTIONS = ['3:4', '1:1', '9:16'] as const;
 type Ratio = typeof RATIO_OPTIONS[number];
 
 const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images, onSubmit }) => {
+  const { t: rootT } = useAppOutletContext();
+  const tt = rootT?.imageEditModal || translations['zh'].createPage.imageEditModal;
   const [activeIndex, setActiveIndex] = useState(0);
   const [edits, setEdits] = useState<Record<number, { ratio: Ratio; rotate: number; zoom: number }>>({});
   const [busy, setBusy] = useState(false);
@@ -126,10 +130,10 @@ const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images
         await sleep(200);
       }
       onSubmit(edited);
-      toast.success('已应用编辑并更新全部图片');
+      toast.success(tt.toasts.editSuccess);
       onClose();
     } catch (e: any) {
-      toast.error(e.message || '编辑失败');
+      toast.error(e.message || tt.toasts.editFailed);
     } finally {
       setBusy(false);
     }
@@ -138,7 +142,7 @@ const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images
   const currentUrl = images[activeIndex]?.url || '';
 
   return (
-    <BaseModal isOpen={isOpen} onClose={onClose} title="修改视频拟合比例" width="max-w-5xl">
+    <BaseModal isOpen={isOpen} onClose={onClose} title={tt.title} width="max-w-5xl">
       <div className="flex gap-6">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-3">
@@ -165,7 +169,7 @@ const ImageEditModal: React.FC<ImageEditModalProps> = ({ isOpen, onClose, images
           </div>
           <div className="mt-4 flex items-center gap-3">
             <button onClick={handleSubmit} disabled={busy} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
-              <Upload size={16} /> 完成并提交
+              <Upload size={16} /> {tt.applyButton}
             </button>
           </div>
         </div>

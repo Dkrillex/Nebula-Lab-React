@@ -30,15 +30,17 @@ interface StandardModeProps {
   onPreview: (img: GeneratedImage, allImages: GeneratedImage[]) => void;
 }
 
-const TEXTS = {
-  productDesc: '高清图片效果最佳\n格式:jpg/jpeg/png/webp; 文件大小<10MB',
-  areaDesc: '使用笔刷画出遮罩标记产品替换后需要发生变化的区域',
-  templateUpload: '上传模板图片\n(png, jpg, jpeg, webp)',
-  areaTitle: '画出您想要替换的区域'
+const formatMessage = (template: string, params?: Record<string, string | number>) => {
+  if (!template) return '';
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    const value = params?.[key];
+    return value !== undefined ? String(value) : '';
+  });
 };
 
 const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, onSaveToAssets, onImageToVideo, onPreview }, ref) => {
   const { isAuthenticated } = useAuthStore();
+  const toasts = t.standard.toasts;
   
   // 图片上传状态
   const [productImage, setProductImage] = useState<UploadedImage | null>(null);
@@ -75,11 +77,11 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
   const validateFileType = (file: File): boolean => {
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
     if (!['png', 'jpg', 'jpeg', 'webp'].includes(fileExtension)) {
-      toast.error(`不支持的文件格式：${file.name}，请上传 PNG, JPG, JPEG, WEBP 格式的图片`);
+      toast.error(formatMessage(toasts.unsupportedFormat, { fileName: file.name }));
       return false;
     }
     if (file.size > 10 * 1024 * 1024) {
-      toast.error(`文件大小超过限制：${file.name}，文件大小不能超过 10MB`);
+      toast.error(formatMessage(toasts.sizeLimitExceeded, { fileName: file.name }));
       return false;
     }
     return true;
@@ -216,12 +218,12 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
       onTimeout: () => {
         setIsGenerating(false);
         setProgress(0);
-        toast.error('任务超时');
+        toast.error(toasts.taskTimeout);
         stopTaskPolling();
       },
       onError: error => {
         console.error('轮询查询出错:', error);
-        toast.error('查询失败');
+        toast.error(toasts.queryFailed);
         setIsGenerating(false);
         stopTaskPolling();
       },
@@ -243,11 +245,11 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
     
     if (isGenerating) return;
     if (!productImage) {
-      toast.error('请上传产品图片');
+      toast.error(toasts.missingProductImage);
       return;
     }
     if (!templateImage && !selectedTemplate) {
-      toast.error('请上传模板图片或选择模板');
+      toast.error(toasts.missingTemplateImage);
       return;
     }
     
@@ -330,7 +332,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(error.message || 'Generation failed');
+      toast.error(error.message || toasts.generationFailed);
       setIsGenerating(false);
       stopTaskPolling();
     }
@@ -365,7 +367,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
       handleImageUpload(templateFile, 'template');
     } catch (error) {
       console.error('Failed to load demo assets:', error);
-      toast.error('加载示例图片失败，请确保assets目录正确');
+      toast.error(toasts.loadExampleFailed);
     }
   };
 
@@ -386,7 +388,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
       <UploadComponent
         onFileSelected={(file) => handleImageUpload(file, type)}
         onUploadComplete={() => {}}
-        onError={(error) => toast.error(error.message)}
+        onError={(error) => toast.error(error.message || toasts.uploadFailed)}
         uploadType="oss"
         immediate={false}
         showConfirmButton={false}
@@ -418,7 +420,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
               {t.standard.productTitle}
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed whitespace-pre-line mb-4">
-              {TEXTS.productDesc}
+              {t.standard.productDesc}
             </p>
             
             {productImage ? (
@@ -481,7 +483,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                   onClick={handleTryExample}
                   className="px-6 py-2 bg-white dark:bg-surface border border-slate-200 dark:border-border rounded-lg shadow-sm text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-surface transition-colors w-full"
                 >
-                  试用示例
+                  {t.standard.tryExample}
                 </button>
               </div>
             )}
@@ -490,10 +492,10 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
           {/* Template Image Section */}
           <div className="mb-5">
             <h3 className="font-bold text-slate-800 dark:text-slate-200 text-lg mb-2">
-              {TEXTS.areaTitle}
+              {t.standard.areaTitle}
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed mb-4">
-              {TEXTS.areaDesc}
+              {t.standard.areaDesc}
             </p>
 
             {(templateImage || selectedTemplate) ? (
@@ -552,7 +554,7 @@ const StandardMode = React.forwardRef<StandardModeRef, StandardModeProps>(({ t, 
                 </div>
               </div>
             ) : (
-              renderUploadBox(templateImage, 'template', TEXTS.templateUpload, templateInputRef, isGenerating)
+              renderUploadBox(templateImage, 'template', t.standard.uploadTemplate, templateInputRef, isGenerating)
             )}
           </div>
         </div>
