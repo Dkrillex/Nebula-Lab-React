@@ -204,6 +204,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     assetType: number;
     assetName?: string;
     assetDesc?: string;
+    assetId?: string;
   } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -2185,13 +2186,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     }
     
     setIsExportingMaterial(true);
+    let finalAssetId: string | undefined;
     try {
       let finalUrl = url;
       
       if (type === 'image') {
         // 处理图片上传
         const imageType = detectImageType({ url });
-        
+
         // 如果已经是 OSS 链接，直接使用
         if (imageType === 'oss') {
           const dateStr = new Date().toISOString().slice(0, 10);
@@ -2206,10 +2208,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           setIsAddMaterialModalOpen(true);
           return;
         }
-        
+
         const ossResult = await processImageToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
+          finalAssetId = ossResult.ossId;
         } else {
           toast.error(t.toasts.imageUploadFailed, { id: 'upload-oss' });
           setIsExportingMaterial(false);
@@ -2218,7 +2221,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       } else {
         // 处理视频上传
         const videoType = detectVideoType({ url });
-        
+
         // 如果已经是 OSS 链接，直接使用
         if (videoType === 'oss') {
           const dateStr = new Date().toISOString().slice(0, 10);
@@ -2233,13 +2236,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           setIsAddMaterialModalOpen(true);
           return;
         }
-        
+
         // 需要上传到 OSS
         toast.loading(t.toasts.uploadingVideoToOSS, { id: 'upload-oss' });
-        
+
         const ossResult = await processVideoToOSS({ url });
         if (ossResult && ossResult.url) {
           finalUrl = ossResult.url;
+          finalAssetId = ossResult.ossId;
           toast.success(t.toasts.videoUploadSuccess, { id: 'upload-oss' });
         } else {
           toast.error(t.toasts.videoUploadFailed, { id: 'upload-oss' });
@@ -2257,6 +2261,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         assetType: type === 'image' ? 7 : 14, // 7: AI生图, 14: AI视频生成
         assetName: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
         assetDesc: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
+        assetId: finalAssetId,
       });
       setIsAddMaterialModalOpen(true);
     } catch (error) {
@@ -5493,6 +5498,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           }}
           initialData={{
             assetUrl: selectedMaterial.url,
+            assetId: selectedMaterial.assetId,
             assetName: selectedMaterial.assetName || (selectedMaterial.prompt 
               ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'}-${selectedMaterial.prompt.slice(0, 10)}`
               : selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'),
