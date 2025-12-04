@@ -35,12 +35,61 @@ interface ViralVideoPageProps {
       makeSame: string;
     };
     examples: string;
+    toasts: {
+      analysisRequired: string;
+      scriptsGenerated: string;
+      scriptsFailed: string;
+      storyboardSuccess: string;
+      storyboardFailed: string;
+      storyboardMissing: string;
+      storyboardNotFound: string;
+      uploadLimitAutoTrim: string;
+      uploadLimit: string;
+      uploadSuccess: string;
+      uploadFailed: string;
+      fetchAssetsFailed: string;
+      invalidAssetUrl: string;
+      assetSelected: string;
+      enterImageLink: string;
+      enterValidLink: string;
+      importSuccess: string;
+      importFailed: string;
+      requireMinImages: string;
+      analysisSuccess: string;
+      analysisFailed: string;
+      videoGenerationFailed: string;
+      sceneVideoSuccess: string;
+      sceneVideoFailed: string;
+      sceneVideoTimeout: string;
+      taskQueryFailed: string;
+      allSceneVideosReady: string;
+      batchGenerationStart: string;
+      completeAllSceneVideos: string;
+      mergingStart: string;
+      mergingSuccess: string;
+      mergingFailed: string;
+      noDownloadableVideo: string;
+      videoDownloadStart: string;
+      downloadFailed: string;
+      scriptRequired: string;
+      videoIdCopied: string;
+      unknownError: string;
+    };
   };
 }
+
+const formatMessage = (template: string, params?: Record<string, string | number>) => {
+  if (!template) return '';
+  return template.replace(/\{(\w+)\}/g, (_, key) => {
+    const value = params?.[key];
+    return value !== undefined ? String(value) : '';
+  });
+};
 
 const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [step, setStep] = useState(1);
   const [activeTab, setActiveTab] = useState<'upload' | 'link'>('upload');
+  const tv = t.toasts;
   
   // Step 2: 脚本相关状态
   const [availableScripts, setAvailableScripts] = useState<Array<{ id: string; title: string; subtitle: string; time: string; description?: string }>>([]);
@@ -82,7 +131,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 生成脚本选项
   const generateScripts = async () => {
     if (!analysisResult) {
-      toast.error('请先完成图片分析');
+      toast.error(tv.analysisRequired);
       return;
     }
 
@@ -100,10 +149,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         await generateStoryboard(scripts[0]);
       }
       
-      toast.success(`成功生成 ${scripts.length} 个脚本选项`);
+      toast.success(formatMessage(tv.scriptsGenerated, { count: scripts.length }));
     } catch (error: any) {
       console.error('脚本生成失败:', error);
-      toast.error(error.message || '脚本生成失败，请重试');
+      toast.error(error.message || tv.scriptsFailed);
     } finally {
       setIsGeneratingScripts(false);
     }
@@ -112,7 +161,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 生成分镜详情
   const generateStoryboard = async (script: { id: string; title: string; subtitle: string; time: string }) => {
     if (!analysisResult || uploadedImages.length === 0) {
-      toast.error('缺少必要信息');
+      toast.error(tv.storyboardMissing);
       return;
     }
 
@@ -133,10 +182,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       localStorage.setItem('viralVideo_storyboard', JSON.stringify(storyboardData));
       localStorage.setItem('viralVideo_selectedScript', script.id);
       
-      toast.success('分镜生成完成');
+      toast.success(tv.storyboardSuccess);
     } catch (error: any) {
       console.error('分镜生成失败:', error);
-      toast.error(error.message || '分镜生成失败，请重试');
+      toast.error(error.message || tv.storyboardFailed);
     } finally {
       setIsGeneratingStoryboard(false);
     }
@@ -243,7 +292,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const remaining = Math.max(0, MAX_IMAGES - uploadedImages.length);
       const selectedFiles = Array.from(files as FileList).slice(0, remaining);
       if (Array.from(files as FileList).length > remaining) {
-        toast.error(`最多只能上传 ${MAX_IMAGES} 张图片，已自动截取前 ${remaining} 张`);
+        toast.error(formatMessage(tv.uploadLimitAutoTrim, { limit: MAX_IMAGES, kept: remaining }));
       }
       const uploadPromises = selectedFiles.map(async (file: File) => {
         // 验证文件类型
@@ -269,7 +318,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const newList = [...uploadedImages, ...results];
       setUploadedImages(newList);
       localStorage.setItem('viralVideo_images', JSON.stringify(newList));
-      toast.success(`成功上传 ${results.length} 张图片`);
+      toast.success(formatMessage(tv.uploadSuccess, { count: results.length }));
       
       // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
       if (results.length > 0) {
@@ -277,7 +326,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       }
     } catch (error: any) {
       console.error('上传失败:', error);
-      toast.error(error.message || '上传失败，请重试');
+      toast.error(error.message || tv.uploadFailed);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -313,7 +362,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       setPortfolioAssets(imageAssets);
     } catch (error: any) {
       console.error('获取素材列表失败:', error);
-      toast.error('获取素材列表失败，请重试');
+      toast.error(tv.fetchAssetsFailed);
     } finally {
       setPortfolioLoading(false);
     }
@@ -322,12 +371,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const handleSelectAsset = (asset: AdsAssetsVO) => {
     const imageUrl = asset.assetUrl || asset.coverUrl || asset.thumbnailUrl || '';
     if (!imageUrl) {
-      toast.error('该素材没有有效的图片URL');
+      toast.error(tv.invalidAssetUrl);
       return;
     }
 
     if (uploadedImages.length >= MAX_IMAGES) {
-      toast.error(`最多只能上传 ${MAX_IMAGES} 张图片`);
+      toast.error(formatMessage(tv.uploadLimit, { limit: MAX_IMAGES }));
       return;
     }
 
@@ -335,7 +384,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     setUploadedImages(newList);
     localStorage.setItem('viralVideo_images', JSON.stringify(newList));
     setShowPortfolioModal(false);
-    toast.success('已选择素材');
+    toast.success(tv.assetSelected);
 
     // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
     setShowEditModal(true);
@@ -344,7 +393,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 处理链接导入
   const handleLinkImport = async () => {
     if (!linkInput.trim()) {
-      toast.error('请输入图片链接');
+      toast.error(tv.enterImageLink);
       return;
     }
 
@@ -352,7 +401,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     try {
       new URL(linkInput);
     } catch {
-      toast.error('请输入有效的图片链接');
+      toast.error(tv.enterValidLink);
       return;
     }
 
@@ -366,20 +415,20 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       // 上传到OSS
       const result = await uploadService.uploadByImageUrl(linkInput, extension);
       if (uploadedImages.length >= MAX_IMAGES) {
-        toast.error(`最多只能上传 ${MAX_IMAGES} 张图片`);
+        toast.error(formatMessage(tv.uploadLimit, { limit: MAX_IMAGES }));
         return;
       }
       const newList = [...uploadedImages, { url: result.url, id: result.ossId }];
       setUploadedImages(newList);
       localStorage.setItem('viralVideo_images', JSON.stringify(newList));
       setLinkInput('');
-      toast.success('图片导入成功');
+      toast.success(tv.importSuccess);
 
       // 移除自动分析逻辑，改为用户点击"完成提交"按钮时分析
       setShowEditModal(true);
     } catch (error: any) {
       console.error('导入失败:', error);
-      toast.error(error.message || '导入失败，请重试');
+      toast.error(error.message || tv.importFailed);
     } finally {
       setIsUploading(false);
     }
@@ -400,7 +449,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const analyzeAllImages = async () => {
     if (isAnalyzing) return;
     if (uploadedImages.length < MIN_IMAGES) {
-      toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
+      toast.error(formatMessage(tv.requireMinImages, { min: MIN_IMAGES }));
       return;
     }
 
@@ -415,13 +464,13 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       const result = await viralVideoService.analyzeProductImages(imageUrls, defaultModel);
       
       setAnalysisResult(result);
-      toast.success(`成功分析 ${uploadedImages.length} 张图片`);
+      toast.success(formatMessage(tv.analysisSuccess, { count: uploadedImages.length }));
       
       // 保存到localStorage
       localStorage.setItem('viralVideo_analysis', JSON.stringify(result));
     } catch (error: any) {
       console.error('图片分析失败:', error);
-      toast.error(error.message || '图片分析失败，请重试');
+      toast.error(error.message || tv.analysisFailed);
     } finally {
       setIsAnalyzing(false);
     }
@@ -462,13 +511,13 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const generateSceneVideo = async (sceneId: number) => {
     const currentStoryboard = editedStoryboard || storyboard;
     if (!currentStoryboard) {
-      toast.error('分镜数据不存在');
+      toast.error(tv.storyboardMissing);
       return;
     }
 
     const scene = currentStoryboard.scenes.find((s: any) => s.id === sceneId);
     if (!scene) {
-      toast.error('分镜不存在');
+      toast.error(tv.storyboardNotFound);
       return;
     }
 
@@ -521,7 +570,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         [sceneId]: { status: 'failed' },
       }));
       setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-      toast.error(error.message || '生成视频失败，请重试');
+      toast.error(error.message || tv.videoGenerationFailed);
     }
   };
 
@@ -567,7 +616,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
           clearInterval(videoPollingIntervals.current[sceneId]);
           delete videoPollingIntervals.current[sceneId];
-          toast.success(`分镜 ${sceneId} 视频生成完成`);
+          toast.success(formatMessage(tv.sceneVideoSuccess, { sceneId }));
           
           // 保存到localStorage
           const savedVideos = localStorage.getItem('viralVideo_sceneVideos');
@@ -582,7 +631,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
           clearInterval(videoPollingIntervals.current[sceneId]);
           delete videoPollingIntervals.current[sceneId];
-          toast.error(`分镜 ${sceneId} 视频生成失败: ${error || '未知错误'}`);
+          toast.error(formatMessage(tv.sceneVideoFailed, { sceneId, error: error || tv.unknownError }));
         } else {
           pollCount++;
           if (pollCount >= maxPolls) {
@@ -593,7 +642,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
               [sceneId]: { status: 'failed' },
             }));
             setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-            toast.error(`分镜 ${sceneId} 视频生成超时`);
+            toast.error(formatMessage(tv.sceneVideoTimeout, { sceneId }));
           }
         }
       } catch (error: any) {
@@ -605,7 +654,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
           [sceneId]: { status: 'failed' },
         }));
         setGeneratingScenes((prev) => prev.filter(id => id !== sceneId));
-        toast.error('查询任务状态失败');
+        toast.error(tv.taskQueryFailed);
       }
     };
 
@@ -620,7 +669,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const generateAllSceneVideos = async () => {
     const currentStoryboard = editedStoryboard || storyboard;
     if (!currentStoryboard || !currentStoryboard.scenes) {
-      toast.error('分镜数据不存在');
+      toast.error(tv.storyboardMissing);
       return;
     }
 
@@ -630,11 +679,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     });
 
     if (scenesToGenerate.length === 0) {
-      toast.info('所有分镜视频已生成');
+      toast.info(tv.allSceneVideosReady);
       return;
     }
 
-    toast.info(`开始批量生成 ${scenesToGenerate.length} 个分镜视频`);
+    toast.info(formatMessage(tv.batchGenerationStart, { count: scenesToGenerate.length }));
     
     // 依次生成（避免并发过多）
     for (const scene of scenesToGenerate) {
@@ -650,7 +699,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const mergeAllVideos = async () => {
     const currentStoryboard = editedStoryboard || storyboard;
     if (!currentStoryboard || !currentStoryboard.scenes) {
-      toast.error('分镜数据不存在');
+      toast.error(tv.storyboardMissing);
       return;
     }
 
@@ -661,7 +710,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     });
 
     if (!allVideosReady) {
-      toast.error('请先完成所有分镜视频的生成');
+      toast.error(tv.completeAllSceneVideos);
       return;
     }
 
@@ -676,7 +725,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
         throw new Error('没有可合并的视频');
       }
 
-      toast.info('开始合并视频，请稍候...');
+      toast.info(tv.mergingStart);
       
       // 合并视频
       const mergedVideoUrl = await mergeVideos(videoUrls);
@@ -690,10 +739,10 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
       localStorage.setItem('viralVideo_finalVideo', mergedVideoUrl);
       localStorage.setItem('viralVideo_videoId', newVideoId);
       
-      toast.success('视频合并完成');
+      toast.success(tv.mergingSuccess);
     } catch (error: any) {
       console.error('视频合并失败:', error);
-      toast.error(error.message || '视频合并失败，请重试');
+      toast.error(error.message || tv.mergingFailed);
     } finally {
       setIsMerging(false);
     }
@@ -702,17 +751,17 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 下载最终视频
   const handleDownloadVideo = async () => {
     if (!finalVideoUrl) {
-      toast.error('没有可下载的视频');
+      toast.error(tv.noDownloadableVideo);
       return;
     }
 
     try {
       const filename = `营销视频_${videoId || Date.now()}.mp4`;
       await downloadVideo(finalVideoUrl, filename);
-      toast.success('视频下载开始');
+      toast.success(tv.videoDownloadStart);
     } catch (error: any) {
       console.error('下载失败:', error);
-      toast.error(error.message || '下载失败，请重试');
+      toast.error(error.message || tv.downloadFailed);
     }
   };
 
@@ -772,11 +821,11 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   // 进入Step 2前检查
   const handleGoToStep2 = () => {
     if (uploadedImages.length < MIN_IMAGES) {
-      toast.error(`请先上传至少 ${MIN_IMAGES} 张图片`);
+      toast.error(formatMessage(tv.requireMinImages, { min: MIN_IMAGES }));
       return;
     }
     if (!analysisResult) {
-      toast.error('请先完成图片分析');
+      toast.error(tv.analysisRequired);
       return;
     }
     setStep(2);
@@ -1193,7 +1242,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
             <button 
               onClick={() => {
                 if (!storyboard) {
-                  toast.error('请先选择脚本并生成分镜');
+                  toast.error(tv.scriptRequired);
                   return;
                 }
                 setStep(3);
@@ -1473,7 +1522,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
                          className="cursor-pointer hover:text-foreground"
                          onClick={() => {
                            navigator.clipboard.writeText(videoId);
-                           toast.success('视频编号已复制');
+                           toast.success(tv.videoIdCopied);
                          }}
                        />
                      )}
