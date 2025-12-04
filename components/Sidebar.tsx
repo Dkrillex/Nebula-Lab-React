@@ -334,8 +334,11 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                 <div className="flex items-start gap-2 mb-1 text-indigo-500">
                   <Sparkles size={14} className="mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col items-center">
-                    <span className="text-[9px] font-bold tracking-wider">
+                    {/* <span className="text-[9px] font-bold tracking-wider">
                       {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}新版本上线
+                    </span> */}
+                    <span className="text-[9px] font-bold tracking-wider">
+                      {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}
                     </span>
                   </div>
               </div>
