@@ -228,6 +228,11 @@ interface Translation {
       agreePolicy?: string;
       privacyPolicy?: string;
       terms?: string;
+      channelQuestion?: string;
+      channelOptions?: Record<string, string>;
+      agreementPrefix?: string;
+      agreementSuffix?: string;
+      phoneActionLabel?: string;
     };
     textToImage: {
       title: string;
@@ -1539,6 +1544,14 @@ interface Translation {
     sendCode: string;
     codeSent: string;
     signIn: string;
+    agreePolicy?: string;
+    privacyPolicy?: string;
+    terms?: string;
+    channelQuestion?: string;
+    channelOptions?: Record<string, string>;
+    agreementPrefix?: string;
+    agreementSuffix?: string;
+    phoneActionLabel?: string;
     countries?: {
       china: string;
       japan: string;
@@ -2003,6 +2016,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: 'I agree to the',
         privacyPolicy: 'Privacy Policy',
         terms: 'Terms of Service',
+      channelQuestion: 'How did you hear about us?',
+      channelOptions: {
+        wechat_group: 'WeChat Group',
+        wechat_official: 'WeChat Official Account',
+        wechat_video: 'WeChat Video',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Search Engine',
+        friend: 'Friend Referral',
+        community: 'Community Article',
+        other: 'Other',
+      },
+      agreementPrefix: 'By logging in with an unregistered phone number, you agree to ',
+      agreementSuffix: ' and automatically create an account.',
+      phoneActionLabel: 'Login / Register',
       },
       textToImage: {
         title: 'AI Image Generation',
@@ -4270,6 +4299,25 @@ export const translations: Record<string, Translation> = {
       sendCode: 'Send Code',
       codeSent: 'Sent!',
       signIn: 'Sign In',
+      agreePolicy: 'I agree to the',
+      privacyPolicy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      channelQuestion: 'How did you hear about us?',
+      channelOptions: {
+        wechat_group: 'WeChat Group',
+        wechat_official: 'WeChat Official Account',
+        wechat_video: 'WeChat Video',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Search Engine',
+        friend: 'Friend Referral',
+        community: 'Community Article',
+        other: 'Other',
+      },
+      agreementPrefix: 'By logging in with an unregistered phone number, you agree to ',
+      agreementSuffix: ' and automatically create an account.',
+      phoneActionLabel: 'Login / Register',
       countries: {
         china: 'China',
         japan: 'Japan',
@@ -4516,6 +4564,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: '我已阅读并同意',
         privacyPolicy: '隐私政策',
         terms: '服务条款',
+      channelQuestion: '您是从哪里了解到我们的？',
+      channelOptions: {
+        wechat_group: '微信群',
+        wechat_official: '公众号',
+        wechat_video: '视频号',
+        xiaohongshu: '小红书',
+        kuaishou: '快手',
+        douyin: '抖音',
+        search: '搜索引擎',
+        friend: '朋友推荐',
+        community: '社区文章',
+        other: '其他',
+      },
+      agreementPrefix: '使用未注册手机号登录即视为您已同意 ',
+      agreementSuffix: ' 并自动创建账号',
+      phoneActionLabel: '登录/注册',
 
       },
       textToImage: {
@@ -6673,6 +6737,25 @@ export const translations: Record<string, Translation> = {
       sendCode: '获取验证码',
       codeSent: '已发送',
       signIn: '立即登录',
+      agreePolicy: '我已阅读并同意',
+      privacyPolicy: '隐私政策',
+      terms: '服务条款',
+      channelQuestion: '您是从哪里了解到我们的？',
+      channelOptions: {
+        wechat_group: '微信群',
+        wechat_official: '公众号',
+        wechat_video: '视频号',
+        xiaohongshu: '小红书',
+        kuaishou: '快手',
+        douyin: '抖音',
+        search: '搜索引擎',
+        friend: '朋友推荐',
+        community: '社区文章',
+        other: '其他',
+      },
+      agreementPrefix: '使用未注册手机号登录即视为您已同意 ',
+      agreementSuffix: ' 并自动创建账号',
+      phoneActionLabel: '登录/注册',
       countries: {
         china: '中国大陆',
         japan: '日本',
@@ -7063,6 +7146,22 @@ export const translations: Record<string, Translation> = {
         agreePolicy: 'Saya setuju dengan',
         privacyPolicy: 'Kebijakan Privasi',
         terms: 'Ketentuan Layanan',
+      channelQuestion: 'Anda mengetahui kami dari mana?',
+      channelOptions: {
+        wechat_group: 'Grup WeChat',
+        wechat_official: 'Akun Resmi WeChat',
+        wechat_video: 'Video WeChat',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Mesin Pencari',
+        friend: 'Rekomendasi Teman',
+        community: 'Artikel Komunitas',
+        other: 'Lainnya',
+      },
+      agreementPrefix: 'Dengan menggunakan nomor telepon yang belum terdaftar, Anda menyetujui ',
+      agreementSuffix: ' dan secara otomatis membuat akun.',
+      phoneActionLabel: 'Masuk / Daftar',
       },
       textToImage: {
         title: 'Pembuatan Gambar AI',
@@ -8869,6 +8968,25 @@ export const translations: Record<string, Translation> = {
       sendCode: 'Kirim Kode',
       codeSent: 'Terkirim!',
       signIn: 'Masuk',
+      agreePolicy: 'Saya setuju dengan',
+      privacyPolicy: 'Kebijakan Privasi',
+      terms: 'Ketentuan Layanan',
+      channelQuestion: 'Anda mengetahui kami dari mana?',
+      channelOptions: {
+        wechat_group: 'Grup WeChat',
+        wechat_official: 'Akun Resmi WeChat',
+        wechat_video: 'Video WeChat',
+        xiaohongshu: 'Xiaohongshu',
+        kuaishou: 'Kuaishou',
+        douyin: 'Douyin/TikTok',
+        search: 'Mesin Pencari',
+        friend: 'Rekomendasi Teman',
+        community: 'Artikel Komunitas',
+        other: 'Lainnya',
+      },
+      agreementPrefix: 'Dengan menggunakan nomor telepon yang belum terdaftar, Anda menyetujui ',
+      agreementSuffix: ' dan secara otomatis membuat akun.',
+      phoneActionLabel: 'Masuk / Daftar',
       countries: {
         china: 'China',
         japan: 'Jepang',

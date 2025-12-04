@@ -7,6 +7,7 @@ import { AIModel } from '../../../types';
 import toast from 'react-hot-toast';
 import { useAppOutletContext } from '../../../router/context';
 import { translations } from '../../../translations';
+import { getStorageKey } from '../../../utils/storageNamespace';
 
 interface TokenFormProps {
   visible: boolean;
@@ -25,7 +26,7 @@ const TokenForm: React.FC<TokenFormProps> = ({
 }) => {
   const { user } = useAuthStore();
   const { t: rawT } = useAppOutletContext();
-  const lang = localStorage.getItem('language') || 'zh';
+  const lang = localStorage.getItem(getStorageKey('language')) || 'zh';
   const keysPageT = rawT?.keysPage || translations[lang]?.keysPage || translations['zh'].keysPage;
   const t = keysPageT.form;
   const [formData, setFormData] = useState<Partial<TokenFormType>>({
