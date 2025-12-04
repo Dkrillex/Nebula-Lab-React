@@ -21,6 +21,12 @@ const getCurrencySymbol = (language: 'zh' | 'en' | 'id'): string => {
   return '¥';
 };
 
+const getCurrencyCode = (language: 'zh' | 'en' | 'id'): string => {
+  if (language === 'en') return 'USD';
+  if (language === 'id') return 'IDR';
+  return 'CNY';
+};
+
 const getBalanceByLanguage = (quotaInfo: UserQuotaInfo | null, language: 'zh' | 'en' | 'id'): number => {
   if (!quotaInfo) return 0;
   if (language === 'en') {
@@ -78,6 +84,11 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
   
   const { user } = useAuthStore();
   const currencySymbol = getCurrencySymbol(language);
+  const currencyLabel = getCurrencyCode(language);
+  const balanceLabelText =
+    typeof t?.balanceLabel === 'string'
+      ? t.balanceLabel.replace('{currency}', currencyLabel)
+      : t?.balanceLabel;
   // 模式切换：'balance' 余额模式，'points' 积分模式，'logos' 日志/账单模式
   const [currentMode, setCurrentMode] = useState<'balance' | 'points' | 'logos'>('balance');
 
@@ -992,7 +1003,7 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           {/* 左侧：余额/积分信息框 - 始终显示余额相关内容 */}
           <div className="bg-white dark:bg-zinc-800 rounded-lg p-6 border border-gray-200 dark:border-zinc-700 shadow-sm">
             <>
-              <div className="text-sm text-gray-600 dark:text-zinc-400 mb-2">{t.balanceLabel}</div>
+              <div className="text-sm text-gray-600 dark:text-zinc-400 mb-2">{balanceLabelText}</div>
               <div className="text-4xl font-bold text-blue-600 dark:text-blue-400 mb-3">
                 {currencySymbol}{quotaLoading ? '...' : formatPoints(balance)}
               </div>

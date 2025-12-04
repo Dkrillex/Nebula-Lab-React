@@ -568,6 +568,18 @@ interface Translation {
         uploadTemplate: string;
         selectTemplate: string;
         support: string;
+        tryExample: string;
+        toasts: {
+          unsupportedFormat: string;
+          sizeLimitExceeded: string;
+          taskTimeout: string;
+          queryFailed: string;
+          missingProductImage: string;
+          missingTemplateImage: string;
+          generationFailed: string;
+          loadExampleFailed: string;
+          uploadFailed: string;
+        };
       };
       clothing: {
         garmentTitle: string;
@@ -2284,7 +2296,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: 'Upload template image or select from templates',
           uploadTemplate: 'Upload Template Image',
           selectTemplate: 'Select Template',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: 'Try Example',
+          toasts: {
+            unsupportedFormat: 'Unsupported file format: {fileName}. Please upload PNG, JPG, JPEG, or WEBP.',
+            sizeLimitExceeded: 'File size exceeds the limit: {fileName}. The maximum allowed size is 10MB.',
+            taskTimeout: 'Task timed out. Please try again later.',
+            queryFailed: 'Failed to query the task. Please retry.',
+            missingProductImage: 'Please upload a product image.',
+            missingTemplateImage: 'Please upload a template image or select one.',
+            generationFailed: 'Generation failed. Please try again.',
+            loadExampleFailed: 'Failed to load sample images. Please ensure the assets directory is available.',
+            uploadFailed: 'Upload failed. Please try again.'
+          }
         },
         clothing: {
           garmentTitle: 'Garment Image',
@@ -3394,7 +3418,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Credits/Balance Center',
       subtitle: 'View and manage your credit balance, understand credit usage',
-      balanceLabel: 'Available Balance (CNY)',
+      balanceLabel: 'Available Balance ({currency})',
       convertPoints: 'Convertible Points:',
       memberLevel: 'Member Level:',
       quickActions: 'Quick Actions',
@@ -4737,7 +4761,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: '上传模板图片或从模板库中选择',
           uploadTemplate: '上传模板图片',
           selectTemplate: '选择模板',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: '试用示例',
+          toasts: {
+            unsupportedFormat: '不支持的文件格式：{fileName}，请上传 PNG、JPG、JPEG、WEBP 格式的图片',
+            sizeLimitExceeded: '文件大小超过限制：{fileName}，文件大小不能超过 10MB',
+            taskTimeout: '任务超时，请稍后再试',
+            queryFailed: '查询失败，请稍后重试',
+            missingProductImage: '请上传产品图片',
+            missingTemplateImage: '请上传模板图片或选择模板',
+            generationFailed: '生成失败，请重试',
+            loadExampleFailed: '加载示例图片失败，请确保 assets 目录正确',
+            uploadFailed: '上传失败，请稍后重试'
+          }
         },
         clothing: {
           garmentTitle: '服装图片',
@@ -6195,7 +6231,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: '费用中心',
       subtitle: '查看和管理您的余额和积分，了解使用情况',
-      balanceLabel: '可用余额 (CNY)',
+      balanceLabel: '可用余额（{currency}）',
       convertPoints: '可转换积分:',
       memberLevel: '会员等级:',
       quickActions: '快捷操作',
@@ -7158,7 +7194,19 @@ export const translations: Record<string, Translation> = {
           areaDesc: 'Unggah gambar template atau pilih dari template',
           uploadTemplate: 'Unggah Gambar Template',
           selectTemplate: 'Pilih Template',
-          support: 'JPG, PNG, WEBP'
+          support: 'JPG, PNG, WEBP',
+          tryExample: 'Coba Contoh',
+          toasts: {
+            unsupportedFormat: 'Format file tidak didukung: {fileName}. Unggah PNG, JPG, JPEG, atau WEBP.',
+            sizeLimitExceeded: 'Ukuran file terlalu besar: {fileName}. Maksimal 10MB.',
+            taskTimeout: 'Tugas melebihi batas waktu. Silakan coba lagi.',
+            queryFailed: 'Gagal memeriksa status tugas. Silakan coba lagi.',
+            missingProductImage: 'Silakan unggah gambar produk.',
+            missingTemplateImage: 'Silakan unggah gambar template atau pilih template.',
+            generationFailed: 'Pembuatan gagal. Silakan coba lagi.',
+            loadExampleFailed: 'Gagal memuat contoh gambar, pastikan folder assets tersedia.',
+            uploadFailed: 'Pengunggahan gagal. Silakan coba lagi.'
+          }
         },
         clothing: {
           garmentTitle: 'Gambar Pakaian',
@@ -7871,7 +7919,7 @@ export const translations: Record<string, Translation> = {
     expensesPage: {
       title: 'Pusat Kredit/Saldo',
       subtitle: 'Lihat dan kelola saldo kredit Anda, pahami penggunaan kredit',
-      balanceLabel: 'Saldo Tersedia (CNY)',
+      balanceLabel: 'Saldo Tersedia ({currency})',
       convertPoints: 'Poin yang Dapat Dikonversi:',
       memberLevel: 'Level Anggota:',
       quickActions: 'Tindakan Cepat',

@@ -28,6 +28,18 @@ export interface StyleTransferPageProps {
       uploadTemplate: string;
       selectTemplate: string;
       support: string;
+      tryExample: string;
+      toasts: {
+        unsupportedFormat: string;
+        sizeLimitExceeded: string;
+        taskTimeout: string;
+        queryFailed: string;
+        missingProductImage: string;
+        missingTemplateImage: string;
+        generationFailed: string;
+        loadExampleFailed: string;
+        uploadFailed: string;
+      };
     };
     clothing: {
       garmentTitle: string;
