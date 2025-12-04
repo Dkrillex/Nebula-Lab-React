@@ -558,12 +558,15 @@ export const avatarService = {
    * 获取上传凭证
    * Endpoint: GET /tp/v1/GetUploadCredential
    */
-  getUploadCredential: (format: string) => {
+  getUploadCredential: (format: string, options?: Record<string, any>) => {
+    const { params: extraParams, ...rest } = options || {};
     return request.get<TopViewResult<UploadCredential>>('/tp/v1/GetUploadCredential', {
       params: {
         format,
         needAccelerateUrl: true,
+        ...extraParams,
       },
+      ...rest
     });
   },
 

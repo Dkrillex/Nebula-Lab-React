@@ -9,7 +9,7 @@ import { showAuthModal } from '@/lib/authModalManager';
 import toast from 'react-hot-toast';
 import AddMaterialModal from '@/components/AddMaterialModal';
 import { AdsAssetsVO } from '@/services/assetsService';
-import UploadComponent, { UploadComponentRef } from '@/components/UploadComponent';
+import UploadComponent, { UploadComponentRef, TriggerUploadOptions } from '@/components/UploadComponent';
 import { UploadedFile } from '@/services/avatarService';
 import { createTaskPoller, PollingController } from '@/utils/taskPolling';
 
@@ -315,6 +315,13 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
     toast.error(error.message || 'Upload failed');
   };
 
+  const uploadTriggerOptions: TriggerUploadOptions = {
+    requestOptions: {
+      _skipErrorDisplay: true
+    },
+    suppressErrorToast: true
+  };
+
   const handleStartClear = () => setStartImage(null);
   const handleEndClear = () => setEndImage(null);
 
@@ -506,7 +513,9 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
       // Upload Start Image if local file exists
       if (startUploadRef.current && startUploadRef.current.file) {
-         const uploaded = await startUploadRef.current.triggerUpload();
+         const uploaded = await startUploadRef.current.triggerUpload(uploadTriggerOptions);
+         console.log('uploaded1',uploaded);
+         
          if (uploaded) {
             currentStartImage = mapUploadedFile(uploaded);
             setStartImage(currentStartImage);
@@ -515,7 +524,8 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
       
       // Upload End Image if local file exists
       if (activeTab === 'startEnd' && endUploadRef.current && endUploadRef.current.file) {
-         const uploaded = await endUploadRef.current.triggerUpload();
+         const uploaded = await endUploadRef.current.triggerUpload(uploadTriggerOptions);
+         console.log('uploaded2',uploaded);
          if (uploaded) {
             currentEndImage = mapUploadedFile(uploaded);
             setEndImage(currentEndImage);
@@ -584,7 +594,7 @@ const ImageToVideoPage: React.FC<ImageToVideoPageProps> = ({ t }) => {
 
     } catch (error: any) {
       console.error('Generation error:', error);
-      toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
+      // toast.error(t.messages?.requestFailed || '请求失败, 请稍后重试');
       setIsGenerating(false);
       stopActivePoller();
       setProgress(0);
