@@ -448,7 +448,6 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
       const logs = res.rows || res.data || [];
       
       // 转换为 CSV 格式
-      // 根据语言设置表头，费用单位已在翻译文件中正确设置
       const headers = [
         t.balanceExportHeaders?.time || '时间',
         t.balanceExportHeaders?.serviceModel || '服务/模型',
@@ -458,31 +457,9 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         t.balanceExportHeaders?.inputToken || '输入Token',
         t.balanceExportHeaders?.outputToken || '输出Token'
       ];
-      
-      // 根据语言设置日期格式化的 locale
-      const dateLocale = language === 'en' ? 'en-US' : language === 'id' ? 'id-ID' : 'zh-CN';
-      
       const rows = logs.map((log: ExpenseLog) => {
         const isConsumption = String(log.type) === '2';
-        // 根据语言格式化时间
-        let timeStr = log.createTime || '-';
-        if (!timeStr && log.createdAt) {
-          const timestamp = typeof log.createdAt === 'number' 
-            ? (log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000)
-            : Date.now();
-          const date = new Date(timestamp);
-          timeStr = date.toLocaleString(dateLocale);
-        } else if (timeStr && timeStr !== '-') {
-          // 如果已有时间字符串，尝试格式化为统一格式
-          try {
-            const date = new Date(timeStr);
-            if (!isNaN(date.getTime())) {
-              timeStr = date.toLocaleString(dateLocale);
-            }
-          } catch {
-            // 如果解析失败，保持原样
-          }
-        }
+        const timeStr = log.createTime || (log.createdAt ? new Date(log.createdAt > 1000000000000 ? log.createdAt : log.createdAt * 1000).toLocaleString('zh-CN') : '-');
         // type=1 是充值（正数），type=2 是扣费（负数）
         const costValue = getCostByLanguage(log, language);
         const cost = isConsumption ? -Math.abs(costValue) : Math.abs(costValue);
@@ -548,10 +525,6 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
         t.exportHeaders?.status || '状态',
         t.exportHeaders?.taskId || '任务ID'
       ];
-      
-      // 根据语言设置日期格式化的 locale
-      const dateLocale = language === 'en' ? 'en-US' : language === 'id' ? 'id-ID' : 'zh-CN';
-      
       const rows = scores.map((score: ScoreRecord) => {
         const scoreValue = Number(score.score) || 0;
         const displayValue = -scoreValue; // 扣积分取反显示
@@ -562,21 +535,8 @@ const ExpensesPage: React.FC<ExpensesPageProps> = (props) => {
           '-1': t.status.failed,
         }[String(score.status) || '0'] || t.status.unknown;
         
-        // 根据语言格式化时间
-        let timeStr = score.createTime || '-';
-        if (timeStr && timeStr !== '-') {
-          try {
-            const date = new Date(timeStr);
-            if (!isNaN(date.getTime())) {
-              timeStr = date.toLocaleString(dateLocale);
-            }
-          } catch {
-            // 如果解析失败，保持原样
-          }
-        }
-        
         return [
-          timeStr,
+          score.createTime || '-',
           typeText,
           displayValue,
           statusText,
