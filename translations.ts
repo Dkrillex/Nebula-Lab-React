@@ -1,6 +1,6 @@
 import { NavItem } from './types';
 
-interface Translation {
+export interface Translation {
   header: {
     searchPlaceholder: string;
     signIn: string;
@@ -1557,6 +1557,13 @@ interface Translation {
       japan: string;
       indonesia: string;
     };
+  };
+  authStore: {
+    inviteSuccessCompanyAndTeam: string;
+    inviteSuccessCompany: string;
+    inviteSuccessTeam: string;
+    welcomeBack: string;
+    loginSuccess: string;
   };
   aiVideoFaceSwapPage: {
     title: string;
@@ -4324,6 +4331,13 @@ export const translations: Record<string, Translation> = {
         indonesia: 'Indonesia'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: 'Successfully joined company and team',
+    inviteSuccessCompany: 'Successfully joined company',
+    inviteSuccessTeam: 'Successfully joined team',
+    welcomeBack: 'Login successful, welcome back: {name}',
+    loginSuccess: 'Login successful',
+  },
     error: {
       sessionExpired: 'Invalid session or session has expired, please log in again.',
       unknownError: 'Unknown error',
@@ -6762,6 +6776,13 @@ export const translations: Record<string, Translation> = {
         indonesia: '印度尼西亚'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: '加入企业和团队成功',
+    inviteSuccessCompany: '加入企业成功',
+    inviteSuccessTeam: '加入团队成功',
+    welcomeBack: '登录成功，欢迎回来：{name}',
+    loginSuccess: '登录成功',
+  },
     enterprisePage: {
       title: '团队管理',
       subtitle: '管理团队信息、成员邀请和角色分配',
@@ -8993,6 +9014,13 @@ export const translations: Record<string, Translation> = {
         indonesia: 'Indonesia'
       }
     },
+  authStore: {
+    inviteSuccessCompanyAndTeam: 'Berhasil bergabung dengan perusahaan dan tim',
+    inviteSuccessCompany: 'Berhasil bergabung dengan perusahaan',
+    inviteSuccessTeam: 'Berhasil bergabung dengan tim',
+    welcomeBack: 'Login berhasil, selamat datang kembali: {name}',
+    loginSuccess: 'Login berhasil',
+  },
     error: {
       sessionExpired: 'Sesi tidak valid atau sesi telah kedaluwarsa, silakan masuk lagi.',
       unknownError: 'Kesalahan tidak diketahui',
