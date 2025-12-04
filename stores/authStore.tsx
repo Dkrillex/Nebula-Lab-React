@@ -4,6 +4,8 @@ import { authService } from '../services/authService';
 import { UserInfo, LoginResponse, UserInfoResp } from '../types';
 import toast from 'react-hot-toast';
 import { getStorageKey } from '../utils/storageNamespace';
+import { translations } from '../translations';
+import type { Translation } from '../translations';
 
 interface FirstLoginInfo {
   isFirstLogin: boolean;
@@ -43,6 +45,42 @@ const getInitialUserInfo = (): UserInfo | null => {
   return null;
 };
 
+const LANGUAGE_STORAGE_KEY = getStorageKey('language');
+const DEFAULT_LANGUAGE = 'zh';
+
+type AuthStoreTranslation = Translation['authStore'];
+
+const getCurrentLanguage = () => localStorage.getItem(LANGUAGE_STORAGE_KEY) || DEFAULT_LANGUAGE;
+
+const getAuthStoreTranslation = (): AuthStoreTranslation => {
+  const languageCode = getCurrentLanguage();
+  const languageTranslation = translations[languageCode] || translations[DEFAULT_LANGUAGE];
+  return languageTranslation.authStore;
+};
+
+const formatTemplate = (template: string, variables: Record<string, string> = {}) =>
+  template.replace(/\{(\w+)\}/g, (_, key) => variables[key] ?? '');
+
+const showInviteJoinSuccessToast = (
+  translation: AuthStoreTranslation,
+  channelId?: string | null,
+  teamId?: string | null
+) => {
+  if (channelId && teamId) {
+    toast.success(translation.inviteSuccessCompanyAndTeam, {
+      duration: 3000,
+    });
+  } else if (channelId) {
+    toast.success(translation.inviteSuccessCompany, {
+      duration: 3000,
+    });
+  } else if (teamId) {
+    toast.success(translation.inviteSuccessTeam, {
+      duration: 3000,
+    });
+  }
+};
+
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
@@ -54,6 +92,7 @@ export const useAuthStore = create<AuthState>()(
 
   login: async (params) => {
     set({ loading: true });
+    const authStoreTranslation = getAuthStoreTranslation();
     try {
       // 步骤1: 登录
       const loginData = await authService.login(params);
@@ -80,21 +119,8 @@ export const useAuthStore = create<AuthState>()(
           try {
             await authService.handleInviteJoin(channelId || '', teamId || '');
             console.log('邀请处理完成');
-            
             // 显示成功提示
-            if (channelId && teamId) {
-              toast.success('加入企业和团队成功', {
-                duration: 3000,
-              });
-            } else if (channelId) {
-              toast.success('加入企业成功', {
-                duration: 3000,
-              });
-            } else if (teamId) {
-              toast.success('加入团队成功', {
-                duration: 3000,
-              });
-            }
+            showInviteJoinSuccessToast(authStoreTranslation, channelId, teamId);
           } catch (error) {
             console.error('处理邀请参数失败:', error);
             // 即使邀请处理失败，也继续获取用户信息
@@ -134,15 +160,12 @@ export const useAuthStore = create<AuthState>()(
         }
         
         // 非首次登录才显示"欢迎回来"
-        if (userInfo?.realName) {
-          toast.success(`登录成功，欢迎回来：${userInfo.realName}`, {
-            duration: 3000,
-          });
-        } else {
-          toast.success('登录成功', {
-            duration: 3000,
-          });
-        }
+        const welcomeMessage = userInfo?.realName
+          ? formatTemplate(authStoreTranslation.welcomeBack, { name: userInfo.realName })
+          : authStoreTranslation.loginSuccess;
+        toast.success(welcomeMessage, {
+          duration: 3000,
+        });
         
         return null;
       } else {
@@ -156,6 +179,7 @@ export const useAuthStore = create<AuthState>()(
 
   phoneLogin: async (params) => {
     set({ loading: true });
+    const authStoreTranslation = getAuthStoreTranslation();
     try {
       // 步骤1: 登录
       const loginData = await authService.phoneLogin({
@@ -192,19 +216,7 @@ export const useAuthStore = create<AuthState>()(
             console.log('邀请处理完成');
             
             // 显示成功提示
-            if (channelId && teamId) {
-              toast.success('加入企业和团队成功', {
-                duration: 3000,
-              });
-            } else if (channelId) {
-              toast.success('加入企业成功', {
-                duration: 3000,
-              });
-            } else if (teamId) {
-              toast.success('加入团队成功', {
-                duration: 3000,
-              });
-            }
+            showInviteJoinSuccessToast(authStoreTranslation, channelId, teamId);
           } catch (error) {
             console.error('处理邀请参数失败:', error);
             // 即使邀请处理失败，也继续获取用户信息
@@ -244,15 +256,12 @@ export const useAuthStore = create<AuthState>()(
         }
         
         // 非首次登录才显示"欢迎回来"
-        if (userInfo?.realName) {
-          toast.success(`登录成功，欢迎回来：${userInfo.realName}`, {
-            duration: 3000,
-          });
-        } else {
-          toast.success('登录成功', {
-            duration: 3000,
-          });
-        }
+        const welcomeMessage = userInfo?.realName
+          ? formatTemplate(authStoreTranslation.welcomeBack, { name: userInfo.realName })
+          : authStoreTranslation.loginSuccess;
+        toast.success(welcomeMessage, {
+          duration: 3000,
+        });
         
         return null;
       } else {
@@ -272,6 +281,7 @@ export const useAuthStore = create<AuthState>()(
     }
 
     try {
+      const authStoreTranslation = getAuthStoreTranslation();
       // 在获取用户信息之前，检查URL参数中是否有邀请参数
       // 注意：如果登录请求中已经传递了 channelId 和 teamId，URL 参数应该已经被清除
       // 这里只处理老用户通过邀请链接访问的情况（已登录用户）
@@ -290,19 +300,7 @@ export const useAuthStore = create<AuthState>()(
           console.log('邀请处理完成');
 
           // 显示成功提示
-          if (channelId && teamId) {
-            toast.success('加入企业和团队成功', {
-              duration: 3000,
-            });
-          } else if (channelId) {
-            toast.success('加入企业成功', {
-              duration: 3000,
-            });
-          } else if (teamId) {
-            toast.success('加入团队成功', {
-              duration: 3000,
-            });
-          }
+          showInviteJoinSuccessToast(authStoreTranslation, channelId, teamId);
 
           // 清除URL中的邀请参数，避免重复处理
           urlParams.delete('channelId');
