@@ -303,6 +303,46 @@ interface Translation {
         makeSame: string;
       };
       examples: string;
+      toasts: {
+        analysisRequired: string;
+        scriptsGenerated: string;
+        scriptsFailed: string;
+        storyboardSuccess: string;
+        storyboardFailed: string;
+        storyboardMissing: string;
+        storyboardNotFound: string;
+        uploadLimitAutoTrim: string;
+        uploadLimit: string;
+        uploadSuccess: string;
+        uploadFailed: string;
+        fetchAssetsFailed: string;
+        invalidAssetUrl: string;
+        assetSelected: string;
+        enterImageLink: string;
+        enterValidLink: string;
+        importSuccess: string;
+        importFailed: string;
+        requireMinImages: string;
+        analysisSuccess: string;
+        analysisFailed: string;
+        videoGenerationFailed: string;
+        sceneVideoSuccess: string;
+        sceneVideoFailed: string;
+        sceneVideoTimeout: string;
+        taskQueryFailed: string;
+        allSceneVideosReady: string;
+        batchGenerationStart: string;
+        completeAllSceneVideos: string;
+        mergingStart: string;
+        mergingSuccess: string;
+        mergingFailed: string;
+        noDownloadableVideo: string;
+        videoDownloadStart: string;
+        downloadFailed: string;
+        scriptRequired: string;
+        videoIdCopied: string;
+        unknownError: string;
+      };
     };
     imgToVideo: {
       title: string;
@@ -807,6 +847,15 @@ interface Translation {
           s4: string;
           s5: string;
         };
+      };
+    };
+    imageEditModal: {
+      title: string;
+      applyButton: string;
+      toasts: {
+        editSuccess: string;
+        editFailed: string;
+        imageLoadFailed: string;
       };
     };
     useToolPage: {
@@ -2028,7 +2077,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: 'Generate Broadcast Video',
           makeSame: 'One-click Make Same'
         },
-        examples: 'Excellent Examples'
+        examples: 'Excellent Examples',
+        toasts: {
+          analysisRequired: 'Please complete the image analysis first.',
+          scriptsGenerated: 'Successfully generated {count} script options.',
+          scriptsFailed: 'Script generation failed, please try again.',
+          storyboardSuccess: 'Storyboard generation completed.',
+          storyboardFailed: 'Storyboard generation failed, please try again.',
+          storyboardMissing: 'Storyboard data is missing.',
+          storyboardNotFound: 'Storyboard not found.',
+          uploadLimitAutoTrim: 'You can only upload up to {limit} images; automatically kept the first {kept}.',
+          uploadLimit: 'You can only upload up to {limit} images.',
+          uploadSuccess: 'Successfully uploaded {count} images.',
+          uploadFailed: 'Upload failed, please try again.',
+          fetchAssetsFailed: 'Failed to fetch portfolio assets, please retry.',
+          invalidAssetUrl: 'Selected asset does not have a valid image URL.',
+          assetSelected: 'Asset selected.',
+          enterImageLink: 'Please enter an image URL.',
+          enterValidLink: 'Please enter a valid URL.',
+          importSuccess: 'Image imported successfully.',
+          importFailed: 'Import failed, please try again.',
+          requireMinImages: 'Please upload at least {min} images first.',
+          analysisSuccess: 'Successfully analyzed {count} images.',
+          analysisFailed: 'Image analysis failed, please try again.',
+          videoGenerationFailed: 'Video generation failed, please try again.',
+          sceneVideoSuccess: 'Scene {sceneId} video generation completed.',
+          sceneVideoFailed: 'Scene {sceneId} video generation failed: {error}',
+          sceneVideoTimeout: 'Scene {sceneId} video generation timed out.',
+          taskQueryFailed: 'Failed to query task status.',
+          allSceneVideosReady: 'All scene videos are ready.',
+          batchGenerationStart: 'Starting batch generation of {count} scene videos.',
+          completeAllSceneVideos: 'Please complete generating all scene videos first.',
+          mergingStart: 'Starting video merge, please wait...',
+          mergingSuccess: 'Video merge completed.',
+          mergingFailed: 'Video merge failed, please try again.',
+          noDownloadableVideo: 'No downloadable videos available.',
+          videoDownloadStart: 'Video download started.',
+          downloadFailed: 'Video download failed, please try again.',
+          scriptRequired: 'Please select a script and generate a storyboard first.',
+          videoIdCopied: 'Video ID copied.',
+          unknownError: 'Unknown error'
+        }
       },
       imgToVideo: {
         title: 'Image to Video',
@@ -3200,6 +3289,15 @@ export const translations: Record<string, Translation> = {
             s4: 'Form reset',
             s5: 'Successfully added to assets'
           }
+        }
+      },
+      imageEditModal: {
+        title: 'Adjust Video Fit Ratio',
+        applyButton: 'Apply & Submit',
+        toasts: {
+          editSuccess: 'Applied edits and refreshed all images.',
+          editFailed: 'Edit failed, please try again.',
+          imageLoadFailed: 'Failed to load image.'
         }
       }
     },
@@ -4493,7 +4591,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: '生成口播视频',
           makeSame: '一键做同款'
         },
-        examples: '优秀案例'
+        examples: '优秀案例',
+      toasts: {
+        analysisRequired: '请先完成图片分析',
+        scriptsGenerated: '成功生成 {count} 个脚本选项',
+        scriptsFailed: '脚本生成失败，请重试',
+        storyboardSuccess: '分镜生成完成',
+        storyboardFailed: '分镜生成失败，请重试',
+        storyboardMissing: '分镜数据不存在',
+        storyboardNotFound: '分镜不存在',
+        uploadLimitAutoTrim: '最多只能上传 {limit} 张图片，已自动保留前 {kept} 张',
+        uploadLimit: '最多只能上传 {limit} 张图片。',
+        uploadSuccess: '成功上传 {count} 张图片',
+        uploadFailed: '上传失败，请重试',
+        fetchAssetsFailed: '获取素材列表失败，请重试',
+        invalidAssetUrl: '该素材没有有效的图片URL',
+        assetSelected: '已选择素材',
+        enterImageLink: '请输入图片链接',
+        enterValidLink: '请输入有效的图片链接',
+        importSuccess: '图片导入成功',
+        importFailed: '导入失败，请重试',
+        requireMinImages: '请先上传至少 {min} 张图片',
+        analysisSuccess: '成功分析 {count} 张图片',
+        analysisFailed: '图片分析失败，请重试',
+        videoGenerationFailed: '生成视频失败，请重试',
+        sceneVideoSuccess: '分镜 {sceneId} 视频生成完成',
+        sceneVideoFailed: '分镜 {sceneId} 视频生成失败: {error}',
+        sceneVideoTimeout: '分镜 {sceneId} 视频生成超时',
+        taskQueryFailed: '查询任务状态失败',
+        allSceneVideosReady: '所有分镜视频已生成',
+        batchGenerationStart: '开始批量生成 {count} 个分镜视频',
+        completeAllSceneVideos: '请先完成所有分镜视频的生成',
+        mergingStart: '开始合并视频，请稍候...',
+        mergingSuccess: '视频合并完成',
+        mergingFailed: '视频合并失败，请重试',
+        noDownloadableVideo: '没有可下载的视频',
+        videoDownloadStart: '视频下载开始',
+        downloadFailed: '下载失败，请重试',
+        scriptRequired: '请先选择脚本并生成分镜',
+        videoIdCopied: '视频编号已复制',
+        unknownError: '未知错误'
+      }
       },
       imgToVideo: {
         title: '图生视频',
@@ -5665,6 +5803,15 @@ export const translations: Record<string, Translation> = {
             s4: '表单已重置',
             s5: '已成功加入素材库'
           }
+        }
+      },
+      imageEditModal: {
+        title: '修改视频拟合比例',
+        applyButton: '完成并提交',
+        toasts: {
+          editSuccess: '已应用编辑并更新全部图片。',
+          editFailed: '编辑失败，请重试。',
+          imageLoadFailed: '图片加载失败。'
         }
       }
     },
@@ -6990,7 +7137,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: 'Hasilkan Video Siaran',
           makeSame: 'Buat yang Sama dengan Satu Klik'
         },
-        examples: 'Contoh Terbaik'
+        examples: 'Contoh Terbaik',
+        toasts: {
+        analysisRequired: 'Silakan selesaikan analisis gambar terlebih dahulu.',
+        scriptsGenerated: 'Berhasil menghasilkan {count} pilihan skrip.',
+        scriptsFailed: 'Pembuatan skrip gagal, silakan coba lagi.',
+        storyboardSuccess: 'Pembuatan storyboard selesai.',
+        storyboardFailed: 'Pembuatan storyboard gagal, silakan coba lagi.',
+        storyboardMissing: 'Data storyboard tidak tersedia.',
+        storyboardNotFound: 'Storyboard tidak ditemukan.',
+        uploadLimitAutoTrim: 'Anda hanya boleh mengunggah hingga {limit} gambar; secara otomatis menyimpan {kept} pertama.',
+        uploadLimit: 'Anda hanya boleh mengunggah hingga {limit} gambar.',
+        uploadSuccess: 'Berhasil mengunggah {count} gambar.',
+        uploadFailed: 'Unggahan gagal, silakan coba lagi.',
+        fetchAssetsFailed: 'Gagal mengambil aset portofolio, silakan ulangi.',
+        invalidAssetUrl: 'Aset yang dipilih tidak memiliki URL gambar yang valid.',
+        assetSelected: 'Aset dipilih.',
+        enterImageLink: 'Silakan masukkan URL gambar.',
+        enterValidLink: 'Silakan masukkan URL yang valid.',
+        importSuccess: 'Gambar berhasil diimpor.',
+        importFailed: 'Impor gagal, silakan coba lagi.',
+        requireMinImages: 'Silakan unggah minimal {min} gambar.',
+        analysisSuccess: 'Berhasil menganalisis {count} gambar.',
+        analysisFailed: 'Analisis gambar gagal, silakan coba lagi.',
+        videoGenerationFailed: 'Pembuatan video gagal, silakan coba lagi.',
+        sceneVideoSuccess: 'Video adegan {sceneId} selesai dibuat.',
+        sceneVideoFailed: 'Video adegan {sceneId} gagal dibuat: {error}',
+        sceneVideoTimeout: 'Video adegan {sceneId} melebihi batas waktu.',
+        taskQueryFailed: 'Gagal memeriksa status tugas.',
+        allSceneVideosReady: 'Semua video adegan telah siap.',
+        batchGenerationStart: 'Mulai membuat {count} video adegan secara batch.',
+        completeAllSceneVideos: 'Silakan selesaikan pembuatan semua video adegan terlebih dahulu.',
+        mergingStart: 'Mulai menggabungkan video, harap tunggu...',
+        mergingSuccess: 'Penggabungan video selesai.',
+        mergingFailed: 'Penggabungan video gagal, silakan coba lagi.',
+        noDownloadableVideo: 'Tidak ada video yang dapat diunduh.',
+        videoDownloadStart: 'Unduhan video dimulai.',
+        downloadFailed: 'Unduhan video gagal, silakan coba lagi.',
+        scriptRequired: 'Silakan pilih skrip dan buat storyboard terlebih dahulu.',
+        videoIdCopied: 'ID video disalin.',
+        unknownError: 'Kesalahan tidak diketahui'
+      }
       },
       imgToVideo: {
         title: 'Gambar ke Video',
@@ -7701,6 +7888,15 @@ export const translations: Record<string, Translation> = {
             s4: 'Formulir direset',
             s5: 'Berhasil ditambahkan ke aset'
           }
+        }
+      },
+      imageEditModal: {
+        title: 'Ubah Rasio Video',
+        applyButton: 'Selesai & Kirim',
+        toasts: {
+          editSuccess: 'Terapkan edit dan perbarui semua gambar.',
+          editFailed: 'Edit gagal, silakan coba lagi.',
+          imageLoadFailed: 'Gagal memuat gambar.'
         }
       }
     },
