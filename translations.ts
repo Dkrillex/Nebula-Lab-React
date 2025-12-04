@@ -837,6 +837,15 @@ interface Translation {
         };
       };
     };
+    imageEditModal: {
+      title: string;
+      applyButton: string;
+      toasts: {
+        editSuccess: string;
+        editFailed: string;
+        imageLoadFailed: string;
+      };
+    };
     useToolPage: {
       promptPlaceholder: string;
       primaryImageLabel: string;
@@ -2056,47 +2065,47 @@ export const translations: Record<string, Translation> = {
           generateVideo: 'Generate Broadcast Video',
           makeSame: 'One-click Make Same'
         },
-      examples: 'Excellent Examples',
-      toasts: {
-        analysisRequired: 'Please complete the image analysis first.',
-        scriptsGenerated: 'Successfully generated {count} script options.',
-        scriptsFailed: 'Script generation failed, please try again.',
-        storyboardSuccess: 'Storyboard generation completed.',
-        storyboardFailed: 'Storyboard generation failed, please try again.',
-        storyboardMissing: 'Storyboard data is missing.',
-        storyboardNotFound: 'Storyboard not found.',
-        uploadLimitAutoTrim: 'You can only upload up to {limit} images; automatically kept the first {kept}.',
-        uploadLimit: 'You can only upload up to {limit} images.',
-        uploadSuccess: 'Successfully uploaded {count} images.',
-        uploadFailed: 'Upload failed, please try again.',
-        fetchAssetsFailed: 'Failed to fetch portfolio assets, please retry.',
-        invalidAssetUrl: 'Selected asset does not have a valid image URL.',
-        assetSelected: 'Asset selected.',
-        enterImageLink: 'Please enter an image URL.',
-        enterValidLink: 'Please enter a valid URL.',
-        importSuccess: 'Image imported successfully.',
-        importFailed: 'Import failed, please try again.',
-        requireMinImages: 'Please upload at least {min} images first.',
-        analysisSuccess: 'Successfully analyzed {count} images.',
-        analysisFailed: 'Image analysis failed, please try again.',
-        videoGenerationFailed: 'Video generation failed, please try again.',
-        sceneVideoSuccess: 'Scene {sceneId} video generation completed.',
-        sceneVideoFailed: 'Scene {sceneId} video generation failed: {error}',
-        sceneVideoTimeout: 'Scene {sceneId} video generation timed out.',
-        taskQueryFailed: 'Failed to query task status.',
-        allSceneVideosReady: 'All scene videos are ready.',
-        batchGenerationStart: 'Starting batch generation of {count} scene videos.',
-        completeAllSceneVideos: 'Please complete generating all scene videos first.',
-        mergingStart: 'Starting video merge, please wait...',
-        mergingSuccess: 'Video merge completed.',
-        mergingFailed: 'Video merge failed, please try again.',
-        noDownloadableVideo: 'No downloadable videos available.',
-        videoDownloadStart: 'Video download started.',
-        downloadFailed: 'Video download failed, please try again.',
-        scriptRequired: 'Please select a script and generate a storyboard first.',
-        videoIdCopied: 'Video ID copied.',
-        unknownError: 'Unknown error'
-      }
+        examples: 'Excellent Examples',
+        toasts: {
+          analysisRequired: 'Please complete the image analysis first.',
+          scriptsGenerated: 'Successfully generated {count} script options.',
+          scriptsFailed: 'Script generation failed, please try again.',
+          storyboardSuccess: 'Storyboard generation completed.',
+          storyboardFailed: 'Storyboard generation failed, please try again.',
+          storyboardMissing: 'Storyboard data is missing.',
+          storyboardNotFound: 'Storyboard not found.',
+          uploadLimitAutoTrim: 'You can only upload up to {limit} images; automatically kept the first {kept}.',
+          uploadLimit: 'You can only upload up to {limit} images.',
+          uploadSuccess: 'Successfully uploaded {count} images.',
+          uploadFailed: 'Upload failed, please try again.',
+          fetchAssetsFailed: 'Failed to fetch portfolio assets, please retry.',
+          invalidAssetUrl: 'Selected asset does not have a valid image URL.',
+          assetSelected: 'Asset selected.',
+          enterImageLink: 'Please enter an image URL.',
+          enterValidLink: 'Please enter a valid URL.',
+          importSuccess: 'Image imported successfully.',
+          importFailed: 'Import failed, please try again.',
+          requireMinImages: 'Please upload at least {min} images first.',
+          analysisSuccess: 'Successfully analyzed {count} images.',
+          analysisFailed: 'Image analysis failed, please try again.',
+          videoGenerationFailed: 'Video generation failed, please try again.',
+          sceneVideoSuccess: 'Scene {sceneId} video generation completed.',
+          sceneVideoFailed: 'Scene {sceneId} video generation failed: {error}',
+          sceneVideoTimeout: 'Scene {sceneId} video generation timed out.',
+          taskQueryFailed: 'Failed to query task status.',
+          allSceneVideosReady: 'All scene videos are ready.',
+          batchGenerationStart: 'Starting batch generation of {count} scene videos.',
+          completeAllSceneVideos: 'Please complete generating all scene videos first.',
+          mergingStart: 'Starting video merge, please wait...',
+          mergingSuccess: 'Video merge completed.',
+          mergingFailed: 'Video merge failed, please try again.',
+          noDownloadableVideo: 'No downloadable videos available.',
+          videoDownloadStart: 'Video download started.',
+          downloadFailed: 'Video download failed, please try again.',
+          scriptRequired: 'Please select a script and generate a storyboard first.',
+          videoIdCopied: 'Video ID copied.',
+          unknownError: 'Unknown error'
+        }
       },
       imgToVideo: {
         title: 'Image to Video',
@@ -3256,6 +3265,15 @@ export const translations: Record<string, Translation> = {
             s4: 'Form reset',
             s5: 'Successfully added to assets'
           }
+        }
+      },
+      imageEditModal: {
+        title: 'Adjust Video Fit Ratio',
+        applyButton: 'Apply & Submit',
+        toasts: {
+          editSuccess: 'Applied edits and refreshed all images.',
+          editFailed: 'Edit failed, please try again.',
+          imageLoadFailed: 'Failed to load image.'
         }
       }
     },
@@ -5750,6 +5768,15 @@ export const translations: Record<string, Translation> = {
             s5: '已成功加入素材库'
           }
         }
+      },
+      imageEditModal: {
+        title: '修改视频拟合比例',
+        applyButton: '完成并提交',
+        toasts: {
+          editSuccess: '已应用编辑并更新全部图片。',
+          editFailed: '编辑失败，请重试。',
+          imageLoadFailed: '图片加载失败。'
+        }
       }
     },
     rankPage: {
@@ -7075,7 +7102,7 @@ export const translations: Record<string, Translation> = {
           makeSame: 'Buat yang Sama dengan Satu Klik'
         },
         examples: 'Contoh Terbaik',
-      toasts: {
+        toasts: {
         analysisRequired: 'Silakan selesaikan analisis gambar terlebih dahulu.',
         scriptsGenerated: 'Berhasil menghasilkan {count} pilihan skrip.',
         scriptsFailed: 'Pembuatan skrip gagal, silakan coba lagi.',
@@ -7813,6 +7840,15 @@ export const translations: Record<string, Translation> = {
             s4: 'Formulir direset',
             s5: 'Berhasil ditambahkan ke aset'
           }
+        }
+      },
+      imageEditModal: {
+        title: 'Ubah Rasio Video',
+        applyButton: 'Selesai & Kirim',
+        toasts: {
+          editSuccess: 'Terapkan edit dan perbarui semua gambar.',
+          editFailed: 'Edit gagal, silakan coba lagi.',
+          imageLoadFailed: 'Gagal memuat gambar.'
         }
       }
     },
