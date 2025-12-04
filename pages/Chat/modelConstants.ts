@@ -89,7 +89,7 @@ export const IMAGE_TO_VIDEO_MODES = [
 export const getImageSizes = (model: string) => {
   if (model.includes('doubao-seededit')) return IMAGE_SIZES.doubao_seededit;
   if (model.includes('doubao-seedream-3-0')) return IMAGE_SIZES.doubao_seedream_3_0;
-  if (model.includes('doubao-seedream-4-0')) return IMAGE_SIZES.doubao_seedream_4_0;
+  if (model.includes('doubao-seedream-4-0') || model.includes('doubao-seedream-4.5') || model.includes('doubao-seedream-4-5')) return IMAGE_SIZES.doubao_seedream_4_0;
   if (model.includes('doubao')) return IMAGE_SIZES.doubao_default;
   if (model.startsWith('gpt-image')) return IMAGE_SIZES.gpt_image;
   if (model.includes('gemini')) return IMAGE_SIZES.gemini;
@@ -191,14 +191,36 @@ export const ModelCapabilities = {
            model === 'doubao-seededit-3-0-i2i-250628';
   },
 
-  // 支持组图功能（Sequential Image Generation）
-  supportsSequentialImageGeneration: (model: string) => {
-    return model === 'doubao-seedream-4-0-250828';
+  // 检测是否为 doubao-seedream-4.x 系列模型（支持 4.0、4.5、5.0 等）
+  isDoubaoSeedream4Series: (model: string) => {
+    // 匹配 doubao-seedream-4 开头的模型，如 doubao-seedream-4-0-250828, doubao-seedream-4-5, doubao-seedream-5-0 等
+    return /^doubao-seedream-[45]/.test(model);
   },
 
-  // 支持提示词优化模式
+  // 检测是否为 doubao-seedream-4.0 或 4.5 模型（支持 optimize_prompt_options 和扩展图片格式）
+  isDoubaoSeedream4Or45: (model: string) => {
+    // 匹配 doubao-seedream-4-0 或 doubao-seedream-4-5 或 doubao-seedream-4.5 开头的模型
+    return /^doubao-seedream-4-[05]/.test(model) || 
+           /^doubao-seedream-4\.5/.test(model) ||
+           model === 'doubao-seedream-4.5';
+  },
+
+  // 支持组图功能（Sequential Image Generation）
+  supportsSequentialImageGeneration: (model: string) => {
+    return ModelCapabilities.isDoubaoSeedream4Series(model);
+  },
+
+  // 支持提示词优化模式（仅 4.0 和 4.5 支持）
   supportsOptimizePromptOptions: (model: string) => {
-    return model === 'doubao-seedream-4-0-250828';
+    return ModelCapabilities.isDoubaoSeedream4Or45(model);
+  },
+
+  // 获取 doubao-seedream-4 系列模型的最大图片数量
+  getMaxImagesForDoubaoSeedream4: (model: string): number => {
+    if (ModelCapabilities.isDoubaoSeedream4Series(model)) {
+      return 4;
+    }
+    return 4;
   },
 
   // 支持GPT图片质量选择
@@ -257,8 +279,12 @@ export const ModelCapabilities = {
 
   // 获取当前模型允许的图片格式
   getAllowedImageFormats: (model: string): string[] => {
-    // doubao 模型限制为 JPEG 和 PNG
-    if (model === 'doubao-seedream-4-0-250828' || model === 'doubao-seededit-3-0-i2i-250628') {
+    // doubao-seedream-4.0 和 4.5 支持 JPEG、PNG、WEBP、BMP、TIFF、GIF
+    if (ModelCapabilities.isDoubaoSeedream4Or45(model)) {
+      return ['jpeg', 'jpg', 'png', 'webp', 'bmp', 'tiff', 'gif'];
+    }
+    // doubao-seedream-4 系列其他模型和 doubao-seededit 模型限制为 JPEG 和 PNG
+    if (ModelCapabilities.isDoubaoSeedream4Series(model) || model === 'doubao-seededit-3-0-i2i-250628') {
       return ['jpeg', 'jpg', 'png'];
     }
     // gemini 模型支持 PNG、JPEG、WEBP
@@ -437,9 +463,17 @@ export const getImageUploadRestrictions = (
   }
   
   // 图片模式限制
-  // doubao 模型限制为 JPEG 和 PNG
+  // doubao-seedream-4.0 和 4.5 支持 JPEG、PNG、WEBP、BMP、TIFF、GIF
+  if (ModelCapabilities.isDoubaoSeedream4Or45(model)) {
+    return {
+      allowedFormats: ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/bmp', 'image/tiff', 'image/gif'],
+      maxFileSize: 10,
+      maxImageSize: 6000,
+    };
+  }
+  // doubao-seedream-4 系列其他模型和 doubao-seededit 模型限制为 JPEG 和 PNG
   if (
-    model === 'doubao-seedream-4-0-250828' ||
+    ModelCapabilities.isDoubaoSeedream4Series(model) ||
     model === 'doubao-seededit-3-0-i2i-250628'
   ) {
     return {
@@ -501,5 +535,76 @@ export const getFormatDisplayText = (model: string, mode: 'image' | 'video' = 'i
 export const getMaxFileSizeText = (model: string, mode: 'image' | 'video' = 'image'): number => {
   const restrictions = getImageUploadRestrictions(model, mode);
   return restrictions.maxFileSize;
+};
+
+// doubao-seedream-4 系列模型的尺寸映射表
+// 根据文档：方式2的推荐尺寸
+const DOUBAO_SEEDREAM_4_SIZE_MAP: Record<'2K' | '4K', Record<string, { width: number; height: number }>> = {
+  '2K': {
+    '1:1': { width: 2048, height: 2048 },
+    '3:4': { width: 1728, height: 2304 },
+    '4:3': { width: 2304, height: 1728 },
+    '9:16': { width: 1440, height: 2560 },
+    '16:9': { width: 2560, height: 1440 },
+    '2:3': { width: 1664, height: 2496 },
+    '3:2': { width: 2496, height: 1664 },
+    '21:9': { width: 3024, height: 1296 },
+  },
+  '4K': {
+    '1:1': { width: 4096, height: 4096 },
+    '3:4': { width: 3520, height: 4704 },
+    '4:3': { width: 4704, height: 3520 },
+    '9:16': { width: 3040, height: 5504 },
+    '16:9': { width: 5504, height: 3040 },
+    '2:3': { width: 3328, height: 4992 },
+    '3:2': { width: 4992, height: 3328 },
+    '21:9': { width: 6240, height: 2656 },
+  },
+};
+
+// 根据分辨率和比例获取 doubao-seedream-4 系列模型的尺寸
+export const getDoubaoSeedream4Size = (resolution: '2K' | '4K', aspectRatio: string): string => {
+  const sizeMap = DOUBAO_SEEDREAM_4_SIZE_MAP[resolution];
+  const size = sizeMap[aspectRatio];
+  if (size) {
+    return `${size.width}x${size.height}`;
+  }
+  // 默认返回 1:1 的尺寸
+  return '2048x2048';
+};
+
+// 从尺寸值解析出分辨率、比例和宽高
+export const getDoubaoSeedream4SizeFromValue = (
+  size: string
+): { resolution: '2K' | '4K'; aspectRatio: string; width: number; height: number } | null => {
+  const match = size.match(/^(\d+)x(\d+)$/);
+  if (!match) {
+    return null;
+  }
+  
+  const width = parseInt(match[1], 10);
+  const height = parseInt(match[2], 10);
+  
+  // 在所有分辨率映射中查找匹配的尺寸
+  for (const [res, sizeMap] of Object.entries(DOUBAO_SEEDREAM_4_SIZE_MAP)) {
+    for (const [ratio, dims] of Object.entries(sizeMap)) {
+      if (dims.width === width && dims.height === height) {
+        return {
+          resolution: res as '2K' | '4K',
+          aspectRatio: ratio,
+          width,
+          height,
+        };
+      }
+    }
+  }
+  
+  // 如果找不到匹配，默认返回 4K 和 1:1
+  return {
+    resolution: '4K',
+    aspectRatio: '1:1',
+    width: 2048,
+    height: 2048,
+  };
 };
 
