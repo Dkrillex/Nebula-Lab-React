@@ -107,9 +107,25 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
           {/* Left Column: Video Player */}
           <div className="lg:col-span-2 space-y-4">
             <div>
-              <h2 className="text-xl font-bold text-foreground">生成结果</h2>
-              <p className="text-xs text-muted mt-1">因产品处于持续学习调优阶段，可能由不恰当的信息，请您谨慎甄别。</p>
-              <p className="text-xs text-muted mt-0.5">{new Date().toLocaleString('zh-CN')}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">生成结果</h2>
+                  <p className="text-xs text-muted mt-1">因产品处于持续学习调优阶段，可能由不恰当的信息，请您谨慎甄别。</p>
+                  <p className="text-xs text-muted mt-0.5">{new Date().toLocaleString('zh-CN')}</p>
+                </div>
+                {/* 测试合并按钮 */}
+                <button
+                  onClick={() => {
+                    console.log('🧪 测试合并按钮被点击');
+                    onMergeAllVideos();
+                  }}
+                  disabled={isMerging}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors"
+                  title="测试合并功能，可重复调用查看调试数据"
+                >
+                  {isMerging ? '合并中...' : '测试合并'}
+                </button>
+              </div>
             </div>
 
             {isMerging ? (

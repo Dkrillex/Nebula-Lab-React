@@ -99,6 +99,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     generatingScenes,
     generateSceneVideo,
     generateAllSceneVideos,
+    addToQueue, // 队列添加函数
   } = useVideoGeneration({
     uploadedImages,
   });
@@ -649,11 +650,12 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
   };
 
-  // 生成单个分镜视频（使用hook）
+  // 生成单个分镜视频（使用hook和队列）
   const handleGenerateSceneVideo = async (sceneId: number, shotIndex?: number) => {
     // shotIndex 表示第几个镜头，如果提供则只生成该镜头的视频
     // 目前 hook 不支持单个镜头生成，先实现整个分镜的生成
-    await generateSceneVideo(sceneId, storyboard, editedStoryboard);
+    // 使用队列模式，确保任务按顺序执行
+    addToQueue(sceneId, storyboard, editedStoryboard);
   };
 
   // 删除分镜
