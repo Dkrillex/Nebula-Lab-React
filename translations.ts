@@ -1069,6 +1069,13 @@ export interface Translation {
       readFailed: string;
         genericError: string;
     };
+    imageSettings: {
+      sizeLabel: string;
+      randomSeedLabel: string;
+      randomSeedPlaceholder: string;
+      multiImageLabel: string;
+      watermarkLabel: string;
+    };
   };
   keysPage: {
     title: string;
@@ -3558,6 +3565,13 @@ export const translations: Record<string, Translation> = {
         sizeExceeded: 'File size exceeded limit. Max allowed: ',
         readFailed: 'Failed to read file',
         genericError: 'Image validation failed'
+      },
+      imageSettings: {
+        sizeLabel: 'Image size',
+        randomSeedLabel: 'Random seed (optional)',
+        randomSeedPlaceholder: 'Random by default',
+        multiImageLabel: 'Multi-image mode',
+        watermarkLabel: 'Add watermark'
       }
     },
     keysPage: {
@@ -6163,6 +6177,13 @@ export const translations: Record<string, Translation> = {
         formatNotSupported: '图片格式不支持。仅支持：',
         sizeExceeded: '文件大小超过限制。最大允许：',
         genericError: '图片验证失败',
+      },
+      imageSettings: {
+        sizeLabel: '图片尺寸',
+        randomSeedLabel: '随机种子（可选）',
+        randomSeedPlaceholder: '默认随机',
+        multiImageLabel: '组图功能',
+        watermarkLabel: '添加水印'
       }
     },
     keysPage: {
@@ -8339,6 +8360,13 @@ export const translations: Record<string, Translation> = {
         sizeExceeded: 'Ukuran file melebihi batas. Maksimal diizinkan: ',
         readFailed: 'Gagal membaca file',
         genericError: 'Validasi gambar gagal',
+      },
+      imageSettings: {
+        sizeLabel: 'Ukuran gambar',
+        randomSeedLabel: 'Benih acak (opsional)',
+        randomSeedPlaceholder: 'Acak secara default',
+        multiImageLabel: 'Fungsi multi-gambar',
+        watermarkLabel: 'Tambahkan watermark'
       }
     },
     keysPage: {

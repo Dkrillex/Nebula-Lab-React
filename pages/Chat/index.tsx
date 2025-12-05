@@ -78,6 +78,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const toastsT = t?.toasts || {};
   const imageValidationT = t?.imageValidation || {};
   const componentsT = rawT?.components || translations['zh'].components;
+  const imageSettingsT = t?.imageSettings || {};
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -4402,7 +4403,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   />
                 ) : (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">图片尺寸</label>
+                    <label className="text-sm font-medium">{imageSettingsT.sizeLabel || 'Image size'}</label>
                     <select
                       value={selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize}
                       onChange={(e) => {
@@ -4484,10 +4485,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                  selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
                  selectedModel !== 'doubao-seedream-3-0-t2i-250415' && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                  <label className="text-sm font-medium">{imageSettingsT.randomSeedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={imageSettingsT.randomSeedPlaceholder || 'Random by default'}
                       value={seed || ''}
                       onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -4533,7 +4534,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 <div className="space-y-3 border-t border-border pt-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">组图功能</label>
+                      <label className="text-sm font-medium">{imageSettingsT.multiImageLabel || 'Multi-image mode'}</label>
                       <TooltipIcon
                         title={t?.sequentialImageGeneration?.multiImageGenerationTitle || '多图生成功能说明'}
                         content={
@@ -4753,7 +4754,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 水印设置 - 豆包模型 */}
                 {ModelCapabilities.supportsWatermark(selectedModel) && !selectedModel.startsWith('qwen-image') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={watermark}
@@ -4766,7 +4767,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* qwen-image-plus 水印设置 */}
                 {selectedModel === 'qwen-image-plus' && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={qwenImageWatermark}
@@ -4865,7 +4866,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* qwen-image-edit 水印设置 */}
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={qwenImageEditWatermark}
@@ -5092,7 +5093,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 水印设置 (视频模式) */}
                 {ModelCapabilities.supportsWatermark(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={watermark}
