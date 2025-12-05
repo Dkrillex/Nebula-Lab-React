@@ -946,6 +946,10 @@ export interface Translation {
     noHistory: string;
     mainTitle: string;
     statusReady: string;
+    historyLoading: string;
+    historyDeleteTooltip: string;
+    statusGenerating: string;
+    statusModelNotSelected: string;
     inputPlaceholder: string;
     inputPlaceholders: {
       chat: string;
@@ -980,6 +984,15 @@ export interface Translation {
       importMaterial: string;
       importingMaterial: string;
       imageToVideo: string;
+    };
+    messageActions: {
+      copy: string;
+      quote: string;
+      resend: string;
+    };
+    preview: {
+      close: string;
+      copyLink: string;
     };
     audio: {
       uploading: string;
@@ -3419,6 +3432,10 @@ export const translations: Record<string, Translation> = {
       noHistory: 'No records yet',
       mainTitle: 'Dialogue Area',
       statusReady: 'Ready',
+    historyLoading: 'Loading...',
+    historyDeleteTooltip: 'Delete record',
+    statusGenerating: 'Generating...',
+    statusModelNotSelected: 'No model selected',
       inputPlaceholder: 'Enter your question... (Enter to send, Shift+Enter for newline)',
       inputPlaceholders: {
         chat: 'Enter your question... (Enter to send, Shift+Enter for newline)',
@@ -3454,6 +3471,15 @@ export const translations: Record<string, Translation> = {
         importingMaterial: 'Importing material...',
         imageToVideo: 'Image to video'
       },
+    messageActions: {
+      copy: 'Copy',
+      quote: 'Quote',
+      resend: 'Resend'
+    },
+    preview: {
+      close: 'Close',
+      copyLink: 'Copy link'
+    },
       audio: {
         uploading: 'Uploading audio...',
         uploadSuccess: 'Audio uploaded successfully',
@@ -6011,6 +6037,10 @@ export const translations: Record<string, Translation> = {
       noHistory: '暂无记录',
       mainTitle: '对话区域',
       statusReady: '准备就绪',
+    historyLoading: '加载中...',
+    historyDeleteTooltip: '删除记录',
+    statusGenerating: '生成中...',
+    statusModelNotSelected: '未选择模型',
       inputPlaceholder: '输入您的问题... (Enter发送，Shift+Enter换行)',
       inputPlaceholders: {
         chat: '输入您的问题... (Enter发送, Shift+Enter换行)',
@@ -6046,6 +6076,15 @@ export const translations: Record<string, Translation> = {
         importingMaterial: '正在导入素材...',
         imageToVideo: '图生视频'
       },
+    messageActions: {
+      copy: '复制',
+      quote: '引用',
+      resend: '重新发送'
+    },
+    preview: {
+      close: '关闭',
+      copyLink: '复制链接'
+    },
       audio: {
         uploading: '音频上传中...',
         uploadSuccess: '音频文件上传成功',
@@ -8174,6 +8213,10 @@ export const translations: Record<string, Translation> = {
       noHistory: 'Belum ada rekaman',
       mainTitle: 'Area Dialog',
       statusReady: 'Siap',
+    historyLoading: 'Memuat...',
+    historyDeleteTooltip: 'Hapus rekaman',
+    statusGenerating: 'Sedang dibuat...',
+    statusModelNotSelected: 'Belum memilih model',
       inputPlaceholder: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
       inputPlaceholders: {
         chat: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
@@ -8209,6 +8252,15 @@ export const translations: Record<string, Translation> = {
         importingMaterial: 'Mengimpor materi...',
         imageToVideo: 'Gambar ke video'
       },
+    messageActions: {
+      copy: 'Salin',
+      quote: 'Kutip',
+      resend: 'Kirim ulang'
+    },
+    preview: {
+      close: 'Tutup',
+      copyLink: 'Salin tautan'
+    },
       audio: {
         uploading: 'Mengunggah audio...',
         uploadSuccess: 'File audio berhasil diunggah',

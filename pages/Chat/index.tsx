@@ -74,8 +74,6 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
   const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
-  const tooltipT = t?.tooltips || {};
-  const videoProcessingT = t?.videoProcessing;
   const audioT = t?.audio || {};
   const toastsT = t?.toasts || {};
   const imageValidationT = t?.imageValidation || {};
@@ -5116,14 +5114,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                <button
                    onClick={handleClear}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="清空对话"
+                   title={t.actions.clear}
                  >
                    <Trash2 size={14} />
                  </button>
                  <button
                    onClick={handleSaveChat}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="保存对话"
+                   title={t.actions.save}
                  >
                    <Save size={14} />
                  </button>
@@ -5133,7 +5131,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                      setSelectedRecordId(null);
                    }}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="新建对话"
+                   title={t.actions.new}
                  >
                    <Plus size={14} />
                  </button>
@@ -5141,7 +5139,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                    onClick={refreshRecords}
                  disabled={recordsLoading}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                   title="刷新记录"
+                   title={t.actions.refresh}
                >
                  <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
                </button>
@@ -5152,11 +5150,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                {(() => {
                  console.log('🔍 渲染历史记录 - 当前模式:', currentMode, '记录数量:', chatRecords.length, '加载中:', recordsLoading);
                  
-                 if (recordsLoading && chatRecords.length === 0) {
+                if (recordsLoading && chatRecords.length === 0) {
                    return (
                      <div className="h-full flex flex-col items-center justify-center text-foreground gap-2">
                  <Loader2 size={24} className="animate-spin" />
-                 <span className="text-sm">加载中...</span>
+                <span className="text-sm">{t.historyLoading}</span>
                </div>
                    );
                  }
@@ -5209,7 +5207,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                        <button
                          onClick={(e) => deleteChatRecord(record.id, e)}
                              className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity flex-shrink-0"
-                         title="删除记录"
+                         title={t.historyDeleteTooltip}
                        >
                          <Trash2 size={12} />
                        </button>
@@ -5236,7 +5234,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded text-xs font-medium border border-indigo-500/20">
-               {selectedModel || '未选择模型'}
+               {selectedModel || t.statusModelNotSelected}
             </div>
             <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${
               isStreaming 
@@ -5244,7 +5242,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 : 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></span>
-              {isStreaming ? '生成中...' : t.statusReady}
+              {isStreaming ? t.statusGenerating : t.statusReady}
             </div>
             <div className="flex gap-1">
               <button 
@@ -5455,7 +5453,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             <button
               onClick={() => setPreviewModal({ isOpen: false, type: 'image', url: '' })}
               className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
-              title="关闭"
+            title={t.preview?.close || 'Close'}
             >
               <X size={20} />
             </button>
@@ -5467,7 +5465,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 toast.success(t.toasts.linkCopied);
               }}
               className="absolute top-4 right-16 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
-              title="复制链接"
+              title={t.preview?.copyLink || 'Copy link'}
             >
               <Copy size={20} />
             </button>
@@ -5715,6 +5713,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const hasReasoning = isAssistant && message.reasoning_content && message.reasoning_content.trim().length > 0;
+  const tooltipTranslations = t?.tooltips || {};
+  const videoProcessingTranslations = t?.videoProcessing;
+  const toastTranslations = t?.toasts || {};
 
   return (
     <div 
@@ -5836,10 +5837,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             <Loader2 className="animate-spin text-primary" size={20} />
                             <div className="flex-1">
                               <p className="text-sm text-foreground font-medium">
-                                {(() => {
-                                  if (progress < 10) return videoProcessingT?.submitted || 'Task submitted successfully, waiting for processing...';
-                                  if (progress < 20) return videoProcessingT?.preparing || 'Preparing generation task, please wait...';
-                                  return videoProcessingT?.generating || 'Creating a polished video for you...';
+                              {(() => {
+                                  if (progress < 10) return videoProcessingTranslations?.submitted || 'Task submitted successfully, waiting for processing...';
+                                  if (progress < 20) return videoProcessingTranslations?.preparing || 'Preparing generation task, please wait...';
+                                  return videoProcessingTranslations?.generating || 'Creating a polished video for you...';
                                 })()}
                               </p>
                               <div className="mt-2 flex items-center gap-2">
@@ -5868,7 +5869,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 onPreview?.('video', video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title={tooltipT.preview || 'Preview'}
+                              title={tooltipTranslations.preview || 'Preview'}
                             >
                               <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
@@ -5878,7 +5879,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                 onDownloadVideo?.(video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title={tooltipT.download || 'Download'}
+                              title={tooltipTranslations.download || 'Download'}
                             >
                               <Download size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
@@ -5895,8 +5896,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                               }`}
                               title={
                                 isExportingMaterial 
-                                  ? (tooltipT.importingMaterial || 'Importing material...')
-                                  : (tooltipT.importMaterial || 'Import material')
+                                  ? (tooltipTranslations.importingMaterial || 'Importing material...')
+                                  : (tooltipTranslations.importMaterial || 'Import material')
                               }
                             >
                               <svg 
@@ -5913,8 +5914,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         </div>
                       ) : video.status === 'failed' ? (
                         <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
-                          <p className="text-sm text-red-600 dark:text-red-400">
-                            {videoProcessingT?.failed || 'Video generation failed'}
+                            <p className="text-sm text-red-600 dark:text-red-400">
+                            {videoProcessingTranslations?.failed || 'Video generation failed'}
                           </p>
                         </div>
                       ) : null}
@@ -5973,7 +5974,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onPreview?.('image', img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title={tooltipT.preview || 'Preview'}
+                    title={tooltipTranslations.preview || 'Preview'}
                   >
                     <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -5983,7 +5984,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onDownloadImage?.(img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title={tooltipT.download || 'Download'}
+                    title={tooltipTranslations.download || 'Download'}
                   >
                     <Download size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -6000,8 +6001,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                     }`}
                     title={
                       isExportingMaterial 
-                        ? (tooltipT.importingMaterial || 'Importing material...')
-                        : (tooltipT.importMaterial || 'Import material')
+                        ? (tooltipTranslations.importingMaterial || 'Importing material...')
+                        : (tooltipTranslations.importMaterial || 'Import material')
                     }
                   >
                     <svg 
@@ -6021,7 +6022,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         onImageToVideo(img.url, img.prompt);
                       }}
                       className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm cursor-pointer"
-                      title={tooltipT.imageToVideo || 'Image to video'}
+                      title={tooltipTranslations.imageToVideo || 'Image to video'}
                     >
                       <Video size={16} className="text-gray-700 dark:text-gray-300" />
                     </button>
@@ -6209,18 +6210,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
-                    toast.success(toastsT.copiedToClipboard || 'Copied to clipboard');
+                    toast.success(toastTranslations.copiedToClipboard || 'Copied to clipboard');
                   } else if (message.generatedImages?.length) {
                     const urls = message.generatedImages.map(img => img.url).join('\n');
                     onCopy(urls);
-                    toast.success(toastsT.imageLinkCopied || 'Image link copied');
+                    toast.success(toastTranslations.imageLinkCopied || 'Image link copied');
                   } else if (message.generatedVideos?.length && message.generatedVideos[0]?.url) {
                     onCopy(message.generatedVideos[0].url);
-                    toast.success(toastsT.videoLinkCopied || 'Video link copied');
+                    toast.success(toastTranslations.videoLinkCopied || 'Video link copied');
                   }
                 }}
                 className="p-1 hover:bg-border rounded transition-colors"
-              title="复制"
+              title={t?.messageActions?.copy}
             >
               <Copy size={12} />
             </button>
@@ -6241,7 +6242,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 onClick={() => onQuote(message)}
                 className="p-1 hover:bg-border rounded transition-colors"
-                title="引用"
+                title={t?.messageActions?.quote}
               >
                 <Reply size={12} />
               </button>
@@ -6251,7 +6252,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 onClick={() => onResend(message)}
                 className="p-1 hover:bg-border rounded transition-colors"
-                title="重新发送"
+                title={t?.messageActions?.resend}
               >
                 <RefreshCw size={12} />
               </button>
