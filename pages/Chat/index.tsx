@@ -74,6 +74,11 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
   const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
+  const tooltipT = t?.tooltips || {};
+  const videoProcessingT = t?.videoProcessing;
+  const audioT = t?.audio || {};
+  const toastsT = t?.toasts || {};
+  const imageValidationT = t?.imageValidation || {};
   const componentsT = rawT?.components || translations['zh'].components;
 
   const [searchParams] = useSearchParams();
@@ -1881,10 +1886,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (textContent && textContent.trim()) {
             setInputValue(textContent.trim());
             // 如果同时有文字和图片，显示引用消息的提示
-            toast.success('已引用消息内容到输入框');
+            toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
           } else {
             // 只有图片时，显示图片复制的提示
-            toast.success('图片已复制并添加到输入框');
+            toast.success(toastsT.imageCopiedToInput || 'Image copied into input');
           }
         }
       };
@@ -1905,17 +1910,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             if (textContent && textContent.trim()) {
               setInputValue(textContent.trim());
               // 如果同时有文字和图片，显示引用消息的提示
-              toast.success('已引用消息内容到输入框');
+              toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
             } else {
               // 只有图片时，显示图片添加的提示
-              toast.success('图片已添加到输入框');
+              toast.success(toastsT.imageAddedToInput || 'Image added to input');
             }
           }
         };
         reader.readAsDataURL(blob);
       } catch (fallbackError) {
         console.error('添加图片到输入框失败:', fallbackError);
-        toast.error('复制图片失败');
+        toast.error(toastsT.copyImageFailed || 'Failed to copy image');
       }
     }
   };
@@ -1961,7 +1966,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       textarea?.focus();
     }, 100);
 
-    toast.success('已引用消息内容到输入框');
+    toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
   };
 
   // 重新发送消息
@@ -2064,7 +2069,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   // 确认AI角色定义
   const confirmAIRole = () => {
     if (!aiRoleContent.trim()) {
-      toast.error(t?.aiRoleDefinition?.inputRequired || '请输入AI角色定义');
+    toast.error(t?.aiRoleDefinition?.inputRequired || 'Please enter AI role definition');
       return;
     }
 
@@ -2101,7 +2106,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     setShowAIRoleModal(false);
     setAiRoleContent('');
     setAiRoleMessageId('');
-    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI角色定义已更新');
+    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI role definition updated');
   };
 
   // 取消AI角色定义
@@ -2124,10 +2129,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('图片下载开始');
+      toast.success(toastsT.imageDownloadStarted || 'Image download started');
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error('下载失败，尝试在新窗口打开');
+      toast.error(toastsT.downloadFailed || 'Download failed, try opening in a new window');
       window.open(url, '_blank');
     }
   };
@@ -2145,10 +2150,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('视频下载开始');
+      toast.success(toastsT.videoDownloadStarted || 'Video download started');
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error('下载失败，尝试在新窗口打开');
+      toast.error(toastsT.downloadFailed || 'Download failed, try opening in a new window');
       window.open(url, '_blank');
     }
   };
@@ -2934,7 +2939,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                          hasChanges = true;
                      } else {
                          // 验证失败（且无裁剪结果），删除
-                         toast.error(result.error || '图片不符合当前模型要求，已移除');
+                         toast.error(result.error || 'Image does not meet the current model requirements and has been removed');
                          newImages.splice(i, 1);
                          hasChanges = true;
                      }
@@ -2974,7 +2979,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const currentCount = uploadedImages.length;
       
       if (currentCount >= maxImages) {
-        toast.error(`当前模式最多支持上传 ${maxImages} 张图片`);
+      toast.error(`Current mode supports up to ${maxImages} images`);
         return;
       }
 
@@ -2989,13 +2994,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       // 验证并处理每个文件
       for (const file of filesToProcess as File[]) {
         if (!file.type.startsWith('image/')) {
-          toast.error(`文件 ${file.name} 不是图片格式`);
+          toast.error(`File ${file.name} is not an image format`);
           continue;
         }
 
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
-          toast.error(validation.error || '图片验证失败');
+          toast.error(validation.error || imageValidationT.genericError || 'Image validation failed');
           continue;
         }
 
@@ -3032,7 +3037,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const currentCount = uploadedImages.length;
       
       if (currentCount >= maxImages) {
-        toast.error(`当前模型最多支持上传 ${maxImages} 张图片`);
+        toast.error(`Current model supports up to ${maxImages} images`);
         return;
       }
 
@@ -3047,13 +3052,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       // 验证并处理每个文件
       for (const file of filesToProcess) {
         if (!file.type.startsWith('image/')) {
-          toast.error(`文件 ${file.name} 不是图片格式`);
+          toast.error(`File ${file.name} is not an image format`);
           continue;
         }
 
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
-          toast.error(validation.error || '图片验证失败');
+          toast.error(validation.error || imageValidationT.genericError || 'Image validation failed');
           continue;
         }
 
@@ -3136,19 +3141,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 验证文件格式
     const allowedFormats = ['audio/wav', 'audio/mp3', 'audio/mpeg'];
     if (!allowedFormats.includes(file.type)) {
-      toast.error('仅支持 WAV 和 MP3 格式的音频文件');
+      toast.error(audioT.formatError || 'Only WAV and MP3 formats are supported');
       return;
     }
 
     // 验证文件大小（15MB限制）
     const maxSize = 15 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('音频文件大小不能超过15MB');
+      toast.error(audioT.sizeExceeded || 'Audio file must be 15MB or smaller');
       return;
     }
 
     try {
-      toast.loading('音频上传中...');
+      toast.loading(audioT.uploading || 'Uploading audio...');
       const result = await uploadService.uploadFile(file);
       toast.dismiss();
       
@@ -3156,14 +3161,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         setWan25AudioFile(file);
         setWan25AudioUrl(result.url);
         console.log('音频上传到OSS成功，URL:', result.url);
-        toast.success('音频文件上传成功');
+        toast.success(audioT.uploadSuccess || 'Audio uploaded successfully');
       } else {
         throw new Error('OSS上传返回格式错误');
       }
     } catch (error: any) {
       toast.dismiss();
       console.error('音频上传到OSS失败:', error);
-      toast.error(`音频文件上传失败: ${error.message || '请重试'}`);
+      const messageText = (typeof error?.message === 'string' && error.message.trim())
+        ? error.message
+        : (audioT.retry || 'Please try again');
+      const uploadFailedText = (audioT.uploadFailed || 'Audio file upload failed: {message}')
+        .replace('{message}', messageText);
+      toast.error(uploadFailedText);
     }
   };
 
@@ -3171,7 +3181,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const removeAudio = () => {
     setWan25AudioFile(null);
     setWan25AudioUrl('');
-    toast.success('已移除音频文件');
+    toast.success(audioT.removed || 'Audio removed');
   };
 
   // 发送消息（根据模式调用不同的API）
@@ -3535,7 +3545,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       if (selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') {
         // 检查是否有图片输入
         if (!images || images.length === 0) {
-          toast.error('图像编辑模型需要至少上传 1 张图片');
+          toast.error(toastsT.imageValidationMin || 'Image editing requires at least 1 image');
           clearInterval(progressInterval);
           setProgress(0);
           return;
@@ -3543,7 +3553,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         
         // 检查图片数量限制（1-3张）
         if (images.length > 3) {
-          toast.error('最多支持 3 张图片');
+          toast.error(toastsT.imageValidationMax || 'Supports up to 3 images');
           clearInterval(progressInterval);
           setProgress(0);
           return;
@@ -5806,7 +5816,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   {message.content}
                 </ReactMarkdown>
               ) : message.isStreaming && currentMode === 'chat' ? (
-                <span>思考中...</span>
+                <span>{t?.thinking || 'Thinking...'}</span>
               ) : null}
               {message.isStreaming && currentMode === 'chat' && (
                 <span className="inline-block w-2 h-4 bg-indigo-600 ml-1 animate-pulse"></span>
@@ -5827,10 +5837,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             <div className="flex-1">
                               <p className="text-sm text-foreground font-medium">
                                 {(() => {
-                                  // 根据进度显示不同文本
-                                  if (progress < 10) return '任务提交成功，等待处理...';
-                                  if (progress < 20) return '正在准备生成任务，请稍候...';
-                                  return '正在创作精美视频...';
+                                  if (progress < 10) return videoProcessingT?.submitted || 'Task submitted successfully, waiting for processing...';
+                                  if (progress < 20) return videoProcessingT?.preparing || 'Preparing generation task, please wait...';
+                                  return videoProcessingT?.generating || 'Creating a polished video for you...';
                                 })()}
                               </p>
                               <div className="mt-2 flex items-center gap-2">
@@ -5853,27 +5862,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           <VideoPlayer url={video.url} />
                           {/* 操作按钮 - 右上角 */}
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onPreview?.('video', video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title="预览"
+                              title={tooltipT.preview || 'Preview'}
                             >
                               <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onDownloadVideo?.(video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title="下载"
+                              title={tooltipT.download || 'Download'}
                             >
                               <Download size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onExportMaterial?.('video', video.url, video.prompt);
@@ -5884,7 +5893,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                   ? 'opacity-50 cursor-not-allowed' 
                                   : 'hover:scale-105 cursor-pointer'
                               }`}
-                              title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
+                              title={
+                                isExportingMaterial 
+                                  ? (tooltipT.importingMaterial || 'Importing material...')
+                                  : (tooltipT.importMaterial || 'Import material')
+                              }
                             >
                               <svg 
                                 className="w-4 h-4 text-gray-700 dark:text-gray-300" 
@@ -5900,7 +5913,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         </div>
                       ) : video.status === 'failed' ? (
                         <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
-                          <p className="text-sm text-red-600 dark:text-red-400">视频生成失败</p>
+                          <p className="text-sm text-red-600 dark:text-red-400">
+                            {videoProcessingT?.failed || 'Video generation failed'}
+                          </p>
                         </div>
                       ) : null}
                       {video.prompt && (
@@ -5958,7 +5973,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onPreview?.('image', img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title="预览"
+                    title={tooltipT.preview || 'Preview'}
                   >
                     <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -5968,7 +5983,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onDownloadImage?.(img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title="下载"
+                    title={tooltipT.download || 'Download'}
                   >
                     <Download size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -5983,7 +5998,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         ? 'opacity-50 cursor-not-allowed' 
                         : 'hover:scale-105 cursor-pointer'
                     }`}
-                    title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
+                    title={
+                      isExportingMaterial 
+                        ? (tooltipT.importingMaterial || 'Importing material...')
+                        : (tooltipT.importMaterial || 'Import material')
+                    }
                   >
                     <svg 
                       className="w-4 h-4 text-gray-700 dark:text-gray-300" 
@@ -6002,7 +6021,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         onImageToVideo(img.url, img.prompt);
                       }}
                       className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm cursor-pointer"
-                      title="图生视频"
+                      title={tooltipT.imageToVideo || 'Image to video'}
                     >
                       <Video size={16} className="text-gray-700 dark:text-gray-300" />
                     </button>
@@ -6190,14 +6209,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
-                    toast.success('已复制到剪贴板');
+                    toast.success(toastsT.copiedToClipboard || 'Copied to clipboard');
                   } else if (message.generatedImages?.length) {
                     const urls = message.generatedImages.map(img => img.url).join('\n');
                     onCopy(urls);
-                    toast.success('图片链接已复制');
+                    toast.success(toastsT.imageLinkCopied || 'Image link copied');
                   } else if (message.generatedVideos?.length && message.generatedVideos[0]?.url) {
                     onCopy(message.generatedVideos[0].url);
-                    toast.success('视频链接已复制');
+                    toast.success(toastsT.videoLinkCopied || 'Video link copied');
                   }
                 }}
                 className="p-1 hover:bg-border rounded transition-colors"

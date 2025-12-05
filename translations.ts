@@ -967,6 +967,29 @@ export interface Translation {
       image: string;
       video: string;
     };
+    thinking: string;
+    videoProcessing: {
+      submitted: string;
+      preparing: string;
+      generating: string;
+      failed: string;
+    };
+    tooltips: {
+      preview: string;
+      download: string;
+      importMaterial: string;
+      importingMaterial: string;
+      imageToVideo: string;
+    };
+    audio: {
+      uploading: string;
+      uploadSuccess: string;
+      removed: string;
+      formatError: string;
+      sizeExceeded: string;
+      uploadFailed: string;
+      retry: string;
+    };
     aiCreatingImage: string;
     modelNotSupportImageUpload: string;
     deleteConfirm: {
@@ -991,6 +1014,18 @@ export interface Translation {
       deleteRecordFailed: string;
       linkCopied: string;
       materialImported: string;
+        quotedMessageAdded: string;
+        imageCopiedToInput: string;
+        imageAddedToInput: string;
+        imageDownloadStarted: string;
+        videoDownloadStarted: string;
+        copiedToClipboard: string;
+        imageLinkCopied: string;
+        videoLinkCopied: string;
+        copyImageFailed: string;
+        downloadFailed: string;
+        imageValidationMin: string;
+        imageValidationMax: string;
     };
     aiRoleDefinition: {
       title: string;
@@ -1019,6 +1054,7 @@ export interface Translation {
       formatNotSupported: string;
       sizeExceeded: string;
       readFailed: string;
+        genericError: string;
     };
   };
   keysPage: {
@@ -3404,6 +3440,29 @@ export const translations: Record<string, Translation> = {
         image: 'Image',
         video: 'Video'
       },
+      thinking: 'Thinking...',
+      videoProcessing: {
+        submitted: 'Task submitted successfully, waiting for processing...',
+        preparing: 'Preparing generation task, please wait...',
+        generating: 'Creating a polished video for you...',
+        failed: 'Video generation failed'
+      },
+      tooltips: {
+        preview: 'Preview',
+        download: 'Download',
+        importMaterial: 'Import material',
+        importingMaterial: 'Importing material...',
+        imageToVideo: 'Image to video'
+      },
+      audio: {
+        uploading: 'Uploading audio...',
+        uploadSuccess: 'Audio uploaded successfully',
+        removed: 'Audio removed',
+        formatError: 'Only WAV and MP3 formats are supported',
+        sizeExceeded: 'Audio file must be 15MB or smaller',
+        uploadFailed: 'Audio file upload failed: {message}',
+        retry: 'Please try again'
+      },
       aiCreatingImage: 'AI is creating beautiful images for you...',
       modelNotSupportImageUpload: 'This model does not support image upload, please switch models',
       deleteConfirm: {
@@ -3427,7 +3486,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: 'Chat record deleted',
         deleteRecordFailed: 'Failed to delete chat record',
         linkCopied: 'Link copied',
-        materialImported: 'Material imported successfully'
+        materialImported: 'Material imported successfully',
+        quotedMessageAdded: 'Message content added to input',
+        imageCopiedToInput: 'Image copied into input',
+        imageAddedToInput: 'Image added to input',
+        imageDownloadStarted: 'Image download started',
+        videoDownloadStarted: 'Video download started',
+        copiedToClipboard: 'Copied to clipboard',
+        imageLinkCopied: 'Image link copied',
+        videoLinkCopied: 'Video link copied',
+        copyImageFailed: 'Failed to copy image',
+        downloadFailed: 'Download failed, try opening in a new window',
+        imageValidationMin: 'Image editing requires at least 1 image',
+        imageValidationMax: 'Supports up to 3 images'
       },
       aiRoleDefinition: {
         title: 'Define AI Assistant Role',
@@ -3460,6 +3531,7 @@ export const translations: Record<string, Translation> = {
         formatNotSupported: 'Image format not supported. Supported formats: ',
         sizeExceeded: 'File size exceeded limit. Max allowed: ',
         readFailed: 'Failed to read file',
+        genericError: 'Image validation failed'
       }
     },
     keysPage: {
@@ -5960,6 +6032,29 @@ export const translations: Record<string, Translation> = {
         image: '图片',
         video: '视频'
       },
+      thinking: '思考中...',
+      videoProcessing: {
+        submitted: '任务提交成功，等待处理...',
+        preparing: '正在准备生成任务，请稍候...',
+        generating: '正在创作精美视频...',
+        failed: '视频生成失败'
+      },
+      tooltips: {
+        preview: '预览',
+        download: '下载',
+        importMaterial: '导入素材',
+        importingMaterial: '正在导入素材...',
+        imageToVideo: '图生视频'
+      },
+      audio: {
+        uploading: '音频上传中...',
+        uploadSuccess: '音频文件上传成功',
+        removed: '已移除音频文件',
+        formatError: '仅支持 WAV 和 MP3 格式的音频文件',
+        sizeExceeded: '音频文件大小不能超过15MB',
+        uploadFailed: '音频文件上传失败：{message}',
+        retry: '请重试'
+      },
       aiCreatingImage: 'AI正在为您创作精美图片...',
       modelNotSupportImageUpload: '该模型不支持上传图片，请切换模型',
       deleteConfirm: {
@@ -5983,7 +6078,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: '对话记录已删除',
         deleteRecordFailed: '删除对话记录失败',
         linkCopied: '链接已复制',
-        materialImported: '素材导入成功'
+        materialImported: '素材导入成功',
+        quotedMessageAdded: '已引用消息内容到输入框',
+        imageCopiedToInput: '图片已复制并添加到输入框',
+        imageAddedToInput: '图片已添加到输入框',
+        imageDownloadStarted: '图片下载开始',
+        videoDownloadStarted: '视频下载开始',
+        copiedToClipboard: '已复制到剪贴板',
+        imageLinkCopied: '图片链接已复制',
+        videoLinkCopied: '视频链接已复制',
+        copyImageFailed: '复制图片失败',
+        downloadFailed: '下载失败，尝试在新窗口打开',
+        imageValidationMin: '图像编辑模型需要至少上传 1 张图片',
+        imageValidationMax: '最多支持 3 张图片'
       },
       aiRoleDefinition: {
         title: '定义AI助手角色',
@@ -6016,6 +6123,7 @@ export const translations: Record<string, Translation> = {
         readFailed: '文件读取失败',
         formatNotSupported: '图片格式不支持。仅支持：',
         sizeExceeded: '文件大小超过限制。最大允许：',
+        genericError: '图片验证失败',
       }
     },
     keysPage: {
@@ -8087,6 +8195,29 @@ export const translations: Record<string, Translation> = {
         image: 'Gambar',
         video: 'Video'
       },
+      thinking: 'Sedang berpikir...',
+      videoProcessing: {
+        submitted: 'Tugas dikirim, mohon tunggu...',
+        preparing: 'Mempersiapkan tugas generasi, harap tunggu...',
+        generating: 'Menciptakan video yang indah untuk Anda...',
+        failed: 'Pembuatan video gagal'
+      },
+      tooltips: {
+        preview: 'Pratinjau',
+        download: 'Unduh',
+        importMaterial: 'Impor materi',
+        importingMaterial: 'Mengimpor materi...',
+        imageToVideo: 'Gambar ke video'
+      },
+      audio: {
+        uploading: 'Mengunggah audio...',
+        uploadSuccess: 'File audio berhasil diunggah',
+        removed: 'File audio telah dihapus',
+        formatError: 'Hanya mendukung format WAV dan MP3',
+        sizeExceeded: 'Ukuran file audio maksimal 15MB',
+        uploadFailed: 'Pengunggahan file audio gagal: {message}',
+        retry: 'Silakan coba lagi'
+      },
       aiCreatingImage: 'AI sedang membuat gambar indah untuk Anda...',
       modelNotSupportImageUpload: 'Model ini tidak mendukung unggah gambar, silakan ganti model',
       deleteConfirm: {
@@ -8110,7 +8241,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: 'Catatan obrolan dihapus',
         deleteRecordFailed: 'Gagal menghapus catatan obrolan',
         linkCopied: 'Tautan disalin',
-        materialImported: 'Materi berhasil diimpor'
+        materialImported: 'Materi berhasil diimpor',
+        quotedMessageAdded: 'Konten pesan ditambahkan ke input',
+        imageCopiedToInput: 'Gambar disalin ke input',
+        imageAddedToInput: 'Gambar ditambahkan ke input',
+        imageDownloadStarted: 'Unduhan gambar dimulai',
+        videoDownloadStarted: 'Unduhan video dimulai',
+        copiedToClipboard: 'Disalin ke papan klip',
+        imageLinkCopied: 'Tautan gambar disalin',
+        videoLinkCopied: 'Tautan video disalin',
+        copyImageFailed: 'Gagal menyalin gambar',
+        downloadFailed: 'Unduhan gagal, coba buka di jendela baru',
+        imageValidationMin: 'Model pengeditan memerlukan setidaknya 1 gambar',
+        imageValidationMax: 'Mendukung hingga 3 gambar'
       },
       aiRoleDefinition: {
         title: 'Definisikan Peran Asisten AI',
@@ -8143,6 +8286,7 @@ export const translations: Record<string, Translation> = {
         formatNotSupported: 'Format gambar tidak didukung. Format yang didukung: ',
         sizeExceeded: 'Ukuran file melebihi batas. Maksimal diizinkan: ',
         readFailed: 'Gagal membaca file',
+        genericError: 'Validasi gambar gagal',
       }
     },
     keysPage: {
