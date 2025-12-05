@@ -61,6 +61,15 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
     return totalImages * 5; // 每张图片5秒
   }, [currentStoryboard]);
 
+  // 检查所有分镜视频是否都已成功生成
+  const allVideosGenerated = useMemo(() => {
+    if (!currentStoryboard || currentStoryboard.scenes.length === 0) return false;
+    return currentStoryboard.scenes.every((scene) => {
+      const video = storyboardVideos[scene.id];
+      return video && video.status === 'succeeded';
+    });
+  }, [currentStoryboard, storyboardVideos]);
+
   // 格式化时长显示
   const formatDuration = (seconds: number) => {
     if (seconds < 60) return `${seconds}s`;
@@ -201,7 +210,8 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
           </button>
           <button 
             onClick={() => onStepChange(4)}
-            className="flex items-center gap-1 px-4 py-2 rounded-lg border border-border hover:bg-surface text-sm transition-colors"
+            disabled={!allVideosGenerated}
+            className="flex items-center gap-1 px-4 py-2 rounded-lg border border-border hover:bg-surface text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             下一步
             <ChevronRight size={16} />
@@ -219,7 +229,7 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
             <span className="text-sm text-muted border-l border-border pl-4 ml-2">预计总时长: {formatDuration(totalDuration)}</span>
             <button
               onClick={onGenerateAllSceneVideos}
-              disabled={generatingScenes.length > 0}
+              disabled={generatingScenes.length > 0 || allVideosGenerated}
               className="ml-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {generatingScenes.length > 0 ? (
@@ -227,6 +237,8 @@ export const EditStoryboard: React.FC<EditStoryboardProps> = ({
                   <Loader className="animate-spin" size={16} />
                   生成中 ({generatingScenes.length})
                 </>
+              ) : allVideosGenerated ? (
+                '全部生成完成'
               ) : (
                 '批量生成视频'
               )}

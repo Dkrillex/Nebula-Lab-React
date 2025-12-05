@@ -136,27 +136,30 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
             className="w-full h-24 bg-surface/30 rounded-lg border border-transparent focus:border-indigo-500/50 focus:bg-surface resize-none text-sm text-foreground focus:outline-none p-3 leading-relaxed transition-all"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onGenerateVideo) {
-                onGenerateVideo(); // 不传 shotIndex 表示批量生成所有图片
-              }
-            }}
-            disabled={isGenerating}
-            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
-          >
-            {isGenerating ? (
-              <>
-                <Loader className="animate-spin" size={12} />
-                生成中
-              </>
-            ) : (
-              '批量图转视频'
-            )}
-          </button>
-        </div>
+        {/* 只在视频未生成成功时显示按钮 */}
+        {videoStatus !== 'succeeded' && (
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onGenerateVideo) {
+                  onGenerateVideo(); // 不传 shotIndex 表示批量生成所有图片
+                }
+              }}
+              disabled={isGenerating || videoStatus === 'pending' || videoStatus === 'processing'}
+              className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-xs font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
+            >
+              {isGenerating || videoStatus === 'pending' || videoStatus === 'processing' ? (
+                <>
+                  <Loader className="animate-spin" size={12} />
+                  生成中
+                </>
+              ) : (
+                '批量图转视频'
+              )}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
