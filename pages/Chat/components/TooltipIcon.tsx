@@ -51,9 +51,18 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({ title, content, size = 14 }) 
       return () => {
         window.removeEventListener('scroll', handleUpdate, true);
         window.removeEventListener('resize', handleUpdate);
+        // 确保在 cleanup 时隐藏 tooltip
+        setIsVisible(false);
       };
     }
   }, [isVisible]);
+
+  // 添加组件卸载时的清理
+  useEffect(() => {
+    return () => {
+      setIsVisible(false);
+    };
+  }, []);
 
   const handleMouseEnter = () => {
     setIsVisible(true);

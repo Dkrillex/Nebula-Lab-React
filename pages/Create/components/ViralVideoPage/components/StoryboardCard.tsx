@@ -99,7 +99,7 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
                 className="w-full h-full object-contain hover:scale-105 transition-transform duration-500" 
               />
               {/* 图转视频按钮 - 悬停时显示 */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+              {/* <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -119,7 +119,7 @@ export const StoryboardCard: React.FC<StoryboardCardProps> = ({
                     '图转视频'
                   )}
                 </button>
-              </div>
+              </div> */}
             </div>
           ))
         )}

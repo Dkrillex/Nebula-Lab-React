@@ -2,7 +2,7 @@
  * 视频合并服务
  * 调用 Jackie-Cloud-Video-Editor/server 的接口进行视频合并
  */
-
+import { uploadService } from './uploadService';
 // 服务器配置 - 默认使用 localhost:3001
 const VIDEO_MERGE_SERVER_URL = import.meta.env.VITE_VIDEO_MERGE_SERVER_URL || 'http://localhost:3001';
 
@@ -17,6 +17,7 @@ export interface VideoMergeSegment {
     video: string; // 视频URL
     text: string; // 文案
     duration?: number; // 视频时长（秒），可选
+    audio?: string | null; // 音频URL，可选
     subtitleStyle?: {
         fontSize?: number;
         fontColor?: string;
@@ -61,6 +62,7 @@ export interface TaskStatusResponse {
 
 // 任务结果响应
 export interface TaskResultResponse {
+    mergedVideoUrl: any;
     success: boolean;
     data?: string; // Base64 视频数据
     outputFile?: string; // 输出文件路径
@@ -280,22 +282,14 @@ export async function mergeVideosWithServer(
 
     // 6. 返回视频URL
     // 优先使用 outputFile 构建完整URL，如果没有则使用 base64 数据
-    if (result.outputFile) {
-        // 如果 outputFile 已经是完整URL，直接返回
-        if (result.outputFile.startsWith('http://') || result.outputFile.startsWith('https://')) {
-            return result.outputFile;
-        }
-        // 否则拼接服务器URL
-        return `${VIDEO_MERGE_SERVER_URL}${result.outputFile}`;
-    } else if (result.data) {
-        // 如果有 base64 数据，转换为 Blob URL
-        const binaryString = atob(result.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i);
-        }
-        const blob = new Blob([bytes], { type: 'video/mp4' });
-        return URL.createObjectURL(blob);
+    if (result.mergedVideoUrl) {
+        const res = await uploadService.uploadByBase64(
+            result.mergedVideoUrl,
+            `${result.outputFile}-merged-video`,
+            'mp4'
+        );
+        return res.data?.url || res.url;
+        return result.mergedVideoUrl;
     } else {
         throw new Error('未获取到视频数据');
     }

@@ -106,55 +106,31 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
     }));
 
     try {
+      console.log(scene, editedStoryboard, storyboard);
       // 构建视频生成参数
       const imageUrl = scene.shots[0]?.img || uploadedImages[0]?.url || '';
+      const lastFrame = scene.shots[1]?.img || uploadedImages[1]?.url || '';
       if (!imageUrl) {
         throw new Error('缺少图片，无法生成视频');
       }
 
-      // 1. 先调用TTS将台词转为音频
-      let audioUrl: string | null = null;
-      if (scene.lines && scene.lines.trim()) {
-        try {
-          toast.loading('正在生成音频...', { id: `tts-${sceneId}` });
-          audioUrl = await generateAudioFromText(scene.lines);
-          toast.dismiss(`tts-${sceneId}`);
-          if (audioUrl) {
-            // 如果是blob URL，保存起来以便后续清理
-            if (audioUrl.startsWith('blob:')) {
-              audioBlobUrls.current[sceneId] = audioUrl;
-            }
-            console.log('✅ 音频生成成功:', audioUrl);
-          } else {
-            console.warn('⚠️ 音频生成失败，将生成无音频视频');
-          }
-        } catch (error: any) {
-          console.warn('TTS生成失败:', error);
-          toast.dismiss(`tts-${sceneId}`);
-          // TTS失败不影响视频生成，继续执行
-        }
-      }
-
-      // 2. 使用 wan2.5-i2v-preview 模型生成视频
+      // 2. 使用 doubao-seedance-1-0-lite-i2v-250428 模型生成视频
       const videoDuration = 5;
       const videoResolution = '720p'; // 固定使用720p
 
-      // wan2.5-i2v-preview 模型参数配置
+      //doubao-seedance-1-0-lite-i2v-250428 模型参数配置
       const requestData: any = {
-        model: 'wan2.5-i2v-preview',
+        model: 'doubao-seedance-1-0-lite-i2v-250428',
         prompt: scene.lines || '生成视频',
         duration: videoDuration,
         resolution: videoResolution,
         image: imageUrl,
+        lastFrame: lastFrame,
         smart_rewrite: false,
-        generate_audio: false, // 因为我们已经传入音频
+        generate_audio: false, // 仅生成视频，音频后续生成
+        width: 1280,
+        watermark: false,
       };
-
-      // 如果TTS成功，添加音频URL
-      if (audioUrl) {
-        requestData.audio_url = audioUrl;
-        console.log('🎵 添加音频URL到视频生成请求:', audioUrl);
-      }
 
       // 提交视频生成任务
       const submitResponse = await videoGenerateService.submitVideoTask(requestData);
@@ -173,7 +149,7 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
       }));
 
       // 开始轮询任务状态
-      pollVideoTask(sceneId, taskId);
+      pollVideoTask(sceneId, taskId, scene.lines);
     } catch (error: any) {
       console.error('生成视频失败:', error);
       setStoryboardVideos((prev) => ({
@@ -289,7 +265,7 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
 
 
   // 轮询视频生成任务状态
-  const pollVideoTask = useCallback((sceneId: number, taskId: string) => {
+  const pollVideoTask = useCallback((sceneId: number, taskId: string, sceneLines?: string) => {
     // 清除之前的轮询
     if (videoPollingIntervals.current[sceneId]) {
       clearInterval(videoPollingIntervals.current[sceneId]);
@@ -396,13 +372,38 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
 
           case 'succeeded': {
             console.log('✅ 视频生成成功:', response);
-            // 先更新视频状态
+
+            // 视频成功后生成音频
+            let audioUrl: string | null = null;
+            if (sceneLines && sceneLines.trim()) {
+              const toastId = `tts-after-video-${sceneId}`;
+              try {
+                toast.loading('正在生成音频...', { id: toastId });
+                audioUrl = await generateAudioFromText(sceneLines);
+                if (audioUrl && audioUrl.startsWith('blob:')) {
+                  audioBlobUrls.current[sceneId] = audioUrl;
+                }
+                if (audioUrl) {
+                  console.log('✅ 视频完成后音频生成成功:', audioUrl);
+                } else {
+                  console.warn('⚠️ 视频完成后音频生成失败，将保持无音频');
+                }
+              } catch (audioErr: any) {
+                console.warn('视频完成后音频生成失败:', audioErr);
+              } finally {
+                toast.dismiss(toastId);
+              }
+            }
+
+            // 更新视频及音频状态
             setStoryboardVideos((prev) => ({
               ...prev,
               [sceneId]: {
+                ...prev[sceneId],
                 url: finalVideoUrl || '',
                 status: 'succeeded',
                 progress: 100,
+                audioUrl: audioUrl || prev[sceneId]?.audioUrl,
               },
             }));
             // 然后从生成中状态移除

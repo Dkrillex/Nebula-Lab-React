@@ -45,6 +45,7 @@ export type VideoStatus = 'pending' | 'processing' | 'succeeded' | 'failed';
 export interface StoryboardVideo {
   url?: string;
   taskId?: string;
+  audioUrl?: string;
   status: VideoStatus;
   progress?: number;
 }

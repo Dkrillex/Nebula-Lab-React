@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { SearchIcon, Box, X, ChevronLeft, ChevronRight, MessageSquare, Image as ImageIcon, Video as VideoIcon, SlidersHorizontal, GitCompareArrows as Compare } from 'lucide-react';
 import { translations } from '@/translations';
 import { useNavigate } from 'react-router-dom';
@@ -399,7 +399,10 @@ const ModelSquarePage: React.FC<ModelSquarePageProps> = (props) => {
     } catch {
       toast.error('复制失败，请手动复制');
     } finally {
-      document.body.removeChild(textArea);
+      // 添加检查：确保元素仍在 DOM 中
+      if (textArea.parentNode === document.body) {
+        document.body.removeChild(textArea);
+      }
     }
   };
 
@@ -1214,6 +1217,15 @@ const ModelDetailDrawer = ({
 }) => {
 
   const navigate = useNavigate();
+  const isMountedRef = useRef(true);
+
+  // 管理组件挂载状态
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   if (!visible) return null;
 
@@ -1235,18 +1247,36 @@ const ModelDetailDrawer = ({
 
   // 跳转处理
   const goToChat = () => {
+    if (!isMountedRef.current) return;
     onClose();
-    navigate(`/chat?model_name=${model.name}&mode=chat`);
+    // 延迟跳转，确保 Drawer 关闭动画完成
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        navigate(`/chat?model_name=${model.name}&mode=chat`);
+      }
+    }, 150);
   };
 
   const goToImage = () => {
+    if (!isMountedRef.current) return;
     onClose();
-    navigate(`/chat?model_name=${model.name}&mode=image`);
+    // 延迟跳转，确保 Drawer 关闭动画完成
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        navigate(`/chat?model_name=${model.name}&mode=image`);
+      }
+    }, 150);
   };
 
   const goToVideo = () => {
+    if (!isMountedRef.current) return;
     onClose();
-    navigate(`/chat?model_name=${model.name}&mode=video`);
+    // 延迟跳转，确保 Drawer 关闭动画完成
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        navigate(`/chat?model_name=${model.name}&mode=video`);
+      }
+    }, 150);
   };
 
   const getCapabilityClass = (cap: string) => {

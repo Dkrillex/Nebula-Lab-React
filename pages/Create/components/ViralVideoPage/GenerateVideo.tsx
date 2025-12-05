@@ -91,10 +91,10 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 text-orange-600 text-sm hover:bg-orange-200 transition-colors font-medium">
+          {/* <button className="flex items-center gap-2 px-3 py-2 rounded-lg bg-orange-100 text-orange-600 text-sm hover:bg-orange-200 transition-colors font-medium">
             <BookOpen size={16} />
             智能混剪教程
-          </button>
+          </button> */}
           <div className="w-px h-6 bg-border"></div>
           <button className="p-2 rounded-lg text-muted hover:text-red-500 hover:bg-red-50 transition-colors">
             <Trash2 size={18} />
@@ -136,7 +136,7 @@ export const GenerateVideo: React.FC<GenerateVideoProps> = ({
                 </div>
               </div>
             ) : finalVideoUrl ? (
-              <div className="aspect-[3/4] w-full max-w-2xl bg-black rounded-xl overflow-hidden relative group mx-auto lg:mx-0">
+              <div className="aspect-[3/4] w-full max-w-2xl bg-black rounded-xl overflow-hidden relative group mx-auto lg:mx-0 max-h-[500px]">
                 <video
                   ref={videoRef}
                   src={finalVideoUrl}

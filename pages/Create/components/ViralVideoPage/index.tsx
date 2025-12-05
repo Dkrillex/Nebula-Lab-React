@@ -66,6 +66,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
   const [portfolioAssets, setPortfolioAssets] = useState<AdsAssetsVO[]>([]);
   const [portfolioLoading, setPortfolioLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const prevStepRef = useRef<number>(0); // 跟踪之前的 step 值
   const defaultModel = 'qwen3-omni-flash';
   const MIN_IMAGES = 4;
   const MAX_IMAGES = 10;
@@ -777,6 +778,19 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
     }
   }, [step, finalVideoUrl, isMerging, handleMergeAllVideos]);
 
+  // 当从 step 3 返回到 step 2 时，重置 EditStoryboard 相关状态
+  useEffect(() => {
+    // 只在从 step 3 返回到 step 2 时重置
+    if (step === 2 && prevStepRef.current === 3) {
+      // 重置编辑过的分镜
+      setEditedStoryboard(null);
+      // 重置分镜视频状态
+      setStoryboardVideos({});
+    }
+    // 更新之前的 step 值
+    prevStepRef.current = step;
+  }, [step, setStoryboardVideos]);
+
   // 进入Step 2前检查
   const handleGoToStep2 = () => {
     if (uploadedImages.length < MIN_IMAGES) {
@@ -1031,6 +1045,7 @@ const ViralVideoPage: React.FC<ViralVideoPageProps> = ({ t }) => {
 
       {step === 3 && (
         <EditStoryboard
+          key={`edit-storyboard-${step}`}
           t={t}
           step={step}
           videoId={finalVideoId} // Use finalVideoId

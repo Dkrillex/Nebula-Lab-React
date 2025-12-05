@@ -25,7 +25,6 @@ export const useVideoMerge = (options: UseVideoMergeOptions = {}) => {
       return;
     }
     console.log(storyboard, editedStoryboard, storyboardVideos);
-
     // 检查所有分镜视频是否都已生成
     const allVideosReady = currentStoryboard.scenes.every((scene) => {
       const video = storyboardVideos[scene.id];
@@ -49,6 +48,7 @@ export const useVideoMerge = (options: UseVideoMergeOptions = {}) => {
 
           const segment: VideoMergeSegment = {
             video: video.url,
+            audio: video.audioUrl,
             text: scene.lines || '', // 使用场景的文案
             duration: 5, // 默认5秒，可以根据实际视频时长调整
           };
@@ -59,33 +59,17 @@ export const useVideoMerge = (options: UseVideoMergeOptions = {}) => {
       if (segments.length === 0) {
         throw new Error('没有可合并的视频');
       }
-
-      // ========== 详细调试日志 ==========
-      console.log('========== 视频合并调试信息 ==========');
-      console.log('📋 Segments 详细信息:', JSON.stringify(segments, null, 2));
-      console.log('📹 视频URL列表:', segments.map((s) => s.video));
-      console.log('📝 文案列表:', segments.map((s) => s.text));
-      console.log('⏱️ 时长列表:', segments.map((s) => s.duration));
-
       // 请求参数
       const requestSettings = {
         resolution: '1080p',
         format: 'mp4',
         fps: 30,
         quality: 'high',
+        orientation: 'portrait',
       };
       const segmentDuration = 5;
-
-      console.log('⚙️ 请求参数 Settings:', JSON.stringify(requestSettings, null, 2));
-      console.log('⏱️ Segment Duration:', segmentDuration);
-      console.log('📊 Segments 数量:', segments.length);
-      console.log('=====================================');
-
       // 显示开始合并提示
       toast.loading('开始合并视频，请稍候...', { id: 'video-merge' });
-
-      // 合并视频（使用服务器接口）
-      console.log('🚀 开始调用 mergeVideosWithServer...');
       const mergedVideoUrl: string = await mergeVideosWithServer(
         segments,
         requestSettings,
@@ -95,12 +79,6 @@ export const useVideoMerge = (options: UseVideoMergeOptions = {}) => {
           console.log(`📈 视频合并进度: ${progress}% - ${message}`);
         }
       );
-
-      // ========== 响应数据日志 ==========
-      console.log('✅ mergeVideosWithServer 调用成功');
-      console.log('📦 响应数据 (mergedVideoUrl):', mergedVideoUrl);
-      console.log('📦 响应数据类型:', typeof mergedVideoUrl);
-      console.log('=====================================');
 
       setFinalVideoUrl(mergedVideoUrl);
 
