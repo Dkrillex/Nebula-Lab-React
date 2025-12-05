@@ -62,28 +62,34 @@ export const IMAGE_SIZES: Record<string, { id: string; name: string }[]> = {
 
 // 视频生成比例
 export const VIDEO_RATIOS = [
-  { id: '16:9', name: '16:9 (横屏)', description: '适合电脑观看' },
-  { id: '4:3', name: '4:3 (传统)', description: '传统比例' },
-  { id: '1:1', name: '1:1 (正方形)', description: '社交媒体' },
-  { id: '3:4', name: '3:4 (竖屏)', description: '移动端竖屏' },
-  { id: '9:16', name: '9:16 (竖屏)', description: '适合手机观看' },
-  { id: '21:9', name: '21:9 (宽屏)', description: '电影宽屏' },
-  { id: 'adaptive', name: '自适应', description: '根据图片自动调整' },
+  { id: '16:9' },
+  { id: '4:3' },
+  { id: '1:1' },
+  { id: '3:4' },
+  { id: '9:16' },
+  { id: '21:9' },
+  { id: 'adaptive' },
 ] as const;
+
+export type VideoRatioId = (typeof VIDEO_RATIOS)[number]['id'];
 
 // 视频分辨率
 export const VIDEO_RESOLUTIONS = [
-  { id: '480p', name: '480P', description: '标清画质' },
-  { id: '720p', name: '720P', description: '高清画质' },
-  { id: '1080p', name: '1080P', description: '全高清画质' },
+  { id: '480p' },
+  { id: '720p' },
+  { id: '1080p' },
 ];
+
+export type VideoResolutionId = (typeof VIDEO_RESOLUTIONS)[number]['id'];
 
 // 图生视频模式
 export const IMAGE_TO_VIDEO_MODES = [
-  { id: 'first_frame', name: '首帧生成', description: '基于首帧图片生成视频' },
-  { id: 'first_last_frame', name: '首尾帧生成', description: '基于首尾帧图片生成视频' },
-  { id: 'reference', name: '参考图生成', description: '基于参考图片生成视频' },
+  { id: 'first_frame' },
+  { id: 'first_last_frame' },
+  { id: 'reference' },
 ];
+
+export type ImageToVideoModeId = (typeof IMAGE_TO_VIDEO_MODES)[number]['id'];
 
 // 获取图片尺寸选项
 export const getImageSizes = (model: string) => {

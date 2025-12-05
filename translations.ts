@@ -946,6 +946,10 @@ export interface Translation {
     noHistory: string;
     mainTitle: string;
     statusReady: string;
+    historyLoading: string;
+    historyDeleteTooltip: string;
+    statusGenerating: string;
+    statusModelNotSelected: string;
     inputPlaceholder: string;
     inputPlaceholders: {
       chat: string;
@@ -966,6 +970,38 @@ export interface Translation {
       chat: string;
       image: string;
       video: string;
+    };
+    thinking: string;
+    videoProcessing: {
+      submitted: string;
+      preparing: string;
+      generating: string;
+      failed: string;
+    };
+    tooltips: {
+      preview: string;
+      download: string;
+      importMaterial: string;
+      importingMaterial: string;
+      imageToVideo: string;
+    };
+    messageActions: {
+      copy: string;
+      quote: string;
+      resend: string;
+    };
+    preview: {
+      close: string;
+      copyLink: string;
+    };
+    audio: {
+      uploading: string;
+      uploadSuccess: string;
+      removed: string;
+      formatError: string;
+      sizeExceeded: string;
+      uploadFailed: string;
+      retry: string;
     };
     aiCreatingImage: string;
     modelNotSupportImageUpload: string;
@@ -991,6 +1027,18 @@ export interface Translation {
       deleteRecordFailed: string;
       linkCopied: string;
       materialImported: string;
+        quotedMessageAdded: string;
+        imageCopiedToInput: string;
+        imageAddedToInput: string;
+        imageDownloadStarted: string;
+        videoDownloadStarted: string;
+        copiedToClipboard: string;
+        imageLinkCopied: string;
+        videoLinkCopied: string;
+        copyImageFailed: string;
+        downloadFailed: string;
+        imageValidationMin: string;
+        imageValidationMax: string;
     };
     aiRoleDefinition: {
       title: string;
@@ -1019,6 +1067,93 @@ export interface Translation {
       formatNotSupported: string;
       sizeExceeded: string;
       readFailed: string;
+        genericError: string;
+    };
+    imageSettings: {
+      sizeLabel: string;
+      randomSeedLabel: string;
+      randomSeedPlaceholder: string;
+      multiImageLabel: string;
+      watermarkLabel: string;
+      creativityLabel: string;
+      creativityTooltipTitle: string;
+      creativityTooltipLineLow: string;
+      creativityTooltipLineHigh: string;
+      creativityScaleMinLabel: string;
+      creativityScaleMaxLabel: string;
+      qwenPromptExtendLabel: string;
+      qwenPromptExtendTooltipTitle: string;
+      qwenPromptExtendTooltipContent: string;
+      qwenImageEditCountLabel: string;
+      qwenImageEditCountTooltipTitle: string;
+      qwenImageEditCountTooltipContent: string;
+      negativePromptLabel: string;
+      negativePromptTooltipTitle: string;
+      negativePromptTooltipContent: string;
+      negativePromptPlaceholder: string;
+      negativePromptEditTooltipTitle: string;
+      negativePromptEditTooltipContent: string;
+      negativePromptEditPlaceholder: string;
+      randomSeedTooltipTitle: string;
+      randomSeedTooltipContent: string;
+      randomSeedOptionalPlaceholder: string;
+      gptImageQualityLabel: string;
+      gptImageQualityTooltipTitle: string;
+      gptImageQualityTooltipContent: string;
+      gptImageQualityOptionLow: string;
+      gptImageQualityOptionMedium: string;
+      gptImageQualityOptionHigh: string;
+      gptImageInputFidelityLabel: string;
+      gptImageInputFidelityTooltipTitle: string;
+      gptImageInputFidelityTooltipLow: string;
+      gptImageInputFidelityTooltipHigh: string;
+      gptImageInputFidelityTooltipNote: string;
+      gptImageInputFidelityOptionLow: string;
+      gptImageInputFidelityOptionHigh: string;
+      gptImageQuantityLabel: string;
+    };
+    videoSettings: {
+      generationModeLabel: string;
+      resolutionLabel: string;
+      aspectRatioLabel: string;
+      durationLabel: string;
+      durationUnit: string;
+      seedLabel: string;
+      seedPlaceholder: string;
+      cameraFixedLabel: string;
+      smartRewriteLabel: string;
+      generateAudioLabel: string;
+      audioFileLabel: string;
+      audioUploadHint: string;
+      audioRemoveTitle: string;
+      wanSeedLabel: string;
+      wanSeedPlaceholder: string;
+      aspectRatioOptions: Record<string, string>;
+      resolutionOptions: Record<string, string>;
+      imageToVideoModes: Record<string, { name: string; description: string }>;
+    };
+    sizeSelector?: {
+      imageSize: string;
+      resolution: string;
+      aspectRatio: string;
+      width: string;
+      height: string;
+    };
+    sequentialImageGeneration: {
+      multiImageGenerationTitle: string;
+      enableMultiImageTitle: string;
+      enableMultiImageDesc: string;
+      textToMultiImage: string;
+      imageToMultiImage: string;
+      multiImageToMultiImage: string;
+      disableMultiImageTitle: string;
+      disableMultiImageDesc: string;
+      textToSingleImage: string;
+      imageToSingleImage: string;
+      multiImageToSingleImage: string;
+      importantNote: string;
+      importantNoteContent: string;
+      maxImagesNote: string;
     };
   };
   keysPage: {
@@ -3383,6 +3518,10 @@ export const translations: Record<string, Translation> = {
       noHistory: 'No records yet',
       mainTitle: 'Dialogue Area',
       statusReady: 'Ready',
+    historyLoading: 'Loading...',
+    historyDeleteTooltip: 'Delete record',
+    statusGenerating: 'Generating...',
+    statusModelNotSelected: 'No model selected',
       inputPlaceholder: 'Enter your question... (Enter to send, Shift+Enter for newline)',
       inputPlaceholders: {
         chat: 'Enter your question... (Enter to send, Shift+Enter for newline)',
@@ -3403,6 +3542,38 @@ export const translations: Record<string, Translation> = {
         chat: 'Chat',
         image: 'Image',
         video: 'Video'
+      },
+      thinking: 'Thinking...',
+      videoProcessing: {
+        submitted: 'Task submitted successfully, waiting for processing...',
+        preparing: 'Preparing generation task, please wait...',
+        generating: 'Creating a polished video for you...',
+        failed: 'Video generation failed'
+      },
+      tooltips: {
+        preview: 'Preview',
+        download: 'Download',
+        importMaterial: 'Import material',
+        importingMaterial: 'Importing material...',
+        imageToVideo: 'Image to video'
+      },
+    messageActions: {
+      copy: 'Copy',
+      quote: 'Quote',
+      resend: 'Resend'
+    },
+    preview: {
+      close: 'Close',
+      copyLink: 'Copy link'
+    },
+      audio: {
+        uploading: 'Uploading audio...',
+        uploadSuccess: 'Audio uploaded successfully',
+        removed: 'Audio removed',
+        formatError: 'Only WAV and MP3 formats are supported',
+        sizeExceeded: 'Audio file must be 15MB or smaller',
+        uploadFailed: 'Audio file upload failed: {message}',
+        retry: 'Please try again'
       },
       aiCreatingImage: 'AI is creating beautiful images for you...',
       modelNotSupportImageUpload: 'This model does not support image upload, please switch models',
@@ -3427,7 +3598,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: 'Chat record deleted',
         deleteRecordFailed: 'Failed to delete chat record',
         linkCopied: 'Link copied',
-        materialImported: 'Material imported successfully'
+        materialImported: 'Material imported successfully',
+        quotedMessageAdded: 'Message content added to input',
+        imageCopiedToInput: 'Image copied into input',
+        imageAddedToInput: 'Image added to input',
+        imageDownloadStarted: 'Image download started',
+        videoDownloadStarted: 'Video download started',
+        copiedToClipboard: 'Copied to clipboard',
+        imageLinkCopied: 'Image link copied',
+        videoLinkCopied: 'Video link copied',
+        copyImageFailed: 'Failed to copy image',
+        downloadFailed: 'Download failed, try opening in a new window',
+        imageValidationMin: 'Image editing requires at least 1 image',
+        imageValidationMax: 'Supports up to 3 images'
       },
       aiRoleDefinition: {
         title: 'Define AI Assistant Role',
@@ -3460,6 +3643,128 @@ export const translations: Record<string, Translation> = {
         formatNotSupported: 'Image format not supported. Supported formats: ',
         sizeExceeded: 'File size exceeded limit. Max allowed: ',
         readFailed: 'Failed to read file',
+        genericError: 'Image validation failed'
+      },
+      imageSettings: {
+        sizeLabel: 'Image size',
+        randomSeedLabel: 'Random seed (optional)',
+        randomSeedPlaceholder: 'Random by default',
+        multiImageLabel: 'Multi-image mode',
+        watermarkLabel: 'Add watermark',
+        creativityLabel: 'Creativity',
+        creativityTooltipTitle: 'Adjust creativity',
+        creativityTooltipLineLow: '0: Outputs stay precise and stable with less randomness, suitable for factual answers.',
+        creativityTooltipLineHigh: '2: Expressions become more flexible and surprising, ideal for brainstorming.',
+        creativityScaleMinLabel: 'Precision',
+        creativityScaleMaxLabel: 'Creative',
+        qwenPromptExtendLabel: 'Prompt extension',
+        qwenPromptExtendTooltipTitle: 'Prompt extension',
+        qwenPromptExtendTooltipContent:
+          'Enable automatic expansion and optimization of your prompt so the generated images stay rich and precise. <strong>Tip:</strong> turn it on for short prompts to get better results.',
+        qwenImageEditCountLabel: 'Output image count',
+        qwenImageEditCountTooltipTitle: 'Output count',
+        qwenImageEditCountTooltipContent:
+          'You can generate up to 6 images; the actual number depends on your reference images and edit complexity.',
+        negativePromptLabel: 'Negative prompt (optional)',
+        negativePromptTooltipTitle: 'Negative prompt',
+        negativePromptTooltipContent:
+          'Describe content, styles, or elements you do not want in the image (e.g. blurry, low quality, text, watermark).',
+        negativePromptPlaceholder: 'Describe unwanted content, styles, or elements...',
+        negativePromptEditTooltipTitle: 'Negative prompt (optional)',
+        negativePromptEditTooltipContent:
+          'Describe content, styles, or elements you do not want in the edited image.<br/><strong>Common examples:</strong><br/><ul><li>Person edits: distortions, deformations, extra limbs, wrong proportions</li><li>Style transfer: over-processing, artifacts, mismatched colors</li><li>Object edits: unnatural looks, visual conflicts, visible seams</li></ul>',
+        negativePromptEditPlaceholder:
+          'Describe unwanted content, styles, or elements in the edited image...',
+        randomSeedTooltipTitle: 'Random seed (optional)',
+        randomSeedTooltipContent:
+          'Using the same seed, input, and parameters helps you reproduce similar results.<br/><strong>Range:</strong> 0 - 2147483647<br/><strong>Tip:</strong> leave it empty to randomize each time.',
+        randomSeedOptionalPlaceholder: 'Leave empty for random each time',
+      gptImageQualityLabel: 'Image quality',
+      gptImageQualityTooltipTitle: 'Image quality',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>Standard:</strong> Balanced quality and speed</div><div><strong>High:</strong> Higher resolution and details</div><div><strong>Ultra:</strong> Best detail at a higher cost</div><div class="mt-2 text-gray-500 text-xs">💡 Higher quality costs more but yields sharper images.</div></div>',
+      gptImageQualityOptionLow: 'Standard',
+      gptImageQualityOptionMedium: 'High',
+      gptImageQualityOptionHigh: 'Ultra',
+      gptImageInputFidelityLabel: 'Detail fidelity',
+      gptImageInputFidelityTooltipTitle: 'Detail fidelity',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low:</strong> Prioritize creativity and allow significant modification, great for artistic transformations.',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High:</strong> Preserve original details such as faces, brand logos, and structure.',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ Higher fidelity increases token usage, useful when you must retain specific elements.',
+      gptImageInputFidelityOptionLow: 'Low',
+      gptImageInputFidelityOptionHigh: 'High',
+      gptImageQuantityLabel: 'Generation quantity',
+      },
+      sizeSelector: {
+        imageSize: 'Image size',
+        resolution: 'Resolution',
+        aspectRatio: 'Aspect ratio',
+        width: 'Width',
+        height: 'Height'
+      },
+      videoSettings: {
+        generationModeLabel: 'Generation mode',
+        resolutionLabel: 'Resolution',
+        aspectRatioLabel: 'Aspect ratio',
+        durationLabel: 'Duration',
+        durationUnit: 's',
+        seedLabel: 'Random seed (optional)',
+        seedPlaceholder: 'Random by default',
+        cameraFixedLabel: 'Camera lock',
+        smartRewriteLabel: 'Prompt rewrite',
+        generateAudioLabel: 'Generate audio',
+        audioFileLabel: 'Audio file (optional)',
+        audioUploadHint: '🎵 Upload audio (WAV/MP3, max 15MB)',
+        audioRemoveTitle: 'Remove audio',
+        wanSeedLabel: 'Random seed (optional)',
+        wanSeedPlaceholder: 'Leave empty for random',
+        aspectRatioOptions: {
+          '16:9': '16:9 (Landscape)',
+          '4:3': '4:3 (Traditional)',
+          '1:1': '1:1 (Square)',
+          '3:4': '3:4 (Vertical)',
+          '9:16': '9:16 (Vertical)',
+          '21:9': '21:9 (Widescreen)',
+          adaptive: 'Adaptive',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: 'First frame generation',
+            description: 'Generate video based on the first frame image',
+          },
+          first_last_frame: {
+            name: 'First & last frame generation',
+            description: 'Generate video using both the first and last frame images',
+          },
+          reference: {
+            name: 'Reference image generation',
+            description: 'Generate video guided by a reference image',
+          },
+        },
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: 'Multi-image generation guide',
+        enableMultiImageTitle: 'I. Enable multi-image generation mode',
+        enableMultiImageDesc: 'When enabled, you can create a set of related images from text or reference pictures, including the following situations:',
+        textToMultiImage: '1. <strong>Text to multi-image</strong>: generate a set of related images using only text prompts, up to 4 images;',
+        imageToMultiImage: '2. <strong>Single image to multi-image</strong>: upload one reference image plus extra text to generate a set of related images, up to 4 images;',
+        multiImageToMultiImage: '3. <strong>Multi-image to multi-image</strong>: upload 2-7 reference images plus extra text to generate a related image set, and the total number of reference and generated images must not exceed 11;',
+        disableMultiImageTitle: 'II. Disable multi-image mode (default single image)',
+        disableMultiImageDesc: 'When disabled, only single image creation is supported based on text or references, including:',
+        textToSingleImage: '1. <strong>Text to single image</strong>: generate one image that matches the description;',
+        imageToSingleImage: '2. <strong>Single image to single image</strong>: upload one reference image plus text to generate a related image;',
+        multiImageToSingleImage: '3. <strong>Multi-image to single image</strong>: upload 2-7 reference images plus text to generate one image that blends the core elements of the references.',
+        importantNote: 'Important note',
+        importantNoteContent: 'You can generate up to 4 images; the actual quantity depends on the prompt.',
+        maxImagesNote: 'Generate up to 4 images; actual number depends on the prompt.'
       }
     },
     keysPage: {
@@ -5939,6 +6244,10 @@ export const translations: Record<string, Translation> = {
       noHistory: '暂无记录',
       mainTitle: '对话区域',
       statusReady: '准备就绪',
+    historyLoading: '加载中...',
+    historyDeleteTooltip: '删除记录',
+    statusGenerating: '生成中...',
+    statusModelNotSelected: '未选择模型',
       inputPlaceholder: '输入您的问题... (Enter发送，Shift+Enter换行)',
       inputPlaceholders: {
         chat: '输入您的问题... (Enter发送, Shift+Enter换行)',
@@ -5959,6 +6268,38 @@ export const translations: Record<string, Translation> = {
         chat: '对话',
         image: '图片',
         video: '视频'
+      },
+      thinking: '思考中...',
+      videoProcessing: {
+        submitted: '任务提交成功，等待处理...',
+        preparing: '正在准备生成任务，请稍候...',
+        generating: '正在创作精美视频...',
+        failed: '视频生成失败'
+      },
+      tooltips: {
+        preview: '预览',
+        download: '下载',
+        importMaterial: '导入素材',
+        importingMaterial: '正在导入素材...',
+        imageToVideo: '图生视频'
+      },
+    messageActions: {
+      copy: '复制',
+      quote: '引用',
+      resend: '重新发送'
+    },
+    preview: {
+      close: '关闭',
+      copyLink: '复制链接'
+    },
+      audio: {
+        uploading: '音频上传中...',
+        uploadSuccess: '音频文件上传成功',
+        removed: '已移除音频文件',
+        formatError: '仅支持 WAV 和 MP3 格式的音频文件',
+        sizeExceeded: '音频文件大小不能超过15MB',
+        uploadFailed: '音频文件上传失败：{message}',
+        retry: '请重试'
       },
       aiCreatingImage: 'AI正在为您创作精美图片...',
       modelNotSupportImageUpload: '该模型不支持上传图片，请切换模型',
@@ -5983,7 +6324,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: '对话记录已删除',
         deleteRecordFailed: '删除对话记录失败',
         linkCopied: '链接已复制',
-        materialImported: '素材导入成功'
+        materialImported: '素材导入成功',
+        quotedMessageAdded: '已引用消息内容到输入框',
+        imageCopiedToInput: '图片已复制并添加到输入框',
+        imageAddedToInput: '图片已添加到输入框',
+        imageDownloadStarted: '图片下载开始',
+        videoDownloadStarted: '视频下载开始',
+        copiedToClipboard: '已复制到剪贴板',
+        imageLinkCopied: '图片链接已复制',
+        videoLinkCopied: '视频链接已复制',
+        copyImageFailed: '复制图片失败',
+        downloadFailed: '下载失败，尝试在新窗口打开',
+        imageValidationMin: '图像编辑模型需要至少上传 1 张图片',
+        imageValidationMax: '最多支持 3 张图片'
       },
       aiRoleDefinition: {
         title: '定义AI助手角色',
@@ -6016,6 +6369,128 @@ export const translations: Record<string, Translation> = {
         readFailed: '文件读取失败',
         formatNotSupported: '图片格式不支持。仅支持：',
         sizeExceeded: '文件大小超过限制。最大允许：',
+        genericError: '图片验证失败',
+      },
+      imageSettings: {
+        sizeLabel: '图片尺寸',
+        randomSeedLabel: '随机种子（可选）',
+        randomSeedPlaceholder: '默认随机',
+        multiImageLabel: '组图功能',
+        watermarkLabel: '添加水印',
+        creativityLabel: '创意度',
+        creativityTooltipTitle: '调整创意度',
+        creativityTooltipLineLow: '0：输出更精准稳定、少随机创意，适合事实问答',
+        creativityTooltipLineHigh: '2：表达更多元灵活、富惊喜感，适合脑洞创作',
+        creativityScaleMinLabel: '精准稳定',
+        creativityScaleMaxLabel: '灵活创意',
+        qwenPromptExtendLabel: '提示词扩展',
+        qwenPromptExtendTooltipTitle: '提示词扩展',
+        qwenPromptExtendTooltipContent:
+          '开启后，系统会自动扩展和优化您的提示词，使生成的图片更加丰富和精准。<br/><strong>建议：</strong>对于简短的提示词，建议开启此功能以获得更好的效果。',
+        qwenImageEditCountLabel: '输出图像数量',
+        qwenImageEditCountTooltipTitle: '生成数量',
+        qwenImageEditCountTooltipContent:
+          '最多可生成6张图片，实际数量受图片内容和编辑复杂度影响',
+        negativePromptLabel: '负面提示词（可选）',
+        negativePromptTooltipTitle: '负面提示词',
+        negativePromptTooltipContent:
+          '描述您不希望在图片中出现的内容、风格或元素。例如：模糊、低质量、文字、水印等',
+        negativePromptPlaceholder: '描述您不希望在图片中出现的内容、风格或元素...',
+        negativePromptEditTooltipTitle: '负面提示词（可选）',
+        negativePromptEditTooltipContent:
+          '描述您不希望在编辑后的图片中出现的内容、风格或元素。<br/><strong>常用示例：</strong><br/><ul><li>人物编辑：扭曲、变形、多余的肢体、错误的比例</li><li>风格迁移：过度渲染、失真、色彩不匹配</li><li>物体编辑：不自然、违和感、接缝明显</li></ul>',
+        negativePromptEditPlaceholder:
+          '描述您不希望在编辑后的图片中出现的内容、风格或元素...',
+        randomSeedTooltipTitle: '随机种子（可选）',
+        randomSeedTooltipContent:
+          '使用相同的种子、相同的输入和参数，可以获得相似的生成结果。<br/><strong>取值范围：</strong>0 - 2147483647<br/><strong>建议：</strong>留空则每次随机生成',
+        randomSeedOptionalPlaceholder: '留空则每次随机生成',
+      gptImageQualityLabel: '图片质量',
+      gptImageQualityTooltipTitle: '图像质量',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>标准：</strong>均衡画质与速度</div><div><strong>高清：</strong>更高分辨率与细节</div><div><strong>超清：</strong>更佳画质但费用更高</div><div class="mt-2 text-gray-500 text-xs">💡 质量越高，输出越清晰，但成本也越高。</div></div>',
+      gptImageQualityOptionLow: '标准',
+      gptImageQualityOptionMedium: '高清',
+      gptImageQualityOptionHigh: '超清',
+      gptImageInputFidelityLabel: '细节保留',
+      gptImageInputFidelityTooltipTitle: '细节保留说明',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low：</strong>创意优先，允许大幅修改原图，适合风格创作。',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High：</strong>保留原图细节，如人脸、品牌标识、结构等。',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ 选择高保真会显著增加 Token 消耗，建议在必须保留元素时使用。',
+      gptImageInputFidelityOptionLow: '低',
+      gptImageInputFidelityOptionHigh: '高',
+      gptImageQuantityLabel: '生成数量',
+      },
+      sizeSelector: {
+        imageSize: '图片尺寸',
+        resolution: '分辨率',
+        aspectRatio: '图片比例',
+        width: '宽度',
+        height: '高度'
+      },
+      videoSettings: {
+        generationModeLabel: '生成模式',
+        resolutionLabel: '分辨率',
+        aspectRatioLabel: '宽高比',
+        durationLabel: '视频时长',
+        durationUnit: '秒',
+        seedLabel: '随机种子（可选）',
+        seedPlaceholder: '默认随机',
+        cameraFixedLabel: '固定摄像头',
+        smartRewriteLabel: '智能扩写提示词',
+        generateAudioLabel: '生成音效',
+        audioFileLabel: '音频文件（可选）',
+        audioUploadHint: '🎵 上传音频（WAV/MP3，最大15MB）',
+        audioRemoveTitle: '移除音频',
+        wanSeedLabel: '随机种子（可选）',
+        wanSeedPlaceholder: '留空则随机',
+        aspectRatioOptions: {
+          '16:9': '16:9 (横屏)',
+          '4:3': '4:3 (传统)',
+          '1:1': '1:1 (正方形)',
+          '3:4': '3:4 (竖屏)',
+          '9:16': '9:16 (竖屏)',
+          '21:9': '21:9 (宽屏)',
+          adaptive: '自适应',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: '首帧生成',
+            description: '基于首帧图片生成视频',
+          },
+          first_last_frame: {
+            name: '首尾帧生成',
+            description: '基于首尾帧图片生成视频',
+          },
+          reference: {
+            name: '参考图生成',
+            description: '基于参考图片生成视频',
+          },
+        },
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: '多图生成功能说明',
+        enableMultiImageTitle: '一、启用多图生成模式',
+        enableMultiImageDesc: '当开启多图生成功能时，支持基于文本或参考图片生成一组内容关联的图片，具体场景包括：',
+        textToMultiImage: '1. <strong>文生多图</strong>：仅通过文本提示词，生成一组内容关联的图片，最多可生成4张；',
+        imageToMultiImage: '2. <strong>单图生多图</strong>：上传1张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，最多可生成4张；',
+        multiImageToMultiImage: '3. <strong>多图生多图</strong>：上传2-7张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，且「参考图片总数+生成图片数」不超过11张。',
+        disableMultiImageTitle: '二、关闭多图生成模式（默认单图生成）',
+        disableMultiImageDesc: '当关闭多图生成功能时，仅支持基于文本或参考图片生成单张图片，具体场景包括：',
+        textToSingleImage: '1. <strong>文生单图</strong>：仅通过文本提示词，生成1张符合描述的图片；',
+        imageToSingleImage: '2. <strong>单图生单图</strong>：上传1张参考图片+补充文本提示词，生成1张与参考图内容关联的图片；',
+        multiImageToSingleImage: '3. <strong>多图生单图</strong>：上传2-7张参考图片+补充文本提示词，生成1张融合参考图核心元素的图片。',
+        importantNote: '重要提示',
+        importantNoteContent: '最多可生成4张图片，实际数量受文本提示词影响',
+        maxImagesNote: '最多可生成4张图片，实际数量受文本提示词影响'
       }
     },
     keysPage: {
@@ -8066,6 +8541,10 @@ export const translations: Record<string, Translation> = {
       noHistory: 'Belum ada rekaman',
       mainTitle: 'Area Dialog',
       statusReady: 'Siap',
+    historyLoading: 'Memuat...',
+    historyDeleteTooltip: 'Hapus rekaman',
+    statusGenerating: 'Sedang dibuat...',
+    statusModelNotSelected: 'Belum memilih model',
       inputPlaceholder: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
       inputPlaceholders: {
         chat: 'Masukkan pertanyaan Anda... (Enter untuk mengirim, Shift+Enter untuk baris baru)',
@@ -8086,6 +8565,38 @@ export const translations: Record<string, Translation> = {
         chat: 'Obrolan',
         image: 'Gambar',
         video: 'Video'
+      },
+      thinking: 'Sedang berpikir...',
+      videoProcessing: {
+        submitted: 'Tugas dikirim, mohon tunggu...',
+        preparing: 'Mempersiapkan tugas generasi, harap tunggu...',
+        generating: 'Menciptakan video yang indah untuk Anda...',
+        failed: 'Pembuatan video gagal'
+      },
+      tooltips: {
+        preview: 'Pratinjau',
+        download: 'Unduh',
+        importMaterial: 'Impor materi',
+        importingMaterial: 'Mengimpor materi...',
+        imageToVideo: 'Gambar ke video'
+      },
+    messageActions: {
+      copy: 'Salin',
+      quote: 'Kutip',
+      resend: 'Kirim ulang'
+    },
+    preview: {
+      close: 'Tutup',
+      copyLink: 'Salin tautan'
+    },
+      audio: {
+        uploading: 'Mengunggah audio...',
+        uploadSuccess: 'File audio berhasil diunggah',
+        removed: 'File audio telah dihapus',
+        formatError: 'Hanya mendukung format WAV dan MP3',
+        sizeExceeded: 'Ukuran file audio maksimal 15MB',
+        uploadFailed: 'Pengunggahan file audio gagal: {message}',
+        retry: 'Silakan coba lagi'
       },
       aiCreatingImage: 'AI sedang membuat gambar indah untuk Anda...',
       modelNotSupportImageUpload: 'Model ini tidak mendukung unggah gambar, silakan ganti model',
@@ -8110,7 +8621,19 @@ export const translations: Record<string, Translation> = {
         recordDeleted: 'Catatan obrolan dihapus',
         deleteRecordFailed: 'Gagal menghapus catatan obrolan',
         linkCopied: 'Tautan disalin',
-        materialImported: 'Materi berhasil diimpor'
+        materialImported: 'Materi berhasil diimpor',
+        quotedMessageAdded: 'Konten pesan ditambahkan ke input',
+        imageCopiedToInput: 'Gambar disalin ke input',
+        imageAddedToInput: 'Gambar ditambahkan ke input',
+        imageDownloadStarted: 'Unduhan gambar dimulai',
+        videoDownloadStarted: 'Unduhan video dimulai',
+        copiedToClipboard: 'Disalin ke papan klip',
+        imageLinkCopied: 'Tautan gambar disalin',
+        videoLinkCopied: 'Tautan video disalin',
+        copyImageFailed: 'Gagal menyalin gambar',
+        downloadFailed: 'Unduhan gagal, coba buka di jendela baru',
+        imageValidationMin: 'Model pengeditan memerlukan setidaknya 1 gambar',
+        imageValidationMax: 'Mendukung hingga 3 gambar'
       },
       aiRoleDefinition: {
         title: 'Definisikan Peran Asisten AI',
@@ -8143,6 +8666,130 @@ export const translations: Record<string, Translation> = {
         formatNotSupported: 'Format gambar tidak didukung. Format yang didukung: ',
         sizeExceeded: 'Ukuran file melebihi batas. Maksimal diizinkan: ',
         readFailed: 'Gagal membaca file',
+        genericError: 'Validasi gambar gagal',
+      },
+      imageSettings: {
+        sizeLabel: 'Ukuran gambar',
+        randomSeedLabel: 'Benih acak (opsional)',
+        randomSeedPlaceholder: 'Acak secara default',
+        multiImageLabel: 'Fungsi multi-gambar',
+        watermarkLabel: 'Tambahkan watermark',
+        creativityLabel: 'Kreativitas',
+        creativityTooltipTitle: 'Sesuaikan kreativitas',
+        creativityTooltipLineLow:
+          '0: Output lebih presisi dan stabil, dengan sedikit kreativitas acak, cocok untuk tanya jawab faktual.',
+        creativityTooltipLineHigh:
+          '2: Ekspresi lebih beragam dan mengejutkan, cocok untuk kreasi ide liar.',
+        creativityScaleMinLabel: 'Presisi',
+        creativityScaleMaxLabel: 'Kreatif',
+        qwenPromptExtendLabel: 'Perluasan prompt',
+        qwenPromptExtendTooltipTitle: 'Perluasan prompt',
+        qwenPromptExtendTooltipContent:
+          'Aktifkan agar sistem otomatis memperluas dan mengoptimalkan prompt Anda, membuat gambar lebih kaya dan presisi. <strong>Tips:</strong> hidupkan untuk prompt pendek agar hasil lebih baik.',
+        qwenImageEditCountLabel: 'Jumlah keluaran gambar',
+        qwenImageEditCountTooltipTitle: 'Jumlah keluaran',
+        qwenImageEditCountTooltipContent:
+          'Maksimal 6 gambar; jumlah sebenarnya tergantung pada gambar referensi dan kompleksitas edit.',
+        negativePromptLabel: 'Prompt negatif (opsional)',
+        negativePromptTooltipTitle: 'Prompt negatif',
+        negativePromptTooltipContent:
+          'Jelaskan konten, gaya, atau elemen yang tidak ingin muncul di gambar, misalnya: blur, kualitas rendah, teks, watermark.',
+        negativePromptPlaceholder: 'Jelaskan konten, gaya, atau elemen yang tidak diinginkan...',
+        negativePromptEditTooltipTitle: 'Prompt negatif (opsional)',
+        negativePromptEditTooltipContent:
+          'Jelaskan konten, gaya, atau elemen yang tidak ingin muncul di gambar hasil edit.<br/><strong>Contoh umum:</strong><br/><ul><li>Edit wajah: distorsi, deformasi, anggota badan berlebih, proporsi salah</li><li>Transfer gaya: terlalu tajam, artefak, warna tidak cocok</li><li>Edit objek: terlihat tidak alami, tidak sinkron, sambungan jelas</li></ul>',
+        negativePromptEditPlaceholder:
+          'Jelaskan konten, gaya, atau elemen yang tidak diinginkan di gambar hasil edit...',
+        randomSeedTooltipTitle: 'Benih acak (opsional)',
+        randomSeedTooltipContent:
+          'Dengan benih, input, dan parameter yang sama, Anda bisa mendapatkan hasil yang mirip.<br/><strong>Rentang:</strong> 0 - 2147483647<br/><strong>Tips:</strong> biarkan kosong untuk acak setiap kali.',
+        randomSeedOptionalPlaceholder: 'Kosongkan untuk acak tiap kali',
+      gptImageQualityLabel: 'Kualitas gambar',
+      gptImageQualityTooltipTitle: 'Kualitas gambar',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>Standard:</strong> Keseimbangan kualitas dan kecepatan</div><div><strong>High:</strong> Resolusi dan detail lebih tinggi</div><div><strong>Ultra:</strong> Detail terbaik dengan biaya lebih tinggi</div><div class="mt-2 text-gray-500 text-xs">💡 Kualitas lebih tinggi menghasilkan gambar yang lebih tajam tapi biaya lebih besar.</div></div>',
+      gptImageQualityOptionLow: 'Standard',
+      gptImageQualityOptionMedium: 'High',
+      gptImageQualityOptionHigh: 'Ultra',
+      gptImageInputFidelityLabel: 'Fidelitas detail',
+      gptImageInputFidelityTooltipTitle: 'Fidelitas detail',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low:</strong> Prioritaskan kreativitas, mengizinkan perubahan besar pada gambar asli, cocok untuk transformasi artistik.',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High:</strong> Pertahankan detail asli seperti wajah, logo merek, dan struktur.',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ Fidelitas tinggi meningkatkan penggunaan token; gunakan saat perlu mempertahankan elemen tertentu.',
+      gptImageInputFidelityOptionLow: 'Low',
+      gptImageInputFidelityOptionHigh: 'High',
+      gptImageQuantityLabel: 'Jumlah generasi',
+      },
+    sizeSelector: {
+      imageSize: 'Ukuran gambar',
+      resolution: 'Resolusi',
+      aspectRatio: 'Rasio aspek',
+      width: 'Lebar',
+      height: 'Tinggi'
+    },
+      videoSettings: {
+        generationModeLabel: 'Mode generasi',
+        resolutionLabel: 'Resolusi',
+        aspectRatioLabel: 'Rasio aspek',
+        durationLabel: 'Durasi',
+        durationUnit: 'detik',
+        seedLabel: 'Benih acak (opsional)',
+        seedPlaceholder: 'Acak secara default',
+        cameraFixedLabel: 'Kamera tetap',
+        smartRewriteLabel: 'Perluasan prompt',
+        generateAudioLabel: 'Hasilkan audio',
+        audioFileLabel: 'File audio (opsional)',
+        audioUploadHint: '🎵 Unggah audio (WAV/MP3, maks 15MB)',
+        audioRemoveTitle: 'Hapus audio',
+        wanSeedLabel: 'Benih acak (opsional)',
+        wanSeedPlaceholder: 'Kosongkan untuk acak',
+        aspectRatioOptions: {
+          '16:9': '16:9 (Lanskap)',
+          '4:3': '4:3 (Klasik)',
+          '1:1': '1:1 (Persegi)',
+          '3:4': '3:4 (Potret)',
+          '9:16': '9:16 (Vertikal)',
+          '21:9': '21:9 (Layar Lebar)',
+          adaptive: 'Adaptif',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: 'Generasi bingkai pertama',
+            description: 'Hasilkan video berdasarkan gambar bingkai pertama',
+          },
+          first_last_frame: {
+            name: 'Bingkai awal & akhir',
+            description: 'Hasilkan video menggunakan bingkai pertama dan terakhir',
+          },
+          reference: {
+            name: 'Gambar referensi',
+            description: 'Hasilkan video berdasarkan gambar referensi',
+          },
+        },
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: 'Panduan multi-gambar',
+        enableMultiImageTitle: 'I. Aktifkan mode multi-gambar',
+        enableMultiImageDesc: 'Saat fitur multi-gambar aktif, Anda dapat membuat satu set gambar terkait berdasarkan teks atau gambar referensi, termasuk skenario berikut:',
+        textToMultiImage: '1. <strong>Teks ke multi-gambar</strong>: gunakan prompt teks saja untuk membuat satu set gambar terkait, maksimal 4 gambar;',
+        imageToMultiImage: '2. <strong>Gambar tunggal ke multi-gambar</strong>: unggah 1 gambar referensi dan tambahkan teks untuk membuat satu set gambar terkait, maksimal 4 gambar;',
+        multiImageToMultiImage: '3. <strong>Multi-gambar ke multi-gambar</strong>: unggah 2-7 gambar referensi dan teks tambahan untuk membuat set gambar terkait, dengan total gambar referensi + hasil tidak melebihi 11;',
+        disableMultiImageTitle: 'II. Nonaktifkan mode multi-gambar (default satu gambar)',
+        disableMultiImageDesc: 'Saat dinonaktifkan, hanya mendukung pembuatan satu gambar berdasarkan teks atau referensi, termasuk:',
+        textToSingleImage: '1. <strong>Teks ke satu gambar</strong>: buat 1 gambar sesuai deskripsi;',
+        imageToSingleImage: '2. <strong>Gambar tunggal ke satu gambar</strong>: unggah 1 gambar referensi ditambah teks untuk menghasilkan 1 gambar terkait;',
+        multiImageToSingleImage: '3. <strong>Multi-gambar ke satu gambar</strong>: unggah 2-7 gambar referensi ditambah teks untuk menghasilkan 1 gambar yang memadukan elemen inti referensi;',
+        importantNote: 'Catatan penting',
+        importantNoteContent: 'Maksimal 4 gambar dapat dibuat; jumlah aktual tergantung prompt.',
+        maxImagesNote: 'Maksimal 4 gambar; jumlah aktual tergantung prompt.'
       }
     },
     keysPage: {
