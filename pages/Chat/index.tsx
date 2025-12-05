@@ -4362,13 +4362,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-medium">创意度</span>
+                      <span className="font-medium">{imageSettingsT.creativityLabel || 'Creativity'}</span>
                       <TooltipIcon
-                        title="调整创意度"
+                        title={imageSettingsT.creativityTooltipTitle || 'Adjust creativity'}
                         content={
                           <div>
-                            <div>0: 输出更精准稳定、少随机创意，适合事实问答</div>
-                            <div>2: 表达更多元灵活、富惊喜感，适合脑洞创作</div>
+                            <div>{imageSettingsT.creativityTooltipLineLow || '0: Outputs stay precise and stable with less randomness, suitable for factual answers.'}</div>
+                            <div>{imageSettingsT.creativityTooltipLineHigh || '2: Expressions become more flexible and surprising, ideal for brainstorming.'}</div>
                           </div>
                         }
                         size={16}
@@ -4383,8 +4383,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between text-xs text-muted">
-                    <span>精准稳定</span>
-                    <span>灵活创意</span>
+                    <span>{imageSettingsT.creativityScaleMinLabel || 'Precision'}</span>
+                    <span>{imageSettingsT.creativityScaleMaxLabel || 'Creative'}</span>
                   </div>
                 </div>
                 )}
@@ -4556,18 +4556,20 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">图片质量</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.gptImageQualityLabel || 'Image quality'}
+                    </label>
                     <TooltipIcon
-                      title="图像质量"
+                      title={imageSettingsT.gptImageQualityTooltipTitle || 'Image quality'}
                       content={
-                        <div>
-                          <div className="mb-2"><strong>标准</strong>：标准画质</div>
-                          <div className="mb-2"><strong>高清</strong>：高清画质</div>
-                          <div className="mb-2"><strong>超清</strong>：超清画质</div>
-                          <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500">
-                            💡 质量越高，输出图片的分辨率和细节越好，费用也越高
-                          </div>
-                        </div>
+                        <div
+                          className="leading-relaxed text-gray-700 dark:text-gray-300"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.gptImageQualityTooltipContent ||
+                              '<div class="space-y-2"><div><strong>Standard:</strong> Balanced quality and speed</div><div><strong>High:</strong> Higher resolution and details</div><div><strong>Ultra:</strong> Best detail at a higher cost</div><div class="mt-2 text-gray-500 text-xs">💡 Higher quality costs more but yields sharper images.</div></div>'
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4577,9 +4579,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     onChange={(e) => setGptImageQuality(e.target.value as 'low' | 'medium' | 'high')}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="low">低质量</option>
-                    <option value="medium">中等质量</option>
-                    <option value="high">高质量</option>
+                    <option value="low">{imageSettingsT.gptImageQualityOptionLow || 'Standard'}</option>
+                    <option value="medium">{imageSettingsT.gptImageQualityOptionMedium || 'High'}</option>
+                    <option value="high">{imageSettingsT.gptImageQualityOptionHigh || 'Ultra'}</option>
                   </select>
                 </div>
                 )}
@@ -4588,23 +4590,21 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsGptImageInputFidelity(selectedModel) && uploadedImages.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">细节保留</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.gptImageInputFidelityLabel || 'Detail fidelity'}
+                    </label>
                     <TooltipIcon
-                      title="细节保留说明"
+                      title={imageSettingsT.gptImageInputFidelityTooltipTitle || 'Detail fidelity'}
                       content={
-                        <div>
-                          <div className="mb-2">
-                            <strong>Low：创意优先</strong>
-                            <div className="ml-4 text-gray-500 text-xs">允许大幅修改原图，适合风格转换、艺术创作</div>
-                          </div>
-                          <div className="mb-2">
-                            <strong>High：细节优先</strong>
-                            <div className="ml-4 text-gray-500 text-xs">最大保留原图细节，保留人脸、品牌标识等关键元素</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-gray-200 text-orange-500 text-xs">
-                            ⚠️ 费用说明：选择"High"会显著增加Token消耗，适合需要保留人脸特征或品牌标识的场景
-                          </div>
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              (imageSettingsT.gptImageInputFidelityTooltipLow || '') +
+                              (imageSettingsT.gptImageInputFidelityTooltipHigh || '') +
+                              `<div class="mt-2 pt-2 border-t border-gray-200 text-orange-500 text-xs">${imageSettingsT.gptImageInputFidelityTooltipNote ||
+                                '⚠️ Higher fidelity increases token usage, useful when you must retain specific elements.'}</div>`
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4614,8 +4614,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     onChange={(e) => setGptImageInputFidelity(e.target.value as 'low' | 'high')}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="low">低</option>
-                    <option value="high">高</option>
+                    <option value="low">
+                      {imageSettingsT.gptImageInputFidelityOptionLow || 'Low'}
+                    </option>
+                    <option value="high">
+                      {imageSettingsT.gptImageInputFidelityOptionHigh || 'High'}
+                    </option>
                   </select>
                 </div>
                 )}
@@ -4623,7 +4627,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* GPT生成数量 (GPT模型) */}
                 {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">生成数量 ({gptImageN})</label>
+                  <label className="text-sm font-medium">
+                    {imageSettingsT.gptImageQuantityLabel || 'Generation quantity'} ({gptImageN})
+                  </label>
                   <input 
                     type="range" min="1" max="10" step="1" 
                     value={gptImageN}
@@ -4637,14 +4643,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsQwenPromptExtend(selectedModel) && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">提示词扩展</label>
+                    <label className="text-sm font-medium">{imageSettingsT.qwenPromptExtendLabel || 'Prompt extension'}</label>
                     <TooltipIcon
-                      title="提示词扩展"
+                      title={imageSettingsT.qwenPromptExtendTooltipTitle || 'Prompt extension'}
                       content={
-                        <div>
-                          <p>开启后，系统会自动扩展和优化您的提示词，使生成的图片更加丰富和精准。</p>
-                          <p><strong>建议：</strong>对于简短的提示词，建议开启此功能以获得更好的效果。</p>
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.qwenPromptExtendTooltipContent ||
+                              'Enable automatic expansion and optimization of your prompt so the generated images stay rich and precise. <strong>Tip:</strong> turn it on for short prompts to get better results.'
+                          }}
+                        />
                       }
                       size={14}
                     />
@@ -4662,13 +4671,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsQwenImageEditN(selectedModel) && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">输出图像数量 ({qwenImageEditN})</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.qwenImageEditCountLabel || 'Output image count'} ({qwenImageEditN})
+                    </label>
                     <TooltipIcon
-                      title="生成数量"
+                      title={imageSettingsT.qwenImageEditCountTooltipTitle || 'Output count'}
                       content={
-                        <div>
-                          最多可生成6张图片，实际数量受图片内容和编辑复杂度影响
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.qwenImageEditCountTooltipContent ||
+                              'You can generate up to 6 images; the actual number depends on your reference images and edit complexity.'
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4712,22 +4727,30 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {selectedModel === 'qwen-image-plus' && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">负面提示词（可选）</label>
-                      <TooltipIcon
-                        title="负面提示词"
-                        content={
-                          <div>
-                            <p>描述您不希望在图片中出现的内容、风格或元素。</p>
-                            <p>例如：模糊、低质量、文字、水印等</p>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.negativePromptLabel || 'Negative prompt (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={imageSettingsT.negativePromptTooltipTitle || 'Negative prompt'}
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.negativePromptTooltipContent ||
+                              'Describe content, styles, or elements you do not want in the image, e.g. blurry, low quality, text, watermark.'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <textarea
                       value={qwenNegativePrompt}
                       onChange={(e) => setQwenNegativePrompt(e.target.value)}
-                      placeholder="描述您不希望在图片中出现的内容、风格或元素..."
+                      placeholder={
+                        imageSettingsT.negativePromptPlaceholder ||
+                        'Describe unwanted content, styles, or elements...'
+                      }
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
                       maxLength={500}
                     />
@@ -4738,27 +4761,32 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">负面提示词（可选）</label>
-                      <TooltipIcon
-                        title="负面提示词（可选）"
-                        content={
-                          <div>
-                            <p>描述您不希望在编辑后的图片中出现的内容、风格或元素。</p>
-                            <p><strong>常用示例：</strong></p>
-                            <ul className="list-disc list-inside ml-2 mt-1">
-                              <li>人物编辑：扭曲、变形、多余的肢体、错误的比例</li>
-                              <li>风格迁移：过度渲染、失真、色彩不匹配</li>
-                              <li>物体编辑：不自然、违和感、接缝明显</li>
-                            </ul>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.negativePromptLabel || 'Negative prompt (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={
+                        imageSettingsT.negativePromptEditTooltipTitle || 'Negative prompt (optional)'
+                      }
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.negativePromptEditTooltipContent ||
+                              'Describe content, styles, or elements you do not want in the edited image.<br/><strong>Common examples:</strong><br/><ul class="list-disc list-inside ml-2 mt-1"><li>Person edits: distortions, deformations, extra limbs, wrong proportions</li><li>Style transfer: over-processing, artifacts, mismatched colors</li><li>Object edits: unnatural looks, visual conflicts, visible seams</li></ul>'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <textarea
                       value={qwenImageEditNegativePrompt}
                       onChange={(e) => setQwenImageEditNegativePrompt(e.target.value)}
-                      placeholder="描述您不希望在编辑后的图片中出现的内容、风格或元素..."
+                      placeholder={
+                        imageSettingsT.negativePromptEditPlaceholder ||
+                        'Describe unwanted content, styles, or elements in the edited image...'
+                      }
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
                       maxLength={500}
                     />
@@ -4769,24 +4797,30 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">随机种子（可选）</label>
-                      <TooltipIcon
-                        title="随机种子（可选）"
-                        content={
-                          <div>
-                            <p>使用相同的种子、相同的输入和参数，可以获得相似的生成结果。</p>
-                            <p><strong>取值范围：</strong>0 - 2147483647</p>
-                            <p><strong>建议：</strong>留空则每次随机生成</p>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.randomSeedLabel || 'Random seed (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={imageSettingsT.randomSeedTooltipTitle || 'Random seed (optional)'}
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.randomSeedTooltipContent ||
+                              'Using the same seed, input, and parameters helps you reproduce similar results.<br/><strong>Range:</strong> 0 - 2147483647<br/><strong>Tip:</strong> leave it empty to randomize each time.'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <input
                       type="number"
                       min="0"
                       max="2147483647"
-                      placeholder="留空则每次随机生成"
+                      placeholder={
+                        imageSettingsT.randomSeedOptionalPlaceholder || 'Leave empty for random each time'
+                      }
                       value={qwenImageEditSeed || ''}
                       onChange={(e) => setQwenImageEditSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"

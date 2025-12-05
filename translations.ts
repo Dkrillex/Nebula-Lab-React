@@ -1075,6 +1075,49 @@ export interface Translation {
       randomSeedPlaceholder: string;
       multiImageLabel: string;
       watermarkLabel: string;
+      creativityLabel: string;
+      creativityTooltipTitle: string;
+      creativityTooltipLineLow: string;
+      creativityTooltipLineHigh: string;
+      creativityScaleMinLabel: string;
+      creativityScaleMaxLabel: string;
+      qwenPromptExtendLabel: string;
+      qwenPromptExtendTooltipTitle: string;
+      qwenPromptExtendTooltipContent: string;
+      qwenImageEditCountLabel: string;
+      qwenImageEditCountTooltipTitle: string;
+      qwenImageEditCountTooltipContent: string;
+      negativePromptLabel: string;
+      negativePromptTooltipTitle: string;
+      negativePromptTooltipContent: string;
+      negativePromptPlaceholder: string;
+      negativePromptEditTooltipTitle: string;
+      negativePromptEditTooltipContent: string;
+      negativePromptEditPlaceholder: string;
+      randomSeedTooltipTitle: string;
+      randomSeedTooltipContent: string;
+      randomSeedOptionalPlaceholder: string;
+      gptImageQualityLabel: string;
+      gptImageQualityTooltipTitle: string;
+      gptImageQualityTooltipContent: string;
+      gptImageQualityOptionLow: string;
+      gptImageQualityOptionMedium: string;
+      gptImageQualityOptionHigh: string;
+      gptImageInputFidelityLabel: string;
+      gptImageInputFidelityTooltipTitle: string;
+      gptImageInputFidelityTooltipLow: string;
+      gptImageInputFidelityTooltipHigh: string;
+      gptImageInputFidelityTooltipNote: string;
+      gptImageInputFidelityOptionLow: string;
+      gptImageInputFidelityOptionHigh: string;
+      gptImageQuantityLabel: string;
+    };
+    sizeSelector?: {
+      imageSize: string;
+      resolution: string;
+      aspectRatio: string;
+      width: string;
+      height: string;
     };
     sequentialImageGeneration: {
       multiImageGenerationTitle: string;
@@ -3587,7 +3630,60 @@ export const translations: Record<string, Translation> = {
         randomSeedLabel: 'Random seed (optional)',
         randomSeedPlaceholder: 'Random by default',
         multiImageLabel: 'Multi-image mode',
-        watermarkLabel: 'Add watermark'
+        watermarkLabel: 'Add watermark',
+        creativityLabel: 'Creativity',
+        creativityTooltipTitle: 'Adjust creativity',
+        creativityTooltipLineLow: '0: Outputs stay precise and stable with less randomness, suitable for factual answers.',
+        creativityTooltipLineHigh: '2: Expressions become more flexible and surprising, ideal for brainstorming.',
+        creativityScaleMinLabel: 'Precision',
+        creativityScaleMaxLabel: 'Creative',
+        qwenPromptExtendLabel: 'Prompt extension',
+        qwenPromptExtendTooltipTitle: 'Prompt extension',
+        qwenPromptExtendTooltipContent:
+          'Enable automatic expansion and optimization of your prompt so the generated images stay rich and precise. <strong>Tip:</strong> turn it on for short prompts to get better results.',
+        qwenImageEditCountLabel: 'Output image count',
+        qwenImageEditCountTooltipTitle: 'Output count',
+        qwenImageEditCountTooltipContent:
+          'You can generate up to 6 images; the actual number depends on your reference images and edit complexity.',
+        negativePromptLabel: 'Negative prompt (optional)',
+        negativePromptTooltipTitle: 'Negative prompt',
+        negativePromptTooltipContent:
+          'Describe content, styles, or elements you do not want in the image (e.g. blurry, low quality, text, watermark).',
+        negativePromptPlaceholder: 'Describe unwanted content, styles, or elements...',
+        negativePromptEditTooltipTitle: 'Negative prompt (optional)',
+        negativePromptEditTooltipContent:
+          'Describe content, styles, or elements you do not want in the edited image.<br/><strong>Common examples:</strong><br/><ul><li>Person edits: distortions, deformations, extra limbs, wrong proportions</li><li>Style transfer: over-processing, artifacts, mismatched colors</li><li>Object edits: unnatural looks, visual conflicts, visible seams</li></ul>',
+        negativePromptEditPlaceholder:
+          'Describe unwanted content, styles, or elements in the edited image...',
+        randomSeedTooltipTitle: 'Random seed (optional)',
+        randomSeedTooltipContent:
+          'Using the same seed, input, and parameters helps you reproduce similar results.<br/><strong>Range:</strong> 0 - 2147483647<br/><strong>Tip:</strong> leave it empty to randomize each time.',
+        randomSeedOptionalPlaceholder: 'Leave empty for random each time',
+      gptImageQualityLabel: 'Image quality',
+      gptImageQualityTooltipTitle: 'Image quality',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>Standard:</strong> Balanced quality and speed</div><div><strong>High:</strong> Higher resolution and details</div><div><strong>Ultra:</strong> Best detail at a higher cost</div><div class="mt-2 text-gray-500 text-xs">💡 Higher quality costs more but yields sharper images.</div></div>',
+      gptImageQualityOptionLow: 'Standard',
+      gptImageQualityOptionMedium: 'High',
+      gptImageQualityOptionHigh: 'Ultra',
+      gptImageInputFidelityLabel: 'Detail fidelity',
+      gptImageInputFidelityTooltipTitle: 'Detail fidelity',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low:</strong> Prioritize creativity and allow significant modification, great for artistic transformations.',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High:</strong> Preserve original details such as faces, brand logos, and structure.',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ Higher fidelity increases token usage, useful when you must retain specific elements.',
+      gptImageInputFidelityOptionLow: 'Low',
+      gptImageInputFidelityOptionHigh: 'High',
+      gptImageQuantityLabel: 'Generation quantity',
+      },
+      sizeSelector: {
+        imageSize: 'Image size',
+        resolution: 'Resolution',
+        aspectRatio: 'Aspect ratio',
+        width: 'Width',
+        height: 'Height'
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Multi-image generation guide',
@@ -6215,7 +6311,60 @@ export const translations: Record<string, Translation> = {
         randomSeedLabel: '随机种子（可选）',
         randomSeedPlaceholder: '默认随机',
         multiImageLabel: '组图功能',
-        watermarkLabel: '添加水印'
+        watermarkLabel: '添加水印',
+        creativityLabel: '创意度',
+        creativityTooltipTitle: '调整创意度',
+        creativityTooltipLineLow: '0：输出更精准稳定、少随机创意，适合事实问答',
+        creativityTooltipLineHigh: '2：表达更多元灵活、富惊喜感，适合脑洞创作',
+        creativityScaleMinLabel: '精准稳定',
+        creativityScaleMaxLabel: '灵活创意',
+        qwenPromptExtendLabel: '提示词扩展',
+        qwenPromptExtendTooltipTitle: '提示词扩展',
+        qwenPromptExtendTooltipContent:
+          '开启后，系统会自动扩展和优化您的提示词，使生成的图片更加丰富和精准。<br/><strong>建议：</strong>对于简短的提示词，建议开启此功能以获得更好的效果。',
+        qwenImageEditCountLabel: '输出图像数量',
+        qwenImageEditCountTooltipTitle: '生成数量',
+        qwenImageEditCountTooltipContent:
+          '最多可生成6张图片，实际数量受图片内容和编辑复杂度影响',
+        negativePromptLabel: '负面提示词（可选）',
+        negativePromptTooltipTitle: '负面提示词',
+        negativePromptTooltipContent:
+          '描述您不希望在图片中出现的内容、风格或元素。例如：模糊、低质量、文字、水印等',
+        negativePromptPlaceholder: '描述您不希望在图片中出现的内容、风格或元素...',
+        negativePromptEditTooltipTitle: '负面提示词（可选）',
+        negativePromptEditTooltipContent:
+          '描述您不希望在编辑后的图片中出现的内容、风格或元素。<br/><strong>常用示例：</strong><br/><ul><li>人物编辑：扭曲、变形、多余的肢体、错误的比例</li><li>风格迁移：过度渲染、失真、色彩不匹配</li><li>物体编辑：不自然、违和感、接缝明显</li></ul>',
+        negativePromptEditPlaceholder:
+          '描述您不希望在编辑后的图片中出现的内容、风格或元素...',
+        randomSeedTooltipTitle: '随机种子（可选）',
+        randomSeedTooltipContent:
+          '使用相同的种子、相同的输入和参数，可以获得相似的生成结果。<br/><strong>取值范围：</strong>0 - 2147483647<br/><strong>建议：</strong>留空则每次随机生成',
+        randomSeedOptionalPlaceholder: '留空则每次随机生成',
+      gptImageQualityLabel: '图片质量',
+      gptImageQualityTooltipTitle: '图像质量',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>标准：</strong>均衡画质与速度</div><div><strong>高清：</strong>更高分辨率与细节</div><div><strong>超清：</strong>更佳画质但费用更高</div><div class="mt-2 text-gray-500 text-xs">💡 质量越高，输出越清晰，但成本也越高。</div></div>',
+      gptImageQualityOptionLow: '标准',
+      gptImageQualityOptionMedium: '高清',
+      gptImageQualityOptionHigh: '超清',
+      gptImageInputFidelityLabel: '细节保留',
+      gptImageInputFidelityTooltipTitle: '细节保留说明',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low：</strong>创意优先，允许大幅修改原图，适合风格创作。',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High：</strong>保留原图细节，如人脸、品牌标识、结构等。',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ 选择高保真会显著增加 Token 消耗，建议在必须保留元素时使用。',
+      gptImageInputFidelityOptionLow: '低',
+      gptImageInputFidelityOptionHigh: '高',
+      gptImageQuantityLabel: '生成数量',
+      },
+      sizeSelector: {
+        imageSize: '图片尺寸',
+        resolution: '分辨率',
+        aspectRatio: '图片比例',
+        width: '宽度',
+        height: '高度'
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: '多图生成功能说明',
@@ -8414,8 +8563,63 @@ export const translations: Record<string, Translation> = {
         randomSeedLabel: 'Benih acak (opsional)',
         randomSeedPlaceholder: 'Acak secara default',
         multiImageLabel: 'Fungsi multi-gambar',
-        watermarkLabel: 'Tambahkan watermark'
+        watermarkLabel: 'Tambahkan watermark',
+        creativityLabel: 'Kreativitas',
+        creativityTooltipTitle: 'Sesuaikan kreativitas',
+        creativityTooltipLineLow:
+          '0: Output lebih presisi dan stabil, dengan sedikit kreativitas acak, cocok untuk tanya jawab faktual.',
+        creativityTooltipLineHigh:
+          '2: Ekspresi lebih beragam dan mengejutkan, cocok untuk kreasi ide liar.',
+        creativityScaleMinLabel: 'Presisi',
+        creativityScaleMaxLabel: 'Kreatif',
+        qwenPromptExtendLabel: 'Perluasan prompt',
+        qwenPromptExtendTooltipTitle: 'Perluasan prompt',
+        qwenPromptExtendTooltipContent:
+          'Aktifkan agar sistem otomatis memperluas dan mengoptimalkan prompt Anda, membuat gambar lebih kaya dan presisi. <strong>Tips:</strong> hidupkan untuk prompt pendek agar hasil lebih baik.',
+        qwenImageEditCountLabel: 'Jumlah keluaran gambar',
+        qwenImageEditCountTooltipTitle: 'Jumlah keluaran',
+        qwenImageEditCountTooltipContent:
+          'Maksimal 6 gambar; jumlah sebenarnya tergantung pada gambar referensi dan kompleksitas edit.',
+        negativePromptLabel: 'Prompt negatif (opsional)',
+        negativePromptTooltipTitle: 'Prompt negatif',
+        negativePromptTooltipContent:
+          'Jelaskan konten, gaya, atau elemen yang tidak ingin muncul di gambar, misalnya: blur, kualitas rendah, teks, watermark.',
+        negativePromptPlaceholder: 'Jelaskan konten, gaya, atau elemen yang tidak diinginkan...',
+        negativePromptEditTooltipTitle: 'Prompt negatif (opsional)',
+        negativePromptEditTooltipContent:
+          'Jelaskan konten, gaya, atau elemen yang tidak ingin muncul di gambar hasil edit.<br/><strong>Contoh umum:</strong><br/><ul><li>Edit wajah: distorsi, deformasi, anggota badan berlebih, proporsi salah</li><li>Transfer gaya: terlalu tajam, artefak, warna tidak cocok</li><li>Edit objek: terlihat tidak alami, tidak sinkron, sambungan jelas</li></ul>',
+        negativePromptEditPlaceholder:
+          'Jelaskan konten, gaya, atau elemen yang tidak diinginkan di gambar hasil edit...',
+        randomSeedTooltipTitle: 'Benih acak (opsional)',
+        randomSeedTooltipContent:
+          'Dengan benih, input, dan parameter yang sama, Anda bisa mendapatkan hasil yang mirip.<br/><strong>Rentang:</strong> 0 - 2147483647<br/><strong>Tips:</strong> biarkan kosong untuk acak setiap kali.',
+        randomSeedOptionalPlaceholder: 'Kosongkan untuk acak tiap kali',
+      gptImageQualityLabel: 'Kualitas gambar',
+      gptImageQualityTooltipTitle: 'Kualitas gambar',
+      gptImageQualityTooltipContent:
+        '<div class="space-y-2"><div><strong>Standard:</strong> Keseimbangan kualitas dan kecepatan</div><div><strong>High:</strong> Resolusi dan detail lebih tinggi</div><div><strong>Ultra:</strong> Detail terbaik dengan biaya lebih tinggi</div><div class="mt-2 text-gray-500 text-xs">💡 Kualitas lebih tinggi menghasilkan gambar yang lebih tajam tapi biaya lebih besar.</div></div>',
+      gptImageQualityOptionLow: 'Standard',
+      gptImageQualityOptionMedium: 'High',
+      gptImageQualityOptionHigh: 'Ultra',
+      gptImageInputFidelityLabel: 'Fidelitas detail',
+      gptImageInputFidelityTooltipTitle: 'Fidelitas detail',
+      gptImageInputFidelityTooltipLow:
+        '<strong>Low:</strong> Prioritaskan kreativitas, mengizinkan perubahan besar pada gambar asli, cocok untuk transformasi artistik.',
+      gptImageInputFidelityTooltipHigh:
+        '<strong>High:</strong> Pertahankan detail asli seperti wajah, logo merek, dan struktur.',
+      gptImageInputFidelityTooltipNote:
+        '⚠️ Fidelitas tinggi meningkatkan penggunaan token; gunakan saat perlu mempertahankan elemen tertentu.',
+      gptImageInputFidelityOptionLow: 'Low',
+      gptImageInputFidelityOptionHigh: 'High',
+      gptImageQuantityLabel: 'Jumlah generasi',
       },
+    sizeSelector: {
+      imageSize: 'Ukuran gambar',
+      resolution: 'Resolusi',
+      aspectRatio: 'Rasio aspek',
+      width: 'Lebar',
+      height: 'Tinggi'
+    },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Panduan multi-gambar',
         enableMultiImageTitle: 'I. Aktifkan mode multi-gambar',
