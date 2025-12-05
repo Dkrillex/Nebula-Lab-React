@@ -1112,6 +1112,23 @@ export interface Translation {
       gptImageInputFidelityOptionHigh: string;
       gptImageQuantityLabel: string;
     };
+    videoSettings: {
+      generationModeLabel: string;
+      resolutionLabel: string;
+      aspectRatioLabel: string;
+      durationLabel: string;
+      durationUnit: string;
+      seedLabel: string;
+      seedPlaceholder: string;
+      cameraFixedLabel: string;
+      smartRewriteLabel: string;
+      generateAudioLabel: string;
+      audioFileLabel: string;
+      audioUploadHint: string;
+      audioRemoveTitle: string;
+      wanSeedLabel: string;
+      wanSeedPlaceholder: string;
+    };
     sizeSelector?: {
       imageSize: string;
       resolution: string;
@@ -3684,6 +3701,23 @@ export const translations: Record<string, Translation> = {
         aspectRatio: 'Aspect ratio',
         width: 'Width',
         height: 'Height'
+      },
+      videoSettings: {
+        generationModeLabel: 'Generation mode',
+        resolutionLabel: 'Resolution',
+        aspectRatioLabel: 'Aspect ratio',
+        durationLabel: 'Duration',
+        durationUnit: 's',
+        seedLabel: 'Random seed (optional)',
+        seedPlaceholder: 'Random by default',
+        cameraFixedLabel: 'Camera lock',
+        smartRewriteLabel: 'Prompt rewrite',
+        generateAudioLabel: 'Generate audio',
+        audioFileLabel: 'Audio file (optional)',
+        audioUploadHint: '🎵 Upload audio (WAV/MP3, max 15MB)',
+        audioRemoveTitle: 'Remove audio',
+        wanSeedLabel: 'Random seed (optional)',
+        wanSeedPlaceholder: 'Leave empty for random'
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Multi-image generation guide',
@@ -6366,6 +6400,23 @@ export const translations: Record<string, Translation> = {
         width: '宽度',
         height: '高度'
       },
+      videoSettings: {
+        generationModeLabel: '生成模式',
+        resolutionLabel: '分辨率',
+        aspectRatioLabel: '宽高比',
+        durationLabel: '视频时长',
+        durationUnit: '秒',
+        seedLabel: '随机种子（可选）',
+        seedPlaceholder: '默认随机',
+        cameraFixedLabel: '固定摄像头',
+        smartRewriteLabel: '智能扩写提示词',
+        generateAudioLabel: '生成音效',
+        audioFileLabel: '音频文件（可选）',
+        audioUploadHint: '🎵 上传音频（WAV/MP3，最大15MB）',
+        audioRemoveTitle: '移除音频',
+        wanSeedLabel: '随机种子（可选）',
+        wanSeedPlaceholder: '留空则随机'
+      },
       sequentialImageGeneration: {
         multiImageGenerationTitle: '多图生成功能说明',
         enableMultiImageTitle: '一、启用多图生成模式',
@@ -8620,6 +8671,23 @@ export const translations: Record<string, Translation> = {
       width: 'Lebar',
       height: 'Tinggi'
     },
+      videoSettings: {
+        generationModeLabel: 'Mode generasi',
+        resolutionLabel: 'Resolusi',
+        aspectRatioLabel: 'Rasio aspek',
+        durationLabel: 'Durasi',
+        durationUnit: 'detik',
+        seedLabel: 'Benih acak (opsional)',
+        seedPlaceholder: 'Acak secara default',
+        cameraFixedLabel: 'Kamera tetap',
+        smartRewriteLabel: 'Perluasan prompt',
+        generateAudioLabel: 'Hasilkan audio',
+        audioFileLabel: 'File audio (opsional)',
+        audioUploadHint: '🎵 Unggah audio (WAV/MP3, maks 15MB)',
+        audioRemoveTitle: 'Hapus audio',
+        wanSeedLabel: 'Benih acak (opsional)',
+        wanSeedPlaceholder: 'Kosongkan untuk acak'
+      },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Panduan multi-gambar',
         enableMultiImageTitle: 'I. Aktifkan mode multi-gambar',

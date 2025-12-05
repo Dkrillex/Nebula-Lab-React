@@ -79,6 +79,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const imageValidationT = t?.imageValidation || {};
   const componentsT = rawT?.components || translations['zh'].components;
   const imageSettingsT = t?.imageSettings || {};
+  const videoSettingsT = t?.videoSettings || {};
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -4855,7 +4856,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 图生视频模式选择 (如果模型支持图片上传则显示) */}
                 {ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">生成模式</label>
+                    <label className="text-sm font-medium">{videoSettingsT.generationModeLabel || 'Generation mode'}</label>
                   <select
                       value={imageGenerationMode}
                       onChange={(e) => {
@@ -4900,7 +4901,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
                 {/* 视频分辨率 */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">分辨率</label>
+                  <label className="text-sm font-medium">{videoSettingsT.resolutionLabel || 'Resolution'}</label>
                   <select
                     value={selectedModel.includes('wan2.5') ? wan25Resolution : videoResolution}
                     onChange={(e) => {
@@ -4921,7 +4922,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 视频宽高比 */}
                 {!selectedModel.includes('wan2.5-i2v') && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">宽高比</label>
+                  <label className="text-sm font-medium">{videoSettingsT.aspectRatioLabel || 'Aspect ratio'}</label>
                   <select
                     value={selectedModel.includes('wan2.5-t2v') ? wan25AspectRatio : videoAspectRatio}
                     onChange={(e) => {
@@ -4950,14 +4951,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
                 {/* 视频时长 */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">视频时长</label>
+                    <label className="text-sm font-medium">{videoSettingsT.durationLabel || 'Duration'}</label>
                   <select
                       value={videoDuration}
                       onChange={(e) => setVideoDuration(parseInt(e.target.value))}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {ModelCapabilities.getVideoDurationOptions(selectedModel).map((dur) => (
-                      <option key={dur} value={dur}>{dur}秒</option>
+                    <option key={dur} value={dur}>
+                      {dur}
+                      {videoSettingsT.durationUnit || 's'}
+                    </option>
                     ))}
                   </select>
                 </div>
@@ -4965,10 +4969,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 随机种子 */}
                 {ModelCapabilities.supportsSeed(selectedModel) && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.seedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={videoSettingsT.seedPlaceholder || 'Random by default'}
                       value={seed || ''}
                       onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -4979,7 +4983,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 固定摄像头 (豆包模型) */}
                 {ModelCapabilities.supportsCameraFixed(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">固定摄像头</label>
+                    <label className="text-sm font-medium">{videoSettingsT.cameraFixedLabel || 'Camera lock'}</label>
                     <input
                       type="checkbox"
                       checked={cameraFixed}
@@ -4992,7 +4996,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 特定选项 */}
                 {ModelCapabilities.supportsSmartRewrite(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">智能扩写提示词</label>
+                    <label className="text-sm font-medium">{videoSettingsT.smartRewriteLabel || 'Prompt rewrite'}</label>
                     <input
                       type="checkbox"
                       checked={wan25SmartRewrite}
@@ -5004,7 +5008,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 
                 {selectedModel.includes('wan2.5') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">生成音效</label>
+                    <label className="text-sm font-medium">{videoSettingsT.generateAudioLabel || 'Generate audio'}</label>
                     <input
                       type="checkbox"
                       checked={wan25GenerateAudio}
@@ -5017,7 +5021,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 音频上传 */}
                 {ModelCapabilities.supportsAudioUpload(selectedModel) && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">音频文件 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.audioFileLabel || 'Audio file (optional)'}</label>
                     {!wan25AudioFile ? (
                       <label className="flex items-center justify-center w-full px-4 py-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
                         <input
@@ -5029,7 +5033,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           }}
                           className="hidden"
                         />
-                        <span className="text-sm text-muted">🎵 上传音频 (WAV/MP3, 最大15MB)</span>
+                        <span className="text-sm text-muted">
+                          {videoSettingsT.audioUploadHint || '🎵 Upload audio (WAV/MP3, max 15MB)'}
+                        </span>
                       </label>
                     ) : (
                       <div className="flex items-center justify-between px-3 py-2 bg-surface rounded-lg border border-border">
@@ -5038,7 +5044,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           type="button"
                           onClick={removeAudio}
                           className="ml-2 text-red-500 hover:text-red-600 transition-colors"
-                          title="移除音频"
+                          title={videoSettingsT.audioRemoveTitle || 'Remove audio'}
                         >
                           <X size={16} />
                         </button>
@@ -5050,10 +5056,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 随机种子 */}
                 {selectedModel.includes('wan2.5') && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.wanSeedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={videoSettingsT.wanSeedPlaceholder || 'Random by default'}
                       value={wan25Seed || ''}
                       onChange={(e) => setWan25Seed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
