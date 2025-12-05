@@ -11,6 +11,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({ title, content, size = 14 }) 
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  const hideTimerRef = useRef<number | null>(null);
 
   const updatePosition = () => {
     if (iconRef.current && tooltipRef.current && isVisible) {
@@ -57,20 +58,31 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({ title, content, size = 14 }) 
     }
   }, [isVisible]);
 
-  // 添加组件卸载时的清理
   useEffect(() => {
     return () => {
+      if (hideTimerRef.current) {
+        window.clearTimeout(hideTimerRef.current);
+      }
       setIsVisible(false);
     };
   }, []);
 
   const handleMouseEnter = () => {
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
+    }
     setIsVisible(true);
     setTimeout(updatePosition, 0);
   };
 
   const handleMouseLeave = () => {
-    setIsVisible(false);
+    if (hideTimerRef.current) {
+      window.clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = window.setTimeout(() => {
+      setIsVisible(false);
+    }, 150);
   };
 
   return (
@@ -100,7 +112,7 @@ const TooltipIcon: React.FC<TooltipIconProps> = ({ title, content, size = 14 }) 
       {isVisible && (
         <div
           ref={tooltipRef}
-          className="fixed bg-white dark:bg-gray-800 text-black dark:text-white p-3 rounded-xl text-xs whitespace-normal shadow-lg min-w-[200px] max-w-[300px] pointer-events-none border border-gray-200 dark:border-gray-700"
+          className="fixed bg-white dark:bg-gray-800 text-black dark:text-white p-3 rounded-xl text-xs whitespace-normal shadow-lg min-w-[200px] max-w-[300px] border border-gray-200 dark:border-gray-700 max-h-[380px] overflow-auto pointer-events-auto"
           style={{
             zIndex: 99999,
             top: `${position.top}px`,

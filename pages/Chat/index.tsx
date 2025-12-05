@@ -74,7 +74,28 @@ interface ChatPageProps {
 const ChatPage: React.FC<ChatPageProps> = (props) => {
   const { t: rawT } = useAppOutletContext();
   const t = props.t || rawT?.chatPage || translations['zh'].chatPage;
+  const audioT = t?.audio || {};
+  const toastsT = t?.toasts || {};
+  const imageValidationT = t?.imageValidation || {};
   const componentsT = rawT?.components || translations['zh'].components;
+  const imageSettingsT = t?.imageSettings || {};
+  const videoSettingsT = t?.videoSettings || {};
+
+  const getAspectRatioLabel = (id: string) => {
+    return videoSettingsT.aspectRatioOptions?.[id] || id;
+  };
+
+  const getResolutionLabel = (id: string) => {
+    return videoSettingsT.resolutionOptions?.[id] || id;
+  };
+
+  const getImageToVideoModeLabel = (id: string) => {
+    return videoSettingsT.imageToVideoModes?.[id]?.name || id;
+  };
+
+  const getImageToVideoModeDescription = (id: string) => {
+    return videoSettingsT.imageToVideoModes?.[id]?.description || '';
+  };
 
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -149,6 +170,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [videoResolution, setVideoResolution] = useState<'480p' | '720p' | '1080p'>('720p');
   const [imageGenerationMode, setImageGenerationMode] = useState('first_frame'); // first_frame, first_last_frame, reference
   const [cameraFixed, setCameraFixed] = useState(false);
+  const [remixVideoId, setRemixVideoId] = useState<string>(''); // sora remix 视频ID
   
   // Wan2.5模型专用参数
   const [wan25SmartRewrite, setWan25SmartRewrite] = useState(true);
@@ -204,7 +226,6 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     assetType: number;
     assetName?: string;
     assetDesc?: string;
-    assetId?: string;
   } | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -910,6 +931,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     const mode = searchParams.get('mode');
     const transferId = searchParams.get('transferId');
     const modelName = searchParams.get('model_name');
+    const remixVideoIdParam = searchParams.get('remix_video_id');
     
     if (mode && (mode === 'chat' || mode === 'image' || mode === 'video')) {
       setCurrentMode(mode as Mode);
@@ -968,6 +990,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const decodedContent = decodeURIComponent(content);
       setInputValue(decodedContent);
       contentProcessedRef.current = true; // 标记已处理
+    }
+
+    // 处理 remix 视频ID（sora remix）
+    if (remixVideoIdParam) {
+      setRemixVideoId(remixVideoIdParam);
     }
     
     // 当 URL 参数变化时，重置 contentProcessedRef
@@ -1881,10 +1908,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           if (textContent && textContent.trim()) {
             setInputValue(textContent.trim());
             // 如果同时有文字和图片，显示引用消息的提示
-            toast.success('已引用消息内容到输入框');
+            toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
           } else {
             // 只有图片时，显示图片复制的提示
-            toast.success('图片已复制并添加到输入框');
+            toast.success(toastsT.imageCopiedToInput || 'Image copied into input');
           }
         }
       };
@@ -1905,17 +1932,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             if (textContent && textContent.trim()) {
               setInputValue(textContent.trim());
               // 如果同时有文字和图片，显示引用消息的提示
-              toast.success('已引用消息内容到输入框');
+              toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
             } else {
               // 只有图片时，显示图片添加的提示
-              toast.success('图片已添加到输入框');
+              toast.success(toastsT.imageAddedToInput || 'Image added to input');
             }
           }
         };
         reader.readAsDataURL(blob);
       } catch (fallbackError) {
         console.error('添加图片到输入框失败:', fallbackError);
-        toast.error('复制图片失败');
+        toast.error(toastsT.copyImageFailed || 'Failed to copy image');
       }
     }
   };
@@ -1961,7 +1988,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       textarea?.focus();
     }, 100);
 
-    toast.success('已引用消息内容到输入框');
+    toast.success(toastsT.quotedMessageAdded || 'Message content added to input');
   };
 
   // 重新发送消息
@@ -2064,7 +2091,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   // 确认AI角色定义
   const confirmAIRole = () => {
     if (!aiRoleContent.trim()) {
-      toast.error(t?.aiRoleDefinition?.inputRequired || '请输入AI角色定义');
+    toast.error(t?.aiRoleDefinition?.inputRequired || 'Please enter AI role definition');
       return;
     }
 
@@ -2101,7 +2128,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     setShowAIRoleModal(false);
     setAiRoleContent('');
     setAiRoleMessageId('');
-    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI角色定义已更新');
+    toast.success(t?.aiRoleDefinition?.updateSuccess || 'AI role definition updated');
   };
 
   // 取消AI角色定义
@@ -2124,10 +2151,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('图片下载开始');
+      toast.success(toastsT.imageDownloadStarted || 'Image download started');
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error('下载失败，尝试在新窗口打开');
+      toast.error(toastsT.downloadFailed || 'Download failed, try opening in a new window');
       window.open(url, '_blank');
     }
   };
@@ -2145,10 +2172,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-      toast.success('视频下载开始');
+      toast.success(toastsT.videoDownloadStarted || 'Video download started');
     } catch (error) {
       console.error('Download failed:', error);
-      toast.error('下载失败，尝试在新窗口打开');
+      toast.error(toastsT.downloadFailed || 'Download failed, try opening in a new window');
       window.open(url, '_blank');
     }
   };
@@ -2180,88 +2207,20 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
   // 导入素材
   const handleExportMaterial = async (type: 'image' | 'video', url: string, prompt?: string) => {
-    // 如果正在导入，直接返回
     if (isExportingMaterial) {
       return;
     }
-    
+
     setIsExportingMaterial(true);
-    let finalAssetId: string | undefined;
     try {
-      let finalUrl = url;
-      
-      if (type === 'image') {
-        // 处理图片上传
-        const imageType = detectImageType({ url });
-
-        // 如果已经是 OSS 链接，直接使用
-        if (imageType === 'oss') {
-          const dateStr = new Date().toISOString().slice(0, 10);
-          setSelectedMaterial({
-            type,
-            url: finalUrl,
-            prompt,
-            assetType: 13, // AI图片生成
-            assetName: `AI图片生成_${dateStr}`,
-            assetDesc: `AI图片生成_${dateStr}`,
-          });
-          setIsAddMaterialModalOpen(true);
-          return;
-        }
-
-        const ossResult = await processImageToOSS({ url });
-        if (ossResult && ossResult.url) {
-          finalUrl = ossResult.url;
-          finalAssetId = ossResult.ossId;
-        } else {
-          toast.error(t.toasts.imageUploadFailed, { id: 'upload-oss' });
-          setIsExportingMaterial(false);
-          return;
-        }
-      } else {
-        // 处理视频上传
-        const videoType = detectVideoType({ url });
-
-        // 如果已经是 OSS 链接，直接使用
-        if (videoType === 'oss') {
-          const dateStr = new Date().toISOString().slice(0, 10);
-          setSelectedMaterial({
-            type,
-            url: finalUrl,
-            prompt,
-            assetType: 14, // AI视频生成
-            assetName: `AI生成视频_${dateStr}`,
-            assetDesc: `AI生成视频_${dateStr}`,
-          });
-          setIsAddMaterialModalOpen(true);
-          return;
-        }
-
-        // 需要上传到 OSS
-        toast.loading(t.toasts.uploadingVideoToOSS, { id: 'upload-oss' });
-
-        const ossResult = await processVideoToOSS({ url });
-        if (ossResult && ossResult.url) {
-          finalUrl = ossResult.url;
-          finalAssetId = ossResult.ossId;
-          toast.success(t.toasts.videoUploadSuccess, { id: 'upload-oss' });
-        } else {
-          toast.error(t.toasts.videoUploadFailed, { id: 'upload-oss' });
-          setIsExportingMaterial(false);
-          return;
-        }
-      }
-      
-      // 使用 OSS 返回的 URL
       const dateStr = new Date().toISOString().slice(0, 10);
       setSelectedMaterial({
         type,
-        url: finalUrl,
+        url,
         prompt,
-        assetType: type === 'image' ? 7 : 14, // 7: AI生图, 14: AI视频生成
+        assetType: type === 'image' ? 7 : 14,
         assetName: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
         assetDesc: type === 'image' ? `AI生图_${dateStr}` : `AI生成视频_${dateStr}`,
-        assetId: finalAssetId,
       });
       setIsAddMaterialModalOpen(true);
     } catch (error) {
@@ -2934,7 +2893,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                          hasChanges = true;
                      } else {
                          // 验证失败（且无裁剪结果），删除
-                         toast.error(result.error || '图片不符合当前模型要求，已移除');
+                         toast.error(result.error || 'Image does not meet the current model requirements and has been removed');
                          newImages.splice(i, 1);
                          hasChanges = true;
                      }
@@ -2974,7 +2933,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const currentCount = uploadedImages.length;
       
       if (currentCount >= maxImages) {
-        toast.error(`当前模式最多支持上传 ${maxImages} 张图片`);
+      toast.error(`Current mode supports up to ${maxImages} images`);
         return;
       }
 
@@ -2989,13 +2948,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       // 验证并处理每个文件
       for (const file of filesToProcess as File[]) {
         if (!file.type.startsWith('image/')) {
-          toast.error(`文件 ${file.name} 不是图片格式`);
+          toast.error(`File ${file.name} is not an image format`);
           continue;
         }
 
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
-          toast.error(validation.error || '图片验证失败');
+          toast.error(validation.error || imageValidationT.genericError || 'Image validation failed');
           continue;
         }
 
@@ -3032,7 +2991,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const currentCount = uploadedImages.length;
       
       if (currentCount >= maxImages) {
-        toast.error(`当前模型最多支持上传 ${maxImages} 张图片`);
+        toast.error(`Current model supports up to ${maxImages} images`);
         return;
       }
 
@@ -3047,13 +3006,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       // 验证并处理每个文件
       for (const file of filesToProcess) {
         if (!file.type.startsWith('image/')) {
-          toast.error(`文件 ${file.name} 不是图片格式`);
+          toast.error(`File ${file.name} is not an image format`);
           continue;
         }
 
         const validation = await validateImageFile(file, restrictions);
         if (!validation.valid) {
-          toast.error(validation.error || '图片验证失败');
+          toast.error(validation.error || imageValidationT.genericError || 'Image validation failed');
           continue;
         }
 
@@ -3094,32 +3053,38 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     e.target.value = '';
   };
 
-  const isImageDropEnabled = () =>
-    currentMode === 'image' &&
-    !!selectedModel &&
-    ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+  const isImageDropEnabled = () => {
+    if (!selectedModel) return false;
+    if (currentMode === 'image') {
+      return ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+    }
+    if (currentMode === 'video') {
+      return ModelCapabilities.supportsImageUpload(selectedModel, 'video');
+    }
+    return false;
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
-    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
     e.preventDefault();
     e.stopPropagation();
+    if (!isImageDropEnabled()) return;
+    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
     setIsDragOverInput(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
     if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
     e.preventDefault();
     e.stopPropagation();
+    if (!isImageDropEnabled()) return;
     setIsDragOverInput(false);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOverInput(false);
+    if (!isImageDropEnabled()) return;
     const files = e.dataTransfer?.files;
     if (files && files.length > 0) {
       await processImageFiles(files);
@@ -3136,19 +3101,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     // 验证文件格式
     const allowedFormats = ['audio/wav', 'audio/mp3', 'audio/mpeg'];
     if (!allowedFormats.includes(file.type)) {
-      toast.error('仅支持 WAV 和 MP3 格式的音频文件');
+      toast.error(audioT.formatError || 'Only WAV and MP3 formats are supported');
       return;
     }
 
     // 验证文件大小（15MB限制）
     const maxSize = 15 * 1024 * 1024;
     if (file.size > maxSize) {
-      toast.error('音频文件大小不能超过15MB');
+      toast.error(audioT.sizeExceeded || 'Audio file must be 15MB or smaller');
       return;
     }
 
     try {
-      toast.loading('音频上传中...');
+      toast.loading(audioT.uploading || 'Uploading audio...');
       const result = await uploadService.uploadFile(file);
       toast.dismiss();
       
@@ -3156,14 +3121,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         setWan25AudioFile(file);
         setWan25AudioUrl(result.url);
         console.log('音频上传到OSS成功，URL:', result.url);
-        toast.success('音频文件上传成功');
+        toast.success(audioT.uploadSuccess || 'Audio uploaded successfully');
       } else {
         throw new Error('OSS上传返回格式错误');
       }
     } catch (error: any) {
       toast.dismiss();
       console.error('音频上传到OSS失败:', error);
-      toast.error(`音频文件上传失败: ${error.message || '请重试'}`);
+      const messageText = (typeof error?.message === 'string' && error.message.trim())
+        ? error.message
+        : (audioT.retry || 'Please try again');
+      const uploadFailedText = (audioT.uploadFailed || 'Audio file upload failed: {message}')
+        .replace('{message}', messageText);
+      toast.error(uploadFailedText);
     }
   };
 
@@ -3171,7 +3141,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const removeAudio = () => {
     setWan25AudioFile(null);
     setWan25AudioUrl('');
-    toast.success('已移除音频文件');
+    toast.success(audioT.removed || 'Audio removed');
   };
 
   // 发送消息（根据模式调用不同的API）
@@ -3535,7 +3505,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       if (selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') {
         // 检查是否有图片输入
         if (!images || images.length === 0) {
-          toast.error('图像编辑模型需要至少上传 1 张图片');
+          toast.error(toastsT.imageValidationMin || 'Image editing requires at least 1 image');
           clearInterval(progressInterval);
           setProgress(0);
           return;
@@ -3543,7 +3513,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         
         // 检查图片数量限制（1-3张）
         if (images.length > 3) {
-          toast.error('最多支持 3 张图片');
+          toast.error(toastsT.imageValidationMax || 'Supports up to 3 images');
           clearInterval(progressInterval);
           setProgress(0);
           return;
@@ -3721,51 +3691,82 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         if (images && images.length > 0) {
           requestData.input_reference = images[0];
         }
+
+        // sora remix 模式下传递原视频ID
+        if (remixVideoId) {
+          requestData.remix_video_id = remixVideoId;
+        }
       }
       // doubao-seedance 系列模型
       else if (selectedModel.includes('doubao-seedance') || selectedModel.includes('seedance')) {
         const isT2V = selectedModel === 'doubao-seedance-1-0-lite-t2v-250428';
         const isI2V = selectedModel === 'doubao-seedance-1-0-lite-i2v-250428';
-        const isPro = selectedModel === 'doubao-seedance-1-0-pro-250528';
-        
-        // 计算视频尺寸
-        const [width, height] = videoAspectRatio === '16:9' 
-          ? videoResolution === '480p' ? [832, 480]
-          : videoResolution === '720p' ? [1280, 720] : [1920, 1080]
-          : videoAspectRatio === '9:16'
-          ? videoResolution === '480p' ? [480, 832]
-          : videoResolution === '720p' ? [720, 1280] : [1080, 1920]
-          : videoAspectRatio === '1:1'
-          ? videoResolution === '480p' ? [624, 624]
-          : videoResolution === '720p' ? [960, 960] : [1440, 1440]
-          : videoAspectRatio === '4:3'
-          ? videoResolution === '480p' ? [640, 480]
-          : videoResolution === '720p' ? [960, 720] : [1440, 1080]
-          : videoAspectRatio === '3:4'
-          ? videoResolution === '480p' ? [480, 640]
-          : videoResolution === '720p' ? [720, 960] : [1080, 1440]
-          : [1280, 720]; // 默认值
+        const basePrompt = (prompt || '生成一个视频').trim();
 
-        requestData.width = width;
-        requestData.height = height;
-        requestData.seconds = videoDuration;
-        requestData.resolution = videoResolution;
-        requestData.aspectRatio = videoAspectRatio;
-        requestData.duration = videoDuration;
-        requestData.watermark = watermark;
-        
-        // t2v 模型不支持图片
+        // 豆包视频接口需要 content 数组，参数通过提示词后缀传递
+        const buildDoubaoPromptWithParams = () => {
+          const params: string[] = [];
+
+          if (videoAspectRatio !== '16:9') {
+            params.push(`--ratio ${videoAspectRatio}`);
+          }
+          if (videoDuration !== 5) {
+            params.push(`--dur ${videoDuration}`);
+          }
+          if (videoResolution !== '720p') {
+            params.push(`--rs ${videoResolution}`);
+          }
+          // 豆包要求明确水印开关
+          params.push(`--wm ${watermark ? 'true' : 'false'}`);
+          if (cameraFixed && ModelCapabilities.supportsCameraFixed(selectedModel)) {
+            params.push('--cf true');
+          }
+          if (seed !== undefined) {
+            params.push(`--seed ${seed}`);
+          }
+
+          return params.length > 0 ? `${basePrompt} ${params.join(' ')}` : basePrompt;
+        };
+
+        const promptWithParams = buildDoubaoPromptWithParams();
+        const content: {
+          type: 'text' | 'image_url';
+          text?: string;
+          image_url?: { url: string };
+          role?: 'first_frame' | 'last_frame' | 'reference_image';
+        }[] = [
+          { type: 'text', text: promptWithParams },
+        ];
+
+        // t2v 模型不支持图片；i2v/参考图/首尾帧需要 content 里的 image_url
         if (!isT2V && images && images.length > 0) {
-          if (imageGenerationMode === 'first_last_frame' && images.length >= 2) {
-            requestData.image = images[0];
-            requestData.lastFrame = images[1];
+          if (isI2V && imageGenerationMode === 'first_last_frame' && images.length >= 2) {
+            content.push(
+              { type: 'image_url', image_url: { url: images[0] }, role: 'first_frame' },
+              { type: 'image_url', image_url: { url: images[1] }, role: 'last_frame' },
+            );
+          } else if (isI2V && imageGenerationMode === 'reference') {
+            images.forEach((img) => {
+              content.push({
+                type: 'image_url',
+                image_url: { url: img },
+                role: 'reference_image',
+              });
+            });
           } else {
-            requestData.image = images[0];
-            if (imageGenerationMode === 'reference') {
-              requestData.reference_image = images[0];
-            }
+            content.push({
+              type: 'image_url',
+              image_url: { url: images[0] },
+            });
           }
         }
+
+        requestData = {
+          model: selectedModel,
+          prompt: basePrompt,
+          user_id: user?.nebulaApiId,
+          content,
+        };
       }
       // Veo 模型
       else if (selectedModel.toLowerCase().includes('veo')) {
@@ -4394,7 +4395,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                   />
                 ) : (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">图片尺寸</label>
+                    <label className="text-sm font-medium">{imageSettingsT.sizeLabel || 'Image size'}</label>
                     <select
                       value={selectedModel === 'qwen-image-plus' ? qwenImageSize : imageSize}
                       onChange={(e) => {
@@ -4422,13 +4423,13 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 <div className="space-y-2">
                   <div className="flex justify-between items-center text-sm">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-medium">创意度</span>
+                      <span className="font-medium">{imageSettingsT.creativityLabel || 'Creativity'}</span>
                       <TooltipIcon
-                        title="调整创意度"
+                        title={imageSettingsT.creativityTooltipTitle || 'Adjust creativity'}
                         content={
                           <div>
-                            <div>0: 输出更精准稳定、少随机创意，适合事实问答</div>
-                            <div>2: 表达更多元灵活、富惊喜感，适合脑洞创作</div>
+                            <div>{imageSettingsT.creativityTooltipLineLow || '0: Outputs stay precise and stable with less randomness, suitable for factual answers.'}</div>
+                            <div>{imageSettingsT.creativityTooltipLineHigh || '2: Expressions become more flexible and surprising, ideal for brainstorming.'}</div>
                           </div>
                         }
                         size={16}
@@ -4443,8 +4444,8 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full h-1.5 bg-surface rounded-lg appearance-none cursor-pointer accent-primary"
                   />
                   <div className="flex justify-between text-xs text-muted">
-                    <span>精准稳定</span>
-                    <span>灵活创意</span>
+                    <span>{imageSettingsT.creativityScaleMinLabel || 'Precision'}</span>
+                    <span>{imageSettingsT.creativityScaleMaxLabel || 'Creative'}</span>
                   </div>
                 </div>
                 )}
@@ -4476,10 +4477,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                  selectedModel !== 'doubao-seededit-3-0-i2i-250628' &&
                  selectedModel !== 'doubao-seedream-3-0-t2i-250415' && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                  <label className="text-sm font-medium">{imageSettingsT.randomSeedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={imageSettingsT.randomSeedPlaceholder || 'Random by default'}
                       value={seed || ''}
                       onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -4525,7 +4526,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 <div className="space-y-3 border-t border-border pt-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">组图功能</label>
+                      <label className="text-sm font-medium">{imageSettingsT.multiImageLabel || 'Multi-image mode'}</label>
                       <TooltipIcon
                         title={t?.sequentialImageGeneration?.multiImageGenerationTitle || '多图生成功能说明'}
                         content={
@@ -4616,18 +4617,20 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">图片质量</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.gptImageQualityLabel || 'Image quality'}
+                    </label>
                     <TooltipIcon
-                      title="图像质量"
+                      title={imageSettingsT.gptImageQualityTooltipTitle || 'Image quality'}
                       content={
-                        <div>
-                          <div className="mb-2"><strong>标准</strong>：标准画质</div>
-                          <div className="mb-2"><strong>高清</strong>：高清画质</div>
-                          <div className="mb-2"><strong>超清</strong>：超清画质</div>
-                          <div className="mt-2 pt-2 border-t border-gray-200 text-gray-500">
-                            💡 质量越高，输出图片的分辨率和细节越好，费用也越高
-                          </div>
-                        </div>
+                        <div
+                          className="leading-relaxed text-gray-700 dark:text-gray-300"
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.gptImageQualityTooltipContent ||
+                              '<div class="space-y-2"><div><strong>Standard:</strong> Balanced quality and speed</div><div><strong>High:</strong> Higher resolution and details</div><div><strong>Ultra:</strong> Best detail at a higher cost</div><div class="mt-2 text-gray-500 text-xs">💡 Higher quality costs more but yields sharper images.</div></div>'
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4637,9 +4640,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     onChange={(e) => setGptImageQuality(e.target.value as 'low' | 'medium' | 'high')}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="low">低质量</option>
-                    <option value="medium">中等质量</option>
-                    <option value="high">高质量</option>
+                    <option value="low">{imageSettingsT.gptImageQualityOptionLow || 'Standard'}</option>
+                    <option value="medium">{imageSettingsT.gptImageQualityOptionMedium || 'High'}</option>
+                    <option value="high">{imageSettingsT.gptImageQualityOptionHigh || 'Ultra'}</option>
                   </select>
                 </div>
                 )}
@@ -4648,23 +4651,21 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsGptImageInputFidelity(selectedModel) && uploadedImages.length > 0 && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">细节保留</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.gptImageInputFidelityLabel || 'Detail fidelity'}
+                    </label>
                     <TooltipIcon
-                      title="细节保留说明"
+                      title={imageSettingsT.gptImageInputFidelityTooltipTitle || 'Detail fidelity'}
                       content={
-                        <div>
-                          <div className="mb-2">
-                            <strong>Low：创意优先</strong>
-                            <div className="ml-4 text-gray-500 text-xs">允许大幅修改原图，适合风格转换、艺术创作</div>
-                          </div>
-                          <div className="mb-2">
-                            <strong>High：细节优先</strong>
-                            <div className="ml-4 text-gray-500 text-xs">最大保留原图细节，保留人脸、品牌标识等关键元素</div>
-                          </div>
-                          <div className="mt-2 pt-2 border-t border-gray-200 text-orange-500 text-xs">
-                            ⚠️ 费用说明：选择"High"会显著增加Token消耗，适合需要保留人脸特征或品牌标识的场景
-                          </div>
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              (imageSettingsT.gptImageInputFidelityTooltipLow || '') +
+                              (imageSettingsT.gptImageInputFidelityTooltipHigh || '') +
+                              `<div class="mt-2 pt-2 border-t border-gray-200 text-orange-500 text-xs">${imageSettingsT.gptImageInputFidelityTooltipNote ||
+                                '⚠️ Higher fidelity increases token usage, useful when you must retain specific elements.'}</div>`
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4674,8 +4675,12 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     onChange={(e) => setGptImageInputFidelity(e.target.value as 'low' | 'high')}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
-                    <option value="low">低</option>
-                    <option value="high">高</option>
+                    <option value="low">
+                      {imageSettingsT.gptImageInputFidelityOptionLow || 'Low'}
+                    </option>
+                    <option value="high">
+                      {imageSettingsT.gptImageInputFidelityOptionHigh || 'High'}
+                    </option>
                   </select>
                 </div>
                 )}
@@ -4683,7 +4688,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* GPT生成数量 (GPT模型) */}
                 {ModelCapabilities.supportsGptImageQuality(selectedModel) && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">生成数量 ({gptImageN})</label>
+                  <label className="text-sm font-medium">
+                    {imageSettingsT.gptImageQuantityLabel || 'Generation quantity'} ({gptImageN})
+                  </label>
                   <input 
                     type="range" min="1" max="10" step="1" 
                     value={gptImageN}
@@ -4697,14 +4704,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsQwenPromptExtend(selectedModel) && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">提示词扩展</label>
+                    <label className="text-sm font-medium">{imageSettingsT.qwenPromptExtendLabel || 'Prompt extension'}</label>
                     <TooltipIcon
-                      title="提示词扩展"
+                      title={imageSettingsT.qwenPromptExtendTooltipTitle || 'Prompt extension'}
                       content={
-                        <div>
-                          <p>开启后，系统会自动扩展和优化您的提示词，使生成的图片更加丰富和精准。</p>
-                          <p><strong>建议：</strong>对于简短的提示词，建议开启此功能以获得更好的效果。</p>
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.qwenPromptExtendTooltipContent ||
+                              'Enable automatic expansion and optimization of your prompt so the generated images stay rich and precise. <strong>Tip:</strong> turn it on for short prompts to get better results.'
+                          }}
+                        />
                       }
                       size={14}
                     />
@@ -4722,13 +4732,19 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {ModelCapabilities.supportsQwenImageEditN(selectedModel) && (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1.5">
-                    <label className="text-sm font-medium">输出图像数量 ({qwenImageEditN})</label>
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.qwenImageEditCountLabel || 'Output image count'} ({qwenImageEditN})
+                    </label>
                     <TooltipIcon
-                      title="生成数量"
+                      title={imageSettingsT.qwenImageEditCountTooltipTitle || 'Output count'}
                       content={
-                        <div>
-                          最多可生成6张图片，实际数量受图片内容和编辑复杂度影响
-                        </div>
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.qwenImageEditCountTooltipContent ||
+                              'You can generate up to 6 images; the actual number depends on your reference images and edit complexity.'
+                          }}
+                        />
                       }
                       size={16}
                     />
@@ -4745,7 +4761,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 水印设置 - 豆包模型 */}
                 {ModelCapabilities.supportsWatermark(selectedModel) && !selectedModel.startsWith('qwen-image') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={watermark}
@@ -4758,7 +4774,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* qwen-image-plus 水印设置 */}
                 {selectedModel === 'qwen-image-plus' && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={qwenImageWatermark}
@@ -4772,22 +4788,30 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {selectedModel === 'qwen-image-plus' && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">负面提示词（可选）</label>
-                      <TooltipIcon
-                        title="负面提示词"
-                        content={
-                          <div>
-                            <p>描述您不希望在图片中出现的内容、风格或元素。</p>
-                            <p>例如：模糊、低质量、文字、水印等</p>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.negativePromptLabel || 'Negative prompt (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={imageSettingsT.negativePromptTooltipTitle || 'Negative prompt'}
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.negativePromptTooltipContent ||
+                              'Describe content, styles, or elements you do not want in the image, e.g. blurry, low quality, text, watermark.'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <textarea
                       value={qwenNegativePrompt}
                       onChange={(e) => setQwenNegativePrompt(e.target.value)}
-                      placeholder="描述您不希望在图片中出现的内容、风格或元素..."
+                      placeholder={
+                        imageSettingsT.negativePromptPlaceholder ||
+                        'Describe unwanted content, styles, or elements...'
+                      }
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
                       maxLength={500}
                     />
@@ -4798,27 +4822,32 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">负面提示词（可选）</label>
-                      <TooltipIcon
-                        title="负面提示词（可选）"
-                        content={
-                          <div>
-                            <p>描述您不希望在编辑后的图片中出现的内容、风格或元素。</p>
-                            <p><strong>常用示例：</strong></p>
-                            <ul className="list-disc list-inside ml-2 mt-1">
-                              <li>人物编辑：扭曲、变形、多余的肢体、错误的比例</li>
-                              <li>风格迁移：过度渲染、失真、色彩不匹配</li>
-                              <li>物体编辑：不自然、违和感、接缝明显</li>
-                            </ul>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.negativePromptLabel || 'Negative prompt (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={
+                        imageSettingsT.negativePromptEditTooltipTitle || 'Negative prompt (optional)'
+                      }
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.negativePromptEditTooltipContent ||
+                              'Describe content, styles, or elements you do not want in the edited image.<br/><strong>Common examples:</strong><br/><ul class="list-disc list-inside ml-2 mt-1"><li>Person edits: distortions, deformations, extra limbs, wrong proportions</li><li>Style transfer: over-processing, artifacts, mismatched colors</li><li>Object edits: unnatural looks, visual conflicts, visible seams</li></ul>'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <textarea
                       value={qwenImageEditNegativePrompt}
                       onChange={(e) => setQwenImageEditNegativePrompt(e.target.value)}
-                      placeholder="描述您不希望在编辑后的图片中出现的内容、风格或元素..."
+                      placeholder={
+                        imageSettingsT.negativePromptEditPlaceholder ||
+                        'Describe unwanted content, styles, or elements in the edited image...'
+                      }
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none resize-none h-20"
                       maxLength={500}
                     />
@@ -4829,24 +4858,30 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="space-y-2">
                     <div className="flex items-center gap-1.5">
-                      <label className="text-sm font-medium">随机种子（可选）</label>
-                      <TooltipIcon
-                        title="随机种子（可选）"
-                        content={
-                          <div>
-                            <p>使用相同的种子、相同的输入和参数，可以获得相似的生成结果。</p>
-                            <p><strong>取值范围：</strong>0 - 2147483647</p>
-                            <p><strong>建议：</strong>留空则每次随机生成</p>
-                          </div>
-                        }
-                        size={16}
-                      />
+                    <label className="text-sm font-medium">
+                      {imageSettingsT.randomSeedLabel || 'Random seed (optional)'}
+                    </label>
+                    <TooltipIcon
+                      title={imageSettingsT.randomSeedTooltipTitle || 'Random seed (optional)'}
+                      content={
+                        <div
+                          dangerouslySetInnerHTML={{
+                            __html:
+                              imageSettingsT.randomSeedTooltipContent ||
+                              'Using the same seed, input, and parameters helps you reproduce similar results.<br/><strong>Range:</strong> 0 - 2147483647<br/><strong>Tip:</strong> leave it empty to randomize each time.'
+                          }}
+                        />
+                      }
+                      size={16}
+                    />
                     </div>
                     <input
                       type="number"
                       min="0"
                       max="2147483647"
-                      placeholder="留空则每次随机生成"
+                      placeholder={
+                        imageSettingsT.randomSeedOptionalPlaceholder || 'Leave empty for random each time'
+                      }
                       value={qwenImageEditSeed || ''}
                       onChange={(e) => setQwenImageEditSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -4857,7 +4892,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* qwen-image-edit 水印设置 */}
                 {(selectedModel === 'qwen-image-edit-plus' || selectedModel === 'qwen-image-edit-plus-2025-10-30') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={qwenImageEditWatermark}
@@ -4875,7 +4910,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 图生视频模式选择 (如果模型支持图片上传则显示) */}
                 {ModelCapabilities.supportsImageUpload(selectedModel, 'video') && !selectedModel.includes('wan2.5-i2v') && (
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">生成模式</label>
+                    <label className="text-sm font-medium">{videoSettingsT.generationModeLabel || 'Generation mode'}</label>
                   <select
                       value={imageGenerationMode}
                       onChange={(e) => {
@@ -4909,18 +4944,18 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                       {ModelCapabilities.getAvailableImageToVideoModes(selectedModel).map((mode) => (
-                        <option key={mode.id} value={mode.id}>{mode.name}</option>
+                        <option key={mode.id} value={mode.id}>{getImageToVideoModeLabel(mode.id)}</option>
                       ))}
                   </select>
                     <p className="text-xs text-muted">
-                      {IMAGE_TO_VIDEO_MODES.find(m => m.id === imageGenerationMode)?.description}
+                      {getImageToVideoModeDescription(imageGenerationMode)}
                     </p>
                 </div>
                 )}
 
                 {/* 视频分辨率 */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">分辨率</label>
+                  <label className="text-sm font-medium">{videoSettingsT.resolutionLabel || 'Resolution'}</label>
                   <select
                     value={selectedModel.includes('wan2.5') ? wan25Resolution : videoResolution}
                     onChange={(e) => {
@@ -4933,7 +4968,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {getVideoResolutions(selectedModel, imageGenerationMode).map((res) => (
-                      <option key={res.id} value={res.id}>{res.name}</option>
+                      <option key={res.id} value={res.id}>{getResolutionLabel(res.id)}</option>
                     ))}
                   </select>
                 </div>
@@ -4941,7 +4976,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 视频宽高比 */}
                 {!selectedModel.includes('wan2.5-i2v') && (
                 <div className="space-y-2">
-                  <label className="text-sm font-medium">宽高比</label>
+                  <label className="text-sm font-medium">{videoSettingsT.aspectRatioLabel || 'Aspect ratio'}</label>
                   <select
                     value={selectedModel.includes('wan2.5-t2v') ? wan25AspectRatio : videoAspectRatio}
                     onChange={(e) => {
@@ -4954,14 +4989,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                       {selectedModel.includes('wan2.5-t2v') 
-                        ? ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution).map((ratioId) => {
-                            const ratio = VIDEO_RATIOS.find(r => r.id === ratioId);
-                            return ratio ? (
-                        <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
-                            ) : null;
-                          })
+                        ? ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution).map((ratioId) => (
+                            <option key={ratioId} value={ratioId}>{getAspectRatioLabel(ratioId)}</option>
+                          ))
                         : getVideoRatios(selectedModel, undefined, imageGenerationMode).map((ratio) => (
-                            <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
+                            <option key={ratio.id} value={ratio.id}>{getAspectRatioLabel(ratio.id)}</option>
                           ))
                       }
                   </select>
@@ -4970,14 +5002,17 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
 
                 {/* 视频时长 */}
                 <div className="space-y-2">
-                    <label className="text-sm font-medium">视频时长</label>
+                    <label className="text-sm font-medium">{videoSettingsT.durationLabel || 'Duration'}</label>
                   <select
                       value={videoDuration}
                       onChange={(e) => setVideoDuration(parseInt(e.target.value))}
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {ModelCapabilities.getVideoDurationOptions(selectedModel).map((dur) => (
-                      <option key={dur} value={dur}>{dur}秒</option>
+                    <option key={dur} value={dur}>
+                      {dur}
+                      {videoSettingsT.durationUnit || 's'}
+                    </option>
                     ))}
                   </select>
                 </div>
@@ -4985,10 +5020,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 随机种子 */}
                 {ModelCapabilities.supportsSeed(selectedModel) && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.seedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={videoSettingsT.seedPlaceholder || 'Random by default'}
                       value={seed || ''}
                       onChange={(e) => setSeed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -4999,7 +5034,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 固定摄像头 (豆包模型) */}
                 {ModelCapabilities.supportsCameraFixed(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">固定摄像头</label>
+                    <label className="text-sm font-medium">{videoSettingsT.cameraFixedLabel || 'Camera lock'}</label>
                     <input
                       type="checkbox"
                       checked={cameraFixed}
@@ -5012,7 +5047,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 特定选项 */}
                 {ModelCapabilities.supportsSmartRewrite(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">智能扩写提示词</label>
+                    <label className="text-sm font-medium">{videoSettingsT.smartRewriteLabel || 'Prompt rewrite'}</label>
                     <input
                       type="checkbox"
                       checked={wan25SmartRewrite}
@@ -5024,7 +5059,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 
                 {selectedModel.includes('wan2.5') && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">生成音效</label>
+                    <label className="text-sm font-medium">{videoSettingsT.generateAudioLabel || 'Generate audio'}</label>
                     <input
                       type="checkbox"
                       checked={wan25GenerateAudio}
@@ -5037,7 +5072,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 音频上传 */}
                 {ModelCapabilities.supportsAudioUpload(selectedModel) && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">音频文件 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.audioFileLabel || 'Audio file (optional)'}</label>
                     {!wan25AudioFile ? (
                       <label className="flex items-center justify-center w-full px-4 py-2 border-2 border-dashed border-border rounded-lg cursor-pointer hover:border-primary transition-colors">
                         <input
@@ -5049,7 +5084,9 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           }}
                           className="hidden"
                         />
-                        <span className="text-sm text-muted">🎵 上传音频 (WAV/MP3, 最大15MB)</span>
+                        <span className="text-sm text-muted">
+                          {videoSettingsT.audioUploadHint || '🎵 Upload audio (WAV/MP3, max 15MB)'}
+                        </span>
                       </label>
                     ) : (
                       <div className="flex items-center justify-between px-3 py-2 bg-surface rounded-lg border border-border">
@@ -5058,7 +5095,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                           type="button"
                           onClick={removeAudio}
                           className="ml-2 text-red-500 hover:text-red-600 transition-colors"
-                          title="移除音频"
+                          title={videoSettingsT.audioRemoveTitle || 'Remove audio'}
                         >
                           <X size={16} />
                         </button>
@@ -5070,10 +5107,10 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* Wan2.5 随机种子 */}
                 {selectedModel.includes('wan2.5') && (
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">随机种子 (可选)</label>
+                    <label className="text-sm font-medium">{videoSettingsT.wanSeedLabel || 'Random seed (optional)'}</label>
                     <input
                       type="number"
-                      placeholder="默认随机"
+                      placeholder={videoSettingsT.wanSeedPlaceholder || 'Random by default'}
                       value={wan25Seed || ''}
                       onChange={(e) => setWan25Seed(e.target.value ? parseInt(e.target.value) : undefined)}
                       className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
@@ -5084,7 +5121,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 {/* 水印设置 (视频模式) */}
                 {ModelCapabilities.supportsWatermark(selectedModel) && (
                   <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">添加水印</label>
+                    <label className="text-sm font-medium">{imageSettingsT.watermarkLabel || 'Add watermark'}</label>
                     <input
                       type="checkbox"
                       checked={watermark}
@@ -5106,14 +5143,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                <button
                    onClick={handleClear}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="清空对话"
+                   title={t.actions.clear}
                  >
                    <Trash2 size={14} />
                  </button>
                  <button
                    onClick={handleSaveChat}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="保存对话"
+                   title={t.actions.save}
                  >
                    <Save size={14} />
                  </button>
@@ -5123,7 +5160,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                      setSelectedRecordId(null);
                    }}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors"
-                   title="新建对话"
+                   title={t.actions.new}
                  >
                    <Plus size={14} />
                  </button>
@@ -5131,7 +5168,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                    onClick={refreshRecords}
                  disabled={recordsLoading}
                    className="p-1.5 text-muted hover:text-foreground hover:bg-surface rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                   title="刷新记录"
+                   title={t.actions.refresh}
                >
                  <RefreshCw size={14} className={recordsLoading ? 'animate-spin' : ''} />
                </button>
@@ -5142,11 +5179,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                {(() => {
                  console.log('🔍 渲染历史记录 - 当前模式:', currentMode, '记录数量:', chatRecords.length, '加载中:', recordsLoading);
                  
-                 if (recordsLoading && chatRecords.length === 0) {
+                if (recordsLoading && chatRecords.length === 0) {
                    return (
                      <div className="h-full flex flex-col items-center justify-center text-foreground gap-2">
                  <Loader2 size={24} className="animate-spin" />
-                 <span className="text-sm">加载中...</span>
+                <span className="text-sm">{t.historyLoading}</span>
                </div>
                    );
                  }
@@ -5199,7 +5236,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                        <button
                          onClick={(e) => deleteChatRecord(record.id, e)}
                              className="opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-600 transition-opacity flex-shrink-0"
-                         title="删除记录"
+                         title={t.historyDeleteTooltip}
                        >
                          <Trash2 size={12} />
                        </button>
@@ -5226,7 +5263,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           </div>
           <div className="flex items-center gap-4">
             <div className="hidden sm:flex items-center gap-2 px-2 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded text-xs font-medium border border-indigo-500/20">
-               {selectedModel || '未选择模型'}
+               {selectedModel || t.statusModelNotSelected}
             </div>
             <div className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium border ${
               isStreaming 
@@ -5234,7 +5271,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 : 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/20'
             }`}>
               <span className={`w-1.5 h-1.5 rounded-full ${isStreaming ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'}`}></span>
-              {isStreaming ? '生成中...' : t.statusReady}
+              {isStreaming ? t.statusGenerating : t.statusReady}
             </div>
             <div className="flex gap-1">
               <button 
@@ -5286,14 +5323,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
             <div
-              className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
+            className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
                 isImageDropEnabled() && isDragOverInput
                   ? 'border-indigo-400 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/30'
                   : ''
               }`}
-              onDragOver={isImageDropEnabled() ? handleDragOver : undefined}
-              onDragLeave={isImageDropEnabled() ? handleDragLeave : undefined}
-              onDrop={isImageDropEnabled() ? handleDrop : undefined}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               
               {/* 上传的图片预览 */}
@@ -5445,7 +5482,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
             <button
               onClick={() => setPreviewModal({ isOpen: false, type: 'image', url: '' })}
               className="absolute top-4 right-4 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
-              title="关闭"
+            title={t.preview?.close || 'Close'}
             >
               <X size={20} />
             </button>
@@ -5457,7 +5494,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                 toast.success(t.toasts.linkCopied);
               }}
               className="absolute top-4 right-16 z-10 p-2 bg-black/60 hover:bg-black/80 text-white rounded-full backdrop-blur-sm transition-colors"
-              title="复制链接"
+              title={t.preview?.copyLink || 'Copy link'}
             >
               <Copy size={20} />
             </button>
@@ -5498,7 +5535,6 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
           }}
           initialData={{
             assetUrl: selectedMaterial.url,
-            assetId: selectedMaterial.assetId,
             assetName: selectedMaterial.assetName || (selectedMaterial.prompt 
               ? `${selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'}-${selectedMaterial.prompt.slice(0, 10)}`
               : selectedMaterial.type === 'image' ? 'AI生图' : 'AI生成视频'),
@@ -5705,6 +5741,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const hasReasoning = isAssistant && message.reasoning_content && message.reasoning_content.trim().length > 0;
+  const tooltipTranslations = t?.tooltips || {};
+  const videoProcessingTranslations = t?.videoProcessing;
+  const toastTranslations = t?.toasts || {};
 
   return (
     <div 
@@ -5806,7 +5845,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   {message.content}
                 </ReactMarkdown>
               ) : message.isStreaming && currentMode === 'chat' ? (
-                <span>思考中...</span>
+                <span>{t?.thinking || 'Thinking...'}</span>
               ) : null}
               {message.isStreaming && currentMode === 'chat' && (
                 <span className="inline-block w-2 h-4 bg-indigo-600 ml-1 animate-pulse"></span>
@@ -5826,11 +5865,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                             <Loader2 className="animate-spin text-primary" size={20} />
                             <div className="flex-1">
                               <p className="text-sm text-foreground font-medium">
-                                {(() => {
-                                  // 根据进度显示不同文本
-                                  if (progress < 10) return '任务提交成功，等待处理...';
-                                  if (progress < 20) return '正在准备生成任务，请稍候...';
-                                  return '正在创作精美视频...';
+                              {(() => {
+                                  if (progress < 10) return videoProcessingTranslations?.submitted || 'Task submitted successfully, waiting for processing...';
+                                  if (progress < 20) return videoProcessingTranslations?.preparing || 'Preparing generation task, please wait...';
+                                  return videoProcessingTranslations?.generating || 'Creating a polished video for you...';
                                 })()}
                               </p>
                               <div className="mt-2 flex items-center gap-2">
@@ -5853,27 +5891,27 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                           <VideoPlayer url={video.url} />
                           {/* 操作按钮 - 右上角 */}
                           <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex gap-2 z-10">
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onPreview?.('video', video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title="预览"
+                              title={tooltipTranslations.preview || 'Preview'}
                             >
                               <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onDownloadVideo?.(video.url);
                               }}
                               className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                              title="下载"
+                              title={tooltipTranslations.download || 'Download'}
                             >
                               <Download size={16} className="text-gray-700 dark:text-gray-300" />
                             </button>
-                            <button
+                              <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onExportMaterial?.('video', video.url, video.prompt);
@@ -5884,7 +5922,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                                   ? 'opacity-50 cursor-not-allowed' 
                                   : 'hover:scale-105 cursor-pointer'
                               }`}
-                              title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
+                              title={
+                                isExportingMaterial 
+                                  ? (tooltipTranslations.importingMaterial || 'Importing material...')
+                                  : (tooltipTranslations.importMaterial || 'Import material')
+                              }
                             >
                               <svg 
                                 className="w-4 h-4 text-gray-700 dark:text-gray-300" 
@@ -5900,7 +5942,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         </div>
                       ) : video.status === 'failed' ? (
                         <div className="w-full aspect-video bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg flex items-center justify-center">
-                          <p className="text-sm text-red-600 dark:text-red-400">视频生成失败</p>
+                            <p className="text-sm text-red-600 dark:text-red-400">
+                            {videoProcessingTranslations?.failed || 'Video generation failed'}
+                          </p>
                         </div>
                       ) : null}
                       {video.prompt && (
@@ -5958,7 +6002,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onPreview?.('image', img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title="预览"
+                    title={tooltipTranslations.preview || 'Preview'}
                   >
                     <Eye size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -5968,7 +6012,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                       onDownloadImage?.(img.url);
                     }}
                     className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm"
-                    title="下载"
+                    title={tooltipTranslations.download || 'Download'}
                   >
                     <Download size={16} className="text-gray-700 dark:text-gray-300" />
                   </button>
@@ -5983,7 +6027,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         ? 'opacity-50 cursor-not-allowed' 
                         : 'hover:scale-105 cursor-pointer'
                     }`}
-                    title={isExportingMaterial ? '正在导入素材...' : '导入素材'}
+                    title={
+                      isExportingMaterial 
+                        ? (tooltipTranslations.importingMaterial || 'Importing material...')
+                        : (tooltipTranslations.importMaterial || 'Import material')
+                    }
                   >
                     <svg 
                       className="w-4 h-4 text-gray-700 dark:text-gray-300" 
@@ -6002,7 +6050,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         onImageToVideo(img.url, img.prompt);
                       }}
                       className="p-1.5 bg-white/95 dark:bg-gray-800/95 rounded-lg shadow-md hover:scale-105 transition-transform backdrop-blur-sm cursor-pointer"
-                      title="图生视频"
+                      title={tooltipTranslations.imageToVideo || 'Image to video'}
                     >
                       <Video size={16} className="text-gray-700 dark:text-gray-300" />
                     </button>
@@ -6190,18 +6238,18 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                   // 非图片模式，或者图片模式下没有图片时，复制文本内容
                   if (message.content) {
                     onCopy(message.content);
-                    toast.success('已复制到剪贴板');
+                    toast.success(toastTranslations.copiedToClipboard || 'Copied to clipboard');
                   } else if (message.generatedImages?.length) {
                     const urls = message.generatedImages.map(img => img.url).join('\n');
                     onCopy(urls);
-                    toast.success('图片链接已复制');
+                    toast.success(toastTranslations.imageLinkCopied || 'Image link copied');
                   } else if (message.generatedVideos?.length && message.generatedVideos[0]?.url) {
                     onCopy(message.generatedVideos[0].url);
-                    toast.success('视频链接已复制');
+                    toast.success(toastTranslations.videoLinkCopied || 'Video link copied');
                   }
                 }}
                 className="p-1 hover:bg-border rounded transition-colors"
-              title="复制"
+              title={t?.messageActions?.copy}
             >
               <Copy size={12} />
             </button>
@@ -6222,7 +6270,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 onClick={() => onQuote(message)}
                 className="p-1 hover:bg-border rounded transition-colors"
-                title="引用"
+                title={t?.messageActions?.quote}
               >
                 <Reply size={12} />
               </button>
@@ -6232,7 +6280,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
               <button
                 onClick={() => onResend(message)}
                 className="p-1 hover:bg-border rounded transition-colors"
-                title="重新发送"
+                title={t?.messageActions?.resend}
               >
                 <RefreshCw size={12} />
               </button>
