@@ -3029,32 +3029,38 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     e.target.value = '';
   };
 
-  const isImageDropEnabled = () =>
-    currentMode === 'image' &&
-    !!selectedModel &&
-    ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+  const isImageDropEnabled = () => {
+    if (!selectedModel) return false;
+    if (currentMode === 'image') {
+      return ModelCapabilities.supportsImageUpload(selectedModel, 'image');
+    }
+    if (currentMode === 'video') {
+      return ModelCapabilities.supportsImageUpload(selectedModel, 'video');
+    }
+    return false;
+  };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
-    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
     e.preventDefault();
     e.stopPropagation();
+    if (!isImageDropEnabled()) return;
+    if (e.dataTransfer?.types && !Array.from(e.dataTransfer.types).includes('Files')) return;
     setIsDragOverInput(true);
   };
 
   const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
     if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget as Node)) return;
     e.preventDefault();
     e.stopPropagation();
+    if (!isImageDropEnabled()) return;
     setIsDragOverInput(false);
   };
 
   const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    if (!isImageDropEnabled()) return;
     e.preventDefault();
     e.stopPropagation();
     setIsDragOverInput(false);
+    if (!isImageDropEnabled()) return;
     const files = e.dataTransfer?.files;
     if (files && files.length > 0) {
       await processImageFiles(files);
@@ -5260,14 +5266,14 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         <div className="p-4 bg-background border-t border-border">
           <div className="max-w-4xl mx-auto">
             <div
-              className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
+            className={`border-2 border-border rounded-xl bg-white dark:bg-gray-800 transition-all overflow-hidden focus-within:border-indigo-500 dark:focus-within:border-indigo-400 focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.1)] dark:focus-within:shadow-[0_0_0_3px_rgba(102,126,234,0.2)] ${
                 isImageDropEnabled() && isDragOverInput
                   ? 'border-indigo-400 bg-indigo-50/50 dark:border-indigo-500 dark:bg-indigo-900/30'
                   : ''
               }`}
-              onDragOver={isImageDropEnabled() ? handleDragOver : undefined}
-              onDragLeave={isImageDropEnabled() ? handleDragLeave : undefined}
-              onDrop={isImageDropEnabled() ? handleDrop : undefined}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
             >
               
               {/* 上传的图片预览 */}
