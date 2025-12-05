@@ -108,28 +108,46 @@ export const useVideoGeneration = (options: UseVideoGenerationOptions) => {
     try {
       console.log(scene, editedStoryboard, storyboard);
       // 构建视频生成参数
+      let content = []
       const imageUrl = scene.shots[0]?.img || uploadedImages[0]?.url || '';
       const lastFrame = scene.shots[1]?.img || uploadedImages[1]?.url || '';
       if (!imageUrl) {
         throw new Error('缺少图片，无法生成视频');
+      } else {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: imageUrl
+          },
+          role: 'first_frame'
+        })
+      }
+      if (lastFrame) {
+        content.push({
+          type: 'image_url',
+          image_url: {
+            url: lastFrame
+          },
+          role: 'last_frame'
+        })
       }
 
       // 2. 使用 doubao-seedance-1-0-lite-i2v-250428 模型生成视频
       const videoDuration = 5;
       const videoResolution = '720p'; // 固定使用720p
+      const text1 = scene.shots[0]?.desc ? `图1: ${scene.shots[0]?.desc}` : '';
+      const text2 = scene.shots[1]?.desc ? `/n 图2: ${scene.shots[1]?.desc}` : '';
+      const prompt = `${text1} ${text2}` || '生成视频'
 
       //doubao-seedance-1-0-lite-i2v-250428 模型参数配置
       const requestData: any = {
         model: 'doubao-seedance-1-0-lite-i2v-250428',
-        prompt: scene.lines || '生成视频',
-        duration: videoDuration,
-        resolution: videoResolution,
+        prompt: `${prompt} --ratio 3:4 --rs ${videoResolution} --wm false --duration ${videoDuration}`,
         image: imageUrl,
         lastFrame: lastFrame,
         smart_rewrite: false,
         generate_audio: false, // 仅生成视频，音频后续生成
-        width: 1280,
-        watermark: false,
+        content: content
       };
 
       // 提交视频生成任务
