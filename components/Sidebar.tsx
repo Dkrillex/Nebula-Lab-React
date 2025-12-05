@@ -323,7 +323,7 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
       
       <div className="p-2 border-t border-border bg-surface/30 flex flex-col gap-2">
         {!isCollapsed ? (
-          showPromo && (
+          false && (
             <div className="relative bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-lg p-1.5 mx-5 border border-indigo-500/20">
                 <button 
                   onClick={() => setShowPromo(false)}
@@ -334,11 +334,8 @@ const Sidebar: React.FC<SidebarProps> = ({ t, isCollapsed, setIsCollapsed, onSig
                 <div className="flex items-start gap-2 mb-1 text-indigo-500">
                   <Sparkles size={14} className="mt-0.5 flex-shrink-0" />
                   <div className="flex flex-col items-center">
-                    {/* <span className="text-[9px] font-bold tracking-wider">
-                      {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}新版本上线
-                    </span> */}
                     <span className="text-[9px] font-bold tracking-wider">
-                      {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}
+                      {CURRENT_SYSTEM === SYSTEM_TYPE.MODEL_CENTER ? 'NebulaAPI' : 'NebulaLab'}新版本上线
                     </span>
                   </div>
               </div>
