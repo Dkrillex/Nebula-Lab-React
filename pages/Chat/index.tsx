@@ -149,6 +149,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const [videoResolution, setVideoResolution] = useState<'480p' | '720p' | '1080p'>('720p');
   const [imageGenerationMode, setImageGenerationMode] = useState('first_frame'); // first_frame, first_last_frame, reference
   const [cameraFixed, setCameraFixed] = useState(false);
+  const [remixVideoId, setRemixVideoId] = useState<string>(''); // sora remix 视频ID
   
   // Wan2.5模型专用参数
   const [wan25SmartRewrite, setWan25SmartRewrite] = useState(true);
@@ -910,6 +911,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
     const mode = searchParams.get('mode');
     const transferId = searchParams.get('transferId');
     const modelName = searchParams.get('model_name');
+    const remixVideoIdParam = searchParams.get('remix_video_id');
     
     if (mode && (mode === 'chat' || mode === 'image' || mode === 'video')) {
       setCurrentMode(mode as Mode);
@@ -968,6 +970,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
       const decodedContent = decodeURIComponent(content);
       setInputValue(decodedContent);
       contentProcessedRef.current = true; // 标记已处理
+    }
+
+    // 处理 remix 视频ID（sora remix）
+    if (remixVideoIdParam) {
+      setRemixVideoId(remixVideoIdParam);
     }
     
     // 当 URL 参数变化时，重置 contentProcessedRef
@@ -3721,51 +3728,82 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
         if (images && images.length > 0) {
           requestData.input_reference = images[0];
         }
+
+        // sora remix 模式下传递原视频ID
+        if (remixVideoId) {
+          requestData.remix_video_id = remixVideoId;
+        }
       }
       // doubao-seedance 系列模型
       else if (selectedModel.includes('doubao-seedance') || selectedModel.includes('seedance')) {
         const isT2V = selectedModel === 'doubao-seedance-1-0-lite-t2v-250428';
         const isI2V = selectedModel === 'doubao-seedance-1-0-lite-i2v-250428';
-        const isPro = selectedModel === 'doubao-seedance-1-0-pro-250528';
-        
-        // 计算视频尺寸
-        const [width, height] = videoAspectRatio === '16:9' 
-          ? videoResolution === '480p' ? [832, 480]
-          : videoResolution === '720p' ? [1280, 720] : [1920, 1080]
-          : videoAspectRatio === '9:16'
-          ? videoResolution === '480p' ? [480, 832]
-          : videoResolution === '720p' ? [720, 1280] : [1080, 1920]
-          : videoAspectRatio === '1:1'
-          ? videoResolution === '480p' ? [624, 624]
-          : videoResolution === '720p' ? [960, 960] : [1440, 1440]
-          : videoAspectRatio === '4:3'
-          ? videoResolution === '480p' ? [640, 480]
-          : videoResolution === '720p' ? [960, 720] : [1440, 1080]
-          : videoAspectRatio === '3:4'
-          ? videoResolution === '480p' ? [480, 640]
-          : videoResolution === '720p' ? [720, 960] : [1080, 1440]
-          : [1280, 720]; // 默认值
+        const basePrompt = (prompt || '生成一个视频').trim();
 
-        requestData.width = width;
-        requestData.height = height;
-        requestData.seconds = videoDuration;
-        requestData.resolution = videoResolution;
-        requestData.aspectRatio = videoAspectRatio;
-        requestData.duration = videoDuration;
-        requestData.watermark = watermark;
-        
-        // t2v 模型不支持图片
+        // 豆包视频接口需要 content 数组，参数通过提示词后缀传递
+        const buildDoubaoPromptWithParams = () => {
+          const params: string[] = [];
+
+          if (videoAspectRatio !== '16:9') {
+            params.push(`--ratio ${videoAspectRatio}`);
+          }
+          if (videoDuration !== 5) {
+            params.push(`--dur ${videoDuration}`);
+          }
+          if (videoResolution !== '720p') {
+            params.push(`--rs ${videoResolution}`);
+          }
+          // 豆包要求明确水印开关
+          params.push(`--wm ${watermark ? 'true' : 'false'}`);
+          if (cameraFixed && ModelCapabilities.supportsCameraFixed(selectedModel)) {
+            params.push('--cf true');
+          }
+          if (seed !== undefined) {
+            params.push(`--seed ${seed}`);
+          }
+
+          return params.length > 0 ? `${basePrompt} ${params.join(' ')}` : basePrompt;
+        };
+
+        const promptWithParams = buildDoubaoPromptWithParams();
+        const content: {
+          type: 'text' | 'image_url';
+          text?: string;
+          image_url?: { url: string };
+          role?: 'first_frame' | 'last_frame' | 'reference_image';
+        }[] = [
+          { type: 'text', text: promptWithParams },
+        ];
+
+        // t2v 模型不支持图片；i2v/参考图/首尾帧需要 content 里的 image_url
         if (!isT2V && images && images.length > 0) {
-          if (imageGenerationMode === 'first_last_frame' && images.length >= 2) {
-            requestData.image = images[0];
-            requestData.lastFrame = images[1];
+          if (isI2V && imageGenerationMode === 'first_last_frame' && images.length >= 2) {
+            content.push(
+              { type: 'image_url', image_url: { url: images[0] }, role: 'first_frame' },
+              { type: 'image_url', image_url: { url: images[1] }, role: 'last_frame' },
+            );
+          } else if (isI2V && imageGenerationMode === 'reference') {
+            images.forEach((img) => {
+              content.push({
+                type: 'image_url',
+                image_url: { url: img },
+                role: 'reference_image',
+              });
+            });
           } else {
-            requestData.image = images[0];
-            if (imageGenerationMode === 'reference') {
-              requestData.reference_image = images[0];
-            }
+            content.push({
+              type: 'image_url',
+              image_url: { url: images[0] },
+            });
           }
         }
+
+        requestData = {
+          model: selectedModel,
+          prompt: basePrompt,
+          user_id: user?.nebulaApiId,
+          content,
+        };
       }
       // Veo 模型
       else if (selectedModel.toLowerCase().includes('veo')) {
