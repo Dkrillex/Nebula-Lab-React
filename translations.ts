@@ -1128,6 +1128,9 @@ export interface Translation {
       audioRemoveTitle: string;
       wanSeedLabel: string;
       wanSeedPlaceholder: string;
+      aspectRatioOptions: Record<string, string>;
+      resolutionOptions: Record<string, string>;
+      imageToVideoModes: Record<string, { name: string; description: string }>;
     };
     sizeSelector?: {
       imageSize: string;
@@ -3717,7 +3720,35 @@ export const translations: Record<string, Translation> = {
         audioUploadHint: '🎵 Upload audio (WAV/MP3, max 15MB)',
         audioRemoveTitle: 'Remove audio',
         wanSeedLabel: 'Random seed (optional)',
-        wanSeedPlaceholder: 'Leave empty for random'
+        wanSeedPlaceholder: 'Leave empty for random',
+        aspectRatioOptions: {
+          '16:9': '16:9 (Landscape)',
+          '4:3': '4:3 (Traditional)',
+          '1:1': '1:1 (Square)',
+          '3:4': '3:4 (Vertical)',
+          '9:16': '9:16 (Vertical)',
+          '21:9': '21:9 (Widescreen)',
+          adaptive: 'Adaptive',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: 'First frame generation',
+            description: 'Generate video based on the first frame image',
+          },
+          first_last_frame: {
+            name: 'First & last frame generation',
+            description: 'Generate video using both the first and last frame images',
+          },
+          reference: {
+            name: 'Reference image generation',
+            description: 'Generate video guided by a reference image',
+          },
+        },
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Multi-image generation guide',
@@ -6415,7 +6446,35 @@ export const translations: Record<string, Translation> = {
         audioUploadHint: '🎵 上传音频（WAV/MP3，最大15MB）',
         audioRemoveTitle: '移除音频',
         wanSeedLabel: '随机种子（可选）',
-        wanSeedPlaceholder: '留空则随机'
+        wanSeedPlaceholder: '留空则随机',
+        aspectRatioOptions: {
+          '16:9': '16:9 (横屏)',
+          '4:3': '4:3 (传统)',
+          '1:1': '1:1 (正方形)',
+          '3:4': '3:4 (竖屏)',
+          '9:16': '9:16 (竖屏)',
+          '21:9': '21:9 (宽屏)',
+          adaptive: '自适应',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: '首帧生成',
+            description: '基于首帧图片生成视频',
+          },
+          first_last_frame: {
+            name: '首尾帧生成',
+            description: '基于首尾帧图片生成视频',
+          },
+          reference: {
+            name: '参考图生成',
+            description: '基于参考图片生成视频',
+          },
+        },
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: '多图生成功能说明',
@@ -8686,7 +8745,35 @@ export const translations: Record<string, Translation> = {
         audioUploadHint: '🎵 Unggah audio (WAV/MP3, maks 15MB)',
         audioRemoveTitle: 'Hapus audio',
         wanSeedLabel: 'Benih acak (opsional)',
-        wanSeedPlaceholder: 'Kosongkan untuk acak'
+        wanSeedPlaceholder: 'Kosongkan untuk acak',
+        aspectRatioOptions: {
+          '16:9': '16:9 (Lanskap)',
+          '4:3': '4:3 (Klasik)',
+          '1:1': '1:1 (Persegi)',
+          '3:4': '3:4 (Potret)',
+          '9:16': '9:16 (Vertikal)',
+          '21:9': '21:9 (Layar Lebar)',
+          adaptive: 'Adaptif',
+        },
+        resolutionOptions: {
+          '480p': '480P',
+          '720p': '720P',
+          '1080p': '1080P',
+        },
+        imageToVideoModes: {
+          first_frame: {
+            name: 'Generasi bingkai pertama',
+            description: 'Hasilkan video berdasarkan gambar bingkai pertama',
+          },
+          first_last_frame: {
+            name: 'Bingkai awal & akhir',
+            description: 'Hasilkan video menggunakan bingkai pertama dan terakhir',
+          },
+          reference: {
+            name: 'Gambar referensi',
+            description: 'Hasilkan video berdasarkan gambar referensi',
+          },
+        },
       },
       sequentialImageGeneration: {
         multiImageGenerationTitle: 'Panduan multi-gambar',

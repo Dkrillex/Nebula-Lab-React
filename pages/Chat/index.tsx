@@ -81,6 +81,22 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
   const imageSettingsT = t?.imageSettings || {};
   const videoSettingsT = t?.videoSettings || {};
 
+  const getAspectRatioLabel = (id: string) => {
+    return videoSettingsT.aspectRatioOptions?.[id] || id;
+  };
+
+  const getResolutionLabel = (id: string) => {
+    return videoSettingsT.resolutionOptions?.[id] || id;
+  };
+
+  const getImageToVideoModeLabel = (id: string) => {
+    return videoSettingsT.imageToVideoModes?.[id]?.name || id;
+  };
+
+  const getImageToVideoModeDescription = (id: string) => {
+    return videoSettingsT.imageToVideoModes?.[id]?.description || '';
+  };
+
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuthStore();
@@ -4890,11 +4906,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                       {ModelCapabilities.getAvailableImageToVideoModes(selectedModel).map((mode) => (
-                        <option key={mode.id} value={mode.id}>{mode.name}</option>
+                        <option key={mode.id} value={mode.id}>{getImageToVideoModeLabel(mode.id)}</option>
                       ))}
                   </select>
                     <p className="text-xs text-muted">
-                      {IMAGE_TO_VIDEO_MODES.find(m => m.id === imageGenerationMode)?.description}
+                      {getImageToVideoModeDescription(imageGenerationMode)}
                     </p>
                 </div>
                 )}
@@ -4914,7 +4930,7 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                     {getVideoResolutions(selectedModel, imageGenerationMode).map((res) => (
-                      <option key={res.id} value={res.id}>{res.name}</option>
+                      <option key={res.id} value={res.id}>{getResolutionLabel(res.id)}</option>
                     ))}
                   </select>
                 </div>
@@ -4935,14 +4951,11 @@ const ChatPage: React.FC<ChatPageProps> = (props) => {
                     className="w-full rounded-lg border border-border bg-surface py-2 px-3 text-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
                   >
                       {selectedModel.includes('wan2.5-t2v') 
-                        ? ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution).map((ratioId) => {
-                            const ratio = VIDEO_RATIOS.find(r => r.id === ratioId);
-                            return ratio ? (
-                        <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
-                            ) : null;
-                          })
+                        ? ModelCapabilities.getWan25T2VAspectRatios(wan25Resolution).map((ratioId) => (
+                            <option key={ratioId} value={ratioId}>{getAspectRatioLabel(ratioId)}</option>
+                          ))
                         : getVideoRatios(selectedModel, undefined, imageGenerationMode).map((ratio) => (
-                            <option key={ratio.id} value={ratio.id}>{ratio.name}</option>
+                            <option key={ratio.id} value={ratio.id}>{getAspectRatioLabel(ratio.id)}</option>
                           ))
                       }
                   </select>
