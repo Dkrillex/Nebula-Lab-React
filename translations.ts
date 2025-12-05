@@ -1076,6 +1076,22 @@ export interface Translation {
       multiImageLabel: string;
       watermarkLabel: string;
     };
+    sequentialImageGeneration: {
+      multiImageGenerationTitle: string;
+      enableMultiImageTitle: string;
+      enableMultiImageDesc: string;
+      textToMultiImage: string;
+      imageToMultiImage: string;
+      multiImageToMultiImage: string;
+      disableMultiImageTitle: string;
+      disableMultiImageDesc: string;
+      textToSingleImage: string;
+      imageToSingleImage: string;
+      multiImageToSingleImage: string;
+      importantNote: string;
+      importantNoteContent: string;
+      maxImagesNote: string;
+    };
   };
   keysPage: {
     title: string;
@@ -3572,6 +3588,22 @@ export const translations: Record<string, Translation> = {
         randomSeedPlaceholder: 'Random by default',
         multiImageLabel: 'Multi-image mode',
         watermarkLabel: 'Add watermark'
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: 'Multi-image generation guide',
+        enableMultiImageTitle: 'I. Enable multi-image generation mode',
+        enableMultiImageDesc: 'When enabled, you can create a set of related images from text or reference pictures, including the following situations:',
+        textToMultiImage: '1. <strong>Text to multi-image</strong>: generate a set of related images using only text prompts, up to 4 images;',
+        imageToMultiImage: '2. <strong>Single image to multi-image</strong>: upload one reference image plus extra text to generate a set of related images, up to 4 images;',
+        multiImageToMultiImage: '3. <strong>Multi-image to multi-image</strong>: upload 2-7 reference images plus extra text to generate a related image set, and the total number of reference and generated images must not exceed 11;',
+        disableMultiImageTitle: 'II. Disable multi-image mode (default single image)',
+        disableMultiImageDesc: 'When disabled, only single image creation is supported based on text or references, including:',
+        textToSingleImage: '1. <strong>Text to single image</strong>: generate one image that matches the description;',
+        imageToSingleImage: '2. <strong>Single image to single image</strong>: upload one reference image plus text to generate a related image;',
+        multiImageToSingleImage: '3. <strong>Multi-image to single image</strong>: upload 2-7 reference images plus text to generate one image that blends the core elements of the references.',
+        importantNote: 'Important note',
+        importantNoteContent: 'You can generate up to 4 images; the actual quantity depends on the prompt.',
+        maxImagesNote: 'Generate up to 4 images; actual number depends on the prompt.'
       }
     },
     keysPage: {
@@ -6184,6 +6216,22 @@ export const translations: Record<string, Translation> = {
         randomSeedPlaceholder: '默认随机',
         multiImageLabel: '组图功能',
         watermarkLabel: '添加水印'
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: '多图生成功能说明',
+        enableMultiImageTitle: '一、启用多图生成模式',
+        enableMultiImageDesc: '当开启多图生成功能时，支持基于文本或参考图片生成一组内容关联的图片，具体场景包括：',
+        textToMultiImage: '1. <strong>文生多图</strong>：仅通过文本提示词，生成一组内容关联的图片，最多可生成4张；',
+        imageToMultiImage: '2. <strong>单图生多图</strong>：上传1张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，最多可生成4张；',
+        multiImageToMultiImage: '3. <strong>多图生多图</strong>：上传2-7张参考图片+补充文本提示词，生成一组与参考图内容关联的图片，且「参考图片总数+生成图片数」不超过11张。',
+        disableMultiImageTitle: '二、关闭多图生成模式（默认单图生成）',
+        disableMultiImageDesc: '当关闭多图生成功能时，仅支持基于文本或参考图片生成单张图片，具体场景包括：',
+        textToSingleImage: '1. <strong>文生单图</strong>：仅通过文本提示词，生成1张符合描述的图片；',
+        imageToSingleImage: '2. <strong>单图生单图</strong>：上传1张参考图片+补充文本提示词，生成1张与参考图内容关联的图片；',
+        multiImageToSingleImage: '3. <strong>多图生单图</strong>：上传2-7张参考图片+补充文本提示词，生成1张融合参考图核心元素的图片。',
+        importantNote: '重要提示',
+        importantNoteContent: '最多可生成4张图片，实际数量受文本提示词影响',
+        maxImagesNote: '最多可生成4张图片，实际数量受文本提示词影响'
       }
     },
     keysPage: {
@@ -8367,6 +8415,22 @@ export const translations: Record<string, Translation> = {
         randomSeedPlaceholder: 'Acak secara default',
         multiImageLabel: 'Fungsi multi-gambar',
         watermarkLabel: 'Tambahkan watermark'
+      },
+      sequentialImageGeneration: {
+        multiImageGenerationTitle: 'Panduan multi-gambar',
+        enableMultiImageTitle: 'I. Aktifkan mode multi-gambar',
+        enableMultiImageDesc: 'Saat fitur multi-gambar aktif, Anda dapat membuat satu set gambar terkait berdasarkan teks atau gambar referensi, termasuk skenario berikut:',
+        textToMultiImage: '1. <strong>Teks ke multi-gambar</strong>: gunakan prompt teks saja untuk membuat satu set gambar terkait, maksimal 4 gambar;',
+        imageToMultiImage: '2. <strong>Gambar tunggal ke multi-gambar</strong>: unggah 1 gambar referensi dan tambahkan teks untuk membuat satu set gambar terkait, maksimal 4 gambar;',
+        multiImageToMultiImage: '3. <strong>Multi-gambar ke multi-gambar</strong>: unggah 2-7 gambar referensi dan teks tambahan untuk membuat set gambar terkait, dengan total gambar referensi + hasil tidak melebihi 11;',
+        disableMultiImageTitle: 'II. Nonaktifkan mode multi-gambar (default satu gambar)',
+        disableMultiImageDesc: 'Saat dinonaktifkan, hanya mendukung pembuatan satu gambar berdasarkan teks atau referensi, termasuk:',
+        textToSingleImage: '1. <strong>Teks ke satu gambar</strong>: buat 1 gambar sesuai deskripsi;',
+        imageToSingleImage: '2. <strong>Gambar tunggal ke satu gambar</strong>: unggah 1 gambar referensi ditambah teks untuk menghasilkan 1 gambar terkait;',
+        multiImageToSingleImage: '3. <strong>Multi-gambar ke satu gambar</strong>: unggah 2-7 gambar referensi ditambah teks untuk menghasilkan 1 gambar yang memadukan elemen inti referensi;',
+        importantNote: 'Catatan penting',
+        importantNoteContent: 'Maksimal 4 gambar dapat dibuat; jumlah aktual tergantung prompt.',
+        maxImagesNote: 'Maksimal 4 gambar; jumlah aktual tergantung prompt.'
       }
     },
     keysPage: {
